@@ -26,12 +26,11 @@
 									<listOptionValue builtIn="false" value="R"/>
 								</option>
 								<option id="macosx.c.link.option.paths.1817112563" name="Library search path (-L)" superClass="macosx.c.link.option.paths" valueType="libPaths">
-									<listOptionValue builtIn="false" value="/Users/marc/Documents/Research/&quot;2011 thru 2016 ASU&quot;/&quot;2. Subsurface hydrospheres&quot;/IcyDwarf"/>
+									<listOptionValue builtIn="false" value="/Users/marc/Documents/Research/&quot;2011 thru 2016 ASU&quot;/&quot;2. Subsurface hydrospheres&quot;/Git/IcyDwarf/IcyDwarf"/>
 									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Resources/lib/x86_64"/>
 								</option>
 								<option id="macosx.c.link.option.ldflags.1667768476" name="Linker flags" superClass="macosx.c.link.option.ldflags" value="-arch x86_64 -framework openGL -framework SDL2 -framework SDL2_image -framework SDL2_mixer -framework Cocoa -framework GLUT" valueType="string"/>
 								<option id="macosx.c.link.option.userobjs.1352728355" name="Other objects" superClass="macosx.c.link.option.userobjs" valueType="userObjs">
-									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Resources/library/Rcpp/lib/x86_64/libRcpp.a"/>
 									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Resources/library/RInside/lib/x86_64/libRInside.a"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.macosx.c.linker.input.1183805878" superClass="cdt.managedbuild.tool.macosx.c.linker.input">
@@ -54,7 +53,6 @@
 								<option id="gnu.c.compiler.option.include.paths.1102186728" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="/usr/include"/>
 									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Resources/include"/>
-									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Resources/library/Rcpp/include"/>
 									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Resources/library/RInside/include"/>
 									<listOptionValue builtIn="false" value="/System/Library/Frameworks/OpenGL.framework/Versions/A/Headers"/>
 									<listOptionValue builtIn="false" value="/Library/Frameworks/SDL2.framework/Versions/A/Headers"/>
@@ -99,11 +97,17 @@
 							<targetPlatform id="cdt.managedbuild.target.gnu.platform.macosx.exe.release.1126277957" name="Debug Platform" superClass="cdt.managedbuild.target.gnu.platform.macosx.exe.release"/>
 							<builder autoBuildTarget="all" buildPath="${workspace_loc:/IcyDwarf}/Release" cleanBuildTarget="clean" enableAutoBuild="false" enableCleanBuild="true" enabledIncrementalBuild="true" id="cdt.managedbuild.target.gnu.builder.macosx.exe.release.1160659499" incrementalBuildTarget="all" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" parallelBuildOn="false" stopOnErr="true" superClass="cdt.managedbuild.target.gnu.builder.macosx.exe.release"/>
 							<tool command="gcc" commandLinePattern="${COMMAND} ${FLAGS} ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS}" id="cdt.managedbuild.tool.macosx.c.linker.macosx.exe.release.1154934444" name="MacOS X C Linker" superClass="cdt.managedbuild.tool.macosx.c.linker.macosx.exe.release">
-								<option id="macosx.c.link.option.libs.869306267" name="Libraries (-l)" superClass="macosx.c.link.option.libs"/>
-								<option id="macosx.c.link.option.paths.1132158293" name="Library search path (-L)" superClass="macosx.c.link.option.paths" valueType="libPaths">
-									<listOptionValue builtIn="false" value="/Users/marc/Documents/Research/&quot;2011 thru 2016 ASU/2. Subsurface hydrospheres&quot;/IcyDwarf"/>
+								<option id="macosx.c.link.option.libs.869306267" name="Libraries (-l)" superClass="macosx.c.link.option.libs" valueType="libs">
+									<listOptionValue builtIn="false" value="R"/>
 								</option>
-								<option id="macosx.c.link.option.ldflags.1918427544" name="Linker flags" superClass="macosx.c.link.option.ldflags" value="-framework openGL -framework SDL2 -framework SDL2_image -framework SDL2_mixer -framework Cocoa -framework GLUT" valueType="string"/>
+								<option id="macosx.c.link.option.paths.1132158293" name="Library search path (-L)" superClass="macosx.c.link.option.paths" valueType="libPaths">
+									<listOptionValue builtIn="false" value="/Users/marc/Documents/Research/&quot;2011 thru 2016 ASU/2. Subsurface hydrospheres&quot;/Git/IcyDwarf/IcyDwarf"/>
+									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Resources/lib/x86_64"/>
+								</option>
+								<option id="macosx.c.link.option.ldflags.1918427544" name="Linker flags" superClass="macosx.c.link.option.ldflags" value="-arch x86_64 -framework openGL -framework SDL2 -framework SDL2_image -framework SDL2_mixer -framework Cocoa -framework GLUT" valueType="string"/>
+								<option id="macosx.c.link.option.userobjs.2145990486" name="Other objects" superClass="macosx.c.link.option.userobjs" valueType="userObjs">
+									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Resources/library/RInside/lib/x86_64/libRInside.a"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.macosx.c.linker.input.1720534438" superClass="cdt.managedbuild.tool.macosx.c.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
@@ -120,9 +124,11 @@
 							</tool>
 							<tool command="gcc" commandLinePattern="${COMMAND} ${FLAGS} ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS}" id="cdt.managedbuild.tool.gnu.c.compiler.macosx.exe.release.1884175709" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.macosx.exe.release">
 								<option defaultValue="gnu.c.optimization.level.most" id="gnu.c.compiler.macosx.exe.release.option.optimization.level.1371150510" name="Optimization Level" superClass="gnu.c.compiler.macosx.exe.release.option.optimization.level" valueType="enumerated"/>
-								<option id="gnu.c.compiler.macosx.exe.release.option.debugging.level.864024125" name="Debug Level" superClass="gnu.c.compiler.macosx.exe.release.option.debugging.level" value="gnu.c.debugging.level.none" valueType="enumerated"/>
+								<option id="gnu.c.compiler.macosx.exe.release.option.debugging.level.864024125" name="Debug Level" superClass="gnu.c.compiler.macosx.exe.release.option.debugging.level" value="gnu.c.debugging.level.default" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.include.paths.1923154675" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="/usr/include"/>
+									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Resources/library/RInside/include"/>
+									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Resources/include"/>
 									<listOptionValue builtIn="false" value="/Library/Frameworks/SDL2.framework/Versions/A/Headers"/>
 									<listOptionValue builtIn="false" value="/Library/Frameworks/SDL2_image.framework/Versions/A/Headers"/>
 									<listOptionValue builtIn="false" value="/Library/Frameworks/SDL2_mixer.framework/Versions/A/Headers"/>
@@ -131,6 +137,8 @@
 									<listOptionValue builtIn="false" value="/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers"/>
 								</option>
 								<option id="gnu.c.compiler.option.misc.other.361968030" name="Other flags" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0" valueType="string"/>
+								<option id="gnu.c.compiler.option.debugging.gprof.1305378107" name="Generate gprof information (-pg)" superClass="gnu.c.compiler.option.debugging.gprof" value="false" valueType="boolean"/>
+								<option id="gnu.c.compiler.option.debugging.prof.796180563" name="Generate prof information (-p)" superClass="gnu.c.compiler.option.debugging.prof" value="false" valueType="boolean"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1547280650" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 						</toolChain>

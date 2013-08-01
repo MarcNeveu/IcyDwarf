@@ -4,17 +4,16 @@
  *  Created on: Jul 10, 2013
  *      Author: Marc Neveu (mneveu@asu.edu)
  *
- * This routine outputs two table files, one that gives
- * the thermal expansivity of water (alpha in K-1) for a range of T and P,
- * and one that gives the compressibility (beta in bar-1).
+ * 		This routine outputs two table files, one that gives
+ * 		the thermal expansivity of water (alpha in K-1) for a range of T and P,
+ * 		and one that gives the compressibility (beta in bar-1).
  *
- * These quantities are used in the Crack routine to calculate
- * the stress arising from pore water expanding as it is heated.
+ *		These quantities are used in the Crack routine to calculate
+ * 		the stress arising from pore water expanding as it is heated.
  *
- * Alpha and beta are calculated by CHNOSZ. Because this requires
- * interfacing with R code, the process is slower, hence the need
- * to have a static table instead of dynamically calling CHNOSZ.
- *
+ * 		Alpha and beta are calculated by CHNOSZ. Because this requires
+ * 		interfacing with R code, the process is slower, hence the need
+ * 		to have a static table instead of dynamically calling CHNOSZ.
  */
 
 #ifndef CRACK_WATER_CHNOSZ_H_
@@ -47,33 +46,25 @@ int Crack_water_CHNOSZ(int argc, char *argv[], char path[1024], int warnings, in
 		if (beta[t] == NULL) printf("Crack_water_CHNOSZ: Not enough memory to create beta[sizeaTP][sizeaTP]\n");
 	}
 
-	// Start R and CHNOSZ to get alpha and beta
+	// Use CHNOSZ to get alpha and beta
 
-	setenv("R_HOME","/Library/Frameworks/R.framework/Resources",1);     // Specify R home directory
-	Rf_initEmbeddedR(argc, argv);                                       // Launch R
+	// For now, let's say the pores are at lithostatic pressure (should not be too different from hydrostatic pressure,
+	// as long there are only a few layers of cracks)
+	// Also let pressure evolve with temperature.
 
-	    CHNOSZ_init(1);
+	for (t=0;t<sizeaTP;t++) {
+		for (p=0;p<sizeaTP;p++) {
+			alpha[t][p] = 0.0;                                                  // Default value in case of error
+			beta[t][p] = 0.0;				   								    // Default value in case of error
 
-		// For now, let's say the pores are at lithostatic pressure (should not be too different from hydrostatic pressure,
-		// as long there are only a few layers of cracks)
-		// Also let pressure evolve with temperature.
+			alpha[t][p] = CHNOSZ_water_SUPCRT92 ("alpha",tempk,P_bar);
+			beta[t][p] = CHNOSZ_water_SUPCRT92 ("beta",tempk,P_bar);
 
-		for (t=0;t<sizeaTP;t++) {
-			for (p=0;p<sizeaTP;p++) {
-				alpha[t][p] = 0.0;                                                  // Default value in case of error
-				beta[t][p] = 0.0;				   								    // Default value in case of error
-
-				alpha[t][p] = CHNOSZ_water_SUPCRT92 ("alpha",tempk,P_bar);
-				beta[t][p] = CHNOSZ_water_SUPCRT92 ("beta",tempk,P_bar);
-
-				P_bar = P_bar + delta_P_bar;
-			}
-			P_bar = P_bar_min;
-			tempk = tempk + delta_tempk;
+			P_bar = P_bar + delta_P_bar;
 		}
-
-	// Close R and CHNOSZ
-	Rf_endEmbeddedR(0);
+		P_bar = P_bar_min;
+		tempk = tempk + delta_tempk;
+	}
 
 	// Write outputs
 	write_output (sizeaTP, sizeaTP, alpha, path, "Crack/alpha.dat");

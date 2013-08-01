@@ -4,7 +4,8 @@
  *  Created on: Jul 15, 2013
  *      Author: Marc Neveu (mneveu@asu.edu)
  *
- *  Assumes R is already open.
+ *  	Assumes R and CHNOSZ are already open.
+ *  	Frequently used CHNOSZ commands.
  */
 
 #ifndef CHNOSZ_COMMANDS_H_

@@ -5,11 +5,18 @@
  *      Author: Marc Neveu (mneveu@asu.edu)
  *
  *      Solves the following chemical model to determine if gas exsolution can propagate cracks
- *      in the ice mantle and crust all the way to the surface:
+ *      in the ice mantle and crust all the way to the surface (cryovolcanism):
  *
  * 		K_i = m_i / P_i                               (1)
  * 		m_i * M_liq + P_i * V_gas/(R*T) = A_i,w       (2)
  *	 	V_liq/V_gas is given by sum(P_i) = P          (3)
+ *
+ *	 	Assumes R and CHNOSZ are already open.
+ *
+ *	 	Reference:
+ *	 	Neveu et al. (2013) Exotic sodas: Can gas exsolution drive explosive cryovolcanism
+ *	 	on Pluto and Charon? The Pluto System on the Eve of Exploration by New Horizons -
+ *	 	A Scientific Conference, Laurel, MD, July 2013.
  */
 
 #ifndef CRYOLAVA_H_
@@ -221,12 +228,7 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 		Abundances[i] = WrtH2O[i]*Mliq[t]/(Molar_mass[i]*gram);
 	}
 
-	// Get the reaction constants at T and P from CHNOSZ
-	setenv("R_HOME","/Library/Frameworks/R.framework/Resources",1);     // Specify R home directory
-	Rf_initEmbeddedR(argc, argv);                                       // Launch R
-
-	CHNOSZ_init(1);                                                     // Launch CHNOSZ
-
+	// Use CHNOSZ to get reaction constants at given T and P
 	if (CHNOSZ_T < CHNOSZ_T_MIN) {
 		if (warnings == 1) printf("Cryolava: T=%g K below minimum temp for CHNOSZ. Using T=%g K instead\n",CHNOSZ_T,CHNOSZ_T_MIN);
 		CHNOSZ_T = CHNOSZ_T_MIN;
@@ -237,7 +239,6 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 		K_rxn[i] = pow(10,-1.0*logK_reactant + 1.0*logK_product);
 		if (!(K_rxn[i] >=0)) printf("Cryolava: Error calculating K_rxn[%d]=%g at t=%d, r=%d\n",i,K_rxn[i],t,r);
 	}
-	Rf_endEmbeddedR(0);                        // Close R and CHNOSZ
 
     //-------------------------------------------------------------------
     //                   Calculate species molalities

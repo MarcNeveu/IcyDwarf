@@ -4,25 +4,22 @@
  *  Created on: Jun 20, 2013
  *      Author: Marc Neveu (mneveu@asu.edu)
  *
- *-------------------------------------------------------------------
- * THIS ROUTINE CALCULATES A TABLE a(T,P), GIVING THE FLAW SIZE IN A
- * MINERAL GRAIN THAT YIELDS THE MAXIMUM STRESS INTENSITY K_I
- * (SEE FIG. 1 OF VANCE ET AL. 2007) AT A GIVEN TEMPERATURE AND
- * PRESSURE.
+ *		Calculation of an integral and grain flaw size table a(T,P),
+ *		giving the flaw size in a mineral grain that yields the maximum
+ *		stress intensity K_I [see Fig. 1 of Vance et al. (2007)].
  *
- * Marc Neveu - 20 Dec. 2012 - Adapted from Vance et al. (2007)
- *-------------------------------------------------------------------
- *-------------------------------------------------------------------
- * This routine is meant to be used in conjunction with the "Crack"
- * one that calculates the depth of cracking in a cooling core, using
- * the model of Vance et al. (2007). It outputs the files aTP.dat and
- * integral.dat.
+ *		This was adapted from Vance et al. (2007) and initially coded in
+ *		Scilab in Dec. 2012.
  *
- * This allows to calculate cracking depths without having to
- * calculate a(max K_I) at each timestep and gridpoint. Calculating
- * a(T,P) once already takes time (integration of K_I and search for
- * its maximum at many T and P).
- *-------------------------------------------------------------------
+ * 		This routine is meant to be used in conjunction with the "Crack"
+ * 		one that calculates the depth of cracking in a cooling core, using
+ * 		the model of Vance et al. (2007). It outputs the files aTP.dat and
+ * 		integral.dat.
+ *
+ * 		This allows to calculate cracking depths without having to
+ * 		calculate a(max K_I) at each timestep and gridpoint. Calculating
+ * 		a(T,P) once already takes time (integration of K_I and search for
+ * 		its maximum at many T and P).
  */
 
 #ifndef ATP_H_
@@ -53,11 +50,11 @@ int aTP(char path[1024], int warnings, int msgout) {
 	float dInt = 0.0;
 	float dIntPrec = 0.0;
 
-	double **integral = (double**) malloc(int_size*sizeof(double*)); // Initialize integral[int_size+1][2]
-	if (integral == NULL) printf("aTP: Not enough memory to create integral[int_size+1][2]\n");
+	double **integral = (double**) malloc(int_size*sizeof(double*)); // Initialize integral[int_size][2]
+	if (integral == NULL) printf("aTP: Not enough memory to create integral[int_size][2]\n");
 	for (i=0;i<int_size;i++) {
 		integral[i] = (double*) malloc(2*sizeof(double));
-		if (integral[i] == NULL) printf("aTP: Not enough memory to create integral[int_size+1][2]\n");
+		if (integral[i] == NULL) printf("aTP: Not enough memory to create integral[int_size][2]\n");
 	}
 
 	for (j=0;j<int_size;j++) {
@@ -125,7 +122,7 @@ int aTP(char path[1024], int warnings, int msgout) {
 			// Find a_var for which K_I is max
 			K_I_max = K_I[0][1];
 			K_I_max_a = K_I[0][0];
-			for (j=0;j<int_size;j++) {
+			for (j=0;j<int_size-1;j++) {
 				if (K_I[j][1] > K_I_max) {
 					K_I_max = K_I[j][1];
 					K_I_max_a = K_I[j][0];

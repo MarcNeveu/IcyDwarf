@@ -3,6 +3,8 @@
  *
  *  Created on: Jul 11, 2013
  *      Author: Marc Neveu (mneveu@asu.edu)
+ *
+ *      Parameters for the cracking subroutine.
  */
 
 #ifndef CRACK_PARAMETERS_H_

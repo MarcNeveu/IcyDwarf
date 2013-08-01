@@ -3,6 +3,13 @@
  *
  *  Created on: Apr 6, 2013
  *      Author: Marc Neveu (mneveu@asu.edu)
+ *
+ *		Main program: all subroutines are in .h files.
+ *      IcyDwarf is a program that simulates the physical and chemical evolution of dwarf planets
+ *      (bodies with a rocky core, an icy mantle, possibly an undifferentiated crust and an ocean).
+ *      As of July 31, 2013, this 1-D code:
+ *      1. Calculates the depth of cracking into a rocky core (space for hydrothermal circulation)
+ *      2. Calculates gas exsolution in icy shell cracks (gas-driven cryovolcanism)
  */
 
 #include <unistd.h>    // To check current working directory
@@ -63,7 +70,18 @@ int main(int argc, char *argv[]){
 	//-------------------------------------------------------------------
 
 	printf("\n");
+	printf("-------------------------------------------------------------------\n");
 	printf("IcyDwarf v.13.7\n");
+	if (release == 1) printf("Release mode\n");
+	else if (cmdline == 1) printf("Command line mode\n");
+	printf("-------------------------------------------------------------------\n");
+
+	// Initialize the R environment. We do it here, in the main loop, because this can be done only once.
+	// Otherwise, the program crashes at the second initialization.
+
+	setenv("R_HOME","/Library/Frameworks/R.framework/Resources",1);     // Specify R home directory
+	Rf_initEmbeddedR(argc, argv);                                       // Launch R
+	CHNOSZ_init(1);                                                     // Launch CHNOSZ
 
 	// Get current directory. Works for Mac only! To switch between platforms, see:
 	// http://stackoverflow.com/questions/1023306/finding-current-executables-path-without-proc-self-exe
@@ -78,7 +96,7 @@ int main(int argc, char *argv[]){
 	    printf("IcyDwarf: Couldn't retrieve executable directory. Buffer too small; need size %u\n", size);
 
 	input = icy_dwarf_input (input, path);
-	i = 1;
+	i = 0;
 	warnings = (int) input[i], i++;
 	msgout = (int) input[i], i++;
 	rho_p = input[i], i++;
@@ -160,6 +178,8 @@ int main(int argc, char *argv[]){
 	}
 	free (thoutput);
 	free (input);
+
+	Rf_endEmbeddedR(0);                                     // Close R and CHNOSZ
 
 	printf("Exiting IcyDwarf...\n");
 	return 0;

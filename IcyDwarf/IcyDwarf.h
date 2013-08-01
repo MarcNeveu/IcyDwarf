@@ -14,7 +14,8 @@
 #define ICYDWARF_H_
 
 #define release 0                                          // 0 for Debug, 1 for Release
-
+#define cmdline 1										   // If execution from terminal as "./IcyDwarf",
+                                                           // overwritten by release.
 // Physical parameters and constants
 
 #define G 6.67e-11                                         // Gravitational constant (SI)
@@ -221,6 +222,7 @@ float *icy_dwarf_input (float *input, char path[1024]) {
 	char *idi = (char*)malloc(1024);
 	idi[0] = '\0';
 	if (release == 1) strncat(idi,path,strlen(path)-16);
+	else if (cmdline == 1) strncat(idi,path,strlen(path)-18);
 	strcat(idi,"IcyDwarfInput.txt");
 
 	i = 0;
@@ -229,75 +231,71 @@ float *icy_dwarf_input (float *input, char path[1024]) {
 			printf("IcyDwarf: Missing IcyDwarfInput.txt file.\n");
 		}
 		else {
-			fseek(f,135,SEEK_SET);
+			fseek(f,136,SEEK_SET);
+			scan = fscanf(f, "%g", &input[i]), i++;   // Somehow Valgrind indicates a memory leak here.
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,13,SEEK_CUR);
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,148,SEEK_SET);
+			fseek(f,100,SEEK_CUR);
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,161,SEEK_SET);
+			fseek(f,15,SEEK_CUR);
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,262,SEEK_SET);
+			fseek(f,23,SEEK_CUR);
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,281,SEEK_SET);
+			fseek(f,26,SEEK_CUR);
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,306,SEEK_SET);
+			fseek(f,91,SEEK_CUR);
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,337,SEEK_SET);
+			fseek(f,26,SEEK_CUR);
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,430,SEEK_SET);
+			fseek(f,24,SEEK_CUR);
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,458,SEEK_SET);
+			fseek(f,95,SEEK_CUR);
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,485,SEEK_SET);
+			fseek(f,20,SEEK_CUR);
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,581,SEEK_SET);
+			fseek(f,16,SEEK_CUR);
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,601,SEEK_SET);
+			fseek(f,18,SEEK_CUR);
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,617,SEEK_SET);
+			fseek(f,11,SEEK_CUR);
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,635,SEEK_SET);
+			fseek(f,106,SEEK_CUR);
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,646,SEEK_SET);
+			fseek(f,25,SEEK_CUR);
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,753,SEEK_SET);
-			scan = fscanf(f, "%g", &input[i]), i++;
-			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
-
-			fseek(f,778,SEEK_SET);
-			scan = fscanf(f, "%g", &input[i]), i++;
-			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
-
-			fseek(f,797,SEEK_SET);
+			fseek(f,19,SEEK_CUR);
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 		}
@@ -308,39 +306,37 @@ float *icy_dwarf_input (float *input, char path[1024]) {
 		printf("-------------------------------\n");
 		printf("Housekeeping\n");
 		printf("-------------------------------\n");
-		printf("Release? \t \t %g\n",input[i]), i++;
-		printf("Warnings? \t \t %g\n",input[i]), i++;
-		printf("Messages? \t \t %g\n",input[i]), i++;
+		printf("Warnings? \t \t \t %g\n",input[i]), i++;
+		printf("Messages? \t \t \t %g\n",input[i]), i++;
 		printf("-------------------------------\n");
 		printf("Planet parameters\n");
 		printf("-------------------------------\n");
-		printf("Density (g cm-3) \t %g\n",input[i]), i++;
-		printf("Radius (km) \t \t %g\n",input[i]), i++;
-		printf("Ammonia w.r.t. water \t %g\n",input[i]), i++;
-		printf("Surface temperature (K)  %g\n",input[i]), i++;
+		printf("Density (g cm-3) \t \t %g\n",input[i]), i++;
+		printf("Radius (km) \t \t \t %g\n",input[i]), i++;
+		printf("Ammonia w.r.t. water \t \t %g\n",input[i]), i++;
+		printf("Surface temperature (K) \t %g\n",input[i]), i++;
 		printf("-------------------------------\n");
 		printf("Grid\n");
 		printf("-------------------------------\n");
-		printf("Number of grid zones \t %g\n",input[i]), i++;
-		printf("Total time of sim (Myr)  %g\n",input[i]), i++;
-		printf("Output every... (Myr) \t %g\n",input[i]), i++;
+		printf("Number of grid zones \t \t %g\n",input[i]), i++;
+		printf("Total time of sim (Myr) \t %g\n",input[i]), i++;
+		printf("Output every... (Myr) \t \t %g\n",input[i]), i++;
 		printf("-------------------------------\n");
 		printf("Subroutines\n");
 		printf("-------------------------------\n");
-		printf("Calculate aTP? \t \t %g\n",input[i]), i++;
-		printf("Water alpha beta? \t %g\n",input[i]), i++;
-		printf("Core cracks? \t \t %g\n",input[i]), i++;
-		printf("Cryovolcanism? \t \t %g\n",input[i]), i++;
-		printf("Plots? \t \t \t %g\n",input[i]), i++;
+		printf("Calculate aTP? \t \t \t %g\n",input[i]), i++;
+		printf("Water alpha beta? \t \t %g\n",input[i]), i++;
+		printf("Core cracks? \t \t \t %g\n",input[i]), i++;
+		printf("Cryovolcanism? \t \t \t %g\n",input[i]), i++;
+		printf("Plots? \t \t \t \t %g\n",input[i]), i++;
 		printf("-------------------------------\n");
 		printf("Core crack options\n");
 		printf("-------------------------------\n");
-		printf("Pore water expansion? \t %g\n",input[i]), i++;
-		printf("Hydration/dehydration? \t %g\n",input[i]), i++;
-		printf("Dissolution/ppt? \t %g\n",input[i]), i++;
+		printf("Pore water expansion? \t \t %g\n",input[i]), i++;
+		printf("Hydration/dehydration? \t \t %g\n",input[i]), i++;
+		printf("Dissolution/ppt? \t \t %g\n",input[i]), i++;
 		printf("\n");
 
-	free (input);
 	free (idi);
 
 	return input;
@@ -365,6 +361,7 @@ thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char pa
 	char *kbo_dat = (char*)malloc(1024);       // Don't forget to free!
 	kbo_dat[0] = '\0';
 	if (release == 1) strncat(kbo_dat,path,strlen(path)-16);
+	else if (cmdline == 1) strncat(kbo_dat,path,strlen(path)-18);
 	strcat(kbo_dat,"Thermal/kbo.dat");
 
 	fid = fopen (kbo_dat,"r");
@@ -409,6 +406,7 @@ float **read_input (int H, int L, float **Input, char path[1024], char filename[
 	char *title = (char*)malloc(1024);       // Don't forget to free!
 	title[0] = '\0';
 	if (release == 1) strncat(title,path,strlen(path)-16);
+	else if (cmdline == 1) strncat(title,path,strlen(path)-18);
 	strcat(title,filename);
 
 	fin = fopen (title,"r");
@@ -448,6 +446,7 @@ int write_output (int H, int L, double **Output, char path[1024], char filename[
 	char *title = (char*)malloc(1024*sizeof(char));       // Don't forget to free!
 	title[0] = '\0';
 	if (release == 1) strncat(title,path,strlen(path)-16);
+	else if (cmdline == 1) strncat(title,path,strlen(path)-18);
 	strcat(title,filename);
 
 	fout = fopen(title,"w");
