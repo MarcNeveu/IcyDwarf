@@ -72,7 +72,13 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 	double logK_product = 0.0;
 	float P_gas = 0.0;                 // Gas pressure in crack headspace
 	double X_VAP = 0.0;                // = x_vap / (rho*R*T)
-    float g = 0.3;                     // TODO Integrate instead
+
+	// Calculation of the pressure of the column of liquid inside a crack
+	int u = 0;
+	float Minf = 0.0;                  // Mass under a certain radius
+	float dInt = 0.0;
+	float dIntPrec = 0.0;
+	float Pintegral = 0.0;
 
 	// Involves finding the root of a polynomial of degree n_species. Newton-Raphson iteration+bisection (Numerical Recipes 2nd ed. section 9.4)
 	int n_iter = 0;                    // Iteration counter in the root-finding algorithm
@@ -129,14 +135,8 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 	// Find the hydrostatic level
 	r_hydrostatic = floor(r_seafloor + rhoH2os/rhoH2ol*(r_diff-r_seafloor));
 
-	// Initialize tables
-
-	char **Species = (char**) malloc(n_species_cryolava*sizeof(char*));     // Volatile species names
-	if (Species == NULL) printf("Cryolava: Not enough memory to create Species[n_species]\n");
-	for (i=0;i<n_species_cryolava;i++) {
-		Species[i] = (char*) malloc(128*sizeof(char));
-		if (Species[i] == NULL) printf("Cryolava: Not enough memory to create Species[n_species]");
-	}
+	// Declare and initialize tables
+	char Species[n_species_cryolava][10];
 
 	float *Molar_mass = (float*) malloc(n_species_cryolava*sizeof(float));  // Abundances of the volatiles w.r.t. H2O (fraction)
 	if (Molar_mass == NULL) printf("Cryolava: Not enough memory to create Molar_mass[n_species]\n");
@@ -188,16 +188,16 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 	}
 
 	// List species
-	Species[0] = "H2";
-	Species[1] = "CH4";
-	Species[2] = "CH3OH";
-	Species[3] = "CO";
-	Species[4] = "CO2";
-	Species[5] = "NH3";
-	Species[6] = "N2";
-	Species[7] = "H2S";
-	Species[8] = "SO2";
-	Species[9] = "Ar";
+	strcpy(Species[0],"H2");
+	strcpy(Species[1],"CH4");
+	strcpy(Species[2],"CH3OH");
+	strcpy(Species[3],"CO");
+	strcpy(Species[4],"CO2");
+	strcpy(Species[5],"NH3");
+	strcpy(Species[6],"N2");
+	strcpy(Species[7],"H2S");
+	strcpy(Species[8],"SO2");
+	strcpy(Species[9],"Ar");
 
 	// Initialize bulk volatile abundances
 	WrtH2O[0] = 1.0e-5;                                                     // H2 wrt H2O by mass
@@ -246,9 +246,26 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 
 	printf("Cryolava: Calculating species molalities...\n");
 
-	for (r=0;r<NR-r_seafloor;r++) {   // From r_seafloor to NR
+	for (r=0;r<NR-r_seafloor;r++) {       // From r_seafloor to NR
 
-		P_gas = (float) (rhoH2os*g*(NR-r_seafloor)*r_p*km/NR - (rhoH2ol)*g*r*r_p*km/NR);  // In Pa
+		// Pgas = P (seafloor) - P (column of liquid in the crack). P (seafloor) is Pressure[r_seafloor][t].
+		// To get P (column of liquid in the crack), we need to integrate along the crack.
+
+		for (i=r_seafloor;i<r_seafloor+r;i++) { // Integral using trapezoidal method
+			Minf = 0.0;                   // Calculate total mass (grams) below current layer
+			for (u=0;u<i;u++) {
+				Minf = Minf + thoutput[u][t].mrock + thoutput[u][t].mh2os + thoutput[u][t].mh2ol +
+					   thoutput[u][t].madhs + thoutput[u][t].mnh3l;
+			}
+			dInt = rhoH2ol*G/(thoutput[i][t].radius*thoutput[i][t].radius*km*km);
+			Pintegral = Pintegral +
+					(dInt+dIntPrec)/2.0 * Minf*gram*(thoutput[i][t].radius - thoutput[i-1][t].radius)*km;
+			dIntPrec = dInt;
+		}
+		P_gas = Pressure[r_seafloor][t] - Pintegral;
+		Pintegral = 0.0;
+		dInt = 0.0;
+		dIntPrec = 0.0;
 
 		// Take into account abundances, involves finding the root of a degree n_species polynomial.
 	    // Otherwise, m_i and P_i are simply given by P_i = P and K_i = m_i/P_i regardless of the bulk abundances.
@@ -326,7 +343,8 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 																	// The only positive one, it turns out. (They are all close to -K_rxn[i] b/c A_i << P*Mliq, so they are usually negative.)
 																	// Don't forget that X_VAP is in mol kg-1 bar-1, so we need to divide by bar to get Pa-1, the unit consistent with rho*R_G*T.
 			x_vap[r][3] = rhoH2ol/(1.0+x_vap[r][2]);                // Foam density in kg m-3, assuming massless gas
-			x_vap[r][4] = -(x_vap[r][3]-rhoH2os)*2.0*g*pow(r*r_p/NR*km,1.5)/sqrt(PI_greek); // Stress intensity K_I at crack tip (MPa m^0.5)
+			x_vap[r][4] = -(x_vap[r][3]-rhoH2os)*2.0 * G*Minf*gram/(thoutput[r+r_seafloor][t].radius*thoutput[r+r_seafloor][t].radius*km*km)
+					      * pow(r*r_p/NR*km,1.5)/sqrt(PI_greek); // Stress intensity K_I at crack tip (MPa m^0.5)
 			if (r<=r_diff && x_vap[r][4] > K_IC_ice) x_vap[r][5] = 1.0; // Crack propagation or not
 			else if (r>r_diff && x_vap[r][4] > K_IC_crust) x_vap[r][5] = 1.0;
 			else x_vap[r][5] = 0.0;
@@ -377,12 +395,8 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 		free(Partial_P[r]);
 		free(x_vap[r]);
 	}
-//	for (i=0;i<n_species_cryolava;i++) {                  // Not sure why but this gives a malloc error. Leaving the memory leak open.
-//		free(Species[i]);
-//	}
 	free(Pressure);
 	free(Mliq);
-	free(Species);
 	free(Molar_mass);
 	free(WrtH2O);
 	free(Abundances);

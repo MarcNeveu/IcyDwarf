@@ -14,7 +14,7 @@
 #define ICYDWARF_H_
 
 #define release 0                                          // 0 for Debug, 1 for Release
-#define cmdline 1										   // If execution from terminal as "./IcyDwarf",
+#define cmdline 0										   // If execution from terminal as "./IcyDwarf",
                                                            // overwritten by release.
 // Physical parameters and constants
 
@@ -56,6 +56,7 @@ typedef struct {
 
 double **calculate_pressure (double **Pressure, int NR, int NT, thermalout **thoutput);
 float *calculate_mass_liquid (float *Mliq, int NR, int NT, thermalout **thoutput);
+int look_up (float x, float x_var, float x_step, int size, int warnings);
 float *icy_dwarf_input (float *input, char path[1024]);
 thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char path[1024]);
 float **read_input (int H, int L, float **Input, char path[1024], char filename[1024]);
@@ -120,7 +121,7 @@ double **calculate_pressure (double **Pressure, int NR, int NT, thermalout **tho
 		for (r=0;r<NR;r++) {
 			dM[r][t] = thoutput[r][t].mrock + thoutput[r][t].mh2os +
 					   thoutput[r][t].mh2ol + thoutput[r][t].madhs +
-					   thoutput[r][t].mnh3l ;
+					   thoutput[r][t].mnh3l;
 			frock[r][t] = thoutput[r][t].mrock / dM[r][t];
 			fh2os[r][t] = thoutput[r][t].mh2os / dM[r][t];
 			fh2ol[r][t] = thoutput[r][t].mh2ol / dM[r][t];
@@ -146,7 +147,7 @@ double **calculate_pressure (double **Pressure, int NR, int NT, thermalout **tho
 	for (t=0;t<NT;t++) {
 		for (r=0;r<NR;r++) {
 			for (j=r;j<NR-1;j++) { // Integral using trapezoidal method
-				Minf = 0;          // Calculate total mass (grams) below current layer
+				Minf = 0.0;        // Calculate total mass (grams) below current layer
 				for (u=0;u<j;u++) {
 					Minf = Minf + dM[u][t];
 				}
@@ -154,19 +155,18 @@ double **calculate_pressure (double **Pressure, int NR, int NT, thermalout **tho
 						fh2ol[j][t]*rhoH2ol + fadhs[j][t]*rhoAdhs +
 						fnh3l[j][t]*rhoNh3l) * G/(thoutput[j][t].radius*thoutput[j][t].radius*km*km);
 				Pintegral = Pintegral +
-						(dInt+dIntPrec)/2 * Minf*gram*(thoutput[j+1][t].radius - thoutput[j][t].radius)*km;
+						(dInt+dIntPrec)/2.0 * Minf*gram*(thoutput[j+1][t].radius - thoutput[j][t].radius)*km;
 				dIntPrec = dInt;
 			}
 			Pressure[r][t] = Pintegral;
-			if (!(Pressure[r][t] >=0)) printf("Error calculating pressure at t=%d, r=%d\n",t,r);
-			Pintegral = 0;
-			dInt = 0;
-			dIntPrec = 0;
+			if (!(Pressure[r][t] >= 0.0)) printf("Error calculating pressure at t=%d, r=%d\n",t,r);
+			Pintegral = 0.0;
+			dInt = 0.0;
+			dIntPrec = 0.0;
 		}
 	}
 
 	// Free mallocs
-
 	for (r=0;r<NR;r++) {
 		free(dM[r]);
 		free(frock[r]);
@@ -203,6 +203,32 @@ float *calculate_mass_liquid (float *Mliq, int NR, int NT, thermalout **thoutput
 		}
 	}
 	return Mliq;
+}
+
+//-------------------------------------------------------------------
+//        Return correct index to look up a value in a table
+//-------------------------------------------------------------------
+
+int look_up (float x, float x_var, float x_step, int size, int warnings) {
+
+	int x_int = 0;
+	int j = 0;
+
+	if (x <= x_step) x_int = 0;
+	else if (x > x_step*((float) (size-1.0))) {
+		x_int = size-1;
+		if (warnings == 1) printf("IcyDwarf look_up: x=%g above range, assuming x=%g\n",x, x_step*((float) (size-1.0)));
+	}
+	else {
+		for (j=0;j<size;j++) {
+			if (x/(x_var-0.5*x_step) > 1.0 &&
+					x/(x_var+0.5*x_step) < 1.0) {
+				x_int = j;
+			}
+			x_var = x_var + x_step;
+		}
+	}
+	return x_int;
 }
 
 //-------------------------------------------------------------------

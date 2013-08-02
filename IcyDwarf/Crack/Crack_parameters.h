@@ -13,9 +13,9 @@
 // Brittle/ductile transition
 
 #define n_Mogi 0.4                                         // n of the brittle law C = C0+alpha*P^n
-#define alpha_Mogi 2.0/5.0                                 // alpha of the brittle law C = C0+alpha*P^n
-#define C0_Mogi 100.0e6/5.0                                // Compressive strength at atmospheric P in Pa
-#define ductile_Mogi 3.4/5.0                               // Slope of the C vs. P brittle/ductile transition
+#define alpha_Mogi 2.0                           	       // alpha of the brittle law C = C0+alpha*P^n
+#define C0_Mogi 100.0e6                          	       // Compressive strength at atmospheric P in Pa
+#define ductile_Mogi 1.0                         	       // Slope of the C vs. P brittle/ductile transition (Mogi 1966: =3.4)
 
 // Thermal expansion/contraction mismatch (Vance et al. 2007)
 

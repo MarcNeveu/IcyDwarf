@@ -55,6 +55,7 @@ int main(int argc, char *argv[]){
     int plot_on = 0;  				   // Plots
 
     // Crack subroutine inputs
+    int thermal_mismatch = 0;          // Grain thermal expansion/contraction mismatch effects
 	int pore_water_expansion = 0;      // Pore water expansion effects
 	int hydration_dehydration = 0;     // Rock hydration/dehydration effects
 	int dissolution_precipitation = 0; // Rock dissolution/precipitation effects
@@ -104,13 +105,14 @@ int main(int argc, char *argv[]){
 	nh3 = input[i], i++;
 	tsurf = input[i], i++;
 	NR = input[i], i++;
-	NT = floor(input[i]/input[i+1]), i++;
+	NT = floor(input[i]/input[i+1])+1, i++;
 	timestep = (float) input[i]/1000.0, i++;
 	calculate_aTP = (int) input[i], i++;
 	calculate_alpha_beta = (int) input[i], i++;
 	calculate_cracking_depth = (int) input[i], i++;
 	calculate_cryolava = (int) input[i], i++;
 	plot_on = (int) input[i], i++;
+	thermal_mismatch = 1;
 	pore_water_expansion = (int) input[i], i++;
 	hydration_dehydration = (int) input[i], i++;
 	dissolution_precipitation = (int) input[i], i++;
@@ -147,7 +149,7 @@ int main(int argc, char *argv[]){
 	if (calculate_cracking_depth == 1) {
 		printf("Calculating cracking depth...\n");
 		Crack(argc, argv, path, NR, NT, r_p, timestep, rho_p, thoutput, warnings, msgout,
-				pore_water_expansion, hydration_dehydration, dissolution_precipitation);
+				thermal_mismatch, pore_water_expansion, hydration_dehydration, dissolution_precipitation);
 		printf("\n");
 	}
 
@@ -157,7 +159,7 @@ int main(int argc, char *argv[]){
 
 	if (calculate_cryolava == 1) {
 		printf("Calculating gas-driven exsolution...\n");
-		Cryolava(argc, argv, path, NR, NT, r_p, thoutput, 200, warnings, msgout);
+		Cryolava(argc, argv, path, NR, NT, r_p, thoutput, 2.0/timestep, warnings, msgout);
 		printf("\n");
 	}
 

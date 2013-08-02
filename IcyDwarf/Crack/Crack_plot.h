@@ -179,16 +179,16 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 	Uint32 orange_alpha;
 	Uint32 purple_alpha;
 	Uint32 yellow_alpha;
-	Uint32 light_green_alpha;
 	Uint32 green_alpha;
+	Uint32 light_white_alpha;
 	white_alpha = SDL_MapRGBA(crack_time->format, 255, 255, 255, 200); // r,g,b,alpha 0 to 255. Alpha of 0 is transparent
 	red_alpha = SDL_MapRGBA(crack_time->format, 255, 200, 200, 200);
 	blue_alpha = SDL_MapRGBA(crack_time->format, 100, 100, 255, 200);
 	orange_alpha = SDL_MapRGBA(crack_time->format, 255, 195, 0, 200);
 	purple_alpha = SDL_MapRGBA(crack_time->format, 128, 0, 200, 200);
 	yellow_alpha = SDL_MapRGBA(crack_time->format, 255, 255, 100, 200);
-	light_green_alpha = SDL_MapRGBA(crack_time->format, 100, 200, 100, 100);
 	green_alpha = SDL_MapRGBA(crack_time->format, 100, 200, 100, 200);
+	light_white_alpha = SDL_MapRGBA(crack_time->format, 255, 255, 255, 100);
 
 	Uint32 *pixmem32;
 
@@ -245,12 +245,12 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 			// Cracks shrunk by precipitation in light green
 			if (Crack[r][t] == 7.0) {
 				pixmem32 = (Uint32*) crack_time->pixels + (crack_time->h - r)*crack_time->w + t;
-				*pixmem32 = light_green_alpha;
+				*pixmem32 = green_alpha;
 			}
-			// Cracks clogged by precipitation in green
+			// Cracks clogged by precipitation in white
 			if (Crack[r][t] == -1.0) {
 				pixmem32 = (Uint32*) crack_time->pixels + (crack_time->h - r)*crack_time->w + t;
-				*pixmem32 = green_alpha;
+				*pixmem32 = light_white_alpha;
 			}
 			if (Crack[r][t] > 0.0 && r>min_depth) {
 				min_depth = r;

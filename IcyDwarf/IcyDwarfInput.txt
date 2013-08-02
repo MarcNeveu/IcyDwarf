@@ -12,24 +12,24 @@ Planet parameters
 Density (g cm-3)		2.077
 Radius (km)			475
 Ammonia w.r.t. water		1.0e-2
-Surface temperature (K) 	60
+Surface temperature (K) 	168
 -------------------------------
 Grid
 -------------------------------
 Number of grid zones		200
-Total time of sim (Myr) 	5000
-Output every... (Myr)		10
+Total time of sim (Myr) 	0.005
+Output every... (Myr)		0.0001
 -------------------------------
 Subroutines
 -------------------------------
-Calculate aTP?  		1
-Water alpha beta?		1
+Calculate aTP?  		0
+Water alpha beta?		0
 Core cracks?			1
-Cryovolcanism?			1
-Plots?				0
+Cryovolcanism?			0
+Plots?				1
 -------------------------------
 Core crack options
 -------------------------------
 Pore water expansion?		1
 Hydration/dehydration?		1
-Dissolution/ppt?		1
+Dissolution/ppt?		0
