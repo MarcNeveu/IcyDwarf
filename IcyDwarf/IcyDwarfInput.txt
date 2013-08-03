@@ -17,8 +17,8 @@ Surface temperature (K) 	168
 Grid
 -------------------------------
 Number of grid zones		200
-Total time of sim (Myr) 	0.005
-Output every... (Myr)		0.0001
+Total time of sim (Myr) 	0.0005
+Output every... (Myr)		0.000001
 -------------------------------
 Subroutines
 -------------------------------
@@ -32,4 +32,4 @@ Core crack options
 -------------------------------
 Pore water expansion?		1
 Hydration/dehydration?		1
-Dissolution/ppt?		0
+Dissolution/ppt?		1

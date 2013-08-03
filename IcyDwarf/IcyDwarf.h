@@ -36,7 +36,6 @@
 #define rhoAdhs 0.985e3                                    // Density of ADH(s)
 #define rhoNh3l 0.74e3                                     // Density of NH3(l)
 #define rhoHydr 2.35e3                                     // Density of hydrated rock
-#define smallest_crack_size 1.0e-3                         // Smallest 1-D or 2-D crack size in m
 #define tempk_dehydration 800.0                            // Dehydration temperature
 
 typedef struct {

@@ -351,17 +351,16 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 
 			if (msgout == 1) printf("X_VAP = %g and x_vap = V_gas/V_liq = %g found after %d iterations\n",X_VAP,x_vap[r][1],n_iter);
 		}
-
-		// DEBUG OF SOLUTION OF DEGREE n_species_cryolava POLYNOMIAL
-		// Case n_species_cryolava = 2, solving the degree 2 polynomial (result should be identical to N-R algorithm):
-	    //	double Delta = pow((K_rxn[0]+K_rxn[1])*P_gas*Mliq[t]-Abundances[0]-Abundances[1],2.0) - 4.0*P_gas*Mliq[t]*(K_rxn[0]*K_rxn[1]*P_gas*Mliq[t]-Abundances[0]*K_rxn[1]-Abundances[1]*K_rxn[0]);
-	    //	double X1 = ((-K_rxn[0] - K_rxn[1])*P_gas*Mliq[t] + Abundances[0] + Abundances[1] - sqrt(Delta))/(2*P_gas*Mliq[t]);
-		//	double X2 = ((-K_rxn[0] - K_rxn[1])*P_gas*Mliq[t] + Abundances[0] + Abundances[1] + sqrt(Delta))/(2*P_gas*Mliq[t]);
-		//	printf("Delta = %g, X1 = %g, X2 = %g\n",Delta,X1,X2);
-		//	printf("Pressure = %g bar, temperature = %g K, Mliq = %g kg\n",P_gas/bar,thoutput[r][t].tempk,Mliq[t]);
+		/* Debug of solution of degree n_species_cryolava polynamial
+		 * Case n_species_cryolava = 2, solving the degree 2 polynomial (result should be identical to N-R algorithm):
+		 * double Delta = pow((K_rxn[0]+K_rxn[1])*P_gas*Mliq[t]-Abundances[0]-Abundances[1],2.0) - 4.0*P_gas*Mliq[t]*(K_rxn[0]*K_rxn[1]*P_gas*Mliq[t]-Abundances[0]*K_rxn[1]-Abundances[1]*K_rxn[0]);
+		 * double X1 = ((-K_rxn[0] - K_rxn[1])*P_gas*Mliq[t] + Abundances[0] + Abundances[1] - sqrt(Delta))/(2*P_gas*Mliq[t]);
+		 * double X2 = ((-K_rxn[0] - K_rxn[1])*P_gas*Mliq[t] + Abundances[0] + Abundances[1] + sqrt(Delta))/(2*P_gas*Mliq[t]);
+		 * printf("Delta = %g, X1 = %g, X2 = %g\n",Delta,X1,X2);
+		 * printf("Pressure = %g bar, temperature = %g K, Mliq = %g kg\n",P_gas/bar,thoutput[r][t].tempk,Mliq[t]);
+		 */
 
 		// Solve each chemical partition equation
-
 		for (i=0;i<n_species_cryolava;i++) {
 			Molalities[r][i] = Abundances[i] / (Mliq[t]*(1.0 + X_VAP/K_rxn[i]));
 			Partial_P[r][i] = Molalities[r][i] / K_rxn[i] * bar;        // m/K is in bar, m/K*bar is in Pa

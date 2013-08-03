@@ -215,13 +215,14 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 
 	float R_diss[n_species_crack];                   // Dissolution/precipitation rate in mol m-3 s-1
 	float k_diss[n_species_crack];                   // Dissolution/precipitation rate "constant" in mol m-2 s-1
-	float Ea_diss[n_species_crack];                  // Activation energy of dissolution/precipitation (J mol-1)
+	float Stoich_coef[n_species_crack];              // Stoichiometric coefficient of the dissolution product(s)
 	float K_eq[n_species_crack];                     // Equilibrium constant, dimensionless
+	float Ea_diss[n_species_crack];                  // Activation energy of dissolution/precipitation (J mol-1)
 	float Molar_volume[n_species_crack];             // Molar volume in m3 mol-1
 
 	float surface_volume_ratio = 0.0;                // Ratio of water-rock surface to fluid volume in m-1
-	float d_crack_size = 0.0;                        // Net change in crack size
-	float Crack_size_mem = 0.0;                      // Crack size before this step
+	float d_crack_size = 0.0;                        // Net change in crack size in m
+	float Crack_size_mem = 0.0;                      // Crack size before this step in m
 
 	float **Q_act = (float**) malloc(NR*sizeof(float*));         // Activity quotient, dimensionless
 	if (Q_act == NULL) printf("Crack: Not enough memory to generate Q_act[NR][n_species]\n");
@@ -247,6 +248,7 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 			Tprime[r][t] = 0.0;
 			P_fluid[r][t] = 0.0;
 			P_hydr[r][t] = 0.0;
+			Crack_size[r][t] = 0.0;
 		}
 		Crack_depth[t][0] = 0.0, Crack_depth[t][1] = 0.0;
 		Mliq[t] = 0.0;
@@ -297,6 +299,17 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 		beta = read_input (sizeaTP, sizeaTP, beta, path, "Crack/beta.dat");
 	}
 	if (dissolution_precipitation == 1) {
+		// Silica: Equations (55) of Rimstidt and Barnes 1980 or (7-8) of Bolton et al. 1997 (porosity not included)
+		// mol m-3 s-1 =no dim (scaled to 1 m-1)*mol L-1 s-1*nd*     no dim (=nd)
+		Stoich_coef[0] = 1.0;
+
+		// Serpentine: Exponent of K/Q remains 1 even though Q = a_silica^2 * a_Mg+2^3 / a_H+^6 = a_solutes^(5/6)
+		// because many other stoichiometries are possible with serpentine.
+		Stoich_coef[1] = 1.0;
+
+		// Carbonate: Pokrovski and Schott 1999 suggest (Q/K)^4, which makes sense because Q = a_Mg+2^2 * a_CO3-2^2
+		Stoich_coef[2] = 4.0;
+
 		Ea_diss[0] = Ea_silica;                                    // Rimstidt and Barnes (1980)
 		Ea_diss[1] = Ea_chrysotile;                                // Thomassin et al. (1977)
 		Ea_diss[2] = Ea_magnesite;                                 // Valid for pH 5.4, but decreases with pH (Pokrovsky et al. 2009)
@@ -341,14 +354,15 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 			//      Calculate rock strength in Pa in each layer over time
 			//-------------------------------------------------------------------
 
-			// Rock strength depends on pressure, temperature, and porosity (Wong and Baud 2012). Here, we consider only
-			// the dependence on pressure. Mogi (1966) suggests the following dependence for porous silicates based on
-			// experiments: compressive rock strength C Å 1+2*P^0.4 with P and C in kbar in the brittle regime, and
-			// C Å 3.4 P in kbar in the ductile regime.
-			// This suggests compressive rock strengths C on the order of 1 to 10 kbar (100 to 1000 MPa).
-			// Here, we take 1/5th of that because the rocks could fail in tensile strength (Å0.1*compressive strength,
-			// see UConn lecture slides on rock strength) or in shear strength (as the empirical dependence on pressure
-			// of Mogi 1966 suggests), with tensile<shear<compressive strength (UConn slides).
+			/* Rock strength depends on pressure, temperature, and porosity (Wong and Baud 2012). Here, we consider only
+			 * the dependence on pressure. Mogi (1966) suggests the following dependence for porous silicates based on
+			 * experiments: compressive rock strength C Å 1+2*P^0.4 with P and C in kbar in the brittle regime, and
+			 * C Å 3.4 P in kbar in the ductile regime.
+			 * This suggests compressive rock strengths C on the order of 1 to 10 kbar (100 to 1000 MPa).
+			 * Here, we take 1/5th of that because the rocks could fail in tensile strength (Å0.1*compressive strength,
+			 * see UConn lecture slides on rock strength) or in shear strength (as the empirical dependence on pressure
+			 * of Mogi 1966 suggests), with tensile<shear<compressive strength (UConn slides).
+			 */
 
 			// Find the brittle/ductile transition using the criterion of Mogi (1966) / 5
 			// Calculate rock strength only if there is enough rock
@@ -491,6 +505,10 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 			//-------------------------------------------------------------------
 			//          Dissolution / precipitation (Bolton et al. 1997)
 			//-------------------------------------------------------------------
+			/* TODO For now, we take the activities of solutes to be like molalities (ideal solutions),
+			 * even though that clearly doesn't work with our concentrated solutions.
+			 * We take the activities of solids (rock and precipitates) and water to be 1.
+			 */
 
 			if (dissolution_precipitation == 1) {
 
@@ -498,7 +516,8 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 				if (Crack[r][t] > 0.0) {
 
 					// Initialize crack size
-					Crack_size[r][t] = smallest_crack_size;
+					Crack_size[r][t] = smallest_crack_size;  // I guess because smallest_crack_size is a #define, the code adds a residual 4.74e-11.
+					                                         // No changes bigger than that residual will trigger a change in the cracking.
 					if (Crack[r][t-1] > 0.0 && Crack_size[r][t-1] > smallest_crack_size) {
 						Crack_size[r][t] = Crack_size[r][t-1];
 					}
@@ -508,15 +527,9 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 					// Calculate dissolution/precipitation rates
 					surface_volume_ratio = 2.0/Crack_size[r][t];
 
-					// TODO For now, we take the activities of solutes to be like molalities (ideal solutions),
-					// even though that clearly doesn't work with our concentrated solutions.
-					// We take the activities of solids (rock and precipitates) and water to be 1.
-
-					// Rimstidt and Barnes (1980) give k_diss[0,1] in s-1, so we assume
-					// an activity coefficient gamma of 1 (low salinity) to get molalities = mol L.
-					// We need to multiply by 1000 to get from L to m3, this is done in the R_diff[0]
-					// calculation (see R&B 80).
-					k_diss[0] = pow(10.0, -0.369 - 7.890e-4*thoutput[r][t].tempk - 3438.0/thoutput[r][t].tempk);
+					// Rimstidt and Barnes (1980) give k_diss[0,1] in s-1, so we assume an activity coef gamma of 1 (low salinity) to get molalities = mol L.
+					// We divide by 1000 to get from L to m3.
+					k_diss[0] = pow(10.0, -0.369 - 7.890e-4*thoutput[r][t].tempk - 3438.0/thoutput[r][t].tempk) / 1000.0;
 
 					// TODO Get K_eq(T,P) dynamically from CHNOSZ instead
 					// subcrt(c("amorphous silica","SiO2"),c("cr","aq"),c(-1,1),T=25,P=1)
@@ -526,40 +539,64 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 					// subcrt(c("magnesite","Mg+2","CO3-2"),c("cr","aq","aq"),c(-1,1,1),T=25,P=1)
 					K_eq[2] = pow(10.0,-8.035219);
 
-					for (i=0;i<n_species_crack;i++) Q_act[r][i] = Q_act_old[r][i];
-
-					// Silica:
-					// Equations (55) of Rimstidt and Barnes 1980 or (7-8) of Bolton et al. 1997 (porosity not included)
-					// mol m-3 s-1 =no dim (scaled to 1 m-1)*mol L-1 s-1*nd*     no dim (=nd)
-					R_diss[0] = surface_volume_ratio * k_diss[0] * 1.0 * (1-Q_act[r][0]/1000.0/K_eq[0]) / 1000.0; // Assumes unit A/V
-
-					// Serpentine:
-					// Exponent of K/Q remains 1 even though Q = a_silica^2 * a_Mg+2^3 / a_H+^6 = a_solutes^(5/6)
-					// because many other stoichiometries are possible with serpentine.
-					R_diss[1] = surface_volume_ratio * k_diss[1] * 1.0 * (1-Q_act[r][1]/1000.0/K_eq[1]);          // Q in mol L-1
-
-					// Carbonate:
-					// Pokrovski and Schott 1999 suggest (Q/K)^4, which makes sense because Q = a_Mg+2^2 * a_CO3-2^2
-					R_diss[2] = surface_volume_ratio * k_diss[2] * 1.0 * (1-pow(Q_act[r][2]/1000.0/K_eq[2],4));   // Q in mol L-1
-
+					/* Debug
+					 * if (r == 130 && t < 100) printf("t=%d, r=%d\n",t,r); // Debug
+					 */
 					for (i=0;i<n_species_crack;i++) {
+						Q_act[r][i] = Q_act_old[r][i];
+						/* Debug
+						 * if (r == 130 && t < 100) printf("\t Q_act[%d]=%g, K_eq[%d]=%g\n",i,Q_act[r][i]/1000,i,K_eq[i]);
+						 */
+						// (Q in mol L-1, silica equation (i=0) assumes unit A/V)
+						R_diss[i] = surface_volume_ratio * k_diss[i] * 1.0 * (1-pow(Q_act[r][i]/1000.0/K_eq[i],Stoich_coef[i]));
 						// Arrhenius temperature scaling
+						/* Debug
+						 * if (r == 130 && t < 100) printf("\t R_diss[%d]=%g\n",i,R_diss[i]);
+						 */
 						R_diss[i] = R_diss[i] * exp(-Ea_diss[i]/(R_G*thoutput[r][t].tempk));
-
-						// Update Q_act[r][i]
-						Q_act[r][i] = R_diss[i]*timestep*Gyr2sec;  // Represents solute activity ~molality in mol m-3
-						// Memorize the activity coefficient for the next timestep
-						Q_act_old[r][i] = Q_act[r][i];
+						/* Debug
+						 * if (r == 130 && t < 100) printf("\t R_diss[%d]=%g with Arrhenius T scaling\n",i,R_diss[i]);
+						 */
 						// Update crack size (equation 61 of Rimstidt and Barnes 1980, ends up being independent of A/V)
-						d_crack_size = d_crack_size + R_diss[i]*timestep*Gyr2sec*1*Molar_volume[i]/surface_volume_ratio;
+						// and update Q_act[r][i] (mol m-3)
+						if (-R_diss[i]*timestep*Gyr2sec > Q_act[r][i]) {              // Everything precipitates
+							/* Debug
+							 * if (r == 130 && t < 100) printf("\t Every bit of species %d precipitates\n",i);
+							 */
+							// The change in size is everything that could precipitate (Q^nu), not everything that should have precipitated (Rdiss*timestep)
+							d_crack_size = d_crack_size - Q_act[r][i]*1*Molar_volume[i]/surface_volume_ratio;
+							/* Debug
+							 * if (r == 130 && t < 100) printf("\t d_crack_size=%g\n",d_crack_size);
+							 */
+							Q_act[r][i] = 0.0;                                        // Can't have negative conc.!
+							/* Debug
+							 * if (r == 130 && t < 100) printf("\t New Q_act[%d]=%g\n",i,Q_act[r][i]/1000);
+							 */
+						}
+						else {
+							/* Debug
+							 * if (r== 130 && t < 100) printf("\t Some species %d in solution\n",i);
+							 */
+							d_crack_size = d_crack_size + R_diss[i]*timestep*Gyr2sec*1*Molar_volume[i]/surface_volume_ratio;
+							/* Debug
+							 * if (r == 130 && t < 100) printf("\t d_crack_size=%g\n",d_crack_size);
+							 */
+							Q_act[r][i] = Q_act[r][i] + R_diss[i]*timestep*Gyr2sec;
+							/* Debug
+							 * if (r == 130 && t < 100) printf("\t New Q_act[%d]=%g\n",i,Q_act[r][i]/1000);
+							 */
+						}
+						Q_act_old[r][i] = Q_act[r][i];   // Memorize the activity coefficient for the next timestep
 					}
-					// Debug printf("t=%d, r=%d, T=%.0fK, R = %.2g, Q = %.3g, d_size = %g\n",t,r,thoutput[r][t].tempk,R_diss[0],Q_act[r][0],d_crack_size);
 					if (Crack_size[r][t] + d_crack_size > 0.0)                        // Update crack size
 						Crack_size[r][t] = Crack_size[r][t] + d_crack_size;
 					else {
 						Crack_size[r][t] = 0.0;                                       // Pore clogged
 						for (i=0;i<n_species_crack;i++) Q_act_old[r][i] = 0.0;        // Reset old activity quotients
 					}
+					/* Debug
+					 * if (r == 130 && t < 100) printf ("\t Crack size is now %.16f m\n",Crack_size[r][t]);
+					 */
 				}
 				else {
 					// If the crack is closed, clear the old activity quotients
@@ -608,7 +645,7 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 				}
 			}
 		}   // End of main grid loop
-		printf("t=%d, r_brittle_ductile = %d\n",t,r_brittle_ductile[t]);
+		// Debug printf("t=%d, r_brittle_ductile = %d\n",t,r_brittle_ductile[t]);
 
 		//-------------------------------------------------------------------
 		//                   Determine cracking depth in km

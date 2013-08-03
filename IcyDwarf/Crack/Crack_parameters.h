@@ -48,6 +48,7 @@
 
 #define n_species_crack 3                                  // Number of species in the chemical model
 #define pH 7.0                                             // pH
+#define smallest_crack_size 1.0e-3                         // Smallest 1-D or 2-D crack size in m
 //#define porosity 0.1                                     // Bulk porosity, dimensionless
 #define Ea_silica 62.9e3                                   // Activation energy for silica reaction in J mol-1 (Rimstidt and Barnes 1980)
 #define Ea_chrysotile 70.0e3                               // Activation energy for serpentine reaction in J mol-1 (Thomassin et al. 1977)
