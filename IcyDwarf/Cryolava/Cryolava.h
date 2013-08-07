@@ -37,8 +37,6 @@
 #define K_IC_ice 0.15e6                     // Fracture toughness of ice at low T in MPa m0.5 (Litwin et al. 2012)
 #define K_IC_crust 0.5e6                    // Fracture toughness of crust in MPa m0.5
 
-#define CHNOSZ_T_MIN 235.0                  // Minimum temperature for the subcrt() routine of CHNOSZ to work
-
 #define n_iter_max 1000                     // Max. number of iterations
 #define NewtRaphThresh 1.5e10               // Threshold for the Bisection/Newton-Raphson loop
 #define x_sup 1.0e3                         // Upper bound of interval [0,x_sup] where root is searched
@@ -107,16 +105,7 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 	t = t_cryolava;
 
 	// Find the seafloor radius and get the temperature there
-	r = 0;
-	r_seafloor = 0;
-	while (r<NR) {
-		if (thoutput[r][t].mh2ol > 0.0) {
-			r_seafloor = r;
-			break;
-		}
-		r++;
-	}
-	r = 0;
+	r_seafloor =  calculate_seafloor (thoutput, NR, NT, t);
 	T = thoutput[r_seafloor][t].tempk;
 	CHNOSZ_T = T;
 
@@ -233,12 +222,6 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 		if (warnings == 1) printf("Cryolava: T=%g K below minimum temp for CHNOSZ. Using T=%g K instead\n",CHNOSZ_T,CHNOSZ_T_MIN);
 		CHNOSZ_T = CHNOSZ_T_MIN;
 	}
-	for (i=0;i<n_species_cryolava;i++) {
-		logK_reactant = CHNOSZ_logK(Species[i], "g", CHNOSZ_T-Kelvin, Pressure[r][t]/bar, "IAPWS95");
-		logK_product = CHNOSZ_logK(Species[i], "aq", CHNOSZ_T-Kelvin, Pressure[r][t]/bar, "IAPWS95");
-		K_rxn[i] = pow(10,-1.0*logK_reactant + 1.0*logK_product);
-		if (!(K_rxn[i] >=0)) printf("Cryolava: Error calculating K_rxn[%d]=%g at t=%d, r=%d\n",i,K_rxn[i],t,r);
-	}
 
     //-------------------------------------------------------------------
     //                   Calculate species molalities
@@ -246,13 +229,13 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 
 	printf("Cryolava: Calculating species molalities...\n");
 
-	for (r=0;r<NR-r_seafloor;r++) {       // From r_seafloor to NR
+	for (r=0;r<NR-r_seafloor;r++) {             // From r_seafloor to NR
 
 		// Pgas = P (seafloor) - P (column of liquid in the crack). P (seafloor) is Pressure[r_seafloor][t].
 		// To get P (column of liquid in the crack), we need to integrate along the crack.
 
 		for (i=r_seafloor;i<r_seafloor+r;i++) { // Integral using trapezoidal method
-			Minf = 0.0;                   // Calculate total mass (grams) below current layer
+			Minf = 0.0;                         // Calculate total mass (grams) below current layer
 			for (u=0;u<i;u++) {
 				Minf = Minf + thoutput[u][t].mrock + thoutput[u][t].mh2os + thoutput[u][t].mh2ol +
 					   thoutput[u][t].madhs + thoutput[u][t].mnh3l;
@@ -271,14 +254,23 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 	    // Otherwise, m_i and P_i are simply given by P_i = P and K_i = m_i/P_i regardless of the bulk abundances.
 	    // (Alternatively, A_i determine m_i and P_i are given by K_i = m_i/P_i, but one constraint is still lifted, since X_VAP = 0.)
 
-		// Initialize bounds for X_VAP = x_vap/(rhoH2ol*R_G*T)
+		// Use CHNOSZ to get reaction constants at given T and P
+		for (i=0;i<n_species_cryolava;i++) {
+			logK_reactant = CHNOSZ_logK(Species[i], "g", CHNOSZ_T-Kelvin, Pressure[r][t]/bar, "IAPWS95");
+			logK_product = CHNOSZ_logK(Species[i], "aq", CHNOSZ_T-Kelvin, Pressure[r][t]/bar, "IAPWS95");
+			K_rxn[i] = pow(10,-1.0*logK_reactant + 1.0*logK_product);
+			if (!(K_rxn[i] >=0)) printf("Cryolava: Error calculating K_rxn[%d]=%g at t=%d, r=%d\n",i,K_rxn[i],t,r);
+		}
 
-		//	double min_K_rxn = K_rxn[0];   // See next comment
-        //
-		//	for (i=0;i<n_species_cryolava;i++) {
-		//		if (K_rxn[i] < min_K_rxn) min_K_rxn = K_rxn[i];
-		//	}
-		// X_INF = -min_K_rxn;             // Mathematically rigorous, but can yield physically incorrect, negative solutions
+		/* Initialize bounds for X_VAP = x_vap/(rhoH2ol*R_G*T)
+		 *
+		 *	double min_K_rxn = K_rxn[0];   // See next comment
+         *
+		 *	for (i=0;i<n_species_cryolava;i++) {
+		 *		if (K_rxn[i] < min_K_rxn) min_K_rxn = K_rxn[i];
+		 *	}
+		 * X_INF = -min_K_rxn;             // Mathematically rigorous, but can yield physically incorrect, negative solutions
+		 */
 
 		X_INF = 0.0;                       // Extreme lower bound: X physically needs to be > 0
 		X_SUP = x_sup;                     // Assumes f(X_SUP) will always be positive if X_SUP is large enough, because the coef in front of X^n_species is positive (it's Pressure*Mliq)
@@ -344,12 +336,12 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 																	// Don't forget that X_VAP is in mol kg-1 bar-1, so we need to divide by bar to get Pa-1, the unit consistent with rho*R_G*T.
 			x_vap[r][3] = rhoH2ol/(1.0+x_vap[r][2]);                // Foam density in kg m-3, assuming massless gas
 			x_vap[r][4] = -(x_vap[r][3]-rhoH2os)*2.0 * G*Minf*gram/(thoutput[r+r_seafloor][t].radius*thoutput[r+r_seafloor][t].radius*km*km)
-					      * pow(r*r_p/NR*km,1.5)/sqrt(PI_greek); // Stress intensity K_I at crack tip (MPa m^0.5)
+					      * pow(r*r_p/NR*km,1.5)/sqrt(PI_greek);    // Stress intensity K_I at crack tip (MPa m^0.5)
 			if (r<=r_diff && x_vap[r][4] > K_IC_ice) x_vap[r][5] = 1.0; // Crack propagation or not
 			else if (r>r_diff && x_vap[r][4] > K_IC_crust) x_vap[r][5] = 1.0;
 			else x_vap[r][5] = 0.0;
 
-			if (msgout == 1) printf("X_VAP = %g and x_vap = V_gas/V_liq = %g found after %d iterations\n",X_VAP,x_vap[r][1],n_iter);
+			if (msgout == 1) printf("X_VAP = %g and x_vap = V_gas/V_liq = %g found after %d iterations\n",X_VAP,x_vap[r][2],n_iter);
 		}
 		/* Debug of solution of degree n_species_cryolava polynamial
 		 * Case n_species_cryolava = 2, solving the degree 2 polynomial (result should be identical to N-R algorithm):

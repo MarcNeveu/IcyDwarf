@@ -11,14 +11,14 @@
 #define CRACK_PARAMETERS_H_
 
 // Brittle/ductile transition
-
-#define n_Mogi 0.4                                         // n of the brittle law C = C0+alpha*P^n
-#define alpha_Mogi 2.0                           	       // alpha of the brittle law C = C0+alpha*P^n
-#define C0_Mogi 100.0e6                          	       // Compressive strength at atmospheric P in Pa
-#define ductile_Mogi 1.0                         	       // Slope of the C vs. P brittle/ductile transition (Mogi 1966: =3.4)
+#define mu_Escartin 0.3                                    // Friction coefficient of Escartin et al. 1997 (default 0.3 to 0.5)
+#define A_flow_law 1.0e-37                                 // A of the antigorite flow law of Hilairet et al. 2007 (default 1.0e-37)
+#define Ea_flow_law 8900                                   // Activation energy of the antigorite flow law of Hilairet et al. 2007 in J (default 8900)
+#define V_flow_law 3.2e-6                                  // Activation volume of Hilairet et al. 2007 in m3 (default 3.2e-6)
+#define n_flow_law 3.1                                     // Stress exponent of Hilairet et al. 2007 (default 3.8)
+#define strain_rate 1.0/(timestep*Gyr2sec)                 // Flow law strain rate in s-1
 
 // Thermal expansion/contraction mismatch (Vance et al. 2007)
-
 #define Q 3.75e5                                           // Activation enthalpy for grain boundary (J/mol)
 #define Omega 1.23e-29                                     // Atomic volume (m^3)
 #define D0_deltab 0.2377                                   // Grain boundary diffusion coefficient (1.5 m^2/s) x width
@@ -37,32 +37,28 @@
 #define a_min 1.0e-7                                       // Minimum flaw size (m) below which flaws are neglected
 
 // Hydration/dehydration stresses
-
-#define hydration_rate 1.0e-3                              // Rate of progression of a hydration front in rock in km/Gyr
+#define hydration_rate 1.0                                 // Rate of progression of a hydration front in rock in m/Gyr
 
 // Pore water expansion upon heating
-
 #define aspect_ratio 10.0                                  // Aspect ratio (width/length) of 2D water pores
 
 // Dissolution and precipitation of species
-
 #define n_species_crack 3                                  // Number of species in the chemical model
 #define pH 7.0                                             // pH
 #define smallest_crack_size 1.0e-3                         // Smallest 1-D or 2-D crack size in m
 //#define porosity 0.1                                     // Bulk porosity, dimensionless
 #define Ea_silica 62.9e3                                   // Activation energy for silica reaction in J mol-1 (Rimstidt and Barnes 1980)
 #define Ea_chrysotile 70.0e3                               // Activation energy for serpentine reaction in J mol-1 (Thomassin et al. 1977)
-#define Ea_magnesite 34.0e3                                // Activation energy for carbonate reaction in J mol-1 (Pokrovsky et al. 2009)
+#define Ea_magnesite 34.0e3                                // Activation energy for carbonate reaction in J mol-1 (Pokrovsky et al. 2009) Table 4
                                                               // Valid for pH 5.4, but decreases with pH
 #define Molar_volume_silica 29.0e-6                        // Molar volume of silica in mol m-3 (CHNOSZ - HDN+78)
 #define Molar_volume_chrysotile 108.5e-6                   // Molar volume of serpentine in mol m-3 (CHNOSZ - HDN+78)
 #define Molar_volume_magnesite 28.018e-6                   // Molar volume of carbonate in mol m-3 (CHNOSZ - HDN+78)
 #define k_chrysotile 1.0e-16*1.0e4                         // Reaction rate constant for serpentine in mol m-2 s-1, Bales and Morgan (1985) Fig. 4
-#define k_magnesite pow(10.0,-(3.0/10.0*pH)-11.0)*1.0e4    // Reaction rate constant for carbonate in mol m-2 s-1, Pokrovsky & Schott (1999) Fig. 2
+#define k_magnesite pow(10.0,-(3.0/10.0*pH)-11.0)*1.0e4    // Reaction rate constant @25¡C for carbonate in mol m-2 s-1, Pokrovsky & Schott (1999) Fig. 2
                                                            // Reaction rate constant for silica varies with T, see code for init
 
 // Table sizes
-
 #define int_size 1000         // Number of datapoints in the integral table
 #define int_steps 10000       // Number of integration steps
 #define sizeaTP 100           // Size of the square a(deltaT,P) table

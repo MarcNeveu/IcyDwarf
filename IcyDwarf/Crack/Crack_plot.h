@@ -92,6 +92,8 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 	SDL_Surface* WR = NULL;
 	SDL_Texture* WR_bar_tex = NULL;
 	SDL_Surface* WR_bar = NULL;
+	SDL_Texture* WR_neg_tex = NULL;
+	SDL_Surface* WR_neg = NULL;
 	SDL_Texture* progress_bar_tex = NULL;
 	SDL_Surface* progress_bar = NULL;
 	SDL_Texture* cracked_rock_tex = NULL;
@@ -123,7 +125,7 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 	SDL_Texture* max_depth_digit_3 = NULL;
 	SDL_Surface* numbers = NULL;
 
-	char *TextureBackground_png = (char*)malloc(1024);           // Don't forget to free!
+	char *TextureBackground_png = (char*)malloc(1024);     // Don't forget to free!
 	TextureBackground_png[0] = '\0';
 	if (release == 1) strncat(TextureBackground_png,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(TextureBackground_png,path,strlen(path)-18);
@@ -143,6 +145,8 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 	if (WR == NULL) printf("IcyDwarf: Plot: WR layer not loaded.\n");
 	WR_bar = IMG_Load(Transparent_png);
 	if (WR_bar == NULL) printf("IcyDwarf: Plot: WR bar layer not loaded.\n");
+	WR_neg = IMG_Load(Transparent_png);
+	if (WR_neg == NULL) printf("IcyDwarf: Plot: WR negative sign layer not loaded.\n");
 	progress_bar = IMG_Load(Transparent_png);
 	if (progress_bar == NULL) printf("IcyDwarf: Plot: Progress bar layer not loaded.\n");
 	free(Transparent_png);
@@ -153,7 +157,7 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 	else if (cmdline == 1) strncat(Numbers_png,path,strlen(path)-18);
 	strcat(Numbers_png,"Graphics/Numbers.png");
 	numbers = IMG_Load(Numbers_png);
-	if (crack_time == NULL) printf("IcyDwarf: Plot: numbers layer not loaded.\n");
+	if (numbers == NULL) printf("IcyDwarf: Plot: numbers layer not loaded.\n");
 	free(Numbers_png);
 
 	char *TextureCracked_png = (char*)malloc(1024);           // Don't forget to free!
@@ -183,7 +187,7 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 	Uint32 light_white_alpha;
 	white_alpha = SDL_MapRGBA(crack_time->format, 255, 255, 255, 200); // r,g,b,alpha 0 to 255. Alpha of 0 is transparent
 	red_alpha = SDL_MapRGBA(crack_time->format, 255, 200, 200, 200);
-	blue_alpha = SDL_MapRGBA(crack_time->format, 100, 100, 255, 200);
+	blue_alpha = SDL_MapRGBA(crack_time->format, 20, 100, 255, 200);
 	orange_alpha = SDL_MapRGBA(crack_time->format, 255, 195, 0, 200);
 	purple_alpha = SDL_MapRGBA(crack_time->format, 128, 0, 200, 200);
 	yellow_alpha = SDL_MapRGBA(crack_time->format, 255, 255, 100, 200);
@@ -207,7 +211,7 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 	}
 
 	for (t=0;t<NT;t++) {
-		Crack_depth[t][1] = 0.0, Crack_depth[t][2] = 0.0;
+		Crack_depth[t][0] = 0.0, Crack_depth[t][1] = 0.0;
 	}
 
 	for (t=0;t<NT;t++) {
@@ -252,20 +256,24 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 				pixmem32 = (Uint32*) crack_time->pixels + (crack_time->h - r)*crack_time->w + t;
 				*pixmem32 = light_white_alpha;
 			}
-			if (Crack[r][t] > 0.0 && r>min_depth) {
-				min_depth = r;
-			}
+		}
+	}
+
+	min_depth = (float) calculate_seafloor (thoutput, NR, NT, 500);
+	max_depth = min_depth;
+	for (t=0;t<NT;t++) {
+		for (r=0;r<NR;r++) {
 			if (Crack[r][t] > 0.0 && r<max_depth) {
 				max_depth = r;
 			}
 			if (Crack[r][t] > 0.0) {
-				Crack_depth[t][2] = Crack_depth[t][2] + 1.0*r_p/NR;
+				Crack_depth[t][1] = Crack_depth[t][1] + 1.0*r_p/NR;
 			}
 		}
 	}
 
 	// The cracked depth goes artificially to zero at t=NT-1, so let's set it equal to that at t=NT-2
-	Crack_depth[NT-1][2] = Crack_depth[NT-2][2];
+	Crack_depth[NT-1][1] = Crack_depth[NT-2][1];
 
 	crack_time_tex = SDL_CreateTextureFromSurface(renderer, crack_time);
 
@@ -375,32 +383,49 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 
 	WR_bar_tex = SDL_CreateTextureFromSurface(renderer, WR_bar);
 
-	// y-axis max ratio (goes to the 2nd decimal place).
+	// y-axis max ratio (goes to the 1st decimal place). Scientific notation.
 
-	int max_ratio_100 = floor(max_ratio);                                        // 1st digit
-	int max_ratio_10 = floor((max_ratio-max_ratio_100)*10.0);                    // 2nd digit
-	int max_ratio_1 = floor((max_ratio-max_ratio_100)*100.0-max_ratio_10*10.0);  // 3rd digit
+	int max_ratio_expo = 0;
+	int max_ratio_neg = 0;
+	int max_ratio_1 = 0;
+	int max_ratio_2 = 0;
+
+	max_ratio_expo = floor(log(max_ratio)/log(10.0));
+	max_ratio_1 = floor(max_ratio*pow(10.0,-max_ratio_expo));
+	max_ratio_2 = floor(max_ratio*pow(10.0,-max_ratio_expo+1.0)-max_ratio_1*10.0);
+	max_ratio_1 = floor(max_ratio*pow(10.0,-max_ratio_expo));
+	max_ratio_2 = floor((max_ratio)*pow(10.0,-max_ratio_expo+1.0)-max_ratio_1*10.0);
+	if (max_ratio_expo < 0) max_ratio_neg = 1;
+	// Debug printf("max_ratio = %g, %d.%d e%d\n",max_ratio,max_ratio_1,max_ratio_2,max_ratio_expo);
 
 	max_ratio_digit_1 = SDL_CreateTextureFromSurface(renderer, numbers);
 	SDL_Rect max_ratio_digit_clip_1;
 	SDL_Rect max_ratio_digit_dest_1;
-	max_ratio_digit_clip_1 = ClipNumber(max_ratio_100,14);
-	max_ratio_digit_dest_1.x = 468, max_ratio_digit_dest_1.y = 321;
+	max_ratio_digit_clip_1 = ClipNumber(max_ratio_1,14);
+	max_ratio_digit_dest_1.x = 463, max_ratio_digit_dest_1.y = 321;
 	max_ratio_digit_dest_1.w = 12, max_ratio_digit_dest_1.h = 20;
 
 	max_ratio_digit_2 = SDL_CreateTextureFromSurface(renderer, numbers);
 	SDL_Rect max_ratio_digit_clip_2;
 	SDL_Rect max_ratio_digit_dest_2;
-	max_ratio_digit_clip_2 = ClipNumber(max_ratio_10,14);
-	max_ratio_digit_dest_2.x = 478, max_ratio_digit_dest_2.y = 321;
+	max_ratio_digit_clip_2 = ClipNumber(max_ratio_2,14);
+	max_ratio_digit_dest_2.x = 473, max_ratio_digit_dest_2.y = 321;
 	max_ratio_digit_dest_2.w = 12, max_ratio_digit_dest_2.h = 20;
 
 	max_ratio_digit_3 = SDL_CreateTextureFromSurface(renderer, numbers);
 	SDL_Rect max_ratio_digit_clip_3;
 	SDL_Rect max_ratio_digit_dest_3;
-	max_ratio_digit_clip_3 = ClipNumber(max_ratio_1,14);
-	max_ratio_digit_dest_3.x = 486, max_ratio_digit_dest_3.y = 321;
+	max_ratio_digit_clip_3 = ClipNumber(abs(max_ratio_expo),14);
+	max_ratio_digit_dest_3.x = 490, max_ratio_digit_dest_3.y = 321;
 	max_ratio_digit_dest_3.w = 12, max_ratio_digit_dest_3.h = 20;
+
+	for (t=489;t<492;t++) {
+		for (r=333;r<334;r++) {
+			pixmem32 = (Uint32*) WR_neg->pixels + r*WR_neg->w + t;
+			*pixmem32 = SDL_MapRGBA(WR_bar->format, 255, 255, 255, 255);
+		}
+	}
+	WR_neg_tex = SDL_CreateTextureFromSurface(renderer, WR_neg);
 
 	// ZOOM ON SUBSEAFLOOR NUMBERS
 
@@ -442,13 +467,7 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 	// Seafloor/core radius: assumes a 3-digit number
 
 	float r_core = 0.0;
-	r=0;
-
-	while (thoutput[r][500].mrock > 0) {
-		r++;
-	}
-	r_core = r*r_p/NR;
-	r = 0;
+	r_core = min_depth *r_p/NR;
 
 	int seafloor_100 = floor(r_core/100);                                  // 1st digit
 	int seafloor_10 = floor((r_core-seafloor_100*100.0)/10.0);             // 2nd digit
@@ -477,7 +496,7 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 
 	// Seafloor/cracked depth: assumes a 3 digit number.
 
-	float r_depth = r_core-(min_depth-max_depth)*r_p/NR;
+	float r_depth = max_depth*r_p/NR;
 
 	int r_depth_100 = floor(r_depth/100.0);                              // 1st digit
 	int r_depth_10 = floor((r_depth-r_depth_100*100.0)/10.0);            // 2nd digit
@@ -602,9 +621,9 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 
 						// Zoom on the subseafloor
 						cracked_rock_clip.x = 0, cracked_rock_clip.y = 0;
-						cracked_rock_clip.w = SCREEN_WIDTH, cracked_rock_clip.h = 2*floor(Crack_depth[t][2]/((min_depth-max_depth)*r_p/NR)*110.0);
+						cracked_rock_clip.w = SCREEN_WIDTH, cracked_rock_clip.h = 2*floor(Crack_depth[t][1]/((min_depth-max_depth)*r_p/NR)*110.0);
 						cracked_rock_dilation.x = 118, cracked_rock_dilation.y = 64;
-						cracked_rock_dilation.w = 319, cracked_rock_dilation.h = floor(Crack_depth[t][2]/((min_depth-max_depth)*r_p/NR)*110.0);
+						cracked_rock_dilation.w = 319, cracked_rock_dilation.h = floor(Crack_depth[t][1]/((min_depth-max_depth)*r_p/NR)*110.0);
 						SDL_RenderCopy(renderer, cracked_rock_tex, &cracked_rock_clip, &cracked_rock_dilation);
 
 						// Time elapsed
@@ -658,6 +677,7 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 						// Other renderings
 
 						SDL_RenderCopy(renderer, WR_bar_tex, NULL, NULL);
+						if (max_ratio_neg == 1) SDL_RenderCopy(renderer, WR_neg_tex, NULL, NULL);
 						SDL_RenderCopy(renderer, numbers_tex_1, &numbers_clip_1, &numbers_dest_1);
 						SDL_RenderCopy(renderer, numbers_tex_2, &numbers_clip_2, &numbers_dest_2);
 						SDL_RenderCopy(renderer, numbers_tex_3, &numbers_clip_3, &numbers_dest_3);
@@ -749,9 +769,9 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 
 							// Zoom on the subseafloor
 							cracked_rock_clip.x = 0, cracked_rock_clip.y = 0;
-							cracked_rock_clip.w = SCREEN_WIDTH, cracked_rock_clip.h = 2*floor(Crack_depth[t][2]/((min_depth-max_depth)*r_p/NR)*110.0);
+							cracked_rock_clip.w = SCREEN_WIDTH, cracked_rock_clip.h = 2*floor(Crack_depth[t][1]/((min_depth-max_depth)*r_p/NR)*110.0);
 							cracked_rock_dilation.x = 118, cracked_rock_dilation.y = 64;
-							cracked_rock_dilation.w = 319, cracked_rock_dilation.h = floor(Crack_depth[t][2]/((min_depth-max_depth)*r_p/NR)*110.0);
+							cracked_rock_dilation.w = 319, cracked_rock_dilation.h = floor(Crack_depth[t][1]/((min_depth-max_depth)*r_p/NR)*110.0);
 							SDL_RenderCopy(renderer, cracked_rock_tex, &cracked_rock_clip, &cracked_rock_dilation);
 
 							// Time elapsed
@@ -805,6 +825,7 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 							// Other renderings
 
 							SDL_RenderCopy(renderer, WR_bar_tex, NULL, NULL);
+							if (max_ratio_neg == 1) SDL_RenderCopy(renderer, WR_neg_tex, NULL, NULL);
 							SDL_RenderCopy(renderer, numbers_tex_1, &numbers_clip_1, &numbers_dest_1);
 							SDL_RenderCopy(renderer, numbers_tex_2, &numbers_clip_2, &numbers_dest_2);
 							SDL_RenderCopy(renderer, numbers_tex_3, &numbers_clip_3, &numbers_dest_3);
@@ -864,9 +885,9 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 
 		// Zoom on the subseafloor
 		cracked_rock_clip.x = 0, cracked_rock_clip.y = 0;
-		cracked_rock_clip.w = SCREEN_WIDTH, cracked_rock_clip.h = 2*floor(Crack_depth[t][2]/((min_depth-max_depth)*r_p/NR)*110.0);
+		cracked_rock_clip.w = SCREEN_WIDTH, cracked_rock_clip.h = 2*floor(Crack_depth[t][1]/((min_depth-max_depth)*r_p/NR)*110.0);
 		cracked_rock_dilation.x = 118, cracked_rock_dilation.y = 64;
-		cracked_rock_dilation.w = 319, cracked_rock_dilation.h = floor(Crack_depth[t][2]/((min_depth-max_depth)*r_p/NR)*110.0);
+		cracked_rock_dilation.w = 319, cracked_rock_dilation.h = floor(Crack_depth[t][1]/((min_depth-max_depth)*r_p/NR)*110.0);
 		SDL_RenderCopy(renderer, cracked_rock_tex, &cracked_rock_clip, &cracked_rock_dilation);
 
 		// Time elapsed
@@ -920,6 +941,7 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 		// Other renderings
 
 		SDL_RenderCopy(renderer, WR_bar_tex, NULL, NULL);
+		if (max_ratio_neg == 1) SDL_RenderCopy(renderer, WR_neg_tex, NULL, NULL);
 		SDL_RenderCopy(renderer, numbers_tex_1, &numbers_clip_1, &numbers_dest_1);
 		SDL_RenderCopy(renderer, numbers_tex_2, &numbers_clip_2, &numbers_dest_2);
 		SDL_RenderCopy(renderer, numbers_tex_3, &numbers_clip_3, &numbers_dest_3);
@@ -960,6 +982,8 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 	SDL_FreeSurface(WR);
 	SDL_DestroyTexture(WR_bar_tex);
 	SDL_FreeSurface(WR_bar);
+	SDL_DestroyTexture(WR_neg_tex);
+	SDL_FreeSurface(WR_neg);
 	SDL_DestroyTexture(progress_bar_tex);
 	SDL_FreeSurface(progress_bar);
 	SDL_DestroyTexture(cracked_rock_tex);

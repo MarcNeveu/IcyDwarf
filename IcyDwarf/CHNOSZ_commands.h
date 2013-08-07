@@ -67,47 +67,47 @@ double CHNOSZ_logK (char species[128], char state[32], float T, float P, char H2
 	int errorOccurred = 0;
 	SEXP e, sexp;
 
-	// TODO 7-17-2013 Code to do thermo$opt$water <- "IAPWS95", doesn't work.
-	// Would get CHNOSZ to work below -20¡C. Main problem: finding thermo in the R environment.
-	// For some reason, R_GlobalEnv is not recognized as an environment.
-	// Maybe because the SEXP thermo is not recognized as a string?
+/*	 TODO 7-17-2013 Code to do thermo$opt$water <- "IAPWS95", doesn't work.
+	 Would get CHNOSZ to work below -20¡C. Main problem: finding thermo in the R environment.
+	 For some reason, R_GlobalEnv is not recognized as an environment.
+	 Maybe because the SEXP thermo is not recognized as a string?
 
-	// Instead, I just forced CHNOSZ to use IAPWS95 all the time by modifying the subcrt source file
-	// (set "dosupcrt" to FALSE) an the water source file (changed the "if supcrt92 else iapws95" to "iapws95").
-	// Good enough, but not as elegant (and requires to redo the hack at each CHNOSZ update).
+	 Instead, I just forced CHNOSZ to use IAPWS95 all the time by modifying the subcrt source file
+	 (set "dosupcrt" to FALSE) an the water source file (changed the "if supcrt92 else iapws95" to "iapws95").
+	 Good enough, but not as elegant (and requires to redo the hack at each CHNOSZ update).*/
 
-//	SEXP e2, thermo, thermostring, sexp2;
-//
-//	// Set EoS for water to use
-//
-//	Rf_protect(e = Rf_list1(mkString(H2OEoS)));
-//	Rf_protect(e2 = Rf_list1(mkString("thermo")));
-//	//PROTECT(env = allocVector(ENVSXP,1));
-//	Rf_protect(sexp = R_tryEval(e, R_GlobalEnv, &errorOccurred));
-//	if (errorOccurred) {
-//		printf("CHNOSZ_commands: Could not perform subcrt('%s','g',T=%g K,P=%g bar)\n",species,T,P);
-//	}
-//	Rf_protect(thermostring = R_tryEval(e2, R_GlobalEnv, &errorOccurred));
-//	if (errorOccurred) {
-//		printf("CHNOSZ_commands: Could not perform subcrt('%s','g',T=%g K,P=%g bar)\n",species,T,P);
-//	}
-//	//PROTECT(env = coerceVector(R_GlobalEnv,ENVSXP));
-//	//Rf_protect (env = R_FindNamespace(mkString("CHNOSZ")));
-//	Rf_protect(sexp2 = coerceVector(sexp,STRSXP));
-//	if (isEnvironment(R_GlobalEnv)) {
-//		printf("Yay\n");
-//	}
-//	else printf("Aw\n");
-//	Rf_protect(thermo = getvar(sexp2,R_GlobalEnv));
-//	if (isString(sexp2)) {
-//		printf("Yay\n");
-//	}
-//	else printf("Aw\n");
-//	PROTECT(thermo = coerceVector(VECTOR_ELT(VECTOR_ELT(thermo,0),10),STRSXP));
-//	//Rf_protect(thermo = Rf_findVar(install(CHAR(STRING_ELT(sexp2, 0))),R_GlobalEnv));
-//	//Rf_setVar(thermo,sexp,R_GlobalEnv);
-//	SET_VECTOR_ELT(VECTOR_ELT(thermo,0),10,sexp);
-//	Rf_unprotect(7);
+/*	SEXP e2, thermo, thermostring, sexp2;
+
+	// Set EoS for water to use
+
+	Rf_protect(e = Rf_list1(mkString(H2OEoS)));
+	Rf_protect(e2 = Rf_list1(mkString("thermo")));
+	//PROTECT(env = allocVector(ENVSXP,1));
+	Rf_protect(sexp = R_tryEval(e, R_GlobalEnv, &errorOccurred));
+	if (errorOccurred) {
+		printf("CHNOSZ_commands: Could not perform subcrt('%s','g',T=%g K,P=%g bar)\n",species,T,P);
+	}
+	Rf_protect(thermostring = R_tryEval(e2, R_GlobalEnv, &errorOccurred));
+	if (errorOccurred) {
+		printf("CHNOSZ_commands: Could not perform subcrt('%s','g',T=%g K,P=%g bar)\n",species,T,P);
+	}
+	//PROTECT(env = coerceVector(R_GlobalEnv,ENVSXP));
+	//Rf_protect (env = R_FindNamespace(mkString("CHNOSZ")));
+	Rf_protect(sexp2 = coerceVector(sexp,STRSXP));
+	if (isEnvironment(R_GlobalEnv)) {
+		printf("Yay\n");
+	}
+	else printf("Aw\n");
+	Rf_protect(thermo = getvar(sexp2,R_GlobalEnv));
+	if (isString(sexp2)) {
+		printf("Yay\n");
+	}
+	else printf("Aw\n");
+	PROTECT(thermo = coerceVector(VECTOR_ELT(VECTOR_ELT(thermo,0),10),STRSXP));
+	//Rf_protect(thermo = Rf_findVar(install(CHAR(STRING_ELT(sexp2, 0))),R_GlobalEnv));
+	//Rf_setVar(thermo,sexp,R_GlobalEnv);
+	SET_VECTOR_ELT(VECTOR_ELT(thermo,0),10,sexp);
+	Rf_unprotect(7);*/
 
     // Get log K of the reactant (that's how CHNOSZ works)
 	PROTECT(e = lang5(install("subcrt"), mkString(species), mkString(state), ScalarReal(T), ScalarReal(P)));
@@ -115,7 +115,7 @@ double CHNOSZ_logK (char species[128], char state[32], float T, float P, char H2
 	SET_TAG(CDDR(CDDR(e)), install("P")) ;                       // 5th element of the lang5() list in the CAR/CDR framework
 	PROTECT(sexp = R_tryEval(e, R_GlobalEnv, &errorOccurred));
 	if (errorOccurred) {
-		printf("CHNOSZ_commands: Could not perform subcrt('%s','g',T=%g K,P=%g bar)\n",species,T,P);
+		printf("CHNOSZ_commands: Could not perform subcrt('%s','%s',T=%g C,P=%g bar)\n",species,state,T,P);
 	}
 	PROTECT(sexp = AS_NUMERIC(VECTOR_ELT(VECTOR_ELT(sexp,1),0)));
 	logK = NUMERIC_POINTER(sexp)[0];

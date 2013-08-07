@@ -14,10 +14,9 @@
 #define ICYDWARF_H_
 
 #define release 0                                          // 0 for Debug, 1 for Release
-#define cmdline 0										   // If execution from terminal as "./IcyDwarf",
+#define cmdline 1										   // If execution from terminal as "./IcyDwarf",
                                                            // overwritten by release.
 // Physical parameters and constants
-
 #define G 6.67e-11                                         // Gravitational constant (SI)
 #define km 1.0e3                                           // km to m
 #define gram 1.0e-3                                        // g to kg
@@ -29,7 +28,6 @@
 #define PI_greek 3.14159265358979323846                    // Pi
 
 // General parameters
-
 #define rhoRock 3.25e3                                     // Density of rock
 #define rhoH2os 0.935e3                                    // Density of H2O(s)
 #define rhoH2ol 1.00e3                                     // Density of H2O(l)
@@ -37,6 +35,7 @@
 #define rhoNh3l 0.74e3                                     // Density of NH3(l)
 #define rhoHydr 2.35e3                                     // Density of hydrated rock
 #define tempk_dehydration 800.0                            // Dehydration temperature
+#define CHNOSZ_T_MIN 235.0                                 // Minimum temperature for the subcrt() routine of CHNOSZ to work
 
 typedef struct {
     float radius; // Radius in km
@@ -55,6 +54,7 @@ typedef struct {
 
 double **calculate_pressure (double **Pressure, int NR, int NT, thermalout **thoutput);
 float *calculate_mass_liquid (float *Mliq, int NR, int NT, thermalout **thoutput);
+int calculate_seafloor (thermalout **thoutput, int NR, int NT, int t);
 int look_up (float x, float x_var, float x_step, int size, int warnings);
 float *icy_dwarf_input (float *input, char path[1024]);
 thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char path[1024]);
@@ -205,6 +205,27 @@ float *calculate_mass_liquid (float *Mliq, int NR, int NT, thermalout **thoutput
 }
 
 //-------------------------------------------------------------------
+//                    Calculate the seafloor depth
+//-------------------------------------------------------------------
+
+int calculate_seafloor (thermalout **thoutput, int NR, int NT, int t) {
+
+	int r_seafloor = 0;
+	int r = 0;
+
+	if (t >= NT) printf("IcyDwarf: t>NT\n");
+	while (r<NR) {
+		if (thoutput[r][t].mh2ol > 0.0) {
+			r_seafloor = r;
+			break;
+		}
+		r++;
+	}
+	if (r == NR) printf("IcyDwarf: Seafloor not found\n");
+return r_seafloor;
+}
+
+//-------------------------------------------------------------------
 //        Return correct index to look up a value in a table
 //-------------------------------------------------------------------
 
@@ -256,35 +277,47 @@ float *icy_dwarf_input (float *input, char path[1024]) {
 			printf("IcyDwarf: Missing IcyDwarfInput.txt file.\n");
 		}
 		else {
-			fseek(f,136,SEEK_SET);
+			fseek(f,155,SEEK_SET);
 			scan = fscanf(f, "%g", &input[i]), i++;   // Somehow Valgrind indicates a memory leak here.
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,13,SEEK_CUR);
+			fseek(f,31,SEEK_CUR);
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,100,SEEK_CUR);
+			fseek(f,31,SEEK_CUR);
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,15,SEEK_CUR);
+			fseek(f,111,SEEK_CUR);
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,23,SEEK_CUR);
+			fseek(f,31,SEEK_CUR);
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,26,SEEK_CUR);
+			fseek(f,31,SEEK_CUR);
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,91,SEEK_CUR);
+			fseek(f,31,SEEK_CUR);
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,26,SEEK_CUR);
+			fseek(f,98,SEEK_CUR);
+			scan = fscanf(f, "%g", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,31,SEEK_CUR);
+			scan = fscanf(f, "%g", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,31,SEEK_CUR);
+			scan = fscanf(f, "%g", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,105,SEEK_CUR);
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
@@ -292,35 +325,39 @@ float *icy_dwarf_input (float *input, char path[1024]) {
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,95,SEEK_CUR);
+			fseek(f,24,SEEK_CUR);
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,20,SEEK_CUR);
+			fseek(f,31,SEEK_CUR);
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,16,SEEK_CUR);
+			fseek(f,112,SEEK_CUR);
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,18,SEEK_CUR);
+			fseek(f,31,SEEK_CUR);
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,11,SEEK_CUR);
+			fseek(f,31,SEEK_CUR);
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,106,SEEK_CUR);
+			fseek(f,31,SEEK_CUR);
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,25,SEEK_CUR);
+			fseek(f,24,SEEK_CUR);
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,19,SEEK_CUR);
+			fseek(f,24,SEEK_CUR);
+			scan = fscanf(f, "%g", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,24,SEEK_CUR);
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 		}
@@ -333,6 +370,7 @@ float *icy_dwarf_input (float *input, char path[1024]) {
 		printf("-------------------------------\n");
 		printf("Warnings? \t \t \t %g\n",input[i]), i++;
 		printf("Messages? \t \t \t %g\n",input[i]), i++;
+		printf("Plots? \t \t \t \t %g\n",input[i]), i++;
 		printf("-------------------------------\n");
 		printf("Planet parameters\n");
 		printf("-------------------------------\n");
@@ -349,17 +387,20 @@ float *icy_dwarf_input (float *input, char path[1024]) {
 		printf("-------------------------------\n");
 		printf("Subroutines\n");
 		printf("-------------------------------\n");
-		printf("Calculate aTP? \t \t \t %g\n",input[i]), i++;
-		printf("Water alpha beta? \t \t %g\n",input[i]), i++;
 		printf("Core cracks? \t \t \t %g\n",input[i]), i++;
+		printf("\t Calculate aTP? \t %g\n",input[i]), i++;
+		printf("\t Water alpha beta? \t %g\n",input[i]), i++;
 		printf("Cryovolcanism? \t \t \t %g\n",input[i]), i++;
-		printf("Plots? \t \t \t \t %g\n",input[i]), i++;
 		printf("-------------------------------\n");
 		printf("Core crack options\n");
 		printf("-------------------------------\n");
+		printf("Thermal mismatch? \t \t %g\n",input[i]), i++;
 		printf("Pore water expansion? \t \t %g\n",input[i]), i++;
 		printf("Hydration/dehydration? \t \t %g\n",input[i]), i++;
 		printf("Dissolution/ppt? \t \t %g\n",input[i]), i++;
+		printf("\t Silica? \t \t %g\n",input[i]), i++;
+		printf("\t Serpentine? \t \t %g\n",input[i]), i++;
+		printf("\t Carbonate? \t \t %g\n",input[i]), i++;
 		printf("\n");
 
 	free (idi);

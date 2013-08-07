@@ -45,7 +45,7 @@ int main(int argc, char *argv[]){
     // Grid inputs
 	int NR = 0;                        // Number of grid zones
 	int NT = 0;                        // Number of time intervals
-    float timestep = 0.0;              // Timestep of the sim (Gyr)
+    float timestep = 0.0;              // Time step of the sim (Gyr)
 
     // Call specific subroutines
     int calculate_aTP = 0;             // Generate a table of flaw size that maximize stress (Vance et al. 2007)
@@ -55,15 +55,13 @@ int main(int argc, char *argv[]){
     int plot_on = 0;  				   // Plots
 
     // Crack subroutine inputs
-    int thermal_mismatch = 0;          // Grain thermal expansion/contraction mismatch effects
-	int pore_water_expansion = 0;      // Pore water expansion effects
-	int hydration_dehydration = 0;     // Rock hydration/dehydration effects
-	int dissolution_precipitation = 0; // Rock dissolution/precipitation effects
+    int *crack_input = (int*) malloc(5*sizeof(int));
+    int *crack_species = (int*) malloc(4*sizeof(int));
 
 	int r = 0;
 	int i = 0;
 
-	float *input = (float*) malloc(18*sizeof(float));
+	float *input = (float*) malloc(22*sizeof(float));
 	if (input == NULL) printf("IcyDwarf: Not enough memory to create input[18]\n");
 
 	//-------------------------------------------------------------------
@@ -100,6 +98,7 @@ int main(int argc, char *argv[]){
 	i = 0;
 	warnings = (int) input[i], i++;
 	msgout = (int) input[i], i++;
+	plot_on = (int) input[i], i++;
 	rho_p = input[i], i++;
 	r_p = input[i], i++;
 	nh3 = input[i], i++;
@@ -107,15 +106,12 @@ int main(int argc, char *argv[]){
 	NR = input[i], i++;
 	NT = floor(input[i]/input[i+1])+1, i++;
 	timestep = (float) input[i]/1000.0, i++;
+	calculate_cracking_depth = (int) input[i], i++;
 	calculate_aTP = (int) input[i], i++;
 	calculate_alpha_beta = (int) input[i], i++;
-	calculate_cracking_depth = (int) input[i], i++;
 	calculate_cryolava = (int) input[i], i++;
-	plot_on = (int) input[i], i++;
-	thermal_mismatch = 1;
-	pore_water_expansion = (int) input[i], i++;
-	hydration_dehydration = (int) input[i], i++;
-	dissolution_precipitation = (int) input[i], i++;
+	for (i=14;i<18;i++) crack_input[i-14] = (int) input[i];
+	for (i=18;i<21;i++) crack_species[i-18] = (int) input[i];
 	i = 0;
 
 	//-------------------------------------------------------------------
@@ -149,7 +145,7 @@ int main(int argc, char *argv[]){
 	if (calculate_cracking_depth == 1) {
 		printf("Calculating cracking depth...\n");
 		Crack(argc, argv, path, NR, NT, r_p, timestep, rho_p, thoutput, warnings, msgout,
-				thermal_mismatch, pore_water_expansion, hydration_dehydration, dissolution_precipitation);
+				crack_input, crack_species);
 		printf("\n");
 	}
 
@@ -180,6 +176,8 @@ int main(int argc, char *argv[]){
 	}
 	free (thoutput);
 	free (input);
+	free (crack_input);
+	free (crack_species);
 
 	Rf_endEmbeddedR(0);                                     // Close R and CHNOSZ
 
