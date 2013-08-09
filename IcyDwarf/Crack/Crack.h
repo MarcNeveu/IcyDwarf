@@ -224,7 +224,6 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 	// No mallocs here, because we'll keep n_species small
 
 	float R_diss[n_species_crack];                   // Dissolution/precipitation rate in mol m-3 s-1
-	float k_diss[n_species_crack];                   // Dissolution/precipitation rate "constant" in mol m-2 s-1
 	float Stoich_coef[n_species_crack];              // Stoichiometric coefficient of the dissolution product(s)
 	float K_eq[n_species_crack];                     // Equilibrium constant, dimensionless
 	float Ea_diss[n_species_crack];                  // Activation energy of dissolution/precipitation (J mol-1)
@@ -279,7 +278,6 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 	}
 	for (i=0;i<n_species_crack;i++) {
 		R_diss[i] = 0.0;
-		k_diss[i] = 0.0;
 		Ea_diss[i] = 0.0;
 		K_eq[i] = 0.0;
 		Molar_volume[i] = 0.0;
@@ -333,10 +331,6 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 		Molar_volume[0] = Molar_volume_silica;                     // CHNOSZ - HDN+78
 		Molar_volume[1] = Molar_volume_chrysotile;                 // CHNOSZ - HDN+78
 		Molar_volume[2] = Molar_volume_magnesite;                  // CHNOSZ - HDN+78
-
-		// k_diss[0] varies with T, see below for init
-		k_diss[1] = k_chrysotile;                                  // mol m-2 s-1, Bales and Morgan (1985) Fig. 4
-		k_diss[2] = k_magnesite;                                   // mol m-2 s-1, Pokrovsky & Schott (1999) Fig. 2
 	}
 	Pressure = calculate_pressure(Pressure, NR, NT, thoutput);     // Pressure
 	Mliq = calculate_mass_liquid (Mliq, NR, NT, thoutput);         // Mass of liquid
@@ -377,7 +371,7 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 							 * exp((Ea_flow_law + Pressure[r][t]*V_flow_law)/(n_flow_law*R_G*thoutput[r][t].tempk));
 			if (Brittle_strength <= Ductile_strength) Rock_strength[r][t] = Brittle_strength;
 			else Rock_strength[r][t] = Ductile_strength;
-			// Debug if (t==200) printf("r=%d, Brittle strength=%g, ductile strength=%g, Rock strength=%g\n",r,Brittle_strength,Ductile_strength,Rock_strength[r][t]);
+			// Debug if (t==456) printf("r=%d, Brittle strength=%g, ductile strength=%g, Rock strength=%g\n",r,Brittle_strength,Ductile_strength,Rock_strength[r][t]);
 
 			//-------------------------------------------------------------------
 			//  Calculate heating/cooling rate in K/Gyr in each layer over time
@@ -456,9 +450,9 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 					Crack_size_hydr_old = Crack_size[r][t];
 					d_crack_size = 0.0;
 					if (thoutput[r][t].tempk < tempk_dehydration) { // Hydration
-						d_crack_size = - (pow((rhoRock/rhoHydr),0.333) - 1.0) * hydration_rate * timestep;
+						d_crack_size = - 2.0*(pow((rhoRock/rhoHydr),0.333) - 1.0) * hydration_rate * timestep;
 						if (Crack_size[r][t] + d_crack_size < 0.0) {
-							P_hydr[r][t] = E_Young*(-d_crack_size-Crack_size[r][t])/Crack_size[r][t]; // Residual rock swell builds up stresses
+							P_hydr[r][t] = E_Young*(-d_crack_size-Crack_size[r][t])/(2.0*hydration_rate*timestep); // Residual rock swell builds up stresses
 							Crack_size[r][t] = 0.0;          // Crack closes completely
 						}
 						else {
@@ -533,10 +527,6 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 					d_crack_size = 0.0;
 					surface_volume_ratio = 2.0/Crack_size[r][t];  // Rimstidt and Barnes (1980) Fig. 6 for a cylinder/fracture
 
-					// Rimstidt and Barnes (1980) give k_diss[0,1] in s-1, so we assume an activity coef gamma of 1 (low salinity) to get molalities = mol L.
-					// We divide by 1000 to get from L to m3.
-					k_diss[0] = pow(10.0, -0.369 - 7.890e-4*thoutput[r][t].tempk - 3438.0/thoutput[r][t].tempk) / 1000.0;
-
 					// Use CHNOSZ to get reaction constants at given T and P
 					/* TODO Get K_eq(T,P) dynamically from CHNOSZ instead. Somehow CHNOSZ gives an error for Mg+2 below 345 bar:
 					   "Error in out$dgdT[idoit] <- dgdT : replacement has length zero"
@@ -557,12 +547,12 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 									   +    CHNOSZ_logK("CO3-2", "aq", CHNOSZ_T-Kelvin, Pressure[r][t]/bar, "IAPWS95"));
 					printf("\t T=%g, K0=%g, K1=%g, K2=%g\n",CHNOSZ_T,log(K_eq[0])/log(10.0),log(K_eq[1])/log(10.0),log(K_eq[2])/log(10.0));
 					*/
-					// subcrt(c("amorphous silica","SiO2"),c("cr","aq"),c(-1,1),T=25,P=1
-					K_eq[0] = pow(10.0,-2.713591);
-					// subcrt(c("chrysotile","SiO2","Mg+2","H2O","H+"),c("cr","aq","aq","aq","aq"),c(-1,2,3,5,-6),T=25,P=1)
-					K_eq[1] = pow(10.0,31.12534);
-					// subcrt(c("magnesite","Mg+2","CO3-2"),c("cr","aq","aq"),c(-1,1,1),T=25,P=1)
-					K_eq[2] = pow(10.0,-8.035219);
+					// subcrt(c("SiO2","SiO2"),c(-1,1),c("cr","aq"),T=0,P=1000)
+					K_eq[0] = pow(10.0,-2.96);
+					// subcrt(c("chrysotile","SiO2","Mg+2","OH-","H2O"),c(-1,2,3,6,-1),c("cr","aq","aq","aq","liq"),T=0,P=1000)
+					K_eq[1] = pow(10.0,-52);
+					// subcrt(c("MgCO3","Mg+2","CO3-2"),c(-1,1,1),c("cr","aq","aq"),T=0,P=1000)
+					K_eq[2] = pow(10.0,-6.727499);
 					/* Debug
 					 * if (r == 130 && t < 100) printf("t=%d, r=%d\n",t,r); // Debug
 					 */
@@ -572,13 +562,9 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 							/* Debug
 							 * if (r == 130 && t < 100) printf("\t Act_prod[%d]=%g, K_eq[%d]=%g\n",i,Act_prod[r][i]/1000,i,K_eq[i]);
 							 */
-							// (Act_prod in mol L-1 to scale with K, silica equation (i=0) assumes unit A/V)
-							R_diss[i] = surface_volume_ratio * k_diss[i] * 1.0 * (1-pow(Act_prod[r][i]/1000.0,Stoich_coef[i])/K_eq[i]);
-							// Arrhenius temperature scaling
-							/* Debug
-							 * if (r == 130 && t < 100) printf("\t R_diss[%d]=%g\n",i,R_diss[i]);
-							 */
-							R_diss[i] = R_diss[i] * exp(-Ea_diss[i]/(R_G*thoutput[r][t].tempk));
+							// (Act_prod in mol L-1 to scale with K, silica equation (i=0) assumes unit A/V).
+							// The Arrhenius term is equivalent to a dissociation rate constant kdiss in mol m-2 s-1.
+							R_diss[i] = surface_volume_ratio * exp(-Ea_diss[i]/(R_G*thoutput[r][t].tempk)) * 1.0 * (1-pow(Act_prod[r][i]/rhoH2ol,Stoich_coef[i])/K_eq[i]);
 							/* Debug
 							 * if (r == 130 && t < 100) printf("\t R_diss[%d]=%g with Arrhenius T scaling\n",i,R_diss[i]);
 							 */

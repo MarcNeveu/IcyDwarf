@@ -6,7 +6,7 @@ Housekeeping
 -------------------------------
 Warnings?                     1
 Messages?                     1
-Plots?                        0
+Plots?                        1
 -------------------------------
 Planet parameters
 -------------------------------
@@ -24,9 +24,9 @@ Output every... (Myr)         10
 Subroutines
 -------------------------------
 Core cracks?                  1
-	Calculate aTP?        1
-	Water alpha beta?     1
-Cryovolcanism?                1
+	Calculate aTP?        0
+	Water alpha beta?     0
+Cryovolcanism?                0
 -------------------------------
 Core crack options
 -------------------------------
@@ -34,7 +34,7 @@ Thermal mismatch?             1
 Pore water expansion?         1
 Hydration/dehydration?        1
 Dissolution/ppt?              1
-	Silica?               1
+	Silica?               0
 	Serpentine?           1
-	Carbonate?            1
+	Carbonate?            0
 
