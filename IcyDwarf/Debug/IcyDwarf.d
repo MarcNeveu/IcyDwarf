@@ -1,5 +1,5 @@
 IcyDwarf.d IcyDwarf.o: ../IcyDwarf.c ../modifdyld.h ../IcyDwarf.h \
-  ../Crack/Crack.h /Library/Frameworks/R.framework/Resources/include/R.h \
+  /Library/Frameworks/R.framework/Resources/include/R.h \
   /Library/Frameworks/R.framework/Resources/include/Rconfig.h \
   /Library/Frameworks/R.framework/Resources/include/x86_64/Rconfig.h \
   /Library/Frameworks/R.framework/Resources/include/R_ext/Arith.h \
@@ -17,10 +17,9 @@ IcyDwarf.d IcyDwarf.o: ../IcyDwarf.c ../modifdyld.h ../IcyDwarf.h \
   /Library/Frameworks/R.framework/Resources/include/Rinternals.h \
   /Library/Frameworks/R.framework/Resources/include/R_ext/PrtUtil.h \
   /Library/Frameworks/R.framework/Resources/include/Rembedded.h \
-  ../Crack/Crack_parameters.h ../Crack/Crack_grain_aTP.h \
-  ../Crack/Crack_water_CHNOSZ.h ../Crack/../CHNOSZ_commands.h \
-  ../Crack/Crack_grain_aTP.h ../Crack/Crack_plot.h \
-  ../Crack/../Graphics/Plot.h \
+  ../CHNOSZ_commands.h ../Crack/Crack.h ../Crack/../IcyDwarf.h \
+  ../Crack/Crack_parameters.h ../Crack/Crack_tables.h \
+  ../Crack/Crack_plot.h ../Crack/../Graphics/Plot.h \
   /Library/Frameworks/SDL2.framework/Versions/A/Headers/SDL.h \
   /Library/Frameworks/SDL2.framework/Versions/A/Headers/SDL_main.h \
   /Library/Frameworks/SDL2.framework/Versions/A/Headers/SDL_stdinc.h \
@@ -67,20 +66,18 @@ IcyDwarf.d IcyDwarf.o: ../IcyDwarf.c ../modifdyld.h ../IcyDwarf.h \
   /Library/Frameworks/SDL2_image.framework/Versions/A/Headers/SDL_image.h \
   /Library/Frameworks/SDL2.framework/Versions/A/Headers/SDL_version.h \
   /Library/Frameworks/SDL2.framework/Versions/A/Headers/begin_code.h \
-  ../Cryolava/Cryolava.h ../Cryolava/../Crack/Crack.h \
-  ../Cryolava/../CHNOSZ_commands.h ../Cryolava/../IcyDwarf.h \
   /Library/Frameworks/SDL2_mixer.framework/Versions/A/Headers/SDL_mixer.h \
   /Library/Frameworks/SDL2.framework/Versions/A/Headers/SDL_types.h \
   /Library/Frameworks/SDL2.framework/Versions/A/Headers/SDL_rwops.h \
   /Library/Frameworks/SDL2.framework/Versions/A/Headers/SDL_audio.h \
   /Library/Frameworks/SDL2.framework/Versions/A/Headers/SDL_endian.h \
+  ../Cryolava/Cryolava.h ../Cryolava/../Crack/Crack.h \
+  ../Cryolava/../CHNOSZ_commands.h ../Cryolava/../IcyDwarf.h \
   ../Graphics/Plot.h
 
 ../modifdyld.h:
 
 ../IcyDwarf.h:
-
-../Crack/Crack.h:
 
 /Library/Frameworks/R.framework/Resources/include/R.h:
 
@@ -118,15 +115,15 @@ IcyDwarf.d IcyDwarf.o: ../IcyDwarf.c ../modifdyld.h ../IcyDwarf.h \
 
 /Library/Frameworks/R.framework/Resources/include/Rembedded.h:
 
+../CHNOSZ_commands.h:
+
+../Crack/Crack.h:
+
+../Crack/../IcyDwarf.h:
+
 ../Crack/Crack_parameters.h:
 
-../Crack/Crack_grain_aTP.h:
-
-../Crack/Crack_water_CHNOSZ.h:
-
-../Crack/../CHNOSZ_commands.h:
-
-../Crack/Crack_grain_aTP.h:
+../Crack/Crack_tables.h:
 
 ../Crack/Crack_plot.h:
 
@@ -224,14 +221,6 @@ IcyDwarf.d IcyDwarf.o: ../IcyDwarf.c ../modifdyld.h ../IcyDwarf.h \
 
 /Library/Frameworks/SDL2.framework/Versions/A/Headers/begin_code.h:
 
-../Cryolava/Cryolava.h:
-
-../Cryolava/../Crack/Crack.h:
-
-../Cryolava/../CHNOSZ_commands.h:
-
-../Cryolava/../IcyDwarf.h:
-
 /Library/Frameworks/SDL2_mixer.framework/Versions/A/Headers/SDL_mixer.h:
 
 /Library/Frameworks/SDL2.framework/Versions/A/Headers/SDL_types.h:
@@ -241,5 +230,13 @@ IcyDwarf.d IcyDwarf.o: ../IcyDwarf.c ../modifdyld.h ../IcyDwarf.h \
 /Library/Frameworks/SDL2.framework/Versions/A/Headers/SDL_audio.h:
 
 /Library/Frameworks/SDL2.framework/Versions/A/Headers/SDL_endian.h:
+
+../Cryolava/Cryolava.h:
+
+../Cryolava/../Crack/Crack.h:
+
+../Cryolava/../CHNOSZ_commands.h:
+
+../Cryolava/../IcyDwarf.h:
 
 ../Graphics/Plot.h:

@@ -11,11 +11,12 @@
 #ifndef PLOT_H_
 #define PLOT_H_
 
-#include <SDL.h>
-#include <SDL_image.h>
-
 #include <stdio.h>
 #include <string.h>
+
+#include <SDL.h>
+#include <SDL_image.h>
+#include <SDL_mixer.h>
 
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 600;

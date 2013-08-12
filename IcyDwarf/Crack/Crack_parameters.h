@@ -58,12 +58,14 @@
 // Table sizes
 #define int_size 1000         // Number of datapoints in the integral table
 #define int_steps 10000       // Number of integration steps
-#define sizeaTP 100           // Size of the square a(deltaT,P) table
+#define sizeaTP 2           // Size of the square a(deltaT,P) table
 #define deltaT_step 20.0      // deltaT intervals at which a(deltaT,P) is calculated
 #define P_step 2.5e6          // P intervals at which a(deltaT,P) was calculated in aTP.dat
-#define delta_tempk 20.0    // 261 to 2241 K, every 20 K
-#define delta_P_bar 25.0    // 0.1 to 2475.1 bar, every 25 bar
-#define tempk_min 261.0     // K
-#define P_bar_min 0.1       // bar
+#define delta_tempk 20.0      // 261 to 2241 K, every 20 K
+#define delta_P_bar 25.0      // 0.1 to 2475.1 bar, every 25 bar
+#define tempk_min 261.0       // K
+#define P_bar_min 0.1         // bar
+#define tempk_min_species 261.0 // K
+#define delta_tempk_species 7.0 // K
 
 #endif /* CRACK_PARAMETERS_H_ */

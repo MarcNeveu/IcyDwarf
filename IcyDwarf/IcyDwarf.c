@@ -21,13 +21,10 @@
 
 #include "IcyDwarf.h"
 #include "Crack/Crack.h"
-#include "Crack/Crack_grain_aTP.h"
+#include "Crack/Crack_tables.h"
 #include "Crack/Crack_plot.h"
 #include "Cryolava/Cryolava.h"
 
-#include <SDL.h>
-#include <SDL_image.h>
-#include <SDL_mixer.h>
 #include "Graphics/Plot.h"
 
 int main(int argc, char *argv[]){
@@ -35,6 +32,8 @@ int main(int argc, char *argv[]){
 	// Housekeeping inputs
 	int warnings = 0;                  // Display warnings
 	int msgout = 0;                    // Display messages
+    int plot_on = 0;  				   // Plots
+    int NT_output = 0;                 // Timestep for writing output
 
 	// Planet inputs
     float rho_p = 0.0;                 // Planetary density
@@ -48,11 +47,11 @@ int main(int argc, char *argv[]){
     float timestep = 0.0;              // Time step of the sim (Gyr)
 
     // Call specific subroutines
+    int calculate_cracking_depth = 0;  // Calculate depth of cracking
     int calculate_aTP = 0;             // Generate a table of flaw size that maximize stress (Vance et al. 2007)
     int calculate_alpha_beta = 0;      // Calculate thermal expansivity and compressibility tables
-    int calculate_cracking_depth = 0;  // Calculate depth of cracking
+    int calculate_crack_species = 0;   // Calculate equilibrium constants of species that dissolve or precipitate
     int calculate_cryolava = 0;        // Calculate gas-driven exsolution
-    int plot_on = 0;  				   // Plots
 
     // Crack subroutine inputs
     int *crack_input = (int*) malloc(5*sizeof(int));
@@ -61,7 +60,7 @@ int main(int argc, char *argv[]){
 	int r = 0;
 	int i = 0;
 
-	float *input = (float*) malloc(22*sizeof(float));
+	float *input = (float*) malloc(23*sizeof(float));
 	if (input == NULL) printf("IcyDwarf: Not enough memory to create input[18]\n");
 
 	//-------------------------------------------------------------------
@@ -95,24 +94,25 @@ int main(int argc, char *argv[]){
 	    printf("IcyDwarf: Couldn't retrieve executable directory. Buffer too small; need size %u\n", size);
 
 	input = icy_dwarf_input (input, path);
-	i = 0;
-	warnings = (int) input[i], i++;
-	msgout = (int) input[i], i++;
-	plot_on = (int) input[i], i++;
-	rho_p = input[i], i++;
-	r_p = input[i], i++;
-	nh3 = input[i], i++;
-	tsurf = input[i], i++;
-	NR = input[i], i++;
-	NT = floor(input[i]/input[i+1])+1, i++;
-	timestep = (float) input[i]/1000.0, i++;
-	calculate_cracking_depth = (int) input[i], i++;
-	calculate_aTP = (int) input[i], i++;
-	calculate_alpha_beta = (int) input[i], i++;
-	calculate_cryolava = (int) input[i], i++;
-	for (i=14;i<18;i++) crack_input[i-14] = (int) input[i];
-	for (i=18;i<21;i++) crack_species[i-18] = (int) input[i];
-	i = 0;
+	warnings = (int) input[0];
+	msgout = (int) input[1];
+	plot_on = (int) input[2];
+	rho_p = input[3];
+	r_p = input[4];
+	nh3 = input[5];
+	tsurf = input[6];
+	NR = input[7];
+	// timestep = (float) input[9]/1000.0;
+	timestep = 10.0/1000.0;
+	NT = floor(input[8]/(timestep*1000.0))+1;
+	NT_output = floor(input[8]/input[9])+1;
+	calculate_cracking_depth = (int) input[10];
+	calculate_aTP = (int) input[11];
+	calculate_alpha_beta = (int) input[12];
+	calculate_crack_species = (int) input[13];
+	calculate_cryolava = (int) input[14];
+	for (i=15;i<19;i++) crack_input[i-15] = (int) input[i];
+	for (i=19;i<22;i++) crack_species[i-19] = (int) input[i];
 
 	//-------------------------------------------------------------------
 	// Read thermal output
@@ -142,9 +142,15 @@ int main(int argc, char *argv[]){
 		printf("\n");
 	}
 
+	if (calculate_crack_species == 1) {
+		printf("Calculating log K for crack species using CHNOSZ...\n");
+		Crack_species_CHNOSZ(argc, argv, path, warnings, msgout);
+		printf("\n");
+	}
+
 	if (calculate_cracking_depth == 1) {
 		printf("Calculating cracking depth...\n");
-		Crack(argc, argv, path, NR, NT, r_p, timestep, rho_p, thoutput, warnings, msgout,
+		Crack(argc, argv, path, NR, NT, r_p, timestep, NT_output, rho_p, thoutput, warnings, msgout,
 				crack_input, crack_species);
 		printf("\n");
 	}
@@ -164,7 +170,7 @@ int main(int argc, char *argv[]){
 	//-------------------------------------------------------------------
 
 	if (plot_on == 1) {
-		Crack_plot (path, NR, NT, timestep, r_p, thoutput, warnings, msgout);
+		Crack_plot (path, NR, NT, timestep, NT_output, r_p, thoutput, warnings, msgout);
 	}
 
 	//-------------------------------------------------------------------

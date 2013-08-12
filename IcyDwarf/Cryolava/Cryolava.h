@@ -90,19 +90,14 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 	double dX = 0.0;                   // Increment by which root search interval was narrowed
 	double dXold = 0.0;
 
-	double **Pressure = (double**) malloc(NR*sizeof(double*));     // Pressure in Pa
-	if (Pressure == NULL) printf("Crack: Not enough memory to create Pressure[NR][NT]\n");
-	for (r=0;r<NR;r++) {
-		Pressure[r] = (double*) malloc(NT*sizeof(double));
-		if (Pressure[r] == NULL) printf("Crack: Not enough memory to create Pressure[NR][NT]\n");
-	}
-	Pressure = calculate_pressure(Pressure,NR,NT,thoutput);        // Calculate pressures
+	double *Pressure = (double*) malloc(NR*sizeof(double));     // Pressure in Pa
+	if (Pressure == NULL) printf("Crack: Not enough memory to create Pressure[NR]\n");
 
-	float *Mliq = (float*) malloc(NT*sizeof(float));               // Mliq[NT] in kg
-	if (Mliq == NULL) printf("Crack: Not enough memory to create Mliq[NT]\n");
-	Mliq = calculate_mass_liquid (Mliq,NR,NT,thoutput);            // Calculate the mass of liquid
+	float Mliq = 0.0;                                              // Mass of liquid in the planet
+	Mliq = calculate_mass_liquid (NR,NT,thoutput);                 // Calculate the mass of liquid
 
 	t = t_cryolava;
+	Pressure = calculate_pressure(Pressure,NR,t,thoutput);         // Calculate pressures
 
 	// Find the seafloor radius and get the temperature there
 	r_seafloor =  calculate_seafloor (thoutput, NR, NT, t);
@@ -111,7 +106,7 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 
 	// Find the base of the crust r_diff (default = surface, NR-2, if fully differentiated)
 	r = NR-2;
-	r_diff = NR-2;                                                      // Initialize at layer right under the surface (surface is constrained to be undiff)
+	r_diff = NR-2;                                                 // Initialize at layer right under the surface (surface is constrained to be undiff)
 	while (r>r_seafloor) {
 		if (thoutput[r][t].mrock <= 0.0) {
 			r_diff = r;
@@ -214,7 +209,7 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 
 	// Initialize abundances in the liquid layer (mol)
 	for (i=0;i<n_species_cryolava;i++) {
-		Abundances[i] = WrtH2O[i]*Mliq[t]/(Molar_mass[i]*gram);
+		Abundances[i] = WrtH2O[i]*Mliq/(Molar_mass[i]*gram);
 	}
 
 	// Use CHNOSZ to get reaction constants at given T and P
@@ -245,7 +240,7 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 					(dInt+dIntPrec)/2.0 * Minf*gram*(thoutput[i][t].radius - thoutput[i-1][t].radius)*km;
 			dIntPrec = dInt;
 		}
-		P_gas = Pressure[r_seafloor][t] - Pintegral;
+		P_gas = Pressure[r_seafloor] - Pintegral;
 		Pintegral = 0.0;
 		dInt = 0.0;
 		dIntPrec = 0.0;
@@ -254,10 +249,10 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 	    // Otherwise, m_i and P_i are simply given by P_i = P and K_i = m_i/P_i regardless of the bulk abundances.
 	    // (Alternatively, A_i determine m_i and P_i are given by K_i = m_i/P_i, but one constraint is still lifted, since X_VAP = 0.)
 
-		// Use CHNOSZ to get reaction constants at given T and P
+		// Use CHNOSZ to get reaction constants at given T and P (P is P in ice below crust Å P in the water column)
 		for (i=0;i<n_species_cryolava;i++) {
-			logK_reactant = CHNOSZ_logK(Species[i], "g", CHNOSZ_T-Kelvin, Pressure[r][t]/bar, "IAPWS95");
-			logK_product = CHNOSZ_logK(Species[i], "aq", CHNOSZ_T-Kelvin, Pressure[r][t]/bar, "IAPWS95");
+			logK_reactant = CHNOSZ_logK(Species[i], "g", CHNOSZ_T-Kelvin, Pressure[r]/bar, "IAPWS95");
+			logK_product = CHNOSZ_logK(Species[i], "aq", CHNOSZ_T-Kelvin, Pressure[r]/bar, "IAPWS95");
 			K_rxn[i] = pow(10,-1.0*logK_reactant + 1.0*logK_product);
 			if (!(K_rxn[i] >=0)) printf("Cryolava: Error calculating K_rxn[%d]=%g at t=%d, r=%d\n",i,K_rxn[i],t,r);
 		}
@@ -277,8 +272,8 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 
 		// Ensure that f(X_INF)<0 and f(X_SUP)>0
 
-		f_inf = f(P_gas/bar, Mliq[t], Abundances, K_rxn, X_INF);
-		f_sup = f(P_gas/bar, Mliq[t], Abundances, K_rxn, X_SUP);
+		f_inf = f(P_gas/bar, Mliq, Abundances, K_rxn, X_INF);
+		f_sup = f(P_gas/bar, Mliq, Abundances, K_rxn, X_SUP);
 
 		if (f_inf*f_sup > 0.0) {                             // f_inf and f_sup have same sign
 			// printf("Cryolava: Choose a different X_INF than %g, f(X_INF)=%g and/or X_SUP than %g, f(X_SUP)=%g for the root finding algorithm\n",X_INF,f_inf,X_SUP,f_sup);
@@ -296,8 +291,8 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 			dXold = fabs(X_INF-X_SUP);                           // Initialize the "stepsize before last"
 			dX = dXold;                                          // Initialize the last stepsize
 
-			f_x = f(P_gas/bar, Mliq[t], Abundances, K_rxn, X_VAP);
-			f_prime_x = f(P_gas/bar, Mliq[t], Abundances, K_rxn, X_VAP);
+			f_x = f(P_gas/bar, Mliq, Abundances, K_rxn, X_VAP);
+			f_prime_x = f(P_gas/bar, Mliq, Abundances, K_rxn, X_VAP);
 
 			// Loop over allowed iterations to find X_VAP that is a root of f
 			n_iter = 0;
@@ -316,8 +311,8 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 				}
 
 				// Calculate updated f and f'
-				f_x = f(P_gas/bar, Mliq[t], Abundances, K_rxn, X_VAP);
-				f_prime_x = f(P_gas/bar, Mliq[t], Abundances, K_rxn, X_VAP);
+				f_x = f(P_gas/bar, Mliq, Abundances, K_rxn, X_VAP);
+				f_prime_x = f(P_gas/bar, Mliq, Abundances, K_rxn, X_VAP);
 
 				if (f_x < 0.0) X_INF = X_VAP;                       // Maintain the bracket on the root
 				else X_SUP = X_VAP;
@@ -354,7 +349,7 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 
 		// Solve each chemical partition equation
 		for (i=0;i<n_species_cryolava;i++) {
-			Molalities[r][i] = Abundances[i] / (Mliq[t]*(1.0 + X_VAP/K_rxn[i]));
+			Molalities[r][i] = Abundances[i] / (Mliq*(1.0 + X_VAP/K_rxn[i]));
 			Partial_P[r][i] = Molalities[r][i] / K_rxn[i] * bar;        // m/K is in bar, m/K*bar is in Pa
 		}
 	}
@@ -370,24 +365,20 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 		}
 	}
 
-	write_output (n_species_cryolava, NR-r_seafloor, Molalities, path, "Cryolava/Molalities.txt");
-	write_output (n_species_cryolava, NR-r_seafloor, Partial_P, path, "Cryolava/Partial_P.txt");
-	write_output (6, NR-r_seafloor, x_vap, path, "Cryolava/x_vap.txt");
+	write_output (n_species_cryolava, NR-r_seafloor, Molalities, path, "Outputs/Cryolava_molalities.txt");
+	write_output (n_species_cryolava, NR-r_seafloor, Partial_P, path, "Outputs/Cryolava_partialP.txt");
+	write_output (6, NR-r_seafloor, x_vap, path, "Outputs/Cryolava_xvap.txt");
 
 	//-------------------------------------------------------------------
 	//                           Free mallocs
 	//-------------------------------------------------------------------
 
-	for (r=0;r<NR;r++) {
-		free(Pressure[r]);
-	}
 	for (r=0;r<NR-r_seafloor;r++) {
 		free(Molalities[r]);
 		free(Partial_P[r]);
 		free(x_vap[r]);
 	}
 	free(Pressure);
-	free(Mliq);
 	free(Molar_mass);
 	free(WrtH2O);
 	free(Abundances);
@@ -405,10 +396,10 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 	if (r_diff < NR-2) printf(" Crust starts at R_diff = %g km\n",r_diff*r_p/NR);
 	else printf(" No crust\n");
 
-	printf("\nOutput successfully generated in IcyDwarf/Cryolava/ directory:\n");
-	printf("1. Molalities vs. P_gas at t=%d in mol kg-1: Molalities.txt\n",t);
-	printf("2. Partial pressures vs. P_gas at t=%d in bar: Partial_P.txt\n",t);
-	printf("3. Volumic vapor fraction x_vap vs. P_gas at t=%d: x_vap.txt\n",t);
+	printf("\nOutputs successfully generated in IcyDwarf/Outputs/ directory:\n");
+	printf("1. Molalities vs. P_gas at t=%d in mol kg-1: Cryolava_molalities.txt\n",t);
+	printf("2. Partial pressures vs. P_gas at t=%d in bar: Cryolava_partialP.txt\n",t);
+	printf("3. Volumic vapor fraction x_vap vs. P_gas at t=%d: Cryolava_xvap.txt\n",t);
 
 	return 0;
 }

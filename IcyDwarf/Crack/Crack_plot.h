@@ -17,9 +17,9 @@
 
 #include "../Graphics/Plot.h"
 
-int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, thermalout **thoutput, int warnings, int msgout);
+int Crack_plot (char path[1024], int NR, int NT, float timestep, int NT_output, float r_p, thermalout **thoutput, int warnings, int msgout);
 
-int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, thermalout **thoutput, int warnings, int msgout) {
+int Crack_plot (char path[1024], int NR, int NT, float timestep, int NT_output, float r_p, thermalout **thoutput, int warnings, int msgout) {
 
 	float total_time = NT*timestep;
 	int r = 0;
@@ -30,22 +30,22 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 //-------------------------------------------------------------------
 
 	// Read the Crack file
-	float **Crack = (float**) malloc(NR*sizeof(float*));       // Crack[NR][NT], cracked zone
-	if (Crack == NULL) printf("Crack: Not enough memory to create Crack[NR][NT]\n");
-	for (r=0;r<NR;r++) {
-		Crack[r] = (float*) malloc(NT*sizeof(float));
-		if (Crack[r] == NULL) printf("Crack: Not enough memory to create Crack[NR][NT]\n");
+	float **Crack = (float**) malloc(NT_output*sizeof(float*));       // Crack[NR][NT_output], cracked zone
+	if (Crack == NULL) printf("Crack: Not enough memory to create Crack[NR][NT_output]\n");
+	for (t=0;t<NT_output;t++) {
+		Crack[t] = (float*) malloc(NR*sizeof(float));
+		if (Crack[t] == NULL) printf("Crack: Not enough memory to create Crack[NR][NT_output]\n");
 	}
-	Crack = read_input (NT, NR, Crack, path, "Crack/Crack.txt");
+	Crack = read_input (NR, NT_output, Crack, path, "Outputs/Crack.txt");
 
 	// Read the W/R file
-	float **WRratio = (float**) malloc(NT*sizeof(float*));             // WRratio[NT][2]
-	if (WRratio == NULL) printf("Crack: Not enough memory to create WRratio[NT][2]\n");
-	for (t=0;t<NT;t++) {
+	float **WRratio = (float**) malloc(NT_output*sizeof(float*));             // WRratio[NT_output][2]
+	if (WRratio == NULL) printf("Crack: Not enough memory to create WRratio[NT_output][2]\n");
+	for (t=0;t<NT_output;t++) {
 		WRratio[t] = (float*) malloc(2*sizeof(float));
-		if (WRratio[t] == NULL) printf("Crack: Not enough memory to create WRratio[NT][2]\n");
+		if (WRratio[t] == NULL) printf("Crack: Not enough memory to create WRratio[NT_output][2]\n");
 	}
-	WRratio = read_input (2, NT, WRratio, path, "Crack/WR_ratio.txt");
+	WRratio = read_input (2, NT_output, WRratio, path, "Outputs/Crack_WRratio.txt");
 
 //-------------------------------------------------------------------
 //           Launch Sample DirectMedia Layer (SDL) display
@@ -202,57 +202,57 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 	int min_depth = 0;
 	int max_depth = NR;
 
-	float **Crack_depth = (float**) malloc(NT*sizeof(float*));         // Crack_depth[NT][2]
+	float **Crack_depth = (float**) malloc(NT_output*sizeof(float*));         // Crack_depth[NT_output][2]
 	                                                                   // Used for the subseafloor zoom graphics
-	if (Crack_depth == NULL) printf("Crack: Not enough memory to create Crack_depth[NT][2]\n");
-	for (t=0;t<NT;t++) {
+	if (Crack_depth == NULL) printf("Crack: Not enough memory to create Crack_depth[NT_output][2]\n");
+	for (t=0;t<NT_output;t++) {
 		Crack_depth[t] = (float*) malloc(2*sizeof(float));
-		if (Crack_depth[t] == NULL) printf("Crack: Not enough memory to create Crack_depth[NT][2]\n");
+		if (Crack_depth[t] == NULL) printf("Crack: Not enough memory to create Crack_depth[NT_output][2]\n");
 	}
 
-	for (t=0;t<NT;t++) {
+	for (t=0;t<NT_output;t++) {
 		Crack_depth[t][0] = 0.0, Crack_depth[t][1] = 0.0;
 	}
 
-	for (t=0;t<NT;t++) {
+	for (t=0;t<NT_output;t++) {
 		for (r=0;r<NR;r++) {
 			// Cooling cracks in white
-			if (Crack[r][t] == 1.0) {
+			if (Crack[t][r] == 1.0) {
 				pixmem32 = (Uint32*) crack_time->pixels + (crack_time->h - r)*crack_time->w + t;
 				*pixmem32 = white_alpha;
 			}
 			// Heating cracks in red
-			if (Crack[r][t] == 2.0) {
+			if (Crack[t][r] == 2.0) {
 				pixmem32 = (Uint32*) crack_time->pixels + (crack_time->h - r)*crack_time->w + t;
 				*pixmem32 = red_alpha;
 			}
 			// Hydration cracks in blue
-			if (Crack[r][t] == 3.0) {
+			if (Crack[t][r] == 3.0) {
 				pixmem32 = (Uint32*) crack_time->pixels + (crack_time->h - r)*crack_time->w + t;
 				*pixmem32 = blue_alpha;
 			}
 			// Dehydration cracks in yellow
-			if (Crack[r][t] == 4.0) {
+			if (Crack[t][r] == 4.0) {
 				pixmem32 = (Uint32*) crack_time->pixels + (crack_time->h - r)*crack_time->w + t;
 				*pixmem32 = orange_alpha;
 			}
 			// Pore dilation cracks in purple
-			if (Crack[r][t] == 5.0) {
+			if (Crack[t][r] == 5.0) {
 				pixmem32 = (Uint32*) crack_time->pixels + (crack_time->h - r)*crack_time->w + t;
 				*pixmem32 = purple_alpha;
 			}
 			// Cracks widened by dissolution in yellow
-			if (Crack[r][t] == 6.0) {
+			if (Crack[t][r] == 6.0) {
 				pixmem32 = (Uint32*) crack_time->pixels + (crack_time->h - r)*crack_time->w + t;
 				*pixmem32 = yellow_alpha;
 			}
 			// Cracks shrunk by precipitation in light green
-			if (Crack[r][t] == 7.0) {
+			if (Crack[t][r] == 7.0) {
 				pixmem32 = (Uint32*) crack_time->pixels + (crack_time->h - r)*crack_time->w + t;
 				*pixmem32 = green_alpha;
 			}
 			// Cracks clogged by precipitation in white
-			if (Crack[r][t] == -1.0) {
+			if (Crack[t][r] == -1.0) {
 				pixmem32 = (Uint32*) crack_time->pixels + (crack_time->h - r)*crack_time->w + t;
 				*pixmem32 = light_white_alpha;
 			}
@@ -261,19 +261,19 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 
 	min_depth = (float) calculate_seafloor (thoutput, NR, NT, 500);
 	max_depth = min_depth;
-	for (t=0;t<NT;t++) {
+	for (t=0;t<NT_output;t++) {
 		for (r=0;r<NR;r++) {
-			if (Crack[r][t] > 0.0 && r<max_depth) {
+			if (Crack[t][r] > 0.0 && r<max_depth) {
 				max_depth = r;
 			}
-			if (Crack[r][t] > 0.0) {
+			if (Crack[t][r] > 0.0) {
 				Crack_depth[t][1] = Crack_depth[t][1] + 1.0*r_p/NR;
 			}
 		}
 	}
 
-	// The cracked depth goes artificially to zero at t=NT-1, so let's set it equal to that at t=NT-2
-	Crack_depth[NT-1][1] = Crack_depth[NT-2][1];
+	// The cracked depth goes artificially to zero at t=NT_output-1, so let's set it equal to that at t=NT_output-2
+	Crack_depth[NT_output-1][1] = Crack_depth[NT_output-2][1];
 
 	crack_time_tex = SDL_CreateTextureFromSurface(renderer, crack_time);
 
@@ -330,7 +330,7 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 
 	float max_ratio = 0.0;
 
-	for (t=0;t<NT;t++) {
+	for (t=0;t<NT_output;t++) {
 		if (WRratio[t][1]>max_ratio) {
 			max_ratio = WRratio[t][1];
 		}
@@ -338,7 +338,7 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 
 	Uint32 WR_ratio_color;
 
-	for (t=0;t<NT;t++) {
+	for (t=0;t<NT_output;t++) {
 		if (WRratio[t][1] != 0) {
 			for (r=0;r<(int) floor(WRratio[t][1]/max_ratio*WR->h);r++) {
 				WR_ratio_color = SDL_MapRGBA(WR->format, (Uint8) (200.0*(1.0-0.35*WRratio[t][1]/max_ratio)), (Uint8) (100.0*(1.0+0.5*WRratio[t][1]/max_ratio)), (Uint8) (255.0*WRratio[t][1]/max_ratio), 200);
@@ -576,7 +576,7 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 	SDL_Rect elapsed_percent_dest_3;
 
 	SDL_Event e;
-	t = NT-1;          // Initialize at the end of the simulation
+	t = NT_output-1;          // Initialize at the end of the simulation
 	int t_memory = t;
 	int t_init = 0;
 	int stop_clicked = 0;
@@ -591,7 +591,7 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 				// Play - Stop
 
 				if (e.button.x >= 20 && e.button.x <= 68 && e.button.y >= 511 && e.button.y <= 539) {
-					for (t=t_init;t<NT;t++) {
+					for (t=t_init;t<NT_output;t++) {
 
 						stop_clicked = 0;
 
@@ -602,21 +602,21 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 						crack_time_clip.x = 0, crack_time_clip.y = crack_time->h - min_depth;
 						crack_time_clip.w = t, crack_time_clip.h = min_depth - max_depth;
 						crack_time_dilation.x = crack_time->w - 240 - 50, crack_time_dilation.y = 87;
-						crack_time_dilation.w = floor(240.0*t/NT), crack_time_dilation.h = 120;
+						crack_time_dilation.w = floor(240.0*t/NT_output), crack_time_dilation.h = 120;
 						SDL_RenderCopy(renderer, crack_time_tex, &crack_time_clip, &crack_time_dilation);
 
 						// Resize, position, and unveil the water-rock ratio plot
 						WR_time_clip.x = 0, WR_time_clip.y = 0;
 						WR_time_clip.w = t, WR_time_clip.h = WR->h;
 						WR_time_dilation.x = WR->w - 240 - 50, WR_time_dilation.y = 341;
-						WR_time_dilation.w = floor(240.0*t/NT), WR_time_dilation.h = 105;
+						WR_time_dilation.w = floor(240.0*t/NT_output), WR_time_dilation.h = 105;
 						SDL_RenderCopy(renderer, WR_tex, &WR_time_clip, &WR_time_dilation);
 
 						// Unveil the progress bar
 						progress_bar_clip.x = 21, progress_bar_clip.y = 551;
-						progress_bar_clip.w = floor((780.0-21.0)*t/NT), progress_bar_clip.h = 15;
+						progress_bar_clip.w = floor((780.0-21.0)*t/NT_output), progress_bar_clip.h = 15;
 						progress_bar_dilation.x = 21, progress_bar_dilation.y = 551;
-						progress_bar_dilation.w = floor((780.0-21.0)*t/NT), progress_bar_dilation.h = 15;
+						progress_bar_dilation.w = floor((780.0-21.0)*t/NT_output), progress_bar_dilation.h = 15;
 						SDL_RenderCopy(renderer, progress_bar_tex, &progress_bar_clip, &progress_bar_dilation);
 
 						// Zoom on the subseafloor
@@ -629,20 +629,20 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 						// Time elapsed
 
 						elapsed_digit_1 = SDL_CreateTextureFromSurface(renderer, numbers);
-						elapsed_digit_clip_1 = ClipNumber(floor(t/100.0),18);
+						elapsed_digit_clip_1 = ClipNumber(floor(t*NT/NT_output/100.0),18);
 						elapsed_digit_dest_1.x = 625, elapsed_digit_dest_1.y = 502;
 						elapsed_digit_dest_1.w = 12, elapsed_digit_dest_1.h = 20;
 						SDL_RenderCopy(renderer, elapsed_digit_1, &elapsed_digit_clip_1, &elapsed_digit_dest_1);
 
 						elapsed_digit_2 = SDL_CreateTextureFromSurface(renderer, numbers);
-						int t_10 = floor((t-floor(t/100.0)*100.0)/10.0);
+						int t_10 = floor((t*NT/NT_output-floor(t*NT/NT_output/100.0)*100.0)/10.0);
 						elapsed_digit_clip_2 = ClipNumber(t_10,18);
 						elapsed_digit_dest_2.x = 640, elapsed_digit_dest_2.y = elapsed_digit_dest_1.y;
 						elapsed_digit_dest_2.w = 12, elapsed_digit_dest_2.h = 20;
 						SDL_RenderCopy(renderer, elapsed_digit_2, &elapsed_digit_clip_2, &elapsed_digit_dest_2);
 
 						elapsed_digit_3 = SDL_CreateTextureFromSurface(renderer, numbers);
-						int t_100 = floor(t-floor(t/100.0)*100.0-floor(t_10)*10.0);
+						int t_100 = floor(t*NT/NT_output-floor(t*NT/NT_output/100.0)*100.0-floor(t_10)*10.0);
 						elapsed_digit_clip_3 = ClipNumber(t_100,18);
 						elapsed_digit_dest_3.x = 650, elapsed_digit_dest_3.y = elapsed_digit_dest_1.y;
 						elapsed_digit_dest_3.w = 12, elapsed_digit_dest_3.h = 20;
@@ -650,7 +650,7 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 
 						// % history elapsed
 
-						percent = t/4.56;
+						percent = t*NT/NT_output/4.56;
 
 						elapsed_percent_1 = SDL_CreateTextureFromSurface(renderer, numbers);
 						elapsed_percent_clip_1 = ClipNumber(floor(percent/100.0),18);
@@ -712,7 +712,7 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 							if (e.button.x >= 76 && e.button.x <= 124 && e.button.y >= 511 && e.button.y <= 539) {
 								t_memory = t; // Memorize where we stopped
 								t_init = t;   // To start where we left off if we play again
-								t = NT;       // Exit for loop
+								t = NT_output;       // Exit for loop
 								stop_clicked = 1;
 							}
 							// If click on the bar
@@ -722,7 +722,7 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 						}
 					}
 					if (stop_clicked == 1) t = t_memory;
-					else t = NT-1, t_init = 0;
+					else t = NT_output-1, t_init = 0;
 
 				}
 
@@ -736,11 +736,11 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 
 						// Do not change t past the x edges of the bar. The y limits are to avoid the program
 						// crashing because we're out of the window.
-						if ((float) e.button.x + e.motion.xrel >= 20 && (float) e.button.x + e.motion.xrel <= 780
+						if ((float) e.button.x + e.motion.xrel >= 20 && (float) e.button.x + e.motion.xrel < 780
 								&& (float) e.button.y + e.motion.yrel > 0 && (float) e.button.y + e.motion.yrel < SCREEN_HEIGHT) {
 
 							// Adjust displays
-							t = floor(((float) e.button.x + e.motion.xrel - 20.0)/(780.0-20.0)*500.0);
+							t = floor(((float) e.button.x + e.motion.xrel - 20.0)/(780.0-20.0)*NT_output);
 
 							// Update displays
 							SDL_RenderClear(renderer);
@@ -750,21 +750,21 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 							crack_time_clip.x = 0, crack_time_clip.y = crack_time->h - min_depth;
 							crack_time_clip.w = t, crack_time_clip.h = min_depth - max_depth;
 							crack_time_dilation.x = crack_time->w - 240 - 50, crack_time_dilation.y = 87;
-							crack_time_dilation.w = floor(240.0*t/NT), crack_time_dilation.h = 120;
+							crack_time_dilation.w = floor(240.0*t/NT_output), crack_time_dilation.h = 120;
 							SDL_RenderCopy(renderer, crack_time_tex, &crack_time_clip, &crack_time_dilation);
 
 							// Resize, position, and unveil the water-rock ratio plot
 							WR_time_clip.x = 0, WR_time_clip.y = 0;
 							WR_time_clip.w = t, WR_time_clip.h = WR->h;
 							WR_time_dilation.x = WR->w - 240 - 50, WR_time_dilation.y = 341;
-							WR_time_dilation.w = floor(240.0*t/NT), WR_time_dilation.h = 105;
+							WR_time_dilation.w = floor(240.0*t/NT_output), WR_time_dilation.h = 105;
 							SDL_RenderCopy(renderer, WR_tex, &WR_time_clip, &WR_time_dilation);
 
 							// Unveil the progress bar
 							progress_bar_clip.x = 21, progress_bar_clip.y = 551;
-							progress_bar_clip.w = floor((780.0-21.0)*t/NT), progress_bar_clip.h = 15;
+							progress_bar_clip.w = floor((780.0-21.0)*t/NT_output), progress_bar_clip.h = 15;
 							progress_bar_dilation.x = 21, progress_bar_dilation.y = 551;
-							progress_bar_dilation.w = floor((780.0-21.0)*t/NT), progress_bar_dilation.h = 15;
+							progress_bar_dilation.w = floor((780.0-21.0)*t/NT_output), progress_bar_dilation.h = 15;
 							SDL_RenderCopy(renderer, progress_bar_tex, &progress_bar_clip, &progress_bar_dilation);
 
 							// Zoom on the subseafloor
@@ -777,20 +777,20 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 							// Time elapsed
 
 							elapsed_digit_1 = SDL_CreateTextureFromSurface(renderer, numbers);
-							elapsed_digit_clip_1 = ClipNumber(floor(t/100.0),18);
+							elapsed_digit_clip_1 = ClipNumber(floor(t*NT/NT_output/100.0),18);
 							elapsed_digit_dest_1.x = 625, elapsed_digit_dest_1.y = 502;
 							elapsed_digit_dest_1.w = 12, elapsed_digit_dest_1.h = 20;
 							SDL_RenderCopy(renderer, elapsed_digit_1, &elapsed_digit_clip_1, &elapsed_digit_dest_1);
 
 							elapsed_digit_2 = SDL_CreateTextureFromSurface(renderer, numbers);
-							int t_10 = floor((t-floor(t/100.0)*100.0)/10.0);
+							int t_10 = floor((t*NT/NT_output-floor(t*NT/NT_output/100.0)*100.0)/10.0);
 							elapsed_digit_clip_2 = ClipNumber(t_10,18);
 							elapsed_digit_dest_2.x = 640, elapsed_digit_dest_2.y = elapsed_digit_dest_1.y;
 							elapsed_digit_dest_2.w = 12, elapsed_digit_dest_2.h = 20;
 							SDL_RenderCopy(renderer, elapsed_digit_2, &elapsed_digit_clip_2, &elapsed_digit_dest_2);
 
 							elapsed_digit_3 = SDL_CreateTextureFromSurface(renderer, numbers);
-							int t_100 = floor(t-floor(t/100.0)*100.0-floor(t_10)*10.0);
+							int t_100 = floor(t*NT/NT_output-floor(t*NT/NT_output/100.0)*100.0-floor(t_10)*10.0);
 							elapsed_digit_clip_3 = ClipNumber(t_100,18);
 							elapsed_digit_dest_3.x = 650, elapsed_digit_dest_3.y = elapsed_digit_dest_1.y;
 							elapsed_digit_dest_3.w = 12, elapsed_digit_dest_3.h = 20;
@@ -798,7 +798,7 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 
 							// % history elapsed
 
-							percent = t/4.56;
+							percent = t*NT/NT_output/4.56;
 
 							elapsed_percent_1 = SDL_CreateTextureFromSurface(renderer, numbers);
 							elapsed_percent_clip_1 = ClipNumber(floor(percent/100.0),18);
@@ -866,21 +866,21 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 		crack_time_clip.x = 0, crack_time_clip.y = crack_time->h - min_depth;
 		crack_time_clip.w = t, crack_time_clip.h = min_depth - max_depth;
 		crack_time_dilation.x = crack_time->w - 240 - 50, crack_time_dilation.y = 87;
-		crack_time_dilation.w = floor(240.0*t/NT), crack_time_dilation.h = 120;
+		crack_time_dilation.w = floor(240.0*t/NT_output), crack_time_dilation.h = 120;
 		SDL_RenderCopy(renderer, crack_time_tex, &crack_time_clip, &crack_time_dilation);
 
 		// Resize, position, and unveil the water-rock ratio plot
 		WR_time_clip.x = 0, WR_time_clip.y = 0;
 		WR_time_clip.w = t, WR_time_clip.h = WR->h;
 		WR_time_dilation.x = WR->w - 240 - 50, WR_time_dilation.y = 341;
-		WR_time_dilation.w = floor(240.0*t/NT), WR_time_dilation.h = 105;
+		WR_time_dilation.w = floor(240.0*t/NT_output), WR_time_dilation.h = 105;
 		SDL_RenderCopy(renderer, WR_tex, &WR_time_clip, &WR_time_dilation);
 
 		// Unveil the progress bar
 		progress_bar_clip.x = 21, progress_bar_clip.y = 551;
-		progress_bar_clip.w = floor((780.0-21.0)*t/NT), progress_bar_clip.h = 15;
+		progress_bar_clip.w = floor((780.0-21.0)*t/NT_output), progress_bar_clip.h = 15;
 		progress_bar_dilation.x = 21, progress_bar_dilation.y = 551;
-		progress_bar_dilation.w = floor((780.0-21.0)*t/NT), progress_bar_dilation.h = 15;
+		progress_bar_dilation.w = floor((780.0-21.0)*t/NT_output), progress_bar_dilation.h = 15;
 		SDL_RenderCopy(renderer, progress_bar_tex, &progress_bar_clip, &progress_bar_dilation);
 
 		// Zoom on the subseafloor
@@ -893,20 +893,20 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 		// Time elapsed
 
 		elapsed_digit_1 = SDL_CreateTextureFromSurface(renderer, numbers);
-		elapsed_digit_clip_1 = ClipNumber(floor(t/100.0),18);
+		elapsed_digit_clip_1 = ClipNumber(floor(t*NT/NT_output/100.0),18);
 		elapsed_digit_dest_1.x = 625, elapsed_digit_dest_1.y = 502;
 		elapsed_digit_dest_1.w = 12, elapsed_digit_dest_1.h = 20;
 		SDL_RenderCopy(renderer, elapsed_digit_1, &elapsed_digit_clip_1, &elapsed_digit_dest_1);
 
 		elapsed_digit_2 = SDL_CreateTextureFromSurface(renderer, numbers);
-		int t_10 = floor((t-floor(t/100.0)*100.0)/10.0);
+		int t_10 = floor((t*NT/NT_output-floor(t*NT/NT_output/100.0)*100.0)/10.0);
 		elapsed_digit_clip_2 = ClipNumber(t_10,18);
 		elapsed_digit_dest_2.x = 640, elapsed_digit_dest_2.y = elapsed_digit_dest_1.y;
 		elapsed_digit_dest_2.w = 12, elapsed_digit_dest_2.h = 20;
 		SDL_RenderCopy(renderer, elapsed_digit_2, &elapsed_digit_clip_2, &elapsed_digit_dest_2);
 
 		elapsed_digit_3 = SDL_CreateTextureFromSurface(renderer, numbers);
-		int t_100 = floor(t-floor(t/100.0)*100.0-floor(t_10)*10.0);
+		int t_100 = floor(t*NT/NT_output-floor(t*NT/NT_output/100.0)*100.0-floor(t_10)*10.0);
 		elapsed_digit_clip_3 = ClipNumber(t_100,18);
 		elapsed_digit_dest_3.x = 650, elapsed_digit_dest_3.y = elapsed_digit_dest_1.y;
 		elapsed_digit_dest_3.w = 12, elapsed_digit_dest_3.h = 20;
@@ -914,7 +914,7 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 
 		// % history elapsed
 
-		percent = t/4.56;
+		percent = t*NT/NT_output/4.56;
 
 		elapsed_percent_1 = SDL_CreateTextureFromSurface(renderer, numbers);
 		elapsed_percent_clip_1 = ClipNumber(floor(percent/100.0),18);
@@ -1020,10 +1020,8 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, float r_p, ther
 	SDL_DestroyWindow(window);
 	SDL_Quit();
 
-	for (r=0;r<NR;r++) {
-		free (Crack[r]);
-	}
-	for (t=0;t<NT;t++) {
+	for (t=0;t<NT_output;t++) {
+		free (Crack[t]);
 		free (Crack_depth[t]);
 		free (WRratio[t]);
 	}
