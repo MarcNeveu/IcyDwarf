@@ -259,11 +259,11 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, int NT_output, 
 		}
 	}
 
-	min_depth = (float) calculate_seafloor (thoutput, NR, NT, 500);
+	min_depth = calculate_seafloor (thoutput, NR, NT, 500);
 	max_depth = min_depth;
 	for (t=0;t<NT_output;t++) {
 		for (r=0;r<NR;r++) {
-			if (Crack[t][r] > 0.0 && r<max_depth) {
+			if (Crack[t][r] > 0.0 && r<=max_depth) {
 				max_depth = r;
 			}
 			if (Crack[t][r] > 0.0) {

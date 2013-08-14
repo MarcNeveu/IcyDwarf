@@ -11,11 +11,11 @@
 #define CRACK_PARAMETERS_H_
 
 // Brittle/ductile transition
-#define mu_Escartin 0.3                                    // Friction coefficient of Escartin et al. 1997 (default 0.3 to 0.5)
+#define mu_Escartin 0.3                                    // Friction coefficient of Escartin et al. 1997 (default 0.3 to 0.5, Byerlee 0.85)
 #define A_flow_law 1.0e-37                                 // A of the antigorite flow law of Hilairet et al. 2007 (default 1.0e-37)
 #define Ea_flow_law 8900                                   // Activation energy of the antigorite flow law of Hilairet et al. 2007 in J (default 8900)
 #define V_flow_law 3.2e-6                                  // Activation volume of Hilairet et al. 2007 in m3 (default 3.2e-6)
-#define n_flow_law 1.1                                     // Stress exponent of Hilairet et al. 2007 (default 3.8)
+#define n_flow_law 3.1                                     // Stress exponent of Hilairet et al. 2007 (default 3.8)
 #define strain_rate 1.0/(timestep*Gyr2sec)                 // Flow law strain rate in s-1
 
 // Thermal expansion/contraction mismatch (Vance et al. 2007)
@@ -58,7 +58,7 @@
 // Table sizes
 #define int_size 1000         // Number of datapoints in the integral table
 #define int_steps 10000       // Number of integration steps
-#define sizeaTP 2           // Size of the square a(deltaT,P) table
+#define sizeaTP 100           // Size of the square a(deltaT,P) table
 #define deltaT_step 20.0      // deltaT intervals at which a(deltaT,P) is calculated
 #define P_step 2.5e6          // P intervals at which a(deltaT,P) was calculated in aTP.dat
 #define delta_tempk 20.0      // 261 to 2241 K, every 20 K

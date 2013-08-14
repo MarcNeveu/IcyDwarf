@@ -325,7 +325,6 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 							 * exp((Ea_flow_law + Pressure[r]*V_flow_law)/(n_flow_law*R_G*thoutput[r][t].tempk));
 			if (Brittle_strength <= Ductile_strength) Rock_strength = Brittle_strength;
 			else Rock_strength = Ductile_strength;
-			// Debug if (t==456) printf("r=%d, Brittle strength=%g, ductile strength=%g, Rock strength=%g\n",r,Brittle_strength,Ductile_strength,Rock_strength);
 
 			//-------------------------------------------------------------------
 			//  Calculate heating/cooling rate in K/Gyr in each layer over time
@@ -445,9 +444,13 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 						tempk_int = look_up (thoutput[r][t].tempk, (float) tempk_min, delta_tempk, sizeaTP, warnings);
 						P_int = look_up (Pressure[r]/bar, (float) P_bar_min, delta_P_bar, sizeaTP, warnings);
 
-						// Calculate fluid pressure, including geometric effects (Norton 1984)
-						// P_fluid[r][t] = Pressure[r][t] + alpha_var/beta_var*bar*(thoutput[r][t].tempk-thoutput[r][t-1].tempk)*(1+2*aspect_ratio);
-						P_fluid = Pressure[r] + alpha[tempk_int][P_int]/beta[tempk_int][P_int]*bar*(thoutput[r][t].tempk-thoutput[r][t-1].tempk)*(1.0+2.0*aspect_ratio);
+						// Calculate fluid pressure, including geometric effects (Le Ravalec & GuŽguen 1994)
+						P_fluid = Pressure[r] + alpha[tempk_int][P_int] * (thoutput[r][t].tempk-thoutput[r][t-1].tempk)
+										/ (beta[tempk_int][P_int]/bar + aspect_ratio*3.0*(1.0-2.0*nu_Poisson)/E_Young)
+										* (1+2*aspect_ratio);
+						// Version of Norton (1984) without elastic relaxation
+						// P_fluid = Pressure[r] + alpha[tempk_int][P_int] * (thoutput[r][t].tempk-thoutput[r][t-1].tempk)
+						//				/ (beta[tempk_int][P_int]/bar) * (1+2*aspect_ratio);
 					}
 				}
 			}
