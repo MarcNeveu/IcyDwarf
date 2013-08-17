@@ -6,7 +6,7 @@ Housekeeping
 -------------------------------
 Warnings?                     0
 Messages?                     1
-Plots?                        0
+Plots?                        1
 -------------------------------
 Planet parameters
 -------------------------------
@@ -32,10 +32,10 @@ Cryovolcanism?                0
 Core crack options
 -------------------------------
 Thermal mismatch?             1
-Pore water expansion?         1
-Hydration/dehydration?        1
+Pore water expansion?         0
+Hydration/dehydration?        0
 Dissolution/ppt?              0
-	Silica?               1
+	Silica?               0
 	Serpentine?           1
-	Carbonate?            1
+	Carbonate?            0
 

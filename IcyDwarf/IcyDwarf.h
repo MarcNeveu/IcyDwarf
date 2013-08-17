@@ -34,7 +34,7 @@
 #define rhoAdhs 0.985e3                                    // Density of ADH(s)
 #define rhoNh3l 0.74e3                                     // Density of NH3(l)
 #define rhoHydr 2.35e3                                     // Density of hydrated rock
-#define tempk_dehydration 800.0                            // Dehydration temperature
+#define tempk_dehydration 730.0                            // Dehydration temperature (Castillo-Rogez and McCord 2010)
 #define CHNOSZ_T_MIN 235.0                                 // Minimum temperature for the subcrt() routine of CHNOSZ to work
                                                            // Default: 235 K (Cryolava), 245 K (Crack, P>200 bar)
 typedef struct {
@@ -181,15 +181,15 @@ int calculate_seafloor (thermalout **thoutput, int NR, int NT, int t) {
 	int r_seafloor = NR-1;
 	int r = 0;
 
-	if (t >= NT) printf("IcyDwarf: t>NT\n");
+	if (t >= NT) printf("IcyDwarf: t>=NT\n");
 	while (r<NR) {
 		if (thoutput[r][t].mrock <= 0.0) {
-			r_seafloor = r;
+			r_seafloor = r-1; // Because the last layer is always only partially filled with rock
 			break;
 		}
 		r++;
 	}
-	if (r == NR) printf("IcyDwarf: Seafloor not found\n");
+	if (r == NR) printf("IcyDwarf: Seafloor not found at t=%d\n",t);
 return r_seafloor;
 }
 

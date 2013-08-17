@@ -154,7 +154,8 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 	// -----  ------------------------
 	// No mallocs here, because we keep n_species small
 	float R_diss[n_species_crack];                               // Dissolution/precipitation rate in mol m-3 s-1
-	float Stoich_coef[n_species_crack];                          // Stoichiometric coefficient of the dissolution product(s)
+	float nu_prod[n_species_crack];                              // Stoichiometric coefficient of the dissolution product(s)
+	float mu_Xu[n_species_crack];                                // Exponent of Q/K in kinetic rate law (Xu and Pruess 2001)
 	double K_eq[n_species_crack];                                // Equilibrium constant, dimensionless
 	float Ea_diss[n_species_crack];                              // Activation energy of dissolution/precipitation in J mol-1
 	float Molar_volume[n_species_crack];                         // Molar volume in m3 mol-1
@@ -184,18 +185,18 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 		if (magnesite[i] == NULL) printf("Crack: Not enough memory to create magnesite[sizeaTP][sizeaTP]\n");
 	}
 
-	float **Act_prod = (float**) malloc(NR*sizeof(float*));      // Activity of the products, dimensionless or (mol m-3) if << salinity
-	if (Act_prod == NULL) printf("Crack: Not enough memory to generate Act_prod[NR][n_species]\n");
+	float **Act = (float**) malloc(NR*sizeof(float*));            // Activity of the products, dimensionless or (mol m-3) if << salinity
+	if (Act == NULL) printf("Crack: Not enough memory to generate Act[NR][n_species]\n");
 	for (r=0;r<NR;r++) {
-		Act_prod[r] = (float*) malloc(n_species_crack*sizeof(float));
-		if (Act_prod[r] == NULL) printf("Crack: Not enough memory to generate Act_prod[NR][n_species]\n");
+		Act[r] = (float*) malloc(n_species_crack*sizeof(float));
+		if (Act[r] == NULL) printf("Crack: Not enough memory to generate Act[NR][n_species]\n");
 	}
 
-	float **Act_prod_old = (float**) malloc(NR*sizeof(float*));  // Activity of the products at the previous step
-	if (Act_prod_old == NULL) printf("Crack: Not enough memory to generate Act_prod_old[NR][n_species]\n");
+	float **Act_old = (float**) malloc(NR*sizeof(float*));        // Activity of the products at the previous step
+	if (Act_old == NULL) printf("Crack: Not enough memory to generate Act_old[NR][n_species]\n");
 	for (r=0;r<NR;r++) {
-		Act_prod_old[r] = (float*) malloc(n_species_crack*sizeof(float));
-		if (Act_prod_old[r] == NULL) printf("Crack: Not enough memory to generate Act_prod_old[NR][n_species]\n");
+		Act_old[r] = (float*) malloc(n_species_crack*sizeof(float));
+		if (Act_old[r] == NULL) printf("Crack: Not enough memory to generate Act_old[NR][n_species]\n");
 	}
 
 	// Zero all the matrices
@@ -222,8 +223,8 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 		K_eq[i] = 0.0;
 		Molar_volume[i] = 0.0;
 		for (r=0;r<NR;r++) {
-			Act_prod[r][i] = 0.0;
-			Act_prod_old[r][i] = 0.0;
+			Act[r][i] = 0.0;
+			Act_old[r][i] = 0.0;
 		}
 	}
 
@@ -259,15 +260,18 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 	if (dissolution_precipitation == 1) {
 		// Silica: Equations (55) of Rimstidt and Barnes 1980 or (7-8) of Bolton et al. 1997 (porosity not included)
 		// mol m-3 s-1 =no dim (scaled to 1 m-1)*mol L-1 s-1*nd*     no dim (=nd)
-		Stoich_coef[0] = 1.0;
+		mu_Xu[0] = 1.0;
 
 		// Serpentine: Exponent of Q/K remains 1 even though Q = a_silica^2 * a_Mg+2^3 / a_H+^6 = a_solutes^(5/6)
 		// because many other stoichiometries are possible with serpentine.
-		Stoich_coef[1] = 1.0;
+		mu_Xu[1] = 1.0;
 
 		// Carbonate: Pokrovski and Schott 1999 suggest (Q/K)^4, which makes sense because Q = a_Mg+2^2 * a_CO3-2^2
-		Stoich_coef[2] = 4.0;
+		mu_Xu[2] = 4.0;
 
+		nu_prod[0] = 1.0;                                          // SiO2 only product
+		nu_prod[1] = 11.0;										   // 2 SiO2, 3 Mg+2, 6 OH-
+		nu_prod[2] = 2.0;										   // 1 Mg+2, 1 CO3-2
 		Ea_diss[0] = Ea_silica;                                    // Rimstidt and Barnes (1980)
 		Ea_diss[1] = Ea_chrysotile;                                // Thomassin et al. (1977)
 		Ea_diss[2] = Ea_magnesite;                                 // Valid for pH 5.4, but decreases with pH (Pokrovsky et al. 2009)
@@ -406,15 +410,15 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 					if (thoutput[r][t].tempk < tempk_dehydration) { // Hydration
 						d_crack_size = - 2.0*(pow((rhoRock/rhoHydr),0.333) - 1.0) * hydration_rate * timestep;
 						if (Crack_size + d_crack_size < 0.0) {
-							P_hydr = E_Young*(-d_crack_size-Crack_size)/(2.0*hydration_rate*timestep); // Residual rock swell builds up stresses
+							P_hydr = E_Young*(-d_crack_size-Crack_size)/(hydration_rate*timestep); // Residual rock swell builds up stresses
 							Crack_size = 0.0;          // Crack closes completely
 						}
 						else {
 							P_hydr = 0.0;
 							Crack_size = Crack_size + d_crack_size;
 						}
-						// Debug if (t < 150) printf("t=%d, r=%d, Old crack size=%g, Crack_size=%g, d_crack_size=%g, P_hydr=%g\n",
-						// t,r,Crack_size_hydr_old,Crack_size[r][t],d_crack_size,P_hydr[r][t]);
+						// Debug printf("t=%d, r=%d, Old crack size=%g, Crack_size=%g, d_crack_size=%g, P_hydr=%g\n",
+						// t,r,Crack_size_hydr_old,Crack_size,d_crack_size,P_hydr);
 					}
 					Crack_size_mem = Crack_size;
 					Hydrated[r] = 1;
@@ -464,15 +468,15 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 			 */
 
 			if (dissolution_precipitation == 1) {
-
+				timestep = timestep/1.0e6;
 				// Calculate dissolution/precipitation only where there are cracks
 				if (Crack[r] > 0.0 && Hydrated[r] > 0) {
 
 					// Initialize crack size
 					Crack_size = smallest_crack_size;       // I guess because smallest_crack_size is a #define, the code adds a residual 4.74e-11.
-					                                              // No changes bigger than that residual will trigger a change in the cracking.
+					                                        // No changes bigger than that residual will trigger a change in the cracking.
 					if (hydration_dehydration == 1) {
-						if (Crack_size_mem > 0.0) { // Check crack size after hydration cracking calculations
+						if (Crack_size_mem > 0.0) {         // Check crack size after hydration cracking calculations
 							Crack_size = Crack_size_mem;
 						}
 					}
@@ -496,69 +500,60 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 					// subcrt(c("MgCO3","Mg+2","CO3-2"),c(-1,1,1),c("cr","aq","aq"))
 					K_eq[2] = pow(10.0,magnesite[tempk_int][P_int]);
 
-					/* Debug
-					 * if (r == 130 && t < 100) printf("t=%d, r=%d\n",t,r); // Debug
-					 */
+					// if (r == 130 && t < 100) printf("t=%d, r=%d\n",t,r); // Debug
+
 					for (i=0;i<n_species_crack;i++) {                                    // Include whichever species are needed
 						if (crack_species[i] > 0) {
-							Act_prod[r][i] = Act_prod_old[r][i];
-							/* Debug
-							 * if (r == 130 && t < 100) printf("\t Act_prod[%d]=%g, K_eq[%d]=%g\n",i,Act_prod[r][i]/1000,i,K_eq[i]);
-							 */
+							Act[r][i] = Act_old[r][i];
+							// if (r == 130 && t < 100) printf("\t Act[%d]=%g, Q[%d]=%g, K_eq[%d]=%g\n",i,Act[r][i]/rhoH2ol,i,pow(Act[r][i]/rhoH2ol,nu_prod[i]),i,K_eq[i]); // Debug
+
 							// (Act_prod in mol L-1 to scale with K, silica equation (i=0) assumes unit A/V).
 							// The Arrhenius term is equivalent to a dissociation rate constant kdiss in mol m-2 s-1.
-							R_diss[i] = surface_volume_ratio * exp(-Ea_diss[i]/(R_G*thoutput[r][t].tempk)) * 1.0 * (1-pow(Act_prod[r][i]/rhoH2ol,Stoich_coef[i])/K_eq[i]);
-							/* Debug
-							 * if (r == 130 && t < 100) printf("\t R_diss[%d]=%g\n",i,R_diss[i]);
-							 */
+							R_diss[i] = surface_volume_ratio * exp(-Ea_diss[i]/(R_G*thoutput[r][t].tempk)) * 1.0 * (1-pow( pow(Act[r][i]/rhoH2ol,nu_prod[i])/K_eq[i], mu_Xu[i]));
+							// if (r == 130 && t < 100) printf("\t R_diss[%d]=%g\n",i,R_diss[i]); // Debug
+
 							// Update crack size (equation 61 of Rimstidt and Barnes 1980, ends up being independent of A/V)
 							// and update Act_prod[r][i] (mol m-3)
-							if (-Stoich_coef[i]*R_diss[i]*timestep*Gyr2sec > Act_prod[r][i]) {  // Everything precipitates
-								/* Debug
-								 * if (r == 130 && t < 100) printf("\t Every bit of species %d precipitates\n",i);
-								 */
+							if (-R_diss[i]*timestep*Gyr2sec > Act[r][i]) {  // Everything precipitates
+								// if (r == 130 && t < 100) printf("\t Every bit of species %d precipitates\n",i); // Debug
+
 								// The change in size is everything that could precipitate (Q^nu), not everything that should have precipitated (Rdiss*timestep)
-								d_crack_size = d_crack_size - Act_prod[r][i]*Molar_volume[i]/surface_volume_ratio; // Rimstidt and Barnes (1980) Eq 61
-								/* Debug
-								 * if (r == 130 && t < 100) printf("\t d_crack_size=%g\n",d_crack_size);
-								 */
-								Act_prod[r][i] = 0.0;                                        // Can't have negative conc.!
-								/* Debug
-								 * if (r == 130 && t < 100) printf("\t New Act_prod[%d]=%g\n",i,Act_prod[r][i]/1000);
-								 */
+								d_crack_size = d_crack_size - Act[r][i]*Molar_volume[i]/surface_volume_ratio; // Rimstidt and Barnes (1980) Eq 61
+								// if (r == 130 && t < 100) printf("\t d_crack_size=%g\n",d_crack_size); // Debug
+
+								Act[r][i] = 0.0;                                           // Can't have negative concentrations!
+								// if (r == 130 && t < 100) printf("\t New Act_prod[%d]=%g\n",i,Act[r][i]/rhoH2ol); // Debug
+
 							}
 							else {
-								/* Debug
-								 * if (r== 130 && t < 100) printf("\t Some species %d in solution\n",i);
-								 */
+								// if (r== 130 && t < 100) printf("\t Some species %d in solution\n",i); // Debug
+
 								d_crack_size = d_crack_size + R_diss[i]*timestep*Gyr2sec*Molar_volume[i]/surface_volume_ratio; // Rimstidt and Barnes (1980) Eq 61
-								/* Debug
-								 * if (r == 130 && t < 100) printf("\t d_crack_size=%g\n",d_crack_size);
-								 */
-								Act_prod[r][i] = Act_prod[r][i] + Stoich_coef[i]*R_diss[i]*timestep*Gyr2sec;
-								/* Debug
-								 * if (r == 130 && t < 100) printf("\t New Act_prod[%d]=%g\n",i,Act_prod[r][i]/1000);
-								 */
+								// if (r == 130 && t < 100) printf("\t d_crack_size=%g\n",d_crack_size); // Debug
+
+								Act[r][i] = Act[r][i] + nu_prod[i]*R_diss[i]*timestep*Gyr2sec;
+								// if (r == 130 && t < 100) printf("\t New Act_prod[%d]=%g\n",i,Act[r][i]/rhoH2ol); // Debug
+
 							}
-							Act_prod_old[r][i] = Act_prod[r][i];                          // Memorize the activity of products for the next timestep
+							Act_old[r][i] = Act[r][i];                          // Memorize the activity of products for the next timestep
 						}
 					}
 					if (Crack_size + d_crack_size > 0.0)                        // Update crack size
 						Crack_size = Crack_size + d_crack_size;
 					else {
 						Crack_size = 0.0;                                       // Pore clogged
-						for (i=0;i<n_species_crack;i++) Act_prod_old[r][i] = 0.0;     // Reset old activity quotients
+						for (i=0;i<n_species_crack;i++) Act_old[r][i] = 0.0;    // Reset old activity quotients
 					}
-					/* Debug
-					 * if (r == 130 && t < 100) printf ("\t Crack size is now %.16f m\n",Crack_size[r][t]);
-					 */
+					// if (r == 130 && t < 100) printf ("\t Crack size is now %.16f m\n",Crack_size); // Debug
+
 				}
 				else {
 					// If the crack is closed, clear the old activity quotients
 					for (i=0;i<n_species_crack;i++) {
-						Act_prod_old[r][i] = 0.0;
+						Act_old[r][i] = 0.0;
 					}
 				}
+				timestep = timestep*1.0e6;
 			}
 
 			//-------------------------------------------------------------------
@@ -602,6 +597,7 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 			if (dissolution_precipitation == 1) {
 				if (Crack_old[r] > 0.0 && Crack_size <= 0.0) {
 					Crack[r] = -1.0;              // Crack closed after precipitation
+					Crack_size = 0.0;
 				}
 			}
 		}   // End of main grid loop
@@ -639,6 +635,7 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 			}
 			if (Mcracked_rock < 0.000001) WRratio[1] = 0.0;           // If Mcracked_rock is essentially 0, to avoid infinities
 			else WRratio[1] = Mliq/Mcracked_rock;
+			// if (WRratio[1] < 1.0e-10) WRratio[1] = 0.0;               // To comply with the 1-digit exponent plot display
 			append_output(2, WRratio, path, "Outputs/Crack_WRratio.txt");
 		}
 	}   // End of main time loop
@@ -648,8 +645,8 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 	//-------------------------------------------------------------------
 
 	for (r=0;r<NR;r++) {
-		free (Act_prod[r]);
-		free (Act_prod_old[r]);
+		free (Act[r]);
+		free (Act_old[r]);
 	}
 	for (i=0;i<int_size;i++) {
 		free (integral[i]);
@@ -671,8 +668,8 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 	free (integral);
 	free (alpha);           // Pore water expansion-specific
 	free (beta);
-	free (Act_prod);		// Dissolution/precipitation-specific
-	free (Act_prod_old);
+	free (Act);		        // Dissolution/precipitation-specific
+	free (Act_old);
 	free (silica);
 	free (chrysotile);
 	free (magnesite);
