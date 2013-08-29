@@ -32,10 +32,10 @@ Cryovolcanism?                0
 Core crack options
 -------------------------------
 Thermal mismatch?             1
-Pore water expansion?         0
-Hydration/dehydration?        0
+Pore water expansion?         1
+Hydration/dehydration?        1
 Dissolution/ppt?              0
-	Silica?               0
+	Silica?               1
 	Serpentine?           1
-	Carbonate?            0
+	Carbonate?            1
 

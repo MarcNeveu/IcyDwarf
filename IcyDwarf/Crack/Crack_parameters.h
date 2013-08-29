@@ -11,21 +11,23 @@
 #define CRACK_PARAMETERS_H_
 
 // General parameters
-#define E_Young 120.0e9                                    // Young's modulus (Pa) for partially hydrated rock (Christensen 1966)
+#define E_Young 80.0e9                                     // Young's modulus (Pa) for partially hydrated rock (Christensen 1966)
 						                                      // Serpentinite = 35 GPa, olivine = 200 GPa, Vance et al. had 197 GPa
-#define nu_Poisson 0.246                                   // Poisson's ratio
+#define nu_Poisson 0.30                                    // Poisson's ratio
 #define smallest_crack_size 1.0e-2                         // Smallest 1-D or 2-D crack size in m
 
 // Brittle/ductile transition
 #define mu_Escartin 0.3                                    // Friction coefficient of Escartin et al. 1997 (default 0.3 to 0.5, Byerlee 0.85)
-#define A_flow_law 1.0e-37                                 // A of the antigorite flow law of Hilairet et al. 2007 (default 1.0e-37)
-#define Ea_flow_law 8900                                   // Activation energy of the antigorite flow law of Hilairet et al. 2007 in J (default 8900)
-#define V_flow_law 3.2e-6                                  // Activation volume of Hilairet et al. 2007 in m3 (default 3.2e-6)
-#define n_flow_law 3.1                                     // Stress exponent of Hilairet et al. 2007 (default 3.8)
+#define A_flow_law 4.17e-1                                 // A of the antigorite flow law of Rutter and Brodie (1988), default 4.17e5, Hilairet et al. 2007 1.0e-37
+#define Ea_flow_law 240e3                                  // Activation energy of the antigorite flow law of Rutter and Brodie (1988), default 240e3 J, Hilairet et al. 2007 8900 J
+#define V_flow_law 0.0                                     // Activation volume of Rutter and Brodie (1988), default 0 m3, Hilairet et al. 2007 3.2e-6 m3
+#define n_flow_law 1.0                                     // Stress in Pa exponent of Rutter and Brodie (1988), default 1.0 (diffusion creep), Hilairet et al. 2007 3.8 dislocation creep
+#define p_flow_law -3.0                                    // Grain size in microns exponent of Rutter and Brodie (1988), default -3
+#define d_flow_law 500                                     // Grain size in microns
 #define strain_rate 1.0/(timestep*Gyr2sec)                 // Flow law strain rate in s-1
 
 // Thermal expansion/contraction mismatch (Vance et al. 2007)
-#define K_IC 0.6e6                                         // Critical stress intensity (Pa m^0.5) (default 0.6e6)
+#define K_IC 0.1e6                                         // Critical stress intensity (Pa m^0.5) (default 0.6e6)
 #define Delta_alpha 3.1e-6                                 // Thermal expansion anisotropy in K-1^in eq (3) (default 3.1e-6)
 #define Q 3.75e5                                           // Activation enthalpy for grain boundary (J/mol) (default 3.75e5)
 #define Omega 1.23e-29                                     // Atomic volume (m^3) (default 1.23e-29)

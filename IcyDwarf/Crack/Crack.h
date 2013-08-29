@@ -325,7 +325,7 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 			AÅ10^-37, EaÅ8.9 kJ, VÅ3.2e-3 m3, nÅ3.8 (Hilairet et al. 2007, but for >1 GPa and >200¡C). Let's fix epsilon = 10^-15 s-1. */
 			Rock_strength = 0.0;
 			Brittle_strength = mu_Escartin*Pressure[r];
-			Ductile_strength = pow(strain_rate,(1.0/n_flow_law)) * pow(A_flow_law,-1.0/n_flow_law)
+			Ductile_strength = pow(strain_rate,(1.0/n_flow_law)) * pow(A_flow_law,-1.0/n_flow_law) * pow(d_flow_law,p_flow_law/n_flow_law)
 							 * exp((Ea_flow_law + Pressure[r]*V_flow_law)/(n_flow_law*R_G*thoutput[r][t].tempk));
 			if (Brittle_strength <= Ductile_strength) Rock_strength = Brittle_strength;
 			else Rock_strength = Ductile_strength;
@@ -468,7 +468,7 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 			 */
 
 			if (dissolution_precipitation == 1) {
-				timestep = timestep/1.0e6;
+				// timestep = timestep/1.0e6; // Debug
 				// Calculate dissolution/precipitation only where there are cracks
 				if (Crack[r] > 0.0 && Hydrated[r] > 0) {
 
@@ -553,7 +553,7 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 						Act_old[r][i] = 0.0;
 					}
 				}
-				timestep = timestep*1.0e6;
+				// timestep = timestep*1.0e6; // Debug
 			}
 
 			//-------------------------------------------------------------------
