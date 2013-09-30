@@ -91,12 +91,17 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 	double dXold = 0.0;
 
 	double *Pressure = (double*) malloc(NR*sizeof(double));     // Pressure in Pa
-	if (Pressure == NULL) printf("Crack: Not enough memory to create Pressure[NR]\n");
+	if (Pressure == NULL) printf("Cryolava: Not enough memory to create Pressure[NR]\n");
 
 	float Mliq = 0.0;                                              // Mass of liquid in the planet
-	Mliq = calculate_mass_liquid (NR,NT,thoutput);                 // Calculate the mass of liquid
 
 	t = t_cryolava;
+
+	Mliq = calculate_mass_liquid (NR,NT,t,thoutput);                 // Calculate the mass of liquid
+	if (Mliq <= 0.0) {
+		printf("Cryolava: No liquid at t=%d\n",t);
+		return -1;
+	}
 	Pressure = calculate_pressure(Pressure,NR,t,thoutput);         // Calculate pressures
 
 	// Find the seafloor radius and get the temperature there

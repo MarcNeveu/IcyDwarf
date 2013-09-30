@@ -18,12 +18,12 @@
 
 // Brittle/ductile transition
 #define mu_Escartin 0.3                                    // Friction coefficient of Escartin et al. 1997 (default 0.3 to 0.5, Byerlee 0.85)
-#define A_flow_law 4.17e-1                                 // A of the antigorite flow law of Rutter and Brodie (1988), default 4.17e5, Hilairet et al. 2007 1.0e-37
-#define Ea_flow_law 240e3                                  // Activation energy of the antigorite flow law of Rutter and Brodie (1988), default 240e3 J, Hilairet et al. 2007 8900 J
+#define A_flow_law 4.17e-1                                 // A of the antigorite flow law of Rutter and Brodie (1988), default 4.17e-1 for sigma in Pa, Hilairet et al. 2007 1.0e-37
+#define Ea_flow_law 240.0e3                                // Activation energy of the antigorite flow law of Rutter and Brodie (1988), default 240e3 J, Hilairet et al. 2007 8900 J
 #define V_flow_law 0.0                                     // Activation volume of Rutter and Brodie (1988), default 0 m3, Hilairet et al. 2007 3.2e-6 m3
 #define n_flow_law 1.0                                     // Stress in Pa exponent of Rutter and Brodie (1988), default 1.0 (diffusion creep), Hilairet et al. 2007 3.8 dislocation creep
-#define p_flow_law -3.0                                    // Grain size in microns exponent of Rutter and Brodie (1988), default -3
-#define d_flow_law 500                                     // Grain size in microns
+#define p_flow_law 3.0                                     // Grain size in microns exponent of Rutter and Brodie (1988), default -3
+#define d_flow_law 500.0                                   // Grain size in microns
 #define strain_rate 1.0/(timestep*Gyr2sec)                 // Flow law strain rate in s-1
 
 // Thermal expansion/contraction mismatch (Vance et al. 2007)

@@ -319,10 +319,8 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 
 			We mix up brittle-ductile and brittle-plastic transitions, although we shouldn't (Kohlstedt et al. 1995).
 			The transition is when the brittle strength equals the ductile strength.
-			The brittle strength is given by a friction/low-P Byerlee type law: stress = mu*P
-			mu = 0.3 to 0.5 (Escartin et al. 1997)
-			The ductile strength is given by a flow law: epsilon = A*sigma^n*exp[(-Ea+P*V)/RT]
-			AÅ10^-37, EaÅ8.9 kJ, VÅ3.2e-3 m3, nÅ3.8 (Hilairet et al. 2007, but for >1 GPa and >200¡C). Let's fix epsilon = 10^-15 s-1. */
+			The brittle strength is given by a friction/low-P Byerlee type law: stress = mu*P.
+			The ductile strength is given by a flow law: epsilon = A*sigma^n*exp[(-Ea+P*V)/RT]. See crack parameters. */
 			Rock_strength = 0.0;
 			Brittle_strength = mu_Escartin*Pressure[r];
 			Ductile_strength = pow(strain_rate,(1.0/n_flow_law)) * pow(A_flow_law,-1.0/n_flow_law) * pow(d_flow_law,p_flow_law/n_flow_law)
@@ -626,7 +624,7 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 			// Depends entirely on porosity! The W/R by volume is porosity. Here, we say W/R = Mliq/Mcracked_rock.
 			Mliq = 0.0;
 			Mcracked_rock = 0.0;
-			Mliq = calculate_mass_liquid (NR, NT, thoutput);             // Mass of liquid in g
+			Mliq = calculate_mass_liquid (NR, NT, t, thoutput);             // Mass of liquid in g
 			WRratio[0] = (double) t*timestep;                            // T in Gyr
 			for (r=0;r<NR;r++) {
 				if (Crack[r] > 0.0) {

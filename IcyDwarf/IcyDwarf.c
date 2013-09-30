@@ -161,7 +161,8 @@ int main(int argc, char *argv[]){
 
 	if (calculate_cryolava == 1) {
 		printf("Calculating gas-driven exsolution...\n");
-		Cryolava(argc, argv, path, NR, NT, r_p, thoutput, 2.0/timestep, warnings, msgout);
+		// Cryolava(argc, argv, path, NR, NT, r_p, thoutput, 2.0/timestep, warnings, msgout);
+		Cryolava(argc, argv, path, NR, NT, r_p, thoutput, 400, warnings, msgout);
 		printf("\n");
 	}
 

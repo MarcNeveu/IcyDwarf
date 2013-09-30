@@ -4,7 +4,7 @@ ICY DWARF v13.8 INPUT FILE
 -------------------------------
 Housekeeping
 -------------------------------
-Warnings?                     0
+Warnings?                     1
 Messages?                     1
 Plots?                        1
 -------------------------------
@@ -34,7 +34,7 @@ Core crack options
 Thermal mismatch?             1
 Pore water expansion?         1
 Hydration/dehydration?        1
-Dissolution/ppt?              0
+Dissolution/ppt?              1
 	Silica?               1
 	Serpentine?           1
 	Carbonate?            1

@@ -60,7 +60,7 @@ typedef struct {
 #include "CHNOSZ_commands.h"
 
 double *calculate_pressure (double *Pressure, int NR, int t, thermalout **thoutput);
-float calculate_mass_liquid (int NR, int NT, thermalout **thoutput);
+float calculate_mass_liquid (int NR, int NT, int t, thermalout **thoutput);
 int calculate_seafloor (thermalout **thoutput, int NR, int NT, int t);
 int look_up (float x, float x_var, float x_step, int size, int warnings);
 float *icy_dwarf_input (float *input, char path[1024]);
@@ -156,18 +156,14 @@ double *calculate_pressure (double *Pressure, int NR, int t, thermalout **thoutp
 //             Calculate the mass of liquid over time
 //-------------------------------------------------------------------
 
-float calculate_mass_liquid (int NR, int NT, thermalout **thoutput) {
+float calculate_mass_liquid (int NR, int NT, int t, thermalout **thoutput) {
 
 	int r = 0;
-	int t = 0;
-
 	float Mliq = 0.0;
-	for (t=1;t<NT;t++) {
-		Mliq = 0.0;
-		for (r=0;r<NR;r++) {
-			Mliq = Mliq + thoutput[r][t].mh2ol*gram + thoutput[r][t].mnh3l*gram;
-			// Mliq = Mliq + thoutput[r][t].mh2ol*gram;  // Just consider liquid water for now
-		}
+
+	for (r=0;r<NR;r++) {
+		Mliq = Mliq + thoutput[r][t].mh2ol*gram + thoutput[r][t].mnh3l*gram;
+		// Mliq = Mliq + thoutput[r][t].mh2ol*gram;  // Just consider liquid water for now
 	}
 	return Mliq;
 }
