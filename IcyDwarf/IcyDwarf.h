@@ -162,10 +162,10 @@ float calculate_mass_liquid (int NR, int NT, int t, thermalout **thoutput) {
 	float Mliq = 0.0;
 
 	for (r=0;r<NR;r++) {
-		Mliq = Mliq + thoutput[r][t].mh2ol*gram + thoutput[r][t].mnh3l*gram;
-		// Mliq = Mliq + thoutput[r][t].mh2ol*gram;  // Just consider liquid water for now
+		// Mliq = Mliq + thoutput[r][t].mh2ol*gram + thoutput[r][t].mnh3l*gram;
+		Mliq = Mliq + thoutput[r][t].mh2ol*gram;     // Just consider liquid water for now
 	}
-	return Mliq;
+	return Mliq;                                     // In kg
 }
 
 //-------------------------------------------------------------------
@@ -301,6 +301,10 @@ float *icy_dwarf_input (float *input, char path[1024]) {
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
+			fseek(f,24,SEEK_CUR);   // After how many Myr?
+			scan = fscanf(f, "%g", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
 			fseek(f,112,SEEK_CUR);  // Thermal mismatch?
 			scan = fscanf(f, "%g", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
@@ -360,6 +364,7 @@ float *icy_dwarf_input (float *input, char path[1024]) {
 		printf("\t Water alpha beta? \t %g\n",input[i]), i++;
 		printf("\t CHNOSZ species? \t %g\n",input[i]), i++;
 		printf("Cryovolcanism? \t \t \t %g\n",input[i]), i++;
+		printf("\t After how many Myr? \t %g\n",input[i]), i++;
 		printf("-------------------------------\n");
 		printf("Core crack options\n");
 		printf("-------------------------------\n");

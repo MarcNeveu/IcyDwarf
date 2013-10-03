@@ -52,6 +52,7 @@ int main(int argc, char *argv[]){
     int calculate_alpha_beta = 0;      // Calculate thermal expansivity and compressibility tables
     int calculate_crack_species = 0;   // Calculate equilibrium constants of species that dissolve or precipitate
     int calculate_cryolava = 0;        // Calculate gas-driven exsolution
+    int t_cryolava = 0;                // Time at which to calculate gas exsolution
 
     // Crack subroutine inputs
     int *crack_input = (int*) malloc(5*sizeof(int));
@@ -60,7 +61,7 @@ int main(int argc, char *argv[]){
 	int r = 0;
 	int i = 0;
 
-	float *input = (float*) malloc(23*sizeof(float));
+	float *input = (float*) malloc(24*sizeof(float));
 	if (input == NULL) printf("IcyDwarf: Not enough memory to create input[18]\n");
 
 	//-------------------------------------------------------------------
@@ -69,7 +70,7 @@ int main(int argc, char *argv[]){
 
 	printf("\n");
 	printf("-------------------------------------------------------------------\n");
-	printf("IcyDwarf v.13.7\n");
+	printf("IcyDwarf v.13.10.1\n");
 	if (release == 1) printf("Release mode\n");
 	else if (cmdline == 1) printf("Command line mode\n");
 	printf("-------------------------------------------------------------------\n");
@@ -103,7 +104,7 @@ int main(int argc, char *argv[]){
 	tsurf = input[6];
 	NR = input[7];
 	// timestep = (float) input[9]/1000.0;
-	timestep = 10.0/1000.0;
+	timestep = 10.0/1000.0; // Change
 	NT = floor(input[8]/(timestep*1000.0))+1;
 	NT_output = floor(input[8]/input[9])+1;
 	calculate_cracking_depth = (int) input[10];
@@ -111,8 +112,9 @@ int main(int argc, char *argv[]){
 	calculate_alpha_beta = (int) input[12];
 	calculate_crack_species = (int) input[13];
 	calculate_cryolava = (int) input[14];
-	for (i=15;i<19;i++) crack_input[i-15] = (int) input[i];
-	for (i=19;i<22;i++) crack_species[i-19] = (int) input[i];
+	t_cryolava = (int) input[15]/input[9];
+	for (i=16;i<20;i++) crack_input[i-16] = (int) input[i];
+	for (i=20;i<23;i++) crack_species[i-20] = (int) input[i];
 
 	//-------------------------------------------------------------------
 	// Read thermal output
@@ -160,9 +162,12 @@ int main(int argc, char *argv[]){
 	//-------------------------------------------------------------------
 
 	if (calculate_cryolava == 1) {
-		printf("Calculating gas-driven exsolution...\n");
-		// Cryolava(argc, argv, path, NR, NT, r_p, thoutput, 2.0/timestep, warnings, msgout);
-		Cryolava(argc, argv, path, NR, NT, r_p, thoutput, 400, warnings, msgout);
+		printf("Calculating gas-driven exsolution at t=%d...\n",t_cryolava);
+		if (t_cryolava > NT_output) {
+			printf("Icy Dwarf: t_cryolava > total time of sim\n");
+			return -1;
+		}
+		Cryolava(argc, argv, path, NR, NT, r_p, thoutput, t_cryolava, warnings, msgout);
 		printf("\n");
 	}
 
@@ -170,7 +175,7 @@ int main(int argc, char *argv[]){
 	// Plots
 	//-------------------------------------------------------------------
 
-	if (plot_on == 1) {
+	if (plot_on == 1 && calculate_cracking_depth == 1) {
 		Crack_plot (path, NR, NT, timestep, NT_output, r_p, thoutput, warnings, msgout);
 	}
 

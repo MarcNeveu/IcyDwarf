@@ -10,24 +10,25 @@ Plots?                        1
 -------------------------------
 Planet parameters
 -------------------------------
-Density (g cm-3)              2.077
-Radius (km)                   475
+Density (g cm-3)              1.65
+Radius (km)                   600
 Ammonia w.r.t. water          1.0e-2
-Surface temperature (K)       168
+Surface temperature (K)       60
 -------------------------------
 Grid
 -------------------------------
-Number of grid zones          200
+Number of grid zones          300
 Total time of sim (Myr)       5000
 Output every... (Myr)         10
 -------------------------------
 Subroutines
 -------------------------------
-Core cracks?                  1
+Core cracks?                  0
 	Calculate aTP?        0
 	Water alpha beta?     0
 	CHNOSZ species?       0
-Cryovolcanism?                0
+Cryovolcanism?                1
+	After how many Myr?   2500
 -------------------------------
 Core crack options
 -------------------------------

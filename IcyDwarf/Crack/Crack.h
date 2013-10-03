@@ -624,14 +624,14 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 			// Depends entirely on porosity! The W/R by volume is porosity. Here, we say W/R = Mliq/Mcracked_rock.
 			Mliq = 0.0;
 			Mcracked_rock = 0.0;
-			Mliq = calculate_mass_liquid (NR, NT, t, thoutput);             // Mass of liquid in g
+			Mliq = calculate_mass_liquid (NR, NT, t, thoutput);          // Mass of liquid in kg
 			WRratio[0] = (double) t*timestep;                            // T in Gyr
 			for (r=0;r<NR;r++) {
 				if (Crack[r] > 0.0) {
-					Mcracked_rock = Mcracked_rock + thoutput[r][t].mrock;
+					Mcracked_rock = Mcracked_rock + thoutput[r][t].mrock*gram;
 				}
 			}
-			if (Mcracked_rock < 0.000001) WRratio[1] = 0.0;           // If Mcracked_rock is essentially 0, to avoid infinities
+			if (Mcracked_rock < 0.000001) WRratio[1] = 0.0;              // If Mcracked_rock is essentially 0, to avoid infinities
 			else WRratio[1] = Mliq/Mcracked_rock;
 			// if (WRratio[1] < 1.0e-10) WRratio[1] = 0.0;               // To comply with the 1-digit exponent plot display
 			append_output(2, WRratio, path, "Outputs/Crack_WRratio.txt");

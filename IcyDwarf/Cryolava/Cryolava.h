@@ -23,16 +23,7 @@
 #define CRYOLAVA_H_
 
 #define n_species_cryolava 10               // Number of volatile species included in the model
-#define M_h2 2.0                            // Molar mass of H2 in g mol-1
-#define M_ch4 16.0                          // Molar mass of CH4 in g mol-1
-#define M_ch3oh 32.0                        // Molar mass of CH3OH in g mol-1
-#define M_co 28.0                           // Molar mass of CO in g mol-1
-#define M_co2 44.0                          // Molar mass of CO2 in g mol-1
-#define M_nh3 17.0                          // Molar mass of NH3 in g mol-1
-#define M_n2 28.0                           // Molar mass of N2 in g mol-1
-#define M_h2s 34.0                          // Molar mass of H2S in g mol-1
-#define M_so2 64.0                          // Molar mass of SO2 in g mol-1
-#define M_ar 40.0                           // Molar mass of Ar in g mol-1
+#define M_h2o 0.018                         // Molar mass of H2O in kg mol-1
 
 #define K_IC_ice 0.15e6                     // Fracture toughness of ice at low T in MPa m0.5 (Litwin et al. 2012)
 #define K_IC_crust 0.5e6                    // Fracture toughness of crust in MPa m0.5
@@ -97,9 +88,9 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 
 	t = t_cryolava;
 
-	Mliq = calculate_mass_liquid (NR,NT,t,thoutput);                 // Calculate the mass of liquid
+	Mliq = calculate_mass_liquid (NR,NT,t,thoutput);               // Calculate the mass of liquid in kg
 	if (Mliq <= 0.0) {
-		printf("Cryolava: No liquid at t=%d\n",t);
+		printf("Cryolava: No liquid at t_cryolava=%d\n",t);
 		return -1;
 	}
 	Pressure = calculate_pressure(Pressure,NR,t,thoutput);         // Calculate pressures
@@ -126,9 +117,6 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 
 	// Declare and initialize tables
 	char Species[n_species_cryolava][10];
-
-	float *Molar_mass = (float*) malloc(n_species_cryolava*sizeof(float));  // Abundances of the volatiles w.r.t. H2O (fraction)
-	if (Molar_mass == NULL) printf("Cryolava: Not enough memory to create Molar_mass[n_species]\n");
 
 	float *WrtH2O = (float*) malloc(n_species_cryolava*sizeof(float));      // Abundances of the volatiles w.r.t. H2O (fraction)
 	if (WrtH2O == NULL) printf("Cryolava: Not enough memory to create WrtH2O[n_species]\n");
@@ -161,7 +149,6 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 	}
 
 	for (i=0;i<n_species_cryolava;i++) {
-		Molar_mass[i] = 0.0;
 		WrtH2O[i] = 0.0;
 		Abundances[i] = 0.0;
 		K_rxn[i] = 0.0;
@@ -198,23 +185,12 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 	WrtH2O[6] = 1.0e-4;                                                     // N2 rt H2O by mass
 	WrtH2O[7] = 0.005;                                                      // H2S wrt H2O by mass
 	WrtH2O[8] = 2.0e-5;                                                     // SO2 wrt H2O by mass
-	WrtH2O[9] = 0.001;                                                      // Ar wrt H2O by mass
-
-	// Initialize molar masses
-	Molar_mass[0] = M_h2;
-	Molar_mass[1] = M_ch4;
-	Molar_mass[2] = M_ch3oh;
-	Molar_mass[3] = M_co;
-	Molar_mass[4] = M_co2;
-	Molar_mass[5] = M_nh3;
-	Molar_mass[6] = M_n2;
-	Molar_mass[7] = M_h2s;
-	Molar_mass[8] = M_so2;
-	Molar_mass[9] = M_ar;
+	WrtH2O[9] = 0.01;                                                       // Ar wrt H2O by mass
 
 	// Initialize abundances in the liquid layer (mol)
 	for (i=0;i<n_species_cryolava;i++) {
-		Abundances[i] = WrtH2O[i]*Mliq/(Molar_mass[i]*gram);
+		Abundances[i] = WrtH2O[i]*Mliq/M_h2o;
+		printf("%s = %g mol/kg\n",Species[i],Abundances[i]/Mliq);
 	}
 
 	// Use CHNOSZ to get reaction constants at given T and P
@@ -285,6 +261,7 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 			// return -1;
 			printf("Cryolava: No physical solution at depth %g km: P_gas=%g bar either negative or too high\n",(float) (NR-(r+r_seafloor))*r_p/NR,P_gas/bar);
 			X_VAP = 0.0;
+			x_vap[r][0] = (NR-r-r_seafloor)*r_p/NR;          // Depth in km, for output file
 		}
 		else {                                               // Swap X_INF and X_SUP if f_inf > 0 and f_sup < 0
 			if (f_inf > 0.0) {
@@ -336,7 +313,7 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 																	// Don't forget that X_VAP is in mol kg-1 bar-1, so we need to divide by bar to get Pa-1, the unit consistent with rho*R_G*T.
 			x_vap[r][3] = rhoH2ol/(1.0+x_vap[r][2]);                // Foam density in kg m-3, assuming massless gas
 			x_vap[r][4] = -(x_vap[r][3]-rhoH2os)*2.0 * G*Minf*gram/(thoutput[r+r_seafloor][t].radius*thoutput[r+r_seafloor][t].radius*km*km)
-					      * pow(r*r_p/NR*km,1.5)/sqrt(PI_greek);    // Stress intensity K_I at crack tip (MPa m^0.5)
+					      * pow(r*r_p/NR*km,1.5)/sqrt(PI_greek);    // Stress intensity K_I at crack tip (Pa m^0.5)
 			if (r<=r_diff && x_vap[r][4] > K_IC_ice) x_vap[r][5] = 1.0; // Crack propagation or not
 			else if (r>r_diff && x_vap[r][4] > K_IC_crust) x_vap[r][5] = 1.0;
 			else x_vap[r][5] = 0.0;
@@ -352,7 +329,7 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 		 * printf("Pressure = %g bar, temperature = %g K, Mliq = %g kg\n",P_gas/bar,thoutput[r][t].tempk,Mliq[t]);
 		 */
 
-		// Solve each chemical partition equation
+		// Solve each chemical partition equation, calculate explosiveness
 		for (i=0;i<n_species_cryolava;i++) {
 			Molalities[r][i] = Abundances[i] / (Mliq*(1.0 + X_VAP/K_rxn[i]));
 			Partial_P[r][i] = Molalities[r][i] / K_rxn[i] * bar;        // m/K is in bar, m/K*bar is in Pa
@@ -384,7 +361,6 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 		free(x_vap[r]);
 	}
 	free(Pressure);
-	free(Molar_mass);
 	free(WrtH2O);
 	free(Abundances);
 	free(Partial_P);
@@ -402,8 +378,8 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 	else printf(" No crust\n");
 
 	printf("\nOutputs successfully generated in IcyDwarf/Outputs/ directory:\n");
-	printf("1. Molalities vs. P_gas at t=%d in mol kg-1: Cryolava_molalities.txt\n",t);
-	printf("2. Partial pressures vs. P_gas at t=%d in bar: Cryolava_partialP.txt\n",t);
+	printf("1. Molalities vs. depth at t=%d in mol kg-1: Cryolava_molalities.txt\n",t);
+	printf("2. Partial pressures vs. depth at t=%d in bar: Cryolava_partialP.txt\n",t);
 	printf("3. Volumic vapor fraction x_vap vs. P_gas at t=%d: Cryolava_xvap.txt\n",t);
 
 	return 0;
