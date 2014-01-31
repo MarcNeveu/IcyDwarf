@@ -28,7 +28,7 @@
 #define PI_greek 3.14159265358979323846                    // Pi
 
 // General parameters
-#define rhoRock 3.25e3                                     // Density of rock
+#define rhoRock 2.35e3                                     // Density of rock
 #define rhoH2os 0.935e3                                    // Density of H2O(s)
 #define rhoH2ol 1.00e3                                     // Density of H2O(l)
 #define rhoAdhs 0.985e3                                    // Density of ADH(s)
@@ -201,7 +201,7 @@ int look_up (float x, float x_var, float x_step, int size, int warnings) {
 	if (x <= x_step) x_int = 0;
 	else if (x > x_var + x_step*((float) (size-1.0))) {
 		x_int = size-1;
-		if (warnings == 1) printf("IcyDwarf look_up: x=%g above range, assuming x=%g\n",x, x_step*((float) (size-1.0)));
+		if (warnings == 1) printf("IcyDwarf look_up: x=%g above range, assuming x=%g\n", x, x_step*((float) (size-1.0)));
 	}
 	else {
 		for (j=0;j<size;j++) {

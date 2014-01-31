@@ -19,7 +19,7 @@ Grid
 -------------------------------
 Number of grid zones          300
 Total time of sim (Myr)       5000
-Output every... (Myr)         10
+Output every... (Myr)         5
 -------------------------------
 Subroutines
 -------------------------------
@@ -32,10 +32,10 @@ Cryovolcanism?                1
 -------------------------------
 Core crack options
 -------------------------------
-Thermal mismatch?             1
-Pore water expansion?         1
-Hydration/dehydration?        1
-Dissolution/ppt?              1
+Thermal mismatch?             0
+Pore water expansion?         0
+Hydration/dehydration?        0
+Dissolution/ppt?              0
 	Silica?               1
 	Serpentine?           1
 	Carbonate?            1

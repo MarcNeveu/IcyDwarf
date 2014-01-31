@@ -22,10 +22,10 @@
 #include "IcyDwarf.h"
 #include "Crack/Crack.h"
 #include "Crack/Crack_tables.h"
-#include "Crack/Crack_plot.h"
+//#include "Crack/Crack_plot.h"
 #include "Cryolava/Cryolava.h"
 
-#include "Graphics/Plot.h"
+//#include "Graphics/Plot.h"
 
 int main(int argc, char *argv[]){
 
@@ -175,9 +175,9 @@ int main(int argc, char *argv[]){
 	// Plots
 	//-------------------------------------------------------------------
 
-	if (plot_on == 1 && calculate_cracking_depth == 1) {
-		Crack_plot (path, NR, NT, timestep, NT_output, r_p, thoutput, warnings, msgout);
-	}
+//	if (plot_on == 1 && calculate_cracking_depth == 1) {
+//		Crack_plot (path, NR, NT, timestep, NT_output, r_p, thoutput, warnings, msgout);
+//	}
 
 	//-------------------------------------------------------------------
 	// Exit

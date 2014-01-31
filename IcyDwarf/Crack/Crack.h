@@ -299,11 +299,43 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 	//                      Begin main loop over time
 	//-------------------------------------------------------------------
 
+////---------------------------------------------
+//// Enceladus stuff
+//float tmax = 0.0; // ENCELADUS
+//int t_tmax = 0; // ENCELADUS
+//int t_647_start = 10000; // ENCELADUS
+//int t_647_end = 0; //ENCELADUS
+////---------------------------------------------
+
 	for (t=1;t<NT;t++) {
 
 		Pressure = calculate_pressure(Pressure, NR, t, thoutput);     // Pressure
 
+////---------------------------------------------
+//// Enceladus stuff
+//if (t==NT-1) {
+//	printf("tmax = %g at t=%d\n",tmax,t_tmax); // ENCELADUS
+//	printf("T>647 K between t=%d and %d\n",t_647_start,t_647_end);
+//}
+////---------------------------------------------
+		printf("%g \t %g \n",(float) t/100,thoutput[290][t].nu);
+
 		for (r=0;r<NR;r++) {
+
+////---------------------------------------------
+//// Enceladus stuff
+//Pressure[r] = Pressure [r] + 1.38e7; // ENCELADUS
+//if (r==0 && thoutput[r][t].tempk > tmax) { // ENCELADUS
+//	tmax = thoutput[r][t].tempk;
+//	t_tmax = t;
+//}
+//if (thoutput[r][t].tempk > 647.0) { // ENCELADUS
+//	if (t < t_647_start) t_647_start = t;
+//	if (t > t_647_end) t_647_end = t;
+//}
+//if (t==456) printf("%g \t %g \t %g \n",thoutput[r][t].radius,thoutput[r][t].tempk,Pressure[r]); // ENCELADUS
+//if (t==456) printf("%g \t %g \t %g\n",thoutput[r][t].radius, thoutput[r][t].tempk, thoutput[r][t].nu);
+////---------------------------------------------
 
 			Crack_old[r] = Crack[r];
 			Hydrated_old[r] = Hydrated[r];

@@ -182,10 +182,10 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 	WrtH2O[3] = 0.2;                                                        // CO wrt H2O by mass
 	WrtH2O[4] = 0.1;                                                        // CO2 wrt H2O by mass
 	WrtH2O[5] = 0.01;                                                       // NH3 wrt H2O by mass
-	WrtH2O[6] = 1.0e-4;                                                     // N2 rt H2O by mass
+	WrtH2O[6] = 0.01;                                                       // N2 rt H2O by mass
 	WrtH2O[7] = 0.005;                                                      // H2S wrt H2O by mass
 	WrtH2O[8] = 2.0e-5;                                                     // SO2 wrt H2O by mass
-	WrtH2O[9] = 0.01;                                                       // Ar wrt H2O by mass
+	WrtH2O[9] = 0.001;                                                      // Ar wrt H2O by mass
 
 	// Initialize abundances in the liquid layer (mol)
 	for (i=0;i<n_species_cryolava;i++) {
@@ -329,7 +329,7 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 		 * printf("Pressure = %g bar, temperature = %g K, Mliq = %g kg\n",P_gas/bar,thoutput[r][t].tempk,Mliq[t]);
 		 */
 
-		// Solve each chemical partition equation, calculate explosiveness
+		// Solve each chemical partition equation
 		for (i=0;i<n_species_cryolava;i++) {
 			Molalities[r][i] = Abundances[i] / (Mliq*(1.0 + X_VAP/K_rxn[i]));
 			Partial_P[r][i] = Molalities[r][i] / K_rxn[i] * bar;        // m/K is in bar, m/K*bar is in Pa
