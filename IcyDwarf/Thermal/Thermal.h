@@ -1178,7 +1178,7 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 		(*Mnh3l)[ir] = Mammonia*(Volume1/Vslushtot);
 		(*Vnh3l)[ir] = (*Mnh3l)[ir]/rhoNh3lth;
 
-		// H2O(s)
+		// H2O ice
 		(*Vh2os)[ir] = Vh2osnew[ir];
 		(*Mh2os)[ir] = Mh2osnew[ir];
 		(*Eh2os)[ir] = Eh2osnew[ir];
