@@ -18,7 +18,7 @@ IcyDwarf.d: ../IcyDwarf.c ../modifdyld.h ../IcyDwarf.h \
   /Library/Frameworks/R.framework/Resources/include/R_ext/PrtUtil.h \
   /Library/Frameworks/R.framework/Resources/include/Rembedded.h \
   ../CHNOSZ_commands.h ../Crack/Crack.h ../Crack/Crack_parameters.h \
-  ../Crack/Crack_tables.h ../Cryolava/Cryolava.h
+  ../Crack/Crack_tables.h ../Cryolava/Cryolava.h ../Thermal/Thermal.h
 
 ../modifdyld.h:
 
@@ -69,3 +69,5 @@ IcyDwarf.d: ../IcyDwarf.c ../modifdyld.h ../IcyDwarf.h \
 ../Crack/Crack_tables.h:
 
 ../Cryolava/Cryolava.h:
+
+../Thermal/Thermal.h:
