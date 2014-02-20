@@ -24,6 +24,7 @@
 #include "Crack/Crack_tables.h"
 //#include "Crack/Crack_plot.h"
 #include "Cryolava/Cryolava.h"
+#include "Thermal/Thermal.h"
 
 //#include "Graphics/Plot.h"
 
@@ -39,7 +40,9 @@ int main(int argc, char *argv[]){
     float rho_p = 0.0;                 // Planetary density
     float r_p = 0.0;                   // Planetary radius
     float nh3 = 0.0;                   // Ammonia w.r.t. water
-    float tsurf = 0.0;				   // Surface temperature
+    float Tsurf = 0.0;				   // Surface temperature
+    float Tinit = 0.0;                 // Initial temperature
+    float tzero = 0.0;                 // Time zero of the sim (Myr)
 
     // Grid inputs
 	int NR = 0;                        // Number of grid zones
@@ -61,7 +64,7 @@ int main(int argc, char *argv[]){
 	int r = 0;
 	int i = 0;
 
-	float *input = (float*) malloc(24*sizeof(float));
+	double *input = (double*) malloc(24*sizeof(double));
 	if (input == NULL) printf("IcyDwarf: Not enough memory to create input[18]\n");
 
 	//-------------------------------------------------------------------
@@ -70,7 +73,7 @@ int main(int argc, char *argv[]){
 
 	printf("\n");
 	printf("-------------------------------------------------------------------\n");
-	printf("IcyDwarf v.13.10.1\n");
+	printf("IcyDwarf v.14.2.1\n");
 	if (release == 1) printf("Release mode\n");
 	else if (cmdline == 1) printf("Command line mode\n");
 	printf("-------------------------------------------------------------------\n");
@@ -101,7 +104,9 @@ int main(int argc, char *argv[]){
 	rho_p = input[3];
 	r_p = input[4];
 	nh3 = input[5];
-	tsurf = input[6];
+	tzero = 1.5;     // Myr
+	Tsurf = input[6];
+	Tinit = Tsurf;
 	NR = input[7];
 	// timestep = (float) input[9]/1000.0;
 	timestep = 10.0/1000.0; // Change
@@ -115,6 +120,14 @@ int main(int argc, char *argv[]){
 	t_cryolava = (int) input[15]/input[9];
 	for (i=16;i<20;i++) crack_input[i-16] = (int) input[i];
 	for (i=20;i<23;i++) crack_species[i-20] = (int) input[i];
+
+	//-------------------------------------------------------------------
+	// Run thermal code
+	//-------------------------------------------------------------------
+
+	printf("Running thermal evolution code...\n");
+	Thermal(argc, argv, path, NR, r_p, rho_p, warnings, msgout, nh3, tzero, Tsurf, Tinit, input[8], input[9]);
+	printf("\n");
 
 	//-------------------------------------------------------------------
 	// Read thermal output

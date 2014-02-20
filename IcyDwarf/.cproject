@@ -54,12 +54,12 @@
 									<listOptionValue builtIn="false" value="/usr/include"/>
 									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Resources/include"/>
 									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Resources/library/RInside/include"/>
-									<listOptionValue builtIn="false" value="/System/Library/Frameworks/OpenGL.framework/Versions/A/Headers"/>
 									<listOptionValue builtIn="false" value="/Library/Frameworks/SDL2.framework/Versions/A/Headers"/>
 									<listOptionValue builtIn="false" value="/Library/Frameworks/SDL2_image.framework/Versions/A/Headers"/>
 									<listOptionValue builtIn="false" value="/Library/Frameworks/SDL2_mixer.framework/Versions/A/Headers"/>
-									<listOptionValue builtIn="false" value="/System/Library/Frameworks/GLUT.framework/Versions/A/Headers"/>
-									<listOptionValue builtIn="false" value="/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers"/>
+									<listOptionValue builtIn="false" value="/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/OpenGL.framework/Versions/A/Headers/"/>
+									<listOptionValue builtIn="false" value="/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/GLUT.framework/Versions/A/Headers"/>
+									<listOptionValue builtIn="false" value="/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers"/>
 								</option>
 								<option id="gnu.c.compiler.option.misc.other.220446502" name="Other flags" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0 -arch x86_64" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.632314581" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
@@ -127,14 +127,14 @@
 								<option id="gnu.c.compiler.macosx.exe.release.option.debugging.level.864024125" name="Debug Level" superClass="gnu.c.compiler.macosx.exe.release.option.debugging.level" value="gnu.c.debugging.level.default" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.include.paths.1923154675" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="/usr/include"/>
-									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Resources/library/RInside/include"/>
 									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Resources/include"/>
+									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Resources/library/RInside/include"/>
 									<listOptionValue builtIn="false" value="/Library/Frameworks/SDL2.framework/Versions/A/Headers"/>
 									<listOptionValue builtIn="false" value="/Library/Frameworks/SDL2_image.framework/Versions/A/Headers"/>
 									<listOptionValue builtIn="false" value="/Library/Frameworks/SDL2_mixer.framework/Versions/A/Headers"/>
-									<listOptionValue builtIn="false" value="/System/Library/Frameworks/OpenGL.framework/Versions/A/Headers"/>
-									<listOptionValue builtIn="false" value="/System/Library/Frameworks/GLUT.framework/Versions/A/Headers"/>
-									<listOptionValue builtIn="false" value="/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers"/>
+									<listOptionValue builtIn="false" value="/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/OpenGL.framework/Versions/A/Headers/"/>
+									<listOptionValue builtIn="false" value="/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/GLUT.framework/Versions/A/Headers"/>
+									<listOptionValue builtIn="false" value="/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers"/>
 								</option>
 								<option id="gnu.c.compiler.option.misc.other.361968030" name="Other flags" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0" valueType="string"/>
 								<option id="gnu.c.compiler.option.debugging.gprof.1305378107" name="Generate gprof information (-pg)" superClass="gnu.c.compiler.option.debugging.gprof" value="false" valueType="boolean"/>
