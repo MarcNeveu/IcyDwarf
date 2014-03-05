@@ -7,9 +7,10 @@
  *		Main program: all subroutines are in .h files.
  *      IcyDwarf is a program that simulates the physical and chemical evolution of dwarf planets
  *      (bodies with a rocky core, an icy mantle, possibly an undifferentiated crust and an ocean).
- *      As of July 31, 2013, this 1-D code:
- *      1. Calculates the depth of cracking into a rocky core (space for hydrothermal circulation)
- *      2. Calculates gas exsolution in icy shell cracks (gas-driven cryovolcanism)
+ *      As of March 4, 2014, this 1-D code calculates:
+ *      1. The thermal evolution of a dwarf planet
+ *      2. The depth of cracking into a rocky core (space for hydrothermal circulation)
+ *      3. Gas exsolution in icy shell cracks (gas-driven cryovolcanism)
  */
 
 #include <unistd.h>    // To check current working directory
@@ -22,11 +23,8 @@
 #include "IcyDwarf.h"
 #include "Crack/Crack.h"
 #include "Crack/Crack_tables.h"
-//#include "Crack/Crack_plot.h"
 #include "Cryolava/Cryolava.h"
 #include "Thermal/Thermal.h"
-
-//#include "Graphics/Plot.h"
 
 int main(int argc, char *argv[]){
 
@@ -50,6 +48,7 @@ int main(int argc, char *argv[]){
     float timestep = 0.0;              // Time step of the sim (Gyr)
 
     // Call specific subroutines
+    int calculate_thermal = 0;         // Run thermal code
     int calculate_cracking_depth = 0;  // Calculate depth of cracking
     int calculate_aTP = 0;             // Generate a table of flaw size that maximize stress (Vance et al. 2007)
     int calculate_alpha_beta = 0;      // Calculate thermal expansivity and compressibility tables
@@ -64,8 +63,8 @@ int main(int argc, char *argv[]){
 	int r = 0;
 	int i = 0;
 
-	double *input = (double*) malloc(24*sizeof(double));
-	if (input == NULL) printf("IcyDwarf: Not enough memory to create input[18]\n");
+	double *input = (double*) malloc(25*sizeof(double));
+	if (input == NULL) printf("IcyDwarf: Not enough memory to create input[25]\n");
 
 	//-------------------------------------------------------------------
 	// Startup
@@ -73,7 +72,7 @@ int main(int argc, char *argv[]){
 
 	printf("\n");
 	printf("-------------------------------------------------------------------\n");
-	printf("IcyDwarf v.14.2.1\n");
+	printf("IcyDwarf v.14.3\n");
 	if (release == 1) printf("Release mode\n");
 	else if (cmdline == 1) printf("Command line mode\n");
 	printf("-------------------------------------------------------------------\n");
@@ -112,25 +111,28 @@ int main(int argc, char *argv[]){
 	timestep = 10.0/1000.0; // Change
 	NT = floor(input[8]/(timestep*1000.0))+1;
 	NT_output = floor(input[8]/input[9])+1;
-	calculate_cracking_depth = (int) input[10];
-	calculate_aTP = (int) input[11];
-	calculate_alpha_beta = (int) input[12];
-	calculate_crack_species = (int) input[13];
-	calculate_cryolava = (int) input[14];
-	t_cryolava = (int) input[15]/input[9];
-	for (i=16;i<20;i++) crack_input[i-16] = (int) input[i];
-	for (i=20;i<23;i++) crack_species[i-20] = (int) input[i];
+	calculate_thermal = (int) input[10];
+	calculate_cracking_depth = (int) input[11];
+	calculate_aTP = (int) input[12];
+	calculate_alpha_beta = (int) input[13];
+	calculate_crack_species = (int) input[14];
+	calculate_cryolava = (int) input[15];
+	t_cryolava = (int) input[16]/input[9];
+	for (i=17;i<21;i++) crack_input[i-17] = (int) input[i];
+	for (i=21;i<24;i++) crack_species[i-21] = (int) input[i];
 
 	//-------------------------------------------------------------------
 	// Run thermal code
 	//-------------------------------------------------------------------
 
-	printf("Running thermal evolution code...\n");
-	Thermal(argc, argv, path, NR, r_p, rho_p, warnings, msgout, nh3, tzero, Tsurf, Tinit, input[8], input[9]);
-	printf("\n");
+	if (calculate_thermal == 1) {
+		printf("Running thermal evolution code...\n");
+		Thermal(argc, argv, path, NR, r_p, rho_p, warnings, msgout, nh3, tzero, Tsurf, Tinit, input[8], input[9]);
+		printf("\n");
+	}
 
 	//-------------------------------------------------------------------
-	// Read thermal output
+	// Read thermal output (currently kbo.dat, need to read Thermal.txt)
 	//-------------------------------------------------------------------
 
 	thermalout **thoutput = malloc(NR*sizeof(thermalout*));        // Thermal model output
@@ -183,14 +185,6 @@ int main(int argc, char *argv[]){
 		Cryolava(argc, argv, path, NR, NT, r_p, thoutput, t_cryolava, warnings, msgout);
 		printf("\n");
 	}
-
-	//-------------------------------------------------------------------
-	// Plots
-	//-------------------------------------------------------------------
-
-//	if (plot_on == 1 && calculate_cracking_depth == 1) {
-//		Crack_plot (path, NR, NT, timestep, NT_output, r_p, thoutput, warnings, msgout);
-//	}
 
 	//-------------------------------------------------------------------
 	// Exit

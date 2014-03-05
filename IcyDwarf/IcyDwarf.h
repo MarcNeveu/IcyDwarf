@@ -59,13 +59,6 @@ typedef struct {
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <R.h>
-#include <Rdefines.h>
-#include <Rinternals.h>
-#include <Rembedded.h>
-
-#include "CHNOSZ_commands.h"
-
 double *calculate_pressure (double *Pressure, int NR, int t, thermalout **thoutput);
 float calculate_mass_liquid (int NR, int NT, int t, thermalout **thoutput);
 int calculate_seafloor (thermalout **thoutput, int NR, int NT, int t);
@@ -288,7 +281,11 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,105,SEEK_CUR);  // Core cracks?
+			fseek(f,105,SEEK_CUR);   // Run thermal?
+			scan = fscanf(f, "%lg", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,31,SEEK_CUR);  // Core cracks?
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
@@ -366,6 +363,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 		printf("-------------------------------\n");
 		printf("Subroutines\n");
 		printf("-------------------------------\n");
+		printf("Run thermal? \t \t \t %g\n",input[i]), i++;
 		printf("Core cracks? \t \t \t %g\n",input[i]), i++;
 		printf("\t Calculate aTP? \t %g\n",input[i]), i++;
 		printf("\t Water alpha beta? \t %g\n",input[i]), i++;

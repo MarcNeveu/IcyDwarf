@@ -37,8 +37,14 @@
 #include <math.h>
 
 #include "../Crack/Crack.h"                 // For the densities
-#include "../CHNOSZ_commands.h"
 #include "../IcyDwarf.h"
+
+#include <R.h>
+#include <Rdefines.h>
+#include <Rinternals.h>
+#include <Rembedded.h>
+
+#include "../CHNOSZ_commands.h"
 
 int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p, thermalout **thoutput, int t_cryolava, int warnings, int msgout);
 double f (float P, float Mliq, double *Abundances, double *K_rxn, double x);

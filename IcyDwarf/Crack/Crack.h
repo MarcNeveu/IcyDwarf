@@ -54,6 +54,13 @@
 #include "../IcyDwarf.h"
 #include "Crack_parameters.h"
 
+#include <R.h>
+#include <Rdefines.h>
+#include <Rinternals.h>
+#include <Rembedded.h>
+
+#include "../CHNOSZ_commands.h"
+
 int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, float timestep, int NT_output, float rho_p, thermalout **thoutput,
 		int warnings, int msgout, int *crack_input, int *crack_species);
 
@@ -322,7 +329,6 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 //	printf("T>647 K between t=%d and %d\n",t_647_start,t_647_end);
 //}
 ////---------------------------------------------
-		printf("%g \t %g \n",(float) t/100,thoutput[290][t].nu);
 
 		for (r=0;r<NR;r++) {
 

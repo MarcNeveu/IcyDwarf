@@ -11,7 +11,7 @@
 #define CRACK_PARAMETERS_H_
 
 // General parameters
-#define E_Young 80.0e9                                     // Young's modulus (Pa) for partially hydrated rock (Christensen 1966)
+#define E_Young 200.0e9                                     // Young's modulus (Pa) for partially hydrated rock (Christensen 1966)
 						                                      // Serpentinite = 35 GPa, olivine = 200 GPa, Vance et al. had 197 GPa
 #define nu_Poisson 0.30                                    // Poisson's ratio
 #define smallest_crack_size 1.0e-2                         // Smallest 1-D or 2-D crack size in m

@@ -26,10 +26,10 @@
 									<listOptionValue builtIn="false" value="R"/>
 								</option>
 								<option id="macosx.c.link.option.paths.1817112563" name="Library search path (-L)" superClass="macosx.c.link.option.paths" valueType="libPaths">
-									<listOptionValue builtIn="false" value="/Users/marc/Documents/Research/&quot;2011 thru 2016 ASU&quot;/&quot;2. Subsurface hydrospheres&quot;/Git/IcyDwarf/IcyDwarf"/>
+									<listOptionValue builtIn="false" value="/Users/marc/Documents/Research/&quot;2011 thru 2016 ASU/2. Subsurface hydrospheres&quot;/Git/IcyDwarf/IcyDwarf"/>
 									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Resources/lib/x86_64"/>
 								</option>
-								<option id="macosx.c.link.option.ldflags.1667768476" name="Linker flags" superClass="macosx.c.link.option.ldflags" value="-arch x86_64 -framework openGL -framework Cocoa -framework GLUT" valueType="string"/>
+								<option id="macosx.c.link.option.ldflags.1667768476" name="Linker flags" superClass="macosx.c.link.option.ldflags" value="-F/Library/Frameworks -arch x86_64 -framework openGL -framework Cocoa -framework GLUT -framework SDL2 -framework SDL2_image -framework SDL2_mixer" valueType="string"/>
 								<option id="macosx.c.link.option.userobjs.1352728355" name="Other objects" superClass="macosx.c.link.option.userobjs" valueType="userObjs">
 									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Resources/library/RInside/lib/x86_64/libRInside.a"/>
 								</option>
@@ -104,7 +104,7 @@
 									<listOptionValue builtIn="false" value="/Users/marc/Documents/Research/&quot;2011 thru 2016 ASU/2. Subsurface hydrospheres&quot;/Git/IcyDwarf/IcyDwarf"/>
 									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Resources/lib/x86_64"/>
 								</option>
-								<option id="macosx.c.link.option.ldflags.1918427544" name="Linker flags" superClass="macosx.c.link.option.ldflags" value="-arch x86_64 -framework openGL -framework Cocoa -framework GLUT" valueType="string"/>
+								<option id="macosx.c.link.option.ldflags.1918427544" name="Linker flags" superClass="macosx.c.link.option.ldflags" value="-F/Library/Frameworks -arch x86_64 -framework openGL -framework Cocoa -framework GLUT -framework SDL2 -framework SDL2_image -framework SDL2_mixer" valueType="string"/>
 								<option id="macosx.c.link.option.userobjs.2145990486" name="Other objects" superClass="macosx.c.link.option.userobjs" valueType="userObjs">
 									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Resources/library/RInside/lib/x86_64/libRInside.a"/>
 								</option>
