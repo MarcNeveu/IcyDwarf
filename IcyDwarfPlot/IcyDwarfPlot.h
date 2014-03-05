@@ -59,16 +59,10 @@ typedef struct {
 #include <stdio.h>
 #include <stdlib.h>
 
-double *calculate_pressure (double *Pressure, int NR, int t, thermalout **thoutput);
-float calculate_mass_liquid (int NR, int NT, int t, thermalout **thoutput);
 int calculate_seafloor (thermalout **thoutput, int NR, int NT, int t);
-int look_up (float x, float x_var, float x_step, int size, int warnings);
 double *icy_dwarf_input (double *input, char path[1024]);
 thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char path[1024]);
 float **read_input (int H, int L, float **Input, char path[1024], char filename[1024]);
-int create_output (char path[1024], char filename[1024]);
-int write_output (int H, int L, double **Output, char path[1024], char filename[1024]);
-int append_output (int L, double *Output, char path[1024], char filename[1024]);
 
 //-------------------------------------------------------------------
 //                        Calculate pressure
@@ -187,32 +181,6 @@ int calculate_seafloor (thermalout **thoutput, int NR, int NT, int t) {
 	}
 	if (r == NR) printf("IcyDwarf: Seafloor not found at t=%d\n",t);
 return r_seafloor;
-}
-
-//-------------------------------------------------------------------
-//        Return correct index to look up a value in a table
-//-------------------------------------------------------------------
-
-int look_up (float x, float x_var, float x_step, int size, int warnings) {
-
-	int x_int = 0;
-	int j = 0;
-
-	if (x <= x_step) x_int = 0;
-	else if (x > x_var + x_step*((float) (size-1.0))) {
-		x_int = size-1;
-		if (warnings == 1) printf("IcyDwarf look_up: x=%g above range, assuming x=%g\n", x, x_step*((float) (size-1.0)));
-	}
-	else {
-		for (j=0;j<size;j++) {
-			if (x/(x_var-0.5*x_step) > 1.0 &&
-					x/(x_var+0.5*x_step) < 1.0) {
-				x_int = j;
-			}
-			x_var = x_var + x_step;
-		}
-	}
-	return x_int;
 }
 
 //-------------------------------------------------------------------
@@ -472,107 +440,6 @@ float **read_input (int H, int L, float **Input, char path[1024], char filename[
 	free (title);
 
 	return Input;
-}
-
-//-------------------------------------------------------------------
-//                           Create output
-//-------------------------------------------------------------------
-
-int create_output (char path[1024], char filename[1024]) {
-
-	FILE *fout;
-
-	// Turn working directory into full file path by moving up two directories
-	// to IcyDwarf (e.g., removing "Release/IcyDwarf" characters) and specifying
-	// the right path end.
-
-	char *title = (char*)malloc(1024*sizeof(char));       // Don't forget to free!
-	title[0] = '\0';
-	if (release == 1) strncat(title,path,strlen(path)-24);
-	else if (cmdline == 1) strncat(title,path,strlen(path)-26);
-	strcat(title,filename);
-
-	fout = fopen(title,"w");
-	if (fout == NULL) {
-		printf("IcyDwarf: Error opening %s output file.\n",title);
-	}
-	fclose (fout);
-	free (title);
-
-	return 0;
-}
-
-//-------------------------------------------------------------------
-//               Write output (no need to create output)
-//-------------------------------------------------------------------
-
-int write_output (int H, int L, double **Output, char path[1024], char filename[1024]) {
-
-	FILE *fout;
-	int l = 0;
-	int h = 0;
-
-	// Turn working directory into full file path by moving up two directories
-	// to IcyDwarf (e.g., removing "Release/IcyDwarf" characters) and specifying
-	// the right path end.
-
-	char *title = (char*)malloc(1024*sizeof(char));       // Don't forget to free!
-	title[0] = '\0';
-	if (release == 1) strncat(title,path,strlen(path)-24);
-	else if (cmdline == 1) strncat(title,path,strlen(path)-26);
-	strcat(title,filename);
-
-	fout = fopen(title,"w");
-	if (fout == NULL) {
-		printf("IcyDwarf: Error opening %s output file.\n",title);
-	}
-	else {
-		for (l=0;l<L;l++) {
-			for (h=0;h<H;h++) {
-				fprintf(fout,"%g \t", Output[l][h]);
-			}
-			fprintf(fout,"\n");
-		}
-	}
-	fclose (fout);
-	free (title);
-
-	return 0;
-}
-
-//-------------------------------------------------------------------
-//                           Append output
-//-------------------------------------------------------------------
-
-int append_output (int L, double *Output, char path[1024], char filename[1024]) {
-
-	FILE *fout;
-	int l = 0;
-
-	// Turn working directory into full file path by moving up two directories
-	// to IcyDwarf (e.g., removing "Release/IcyDwarf" characters) and specifying
-	// the right path end.
-
-	char *title = (char*)malloc(1024*sizeof(char));       // Don't forget to free!
-	title[0] = '\0';
-	if (release == 1) strncat(title,path,strlen(path)-24);
-	else if (cmdline == 1) strncat(title,path,strlen(path)-26);
-	strcat(title,filename);
-
-	fout = fopen(title,"a");
-	if (fout == NULL) {
-		printf("IcyDwarf: Error opening %s output file.\n",title);
-	}
-	else {
-		for (l=0;l<L;l++) {
-			fprintf(fout,"%g \t", Output[l]);
-		}
-		fprintf(fout,"\n");
-	}
-	fclose (fout);
-	free (title);
-
-	return 0;
 }
 
 #endif /* ICYDWARF_H_ */

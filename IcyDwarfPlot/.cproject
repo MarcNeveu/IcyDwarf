@@ -41,7 +41,7 @@
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.1593068112" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker">
 								<option id="gnu.c.link.option.paths.676938955" name="Library search path (-L)" superClass="gnu.c.link.option.paths" valueType="libPaths">
-									<listOptionValue builtIn="false" value="/Users/marc/Documents/Research/&quot;2011 thru 2016 ASU&quot;/&quot;2. Subsurface hydrospheres&quot;/Git/IcyDwarfPlot/IcyDwarfPlot"/>
+									<listOptionValue builtIn="false" value="/Users/marc/Documents/Research/&quot;2011 thru 2016 ASU&quot;/&quot;2. Subsurface hydrospheres&quot;/Git/IcyDwarf/IcyDwarfPlot"/>
 								</option>
 								<option id="gnu.c.link.option.ldflags.1348578128" name="Linker flags" superClass="gnu.c.link.option.ldflags" value="-F/Library/Frameworks -arch x86_64 -framework openGL -framework Cocoa -framework GLUT -framework SDL2 -framework SDL2_image -framework SDL2_mixer " valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.linker.input.1037244587" superClass="cdt.managedbuild.tool.gnu.c.linker.input">
