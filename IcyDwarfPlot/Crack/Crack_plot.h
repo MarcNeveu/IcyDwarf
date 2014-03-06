@@ -17,9 +17,9 @@
 
 #include "../Graphics/Plot.h"
 
-int Crack_plot (char path[1024], int NR, int NT, float timestep, int NT_output, float r_p, thermalout **thoutput, int warnings, int msgout);
+int Crack_plot (char path[1024], int NR, int NT, float timestep, int NT_output, float r_p, thermalout **thoutput, int warnings, int msgout, SDL_Window* window, SDL_Renderer* renderer, int* view, int* quit);
 
-int Crack_plot (char path[1024], int NR, int NT, float timestep, int NT_output, float r_p, thermalout **thoutput, int warnings, int msgout) {
+int Crack_plot (char path[1024], int NR, int NT, float timestep, int NT_output, float r_p, thermalout **thoutput, int warnings, int msgout, SDL_Window* window, SDL_Renderer* renderer, int* view, int* quit) {
 
 	float total_time = NT*timestep;
 	int r = 0;
@@ -46,40 +46,6 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, int NT_output, 
 		if (WRratio[t] == NULL) printf("Crack: Not enough memory to create WRratio[NT_output][2]\n");
 	}
 	WRratio = read_input (2, NT_output, WRratio, path, "Outputs/Crack_WRratio.txt");
-
-//-------------------------------------------------------------------
-//           Launch Sample DirectMedia Layer (SDL) display
-//-------------------------------------------------------------------
-
-	int quit = 0;
-
-	if (SDL_Init(SDL_INIT_EVERYTHING) == -1){
-		printf("Crack_plot: Error: SDL not initialized.");
-	}
-	window = SDL_CreateWindow("IcyDwarf", SDL_WINDOWPOS_CENTERED,
-		SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-	if (window == NULL){
-		printf("Crack_plot: Error: Window not created.");
-	}
-	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED
-		| SDL_RENDERER_PRESENTVSYNC);
-	if (renderer == NULL){
-		printf("Crack_plot: Error: Renderer not created.");
-	}
-
-//-------------------------------------------------------------------
-//                           Window icon
-//-------------------------------------------------------------------
-
-	char *IcyDwarfIcon_icns = (char*)malloc(1024);           // Don't forget to free!
-	IcyDwarfIcon_icns[0] = '\0';
-	if (release == 1) strncat(IcyDwarfIcon_icns,path,strlen(path)-24);
-	else if (cmdline == 1) strncat(IcyDwarfIcon_icns,path,strlen(path)-26);
-	strcat(IcyDwarfIcon_icns,"Graphics/CeresDanWiersemaAtIconbug.icns");
-	SDL_Surface* IcyDwarfIcon = IMG_Load(IcyDwarfIcon_icns);
-	if (IcyDwarfIcon == NULL) printf("IcyDwarf: Plot: Window icon not loaded.\n");
-	free(IcyDwarfIcon_icns);
-	SDL_SetWindowIcon(window, IcyDwarfIcon);
 
 //-------------------------------------------------------------------
 //                     Initialize display elements
@@ -129,7 +95,7 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, int NT_output, 
 	TextureBackground_png[0] = '\0';
 	if (release == 1) strncat(TextureBackground_png,path,strlen(path)-24);
 	else if (cmdline == 1) strncat(TextureBackground_png,path,strlen(path)-26);
-	strcat(TextureBackground_png,"Graphics/TextureBackground.png");
+	strcat(TextureBackground_png,"Graphics/BG/BG.002.png");
 	background_tex = LoadImage(TextureBackground_png);
 	if (background_tex == NULL) printf("IcyDwarf: Plot: Background image not loaded.\n");
 	free(TextureBackground_png);
@@ -581,12 +547,16 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, int NT_output, 
 	int t_init = 0;
 	int stop_clicked = 0;
 
-	while (!quit){
+	while (!(*quit) && (*view) == 2){
 		//Event polling
 		while (SDL_PollEvent(&e)){
 			//If user closes the window
-			if (e.type == SDL_QUIT) quit = 1;
+			if (e.type == SDL_QUIT) (*quit) = 1;
 			if (e.type == SDL_MOUSEBUTTONDOWN) {
+
+				// Switch view
+
+				if (e.button.x >= 19 && e.button.x <= 69 && e.button.y >= 575 && e.button.y <= 599) (*view) = 1;
 
 				// Play - Stop
 
@@ -1032,11 +1002,6 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, int NT_output, 
 	SDL_DestroyTexture(max_depth_digit_2);
 	SDL_DestroyTexture(max_depth_digit_3);
 	SDL_FreeSurface(numbers);
-
-	SDL_FreeSurface(IcyDwarfIcon);
-	SDL_DestroyRenderer(renderer);
-	SDL_DestroyWindow(window);
-	SDL_Quit();
 
 	for (t=0;t<NT_output;t++) {
 		free (Crack[t]);

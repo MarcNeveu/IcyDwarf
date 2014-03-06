@@ -1,5 +1,5 @@
 IcyDwarfPlot.d: ../IcyDwarfPlot.c ../modifdyld.h ../IcyDwarfPlot.h \
-  ../Crack/Crack_plot.h ../Crack/../Graphics/Plot.h \
+  ../Thermal/Thermal_plot.h ../Thermal/../Graphics/Plot.h \
   /Library/Frameworks/SDL2.framework/Versions/A/Headers/SDL.h \
   /Library/Frameworks/SDL2.framework/Versions/A/Headers/SDL_main.h \
   /Library/Frameworks/SDL2.framework/Versions/A/Headers/SDL_stdinc.h \
@@ -45,15 +45,16 @@ IcyDwarfPlot.d: ../IcyDwarfPlot.c ../modifdyld.h ../IcyDwarfPlot.h \
   /Library/Frameworks/SDL2.framework/Versions/A/Headers/SDL_version.h \
   /Library/Frameworks/SDL2_image.framework/Versions/A/Headers/SDL_image.h \
   /Library/Frameworks/SDL2_mixer.framework/Versions/A/Headers/SDL_mixer.h \
-  /Library/Frameworks/SDL2.framework/Versions/A/Headers/SDL_types.h
+  /Library/Frameworks/SDL2.framework/Versions/A/Headers/SDL_types.h \
+  ../Crack/Crack_plot.h
 
 ../modifdyld.h:
 
 ../IcyDwarfPlot.h:
 
-../Crack/Crack_plot.h:
+../Thermal/Thermal_plot.h:
 
-../Crack/../Graphics/Plot.h:
+../Thermal/../Graphics/Plot.h:
 
 /Library/Frameworks/SDL2.framework/Versions/A/Headers/SDL.h:
 
@@ -146,3 +147,5 @@ IcyDwarfPlot.d: ../IcyDwarfPlot.c ../modifdyld.h ../IcyDwarfPlot.h \
 /Library/Frameworks/SDL2_mixer.framework/Versions/A/Headers/SDL_mixer.h:
 
 /Library/Frameworks/SDL2.framework/Versions/A/Headers/SDL_types.h:
+
+../Crack/Crack_plot.h:

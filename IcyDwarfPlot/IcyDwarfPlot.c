@@ -15,6 +15,7 @@
                        // that conflicts with the R_boolean typedef in IcyDwarf
 
 #include "IcyDwarfPlot.h"
+#include "Thermal/Thermal_plot.h"
 #include "Crack/Crack_plot.h"
 #include "Graphics/Plot.h"
 
@@ -23,8 +24,9 @@ int main(int argc, char *argv[]){
 	// Housekeeping inputs
 	int warnings = 0;                  // Display warnings
 	int msgout = 0;                    // Display messages
-    int plot_on = 0;  				   // Plots
+    int view = 0;  				       // Plot view
     int NT_output = 0;                 // Timestep for writing output
+    int quit = 0;                      // Close window
 
 	// Planet inputs
     float rho_p = 0.0;                 // Planetary density
@@ -74,7 +76,6 @@ int main(int argc, char *argv[]){
 
 	warnings = (int) input[0];
 	msgout = (int) input[1];
-	plot_on = (int) input[2];
 	rho_p = input[3];
 	r_p = input[4];
 	nh3 = input[5];
@@ -102,16 +103,58 @@ int main(int argc, char *argv[]){
 	thoutput = read_thermal_output (thoutput, NR, NT, path);
 
 	//-------------------------------------------------------------------
-	// Plots
+	// Launch Sample DirectMedia Layer (SDL) display
 	//-------------------------------------------------------------------
 
-	if (plot_on == 1) {
-		Crack_plot (path, NR, NT, timestep, NT_output, r_p, thoutput, warnings, msgout);
+	if (SDL_Init(SDL_INIT_EVERYTHING) == -1){
+		printf("Crack_plot: Error: SDL not initialized.");
+	}
+	window = SDL_CreateWindow("IcyDwarf", SDL_WINDOWPOS_CENTERED,
+		SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+	if (window == NULL){
+		printf("Crack_plot: Error: Window not created.");
+	}
+	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED
+		| SDL_RENDERER_PRESENTVSYNC);
+	if (renderer == NULL){
+		printf("Crack_plot: Error: Renderer not created.");
+	}
+
+	//-------------------------------------------------------------------
+	// Window icon
+	//-------------------------------------------------------------------
+
+	char *IcyDwarfIcon_icns = (char*)malloc(1024);           // Don't forget to free!
+	IcyDwarfIcon_icns[0] = '\0';
+	if (release == 1) strncat(IcyDwarfIcon_icns,path,strlen(path)-24);
+	else if (cmdline == 1) strncat(IcyDwarfIcon_icns,path,strlen(path)-26);
+	strcat(IcyDwarfIcon_icns,"Graphics/CeresDanWiersemaAtIconbug.icns");
+	SDL_Surface* IcyDwarfIcon = IMG_Load(IcyDwarfIcon_icns);
+	if (IcyDwarfIcon == NULL) printf("IcyDwarf: Plot: Window icon not loaded.\n");
+	free(IcyDwarfIcon_icns);
+	SDL_SetWindowIcon(window, IcyDwarfIcon);
+
+	//-------------------------------------------------------------------
+	// Display interaction
+	//-------------------------------------------------------------------
+
+	view = 1;
+
+	while (!quit) {
+		if (view == 1) // Display thermal tab
+			Thermal_plot (path, NR, NT, timestep, NT_output, r_p, thoutput, warnings, msgout, window, renderer, &view, &quit);
+		if (view == 2) // Display crack tab
+			Crack_plot (path, NR, NT, timestep, NT_output, r_p, thoutput, warnings, msgout, window, renderer, &view, &quit);
 	}
 
 	//-------------------------------------------------------------------
 	// Exit
 	//-------------------------------------------------------------------
+
+	SDL_FreeSurface(IcyDwarfIcon);
+	SDL_DestroyRenderer(renderer);
+	SDL_DestroyWindow(window);
+	SDL_Quit();
 
 	for (r=0;r<NR;r++) {
 		free (thoutput[r]);
@@ -119,7 +162,7 @@ int main(int argc, char *argv[]){
 	free (thoutput);
 	free (input);
 
-	printf("Exiting IcyDwarf...\n");
+	printf("Exiting IcyDwarfPlot...\n");
 	return 0;
 }
 
