@@ -16,14 +16,17 @@ int Thermal_plot (char path[1024], int NR, int NT, float timestep, int NT_output
 
 	int r = 0;
 	int t = 0;
+	int T = 0;
+
+	int grid = 0;
+	int structure = 0;
+	int hold_tracks = 0;
 
 //-------------------------------------------------------------------
 //                     Initialize display elements
 //-------------------------------------------------------------------
 
 	SDL_Texture* background_tex = NULL;
-	SDL_Texture* crack_time_tex = NULL;
-	SDL_Surface* crack_time = NULL;
 	SDL_Texture* progress_bar_tex = NULL;
 	SDL_Surface* progress_bar = NULL;
 	SDL_Texture* numbers_tex_1 = NULL;
@@ -37,6 +40,8 @@ int Thermal_plot (char path[1024], int NR, int NT, float timestep, int NT_output
 	SDL_Texture* elapsed_percent_2 = NULL;
 	SDL_Texture* elapsed_percent_3 = NULL;
 	SDL_Surface* numbers = NULL;
+	SDL_Texture* temp_time_tex = NULL;
+	SDL_Surface* temp_time = NULL;
 
 	char *TextureBackground_png = (char*)malloc(1024);     // Don't forget to free!
 	TextureBackground_png[0] = '\0';
@@ -47,18 +52,25 @@ int Thermal_plot (char path[1024], int NR, int NT, float timestep, int NT_output
 	if (background_tex == NULL) printf("IcyDwarf: Plot: Background image not loaded.\n");
 	free(TextureBackground_png);
 
-	char *Transparent_png = (char*)malloc(1024);           // Don't forget to free!
+	char *Transparent_png = (char*)malloc(1024);      // Don't forget to free!
 	Transparent_png[0] = '\0';
 	if (release == 1) strncat(Transparent_png,path,strlen(path)-24);
 	else if (cmdline == 1) strncat(Transparent_png,path,strlen(path)-26);
 	strcat(Transparent_png,"Graphics/Transparent.png");
-	crack_time = IMG_Load(Transparent_png);
-	if (crack_time == NULL) printf("IcyDwarf: Plot: crack_time layer not loaded.\n");
 	progress_bar = IMG_Load(Transparent_png);
 	if (progress_bar == NULL) printf("IcyDwarf: Plot: Progress bar layer not loaded.\n");
 	free(Transparent_png);
 
-	char *Numbers_png = (char*)malloc(1024);           // Don't forget to free!
+	char *Transparent2kx4k_png = (char*)malloc(1024); // Don't forget to free!
+	Transparent2kx4k_png[0] = '\0';
+	if (release == 1) strncat(Transparent2kx4k_png,path,strlen(path)-24);
+	else if (cmdline == 1) strncat(Transparent2kx4k_png,path,strlen(path)-26);
+	strcat(Transparent2kx4k_png,"Graphics/Transparent2kx4k.png");
+	temp_time = IMG_Load(Transparent2kx4k_png);
+	if (temp_time == NULL) printf("IcyDwarf: Plot: temp_time layer not loaded.\n");
+	free(Transparent2kx4k_png);
+
+	char *Numbers_png = (char*)malloc(1024);          // Don't forget to free!
 	Numbers_png[0] = '\0';
 	if (release == 1) strncat(Numbers_png,path,strlen(path)-24);
 	else if (cmdline == 1) strncat(Numbers_png,path,strlen(path)-26);
@@ -74,6 +86,26 @@ int Thermal_plot (char path[1024], int NR, int NT, float timestep, int NT_output
 //-------------------------------------------------------------------
 
 	Uint32 *pixmem32;
+
+	// TEMPERATURE PLOT
+
+	Uint32 white;
+	Uint32 alpha;
+	white = SDL_MapRGBA(temp_time->format, 255, 255, 255, 255);
+	alpha = SDL_MapRGBA(temp_time->format, 255, 255, 255, 0);   // r,g,b,alpha 0 to 255. Alpha of 0 is transparent
+
+	double Tmax = 0.0; // Max temperature ever encountered in any layer
+	int Tmax_int = 0;
+	for (t=0;t<NT_output;t++) {
+		for (r=0;r<NR;r++) {
+			if (thoutput[r][t].tempk > Tmax) Tmax = thoutput[r][t].tempk;
+		}
+	}
+	Tmax_int = (int) Tmax + 1;
+
+	// STRUCTURE PLOT
+
+
 
 	// PROGRESS BAR
 
@@ -99,6 +131,9 @@ int Thermal_plot (char path[1024], int NR, int NT, float timestep, int NT_output
 
 	SDL_Rect progress_bar_clip;        // Section of the image to clip
 	SDL_Rect progress_bar_dilation;    // Resized and repositioned clip
+
+	SDL_Rect temp_time_clip;          // Section of the image to clip
+	SDL_Rect temp_time_dilation;      // Resized and repositioned clip
 
 	SDL_Rect elapsed_digit_clip_1;
 	SDL_Rect elapsed_digit_dest_1;
@@ -144,6 +179,39 @@ int Thermal_plot (char path[1024], int NR, int NT, float timestep, int NT_output
 
 						SDL_RenderClear(renderer);
 						ApplySurface(0, 0, background_tex, renderer, NULL);
+
+						// Temperature-time plot
+						if (!hold_tracks) {
+							for (T=0;T<=Tmax_int;T++) {
+								for (r=0;r<NR;r++) {
+									pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - T)*temp_time->w + r;
+									*pixmem32 = alpha;
+								}
+							}
+						}
+						for (T=0;T<=Tmax_int;T++) {
+							for (r=0;r<NR;r++) {
+								// Temperature grid every 200 K
+								if (grid) {
+									if ((double) T/200.0 - (double) floor((double) T/200.0) <= 0.1) {
+										pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - T)*temp_time->w + r;
+										*pixmem32 = SDL_MapRGBA(temp_time->format, 255, 255, 255, 20);
+									}
+								}
+								// Temperature profile redder where hotter, bluer where colder
+								if (T >= (int) (thoutput[r][t].tempk - 4) && (int) (T <= thoutput[r][t].tempk + 4)) {
+									pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - T)*temp_time->w + r;
+									*pixmem32 = SDL_MapRGBA(temp_time->format, floor(180*T/Tmax)+75, 75, floor(180*(1-T/Tmax))+75, 255); // r,g,b,alpha 0 to 255. Alpha of 0 is transparent;
+								}
+							}
+						}
+						temp_time_tex = SDL_CreateTextureFromSurface(renderer, temp_time);
+
+						temp_time_clip.x = 0, temp_time_clip.y = temp_time->h - (Tmax_int+1);
+						temp_time_clip.w = NR, temp_time_clip.h = Tmax_int+1;
+						temp_time_dilation.x = 90, temp_time_dilation.y = 87;
+						temp_time_dilation.w = 520, temp_time_dilation.h = 350;
+						SDL_RenderCopy(renderer, temp_time_tex, &temp_time_clip, &temp_time_dilation);
 
 						// Unveil the progress bar
 						progress_bar_clip.x = 21, progress_bar_clip.y = 551;
@@ -253,6 +321,39 @@ int Thermal_plot (char path[1024], int NR, int NT, float timestep, int NT_output
 							SDL_RenderClear(renderer);
 							ApplySurface(0, 0, background_tex, renderer, NULL);
 
+							// Temperature-time plot
+							if (!hold_tracks) {
+								for (T=0;T<=Tmax_int;T++) {
+									for (r=0;r<NR;r++) {
+										pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - T)*temp_time->w + r;
+										*pixmem32 = alpha;
+									}
+								}
+							}
+							for (T=0;T<=Tmax_int;T++) {
+								for (r=0;r<NR;r++) {
+									// Temperature grid every 200 K
+									if (grid) {
+										if ((double) T/200.0 - (double) floor((double) T/200.0) <= 0.1) {
+											pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - T)*temp_time->w + r;
+											*pixmem32 = SDL_MapRGBA(temp_time->format, 255, 255, 255, 20);
+										}
+									}
+									// Temperature profile redder where hotter, bluer where colder
+									if (T >= (int) (thoutput[r][t].tempk - 4) && (int) (T <= thoutput[r][t].tempk + 4)) {
+										pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - T)*temp_time->w + r;
+										*pixmem32 = SDL_MapRGBA(temp_time->format, floor(180*T/Tmax)+75, 75, floor(180*(1-T/Tmax))+75, 255); // r,g,b,alpha 0 to 255. Alpha of 0 is transparent;
+									}
+								}
+							}
+							temp_time_tex = SDL_CreateTextureFromSurface(renderer, temp_time);
+
+							temp_time_clip.x = 0, temp_time_clip.y = temp_time->h - (Tmax_int+1);
+							temp_time_clip.w = NR, temp_time_clip.h = Tmax_int+1;
+							temp_time_dilation.x = 90, temp_time_dilation.y = 87;
+							temp_time_dilation.w = 520, temp_time_dilation.h = 350;
+							SDL_RenderCopy(renderer, temp_time_tex, &temp_time_clip, &temp_time_dilation);
+
 							// Unveil the progress bar
 							progress_bar_clip.x = 21, progress_bar_clip.y = 551;
 							progress_bar_clip.w = floor((780.0-21.0)*t/NT_output), progress_bar_clip.h = 15;
@@ -324,10 +425,61 @@ int Thermal_plot (char path[1024], int NR, int NT, float timestep, int NT_output
 					}
 					t_init = t;  // To pick up the animation back where we're leaving off
 				}
+
+				// Make grid appear or disappear
+				if (e.button.x >= 648 && e.button.x <= 764 && e.button.y >= 262 && e.button.y <= 327) {
+					if (grid == 1) grid = 0;
+					else grid = 1;
+				}
+
+				// Make structure appear or disappear
+				if (e.button.x >= 648 && e.button.x <= 764 && e.button.y >= 338 && e.button.y <= 400) {
+					if (structure == 1) structure = 0;
+					else structure = 1;
+				}
+
+				// Make structure appear or disappear
+				if (e.button.x >= 648 && e.button.x <= 764 && e.button.y >= 411 && e.button.y <= 458) {
+					if (hold_tracks == 1) hold_tracks = 0;
+					else hold_tracks = 1;
+				}
 			}
 		}
 		SDL_RenderClear(renderer);
 		ApplySurface(0, 0, background_tex, renderer, NULL);
+
+		// Temperature-time plot
+		if (!hold_tracks) {
+			for (T=0;T<=Tmax_int;T++) {
+				for (r=0;r<NR;r++) {
+					pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - T)*temp_time->w + r;
+					*pixmem32 = alpha;
+				}
+			}
+		}
+		for (T=0;T<=Tmax_int;T++) {
+			for (r=0;r<NR;r++) {
+				// Temperature grid every 200 K
+				if (grid) {
+					if ((double) T/200.0 - (double) floor((double) T/200.0) <= 0.1) {
+						pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - T)*temp_time->w + r;
+						*pixmem32 = SDL_MapRGBA(temp_time->format, 255, 255, 255, 20);
+					}
+				}
+				// Temperature profile redder where hotter, bluer where colder
+				if (T >= (int) (thoutput[r][t].tempk - 4) && (int) (T <= thoutput[r][t].tempk + 4)) {
+					pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - T)*temp_time->w + r;
+					*pixmem32 = SDL_MapRGBA(temp_time->format, floor(180*T/Tmax)+75, 75, floor(180*(1-T/Tmax))+75, 255); // r,g,b,alpha 0 to 255. Alpha of 0 is transparent;
+				}
+			}
+		}
+		temp_time_tex = SDL_CreateTextureFromSurface(renderer, temp_time);
+
+		temp_time_clip.x = 0, temp_time_clip.y = temp_time->h - (Tmax_int+1);
+		temp_time_clip.w = NR, temp_time_clip.h = Tmax_int+1;
+		temp_time_dilation.x = 90, temp_time_dilation.y = 87;
+		temp_time_dilation.w = 520, temp_time_dilation.h = 350;
+		SDL_RenderCopy(renderer, temp_time_tex, &temp_time_clip, &temp_time_dilation);
 
 		// Unveil the progress bar
 		progress_bar_clip.x = 21, progress_bar_clip.y = 551;
@@ -403,8 +555,6 @@ int Thermal_plot (char path[1024], int NR, int NT, float timestep, int NT_output
 //-------------------------------------------------------------------
 
 	SDL_DestroyTexture(background_tex);
-	SDL_DestroyTexture(crack_time_tex);
-	SDL_FreeSurface(crack_time);
 	SDL_DestroyTexture(progress_bar_tex);
 	SDL_FreeSurface(progress_bar);
 	SDL_DestroyTexture(numbers_tex_1);
@@ -412,6 +562,8 @@ int Thermal_plot (char path[1024], int NR, int NT, float timestep, int NT_output
 	SDL_DestroyTexture(numbers_tex_3);
 	SDL_DestroyTexture(numbers_tex_4);
 	SDL_FreeSurface(numbers);
+	SDL_DestroyTexture(temp_time_tex);
+	SDL_FreeSurface(temp_time);
 
 	return 0;
 }

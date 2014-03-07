@@ -371,15 +371,15 @@ thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char pa
 	// to IcyDwarf (i.e., removing "Release/IcyDwarf" characters) and specifying
 	// the right path end.
 
-	char *kbo_dat = (char*)malloc(1024);       // Don't forget to free!
-	kbo_dat[0] = '\0';
-	if (release == 1) strncat(kbo_dat,path,strlen(path)-24);
-	else if (cmdline == 1) strncat(kbo_dat,path,strlen(path)-26);
-	strcat(kbo_dat,"Outputs/kbo.dat");
+	char *thermal_txt = (char*)malloc(1024);       // Don't forget to free!
+	thermal_txt[0] = '\0';
+	if (release == 1) strncat(thermal_txt,path,strlen(path)-24);
+	else if (cmdline == 1) strncat(thermal_txt,path,strlen(path)-26);
+	strcat(thermal_txt,"Outputs/kbo.dat");
 
-	fid = fopen (kbo_dat,"r");
+	fid = fopen (thermal_txt,"r");
 	if (fid == NULL) {
-		printf("IcyDwarf: Missing kbo.dat file.\n");
+		printf("IcyDwarf: Missing Thermal.txt file.\n");
 	}
 	else {
 		for (t=0;t<NT;t++) {
@@ -397,7 +397,7 @@ thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char pa
 	}
 
 	fclose(fid);
-	free(kbo_dat);
+	free(thermal_txt);
 
 	return thoutput;
 }

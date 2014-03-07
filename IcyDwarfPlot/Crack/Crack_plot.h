@@ -130,7 +130,7 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, int NT_output, 
 	TextureCracked_png[0] = '\0';
 	if (release == 1) strncat(TextureCracked_png,path,strlen(path)-24);
 	else if (cmdline == 1) strncat(TextureCracked_png,path,strlen(path)-26);
-	strcat(TextureCracked_png,"Graphics/TextureCracked.png");
+	strcat(TextureCracked_png,"Graphics/Crack/TextureCracked.png");
 	cracked_rock_tex = LoadImage(TextureCracked_png);
 	if (cracked_rock_tex == NULL) printf("IcyDwarf: Plot: Cracked texture not loaded.\n");
 	free(TextureCracked_png);
