@@ -15,24 +15,25 @@ Go to http://www.r-project.org and follow instructions.
 Go to http://chnosz.net and follow instructions.
 
 ## Install SDL2 (only to use IcyDwarfPlot)
-Go to http://www.libsdl.org/projects
-Download and install SDL2, SDL2_image, SDL2_ttf
+Go to http://www.libsdl.org/projects. Download and install SDL2, SDL2_image, SDL2_ttf.
 
 ## Install IcyDwarf
-Go to https://github.com/MarcNeveu/IcyDwarf
-Click “Download ZIP” on the bottom right side of the page
-Unzip IcyDwarf-master.zip
-Rename the unzipped folder “IcyDwarf-master” to “IcyDwarf”.
-Move the renamed IcyDwarf folder to any folder you’d like, we’ll call it “Path_to_GitFolder” here. All source files should be in: 
+Go to https://github.com/MarcNeveu/IcyDwarf. Click *Download ZIP* on the bottom right side of the page. Unzip IcyDwarf-master.zip. Rename the unzipped folder *IcyDwarf-master* to *IcyDwarf*.
+Move the renamed IcyDwarf folder to any folder you would like, we will call it *Path_to_GitFolder* here. All source files should be in: 
+
 /Path_to_GitFolder/IcyDwarf/IcyDwarf and subfolders
+
 /Path_to_GitFolder/IcyDwarf/IcyDwarfPlot and subfolders
 
 # Running the code
 
 ## Start the code
 The executable files are:
+
 /Path_to_GitFolder/IcyDwarf/IcyDwarf/Release/IcyDwarf (no extension)
+
 /Path_to_GitFolder/IcyDwarf/IcyDwarfPlot/Release/IcyDwarfPlot (no extension)
+
 Just double click to run. You can create shortcuts to these.
 
 ## Input file
@@ -47,15 +48,16 @@ The output file of the thermal evolution code is thermal.txt. It lists, for a gi
 ### Cracking code
 
 The crack routine outputs three files: Crack_depth.txt (two columns: time in Gyr, depth of cracked zone in km), Crack_WRratio.txt (two columns: time in Gyr, water:rock ratio by mass in cracked zone), and Crack.txt (n_layer columns, n_output rows, each value is an integer:
-0: no cracks
-1: cracks from thermal contraction
-2: cracks from thermal expansion
-3: cracks from hydration
-4: cracks from dehydration
-5: cracks from pore water dilation
-6: mineral dissolution widening
-7: mineral precipitation shrinking
--1: mineral precipitation clogging.
+
+- 0: no cracks
+- 1: cracks from thermal contraction
+- 2: cracks from thermal expansion
+- 3: cracks from hydration
+- 4: cracks from dehydration
+- 5: cracks from pore water dilation
+- 6: mineral dissolution widening
+- 7: mineral precipitation shrinking
+- -1: mineral precipitation clogging.
 
 All thermal and crack output files can be read and displayed by IcyDwarfPlot.
 
@@ -71,7 +73,11 @@ The cryolava routine outputs three files: Cryolava_molalities.txt (10 columns, n
 
 # Modifying the source code
 
-If you wish to modify the code, set up your compiler and linker so that all the relevant flags are added. My compiling instructions look like this (I listed each include as a new line for clarity, instead of separating them by a space:
+If you wish to modify the code, set up your compiler and linker so that all the relevant flags are added. 
+
+## Compiler setup (gcc on Mac OS 10.9 Mavericks)
+
+My compiling instructions look like this (I listed each include as a new line for clarity, instead of separating them by a space:
 
 -I/usr/include
 
@@ -89,7 +95,9 @@ If you wish to modify the code, set up your compiler and linker so that all the 
 
 -O3 -Wall -c -fmessage-length=0
 
-And my linker flags look like this:
+## Linker setup (Mac OS 10.9 Mavericks)
+
+My linker flags look like this:
 
 -F/Library/Frameworks -arch x86_64 -framework openGL -framework Cocoa -framework GLUT -framework SDL2 -framework SDL2_image -framework SDL2_ttf
 
@@ -101,9 +109,10 @@ Overall linker instructions:
 
 -L/Path_to_GitFolder/IcyDwarf/IcyDwarfPlot -F/Library/Frameworks -arch x86_64 -framework openGL -framework Cocoa -framework GLUT -framework SDL2 -framework SDL2_image -framework SDL2_mixer
 
-If you communicate or publish scientific results using this code, please acknowledge one of the following references!
+# Doing science with the code
 
-References:
+If you communicate or publish scientific results using this code, please acknowledge one of the following references. Thanks!
+
 Neveu M., Desch S., Castillo-Rogez J. (2014) Modeling core cracking, a key factor in the geophysical evolution 
 and habitability of Ceres. 45th LPSC, abstract 1120.
 
