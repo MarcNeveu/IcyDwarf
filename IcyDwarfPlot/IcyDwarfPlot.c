@@ -107,7 +107,10 @@ int main(int argc, char *argv[]){
 	//-------------------------------------------------------------------
 
 	if (SDL_Init(SDL_INIT_EVERYTHING) == -1){
-		printf("Crack_plot: Error: SDL not initialized.");
+		printf("IcyDwarfPlot: Error: SDL not initialized.");
+	}
+	if (TTF_Init() != 0){
+		printf("IcyDwarfPlot: Error: TTF not initialized.");
 	}
 	window = SDL_CreateWindow("IcyDwarf", SDL_WINDOWPOS_CENTERED,
 		SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);

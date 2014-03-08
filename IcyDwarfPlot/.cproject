@@ -28,7 +28,7 @@
 									<listOptionValue builtIn="false" value="/usr/include"/>
 									<listOptionValue builtIn="false" value="/Library/Frameworks/SDL2.framework/Versions/A/Headers"/>
 									<listOptionValue builtIn="false" value="/Library/Frameworks/SDL2_image.framework/Versions/A/Headers"/>
-									<listOptionValue builtIn="false" value="/Library/Frameworks/SDL2_mixer.framework/Versions/A/Headers"/>
+									<listOptionValue builtIn="false" value="/Library/Frameworks/SDL2_ttf.framework/Versions/A/Headers"/>
 									<listOptionValue builtIn="false" value="/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers"/>
 									<listOptionValue builtIn="false" value="/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/GLUT.framework/Versions/A/Headers"/>
 									<listOptionValue builtIn="false" value="/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/OpenGL.framework/Versions/A/Headers"/>
@@ -43,7 +43,7 @@
 								<option id="gnu.c.link.option.paths.676938955" name="Library search path (-L)" superClass="gnu.c.link.option.paths" valueType="libPaths">
 									<listOptionValue builtIn="false" value="/Users/marc/Documents/Research/&quot;2011 thru 2016 ASU&quot;/&quot;2. Subsurface hydrospheres&quot;/Git/IcyDwarf/IcyDwarfPlot"/>
 								</option>
-								<option id="gnu.c.link.option.ldflags.1348578128" name="Linker flags" superClass="gnu.c.link.option.ldflags" value="-F/Library/Frameworks -arch x86_64 -framework openGL -framework Cocoa -framework GLUT -framework SDL2 -framework SDL2_image -framework SDL2_mixer " valueType="string"/>
+								<option id="gnu.c.link.option.ldflags.1348578128" name="Linker flags" superClass="gnu.c.link.option.ldflags" value="-F/Library/Frameworks -arch x86_64 -framework openGL -framework Cocoa -framework GLUT -framework SDL2 -framework SDL2_image -framework SDL2_ttf" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.linker.input.1037244587" superClass="cdt.managedbuild.tool.gnu.c.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
@@ -85,7 +85,7 @@
 									<listOptionValue builtIn="false" value="/usr/include"/>
 									<listOptionValue builtIn="false" value="/Library/Frameworks/SDL2.framework/Versions/A/Headers"/>
 									<listOptionValue builtIn="false" value="/Library/Frameworks/SDL2_image.framework/Versions/A/Headers"/>
-									<listOptionValue builtIn="false" value="/Library/Frameworks/SDL2_mixer.framework/Versions/A/Headers"/>
+									<listOptionValue builtIn="false" value="/Library/Frameworks/SDL2_ttf.framework/Versions/A/Headers"/>
 									<listOptionValue builtIn="false" value="/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers"/>
 									<listOptionValue builtIn="false" value="/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/GLUT.framework/Versions/A/Headers"/>
 									<listOptionValue builtIn="false" value="/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/OpenGL.framework/Versions/A/Headers"/>
@@ -100,7 +100,7 @@
 								<option id="gnu.c.link.option.paths.1526975944" name="Library search path (-L)" superClass="gnu.c.link.option.paths" valueType="libPaths">
 									<listOptionValue builtIn="false" value="/Users/marc/Documents/Research/&quot;2011 thru 2016 ASU&quot;/&quot;2. Subsurface hydrospheres&quot;/Git/IcyDwarf/IcyDwarfPlot"/>
 								</option>
-								<option id="gnu.c.link.option.ldflags.497145945" name="Linker flags" superClass="gnu.c.link.option.ldflags" value="-F/Library/Frameworks -arch x86_64 -framework openGL -framework Cocoa -framework GLUT -framework SDL2 -framework SDL2_image -framework SDL2_mixer " valueType="string"/>
+								<option id="gnu.c.link.option.ldflags.497145945" name="Linker flags" superClass="gnu.c.link.option.ldflags" value="-F/Library/Frameworks -arch x86_64 -framework openGL -framework Cocoa -framework GLUT -framework SDL2 -framework SDL2_image -framework SDL2_ttf" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.linker.input.1817616934" superClass="cdt.managedbuild.tool.gnu.c.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
