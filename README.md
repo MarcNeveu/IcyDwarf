@@ -12,7 +12,12 @@ R is used to run the package CHNOSZ (see step 2) for geochemical calculations.
 Go to http://www.r-project.org and follow instructions.
 
 ## Install CHNOSZ
-Go to http://chnosz.net and follow instructions.
+Open R using either the installed application icon or by typing *R* in a terminal.
+In R, type the command *install.packages(CHNOSZ)*.
+
+## Install Rcpp and RInside
+Rcpp and RInside are libraries that allow R applications to be embedded in C or C++ codes. 
+Go to http://cran.r-project.org/web/packages/Rcpp/index.html and http://cran.r-project.org/web/packages/RInside/index.html to download the respective archives. On Mac, unzip the archives in */Library/Frameworks/R.framework/Resources/library/*, so that *Rcpp* and *RInside* are two subfolders of *library*.
 
 ## Install SDL2 (only to use IcyDwarfPlot)
 Go to http://www.libsdl.org/projects. Download and install SDL2, SDL2_image, SDL2_ttf.
@@ -79,7 +84,17 @@ If you wish to modify the code, set up your compiler and linker so that all the 
 
 My compiling instructions look like this (I listed each include as a new line for clarity, instead of separating them by a space:
 
+For both IcyDwarf and IcyDwarfPlot:
+
 -I/usr/include
+
+For IcyDwarf only:
+
+-/Library/Frameworks/R.framework/Versions/3.0/Resources/include
+
+-/Library/Frameworks/R.framework/Versions/3.0/Resources/library/RInside/include
+
+For IcyDwarfPlot only:
 
 -I/Library/Frameworks/SDL2.framework/Versions/A/Headers
 
@@ -97,17 +112,32 @@ My compiling instructions look like this (I listed each include as a new line fo
 
 ## Linker setup (Mac OS 10.9 Mavericks)
 
-My linker flags look like this:
+My linker flags for IcyDwarf look like this:
+
+-F/Library/Frameworks -arch x86_64
+
+Linker library: R
+
+Linker library search paths:
+
+/Path_to_GitFolder/IcyDwarf/IcyDwarf
+/Library/Frameworks/R.framework/Versions/3.0/Resources/lib (likely to change with new R versions)
+
+Overall linker instructions:
+
+-L/Path_to_GitFolder/IcyDwarf/IcyDwarf -L/Library/Frameworks/R.framework/Versions/3.0/Resources/lib -F/Library/Frameworks -arch x86_64
+
+My linker flags for IcyDwarfPlot look like this:
 
 -F/Library/Frameworks -arch x86_64 -framework openGL -framework Cocoa -framework GLUT -framework SDL2 -framework SDL2_image -framework SDL2_ttf
 
-Linker library:
+Linker library search path:
 
 /Path_to_GitFolder/IcyDwarf/IcyDwarfPlot
 
 Overall linker instructions:
 
--L/Path_to_GitFolder/IcyDwarf/IcyDwarfPlot -F/Library/Frameworks -arch x86_64 -framework openGL -framework Cocoa -framework GLUT -framework SDL2 -framework SDL2_image -framework SDL2_mixer
+-L/Path_to_GitFolder/IcyDwarf/IcyDwarfPlot -F/Library/Frameworks -arch x86_64 -framework openGL -framework Cocoa -framework GLUT -framework SDL2 -framework SDL2_image -framework SDL2_ttf
 
 # Doing science with the code
 

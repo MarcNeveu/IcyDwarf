@@ -33,7 +33,7 @@
 #define Omega 1.23e-29                                     // Atomic volume (m^3) (default 1.23e-29)
 #define D0_deltab 0.2377                                   // Grain boundary diffusion coefficient (1.5 m^2/s) x width
                                                               // (10^-0.8 m). Units: m^3/s (default 0.2377)
-#define n 23.0                                             // Fitting parameter (when solving diff eq (1)) (default 23)
+#define n_fit 23.0                                         // Fitting parameter (when solving diff eq (1)) (default 23)
 #define L 0.5e-3                                           // 1/2 grain size (m) in Vance et al. (2007). Set to d_flow_law/2*1e-6 for consistency (default 0.5e-3).
 #define a_var_max 0.2*L                                    // Used when looking for the optimal max flaw size
                                                               // No need to go very far in size to find a_max, usually < (2L)/10

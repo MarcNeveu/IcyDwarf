@@ -17,7 +17,7 @@ Surface temperature (K)       168
 -------------------------------
 Grid
 -------------------------------
-Number of grid zones          300
+Number of grid zones          200
 Total time of sim (Myr)       5000
 Output every... (Myr)         10
 -------------------------------

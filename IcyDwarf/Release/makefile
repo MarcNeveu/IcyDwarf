@@ -28,7 +28,7 @@ all: IcyDwarf
 IcyDwarf: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: MacOS X C Linker'
-	gcc -L/Users/marc/Documents/Research/"2011 thru 2016 ASU/2. Subsurface hydrospheres"/Git/IcyDwarf/IcyDwarf -L/Library/Frameworks/R.framework/Resources/lib/x86_64 -F/Library/Frameworks -arch x86_64 -o "IcyDwarf" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -L/Users/marc/Documents/Research/"2011 thru 2016 ASU/2. Subsurface hydrospheres"/Git/IcyDwarf/IcyDwarf -L/Library/Frameworks/R.framework/Versions/3.0/Resources/lib -F/Library/Frameworks -arch x86_64 -o "IcyDwarf" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 

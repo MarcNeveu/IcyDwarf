@@ -52,8 +52,8 @@
 								<option id="gnu.c.compiler.macosx.exe.debug.option.debugging.level.1151105240" name="Debug Level" superClass="gnu.c.compiler.macosx.exe.debug.option.debugging.level" value="gnu.c.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.include.paths.1102186728" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="/usr/include"/>
-									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Resources/include"/>
-									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Resources/library/RInside/include"/>
+									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Versions/3.0/Resources/include"/>
+									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Versions/3.0/Resources/library/RInside/include"/>
 								</option>
 								<option id="gnu.c.compiler.option.misc.other.220446502" name="Other flags" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0 -arch x86_64" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.632314581" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
@@ -96,7 +96,7 @@
 								</option>
 								<option id="macosx.c.link.option.paths.1132158293" name="Library search path (-L)" superClass="macosx.c.link.option.paths" valueType="libPaths">
 									<listOptionValue builtIn="false" value="/Users/marc/Documents/Research/&quot;2011 thru 2016 ASU/2. Subsurface hydrospheres&quot;/Git/IcyDwarf/IcyDwarf"/>
-									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Resources/lib/x86_64"/>
+									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Versions/3.0/Resources/lib"/>
 								</option>
 								<option id="macosx.c.link.option.ldflags.1918427544" name="Linker flags" superClass="macosx.c.link.option.ldflags" value="-F/Library/Frameworks -arch x86_64" valueType="string"/>
 								<option id="macosx.c.link.option.userobjs.2145990486" name="Other objects" superClass="macosx.c.link.option.userobjs" valueType="userObjs">
@@ -121,8 +121,8 @@
 								<option id="gnu.c.compiler.macosx.exe.release.option.debugging.level.864024125" name="Debug Level" superClass="gnu.c.compiler.macosx.exe.release.option.debugging.level" value="gnu.c.debugging.level.default" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.include.paths.1923154675" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="/usr/include"/>
-									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Resources/include"/>
-									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Resources/library/RInside/include"/>
+									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Versions/3.0/Resources/include"/>
+									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Versions/3.0/Resources/library/RInside/include"/>
 								</option>
 								<option id="gnu.c.compiler.option.misc.other.361968030" name="Other flags" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0" valueType="string"/>
 								<option id="gnu.c.compiler.option.debugging.gprof.1305378107" name="Generate gprof information (-pg)" superClass="gnu.c.compiler.option.debugging.gprof" value="false" valueType="boolean"/>
