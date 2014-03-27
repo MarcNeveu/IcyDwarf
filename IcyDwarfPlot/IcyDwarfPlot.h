@@ -199,10 +199,10 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 
 	char *idi = (char*)malloc(1024);
 	idi[0] = '\0';
-	if (release == 1) strncat(idi,path,strlen(path)-24);
-	else if (cmdline == 1) strncat(idi,path,strlen(path)-26);
+	if (release == 1) strncat(idi,path,strlen(path)-20);
+	else if (cmdline == 1) strncat(idi,path,strlen(path)-22);
 	strcat(idi,"Inputs/IcyDwarfInput.txt");
-
+printf("%s\n",idi);
 	i = 0;
 	f = fopen (idi,"r");
 		if (idi == NULL) {
@@ -373,8 +373,8 @@ thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char pa
 
 	char *thermal_txt = (char*)malloc(1024);       // Don't forget to free!
 	thermal_txt[0] = '\0';
-	if (release == 1) strncat(thermal_txt,path,strlen(path)-24);
-	else if (cmdline == 1) strncat(thermal_txt,path,strlen(path)-26);
+	if (release == 1) strncat(thermal_txt,path,strlen(path)-20);
+	else if (cmdline == 1) strncat(thermal_txt,path,strlen(path)-22);
 	strcat(thermal_txt,"Outputs/kbo.dat");
 
 	fid = fopen (thermal_txt,"r");
@@ -418,8 +418,8 @@ float **read_input (int H, int L, float **Input, char path[1024], char filename[
 
 	char *title = (char*)malloc(1024);       // Don't forget to free!
 	title[0] = '\0';
-	if (release == 1) strncat(title,path,strlen(path)-24);
-	else if (cmdline == 1) strncat(title,path,strlen(path)-26);
+	if (release == 1) strncat(title,path,strlen(path)-20);
+	else if (cmdline == 1) strncat(title,path,strlen(path)-22);
 	strcat(title,filename);
 
 	fin = fopen (title,"r");

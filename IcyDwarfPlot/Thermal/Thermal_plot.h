@@ -19,6 +19,8 @@ int Thermal_plot (char path[1024], int NR, int NT, float timestep, int NT_output
 	int T = 0;
 	int itempk = 0;
 	int irad = 0;
+	int xoffset = 0;
+	int yoffset = 0;
 
 	int grid = 0;
 	int structure = 0;
@@ -73,8 +75,8 @@ int Thermal_plot (char path[1024], int NR, int NT, float timestep, int NT_output
 
 	char *TextureBackground_png = (char*)malloc(1024);       // Don't forget to free!
 	TextureBackground_png[0] = '\0';
-	if (release == 1) strncat(TextureBackground_png,path,strlen(path)-24);
-	else if (cmdline == 1) strncat(TextureBackground_png,path,strlen(path)-26);
+	if (release == 1) strncat(TextureBackground_png,path,strlen(path)-20);
+	else if (cmdline == 1) strncat(TextureBackground_png,path,strlen(path)-22);
 	strcat(TextureBackground_png,"Graphics/BG/BG.001.png");
 	background_tex = LoadImage(TextureBackground_png);
 	if (background_tex == NULL) printf("IcyDwarf: Plot: Background image not loaded.\n");
@@ -82,26 +84,26 @@ int Thermal_plot (char path[1024], int NR, int NT, float timestep, int NT_output
 
 	char *Transparent_png = (char*)malloc(1024);      // Don't forget to free!
 	Transparent_png[0] = '\0';
-	if (release == 1) strncat(Transparent_png,path,strlen(path)-24);
-	else if (cmdline == 1) strncat(Transparent_png,path,strlen(path)-26);
+	if (release == 1) strncat(Transparent_png,path,strlen(path)-20);
+	else if (cmdline == 1) strncat(Transparent_png,path,strlen(path)-22);
 	strcat(Transparent_png,"Graphics/Transparent.png");
 	progress_bar = IMG_Load(Transparent_png);
 	if (progress_bar == NULL) printf("IcyDwarf: Plot: Progress bar layer not loaded.\n");
 	free(Transparent_png);
 
-	char *Transparent2kx4k_png = (char*)malloc(1024); // Don't forget to free!
-	Transparent2kx4k_png[0] = '\0';
-	if (release == 1) strncat(Transparent2kx4k_png,path,strlen(path)-24);
-	else if (cmdline == 1) strncat(Transparent2kx4k_png,path,strlen(path)-26);
-	strcat(Transparent2kx4k_png,"Graphics/Transparent2kx4k.png");
-	temp_time = IMG_Load(Transparent2kx4k_png);
+	char *Transparent520_png = (char*)malloc(1024); // Don't forget to free!
+	Transparent520_png[0] = '\0';
+	if (release == 1) strncat(Transparent520_png,path,strlen(path)-20);
+	else if (cmdline == 1) strncat(Transparent520_png,path,strlen(path)-22);
+	strcat(Transparent520_png,"Graphics/Transparent520.png");
+	temp_time = IMG_Load(Transparent520_png);
 	if (temp_time == NULL) printf("IcyDwarf: Plot: temp_time layer not loaded.\n");
-	free(Transparent2kx4k_png);
+	free(Transparent520_png);
 
 	char *DryRock_png = (char*)malloc(1024); // Don't forget to free!
 	DryRock_png[0] = '\0';
-	if (release == 1) strncat(DryRock_png,path,strlen(path)-24);
-	else if (cmdline == 1) strncat(DryRock_png,path,strlen(path)-26);
+	if (release == 1) strncat(DryRock_png,path,strlen(path)-20);
+	else if (cmdline == 1) strncat(DryRock_png,path,strlen(path)-22);
 	strcat(DryRock_png,"Graphics/Thermal/DryRock.png");
 	DryRock_tex = LoadImage(DryRock_png);
 	if (DryRock_tex == NULL) printf("IcyDwarf: Plot: DryRock layer not loaded.\n");
@@ -109,8 +111,8 @@ int Thermal_plot (char path[1024], int NR, int NT, float timestep, int NT_output
 
 	char *HydratedRock_png = (char*)malloc(1024); // Don't forget to free!
 	HydratedRock_png[0] = '\0';
-	if (release == 1) strncat(HydratedRock_png,path,strlen(path)-24);
-	else if (cmdline == 1) strncat(HydratedRock_png,path,strlen(path)-26);
+	if (release == 1) strncat(HydratedRock_png,path,strlen(path)-20);
+	else if (cmdline == 1) strncat(HydratedRock_png,path,strlen(path)-22);
 	strcat(HydratedRock_png,"Graphics/Thermal/HydratedRock.png");
 	HydratedRock_tex = LoadImage(HydratedRock_png);
 	if (HydratedRock_tex == NULL) printf("IcyDwarf: Plot: HydratedRock layer not loaded.\n");
@@ -118,8 +120,8 @@ int Thermal_plot (char path[1024], int NR, int NT, float timestep, int NT_output
 
 	char *Liquid_png = (char*)malloc(1024); // Don't forget to free!
 	Liquid_png[0] = '\0';
-	if (release == 1) strncat(Liquid_png,path,strlen(path)-24);
-	else if (cmdline == 1) strncat(Liquid_png,path,strlen(path)-26);
+	if (release == 1) strncat(Liquid_png,path,strlen(path)-20);
+	else if (cmdline == 1) strncat(Liquid_png,path,strlen(path)-22);
 	strcat(Liquid_png,"Graphics/Thermal/Liquid.png");
 	Liquid_tex = LoadImage(Liquid_png);
 	if (Liquid_tex == NULL) printf("IcyDwarf: Plot: Liquid layer not loaded.\n");
@@ -127,8 +129,8 @@ int Thermal_plot (char path[1024], int NR, int NT, float timestep, int NT_output
 
 	char *Ice_png = (char*)malloc(1024); // Don't forget to free!
 	Ice_png[0] = '\0';
-	if (release == 1) strncat(Ice_png,path,strlen(path)-24);
-	else if (cmdline == 1) strncat(Ice_png,path,strlen(path)-26);
+	if (release == 1) strncat(Ice_png,path,strlen(path)-20);
+	else if (cmdline == 1) strncat(Ice_png,path,strlen(path)-22);
 	strcat(Ice_png,"Graphics/Thermal/Ice.png");
 	Ice_tex = LoadImage(Ice_png);
 	if (Ice_tex == NULL) printf("IcyDwarf: Plot: Ice layer not loaded.\n");
@@ -136,8 +138,8 @@ int Thermal_plot (char path[1024], int NR, int NT, float timestep, int NT_output
 
 	char *Crust_png = (char*)malloc(1024); // Don't forget to free!
 	Crust_png[0] = '\0';
-	if (release == 1) strncat(Crust_png,path,strlen(path)-24);
-	else if (cmdline == 1) strncat(Crust_png,path,strlen(path)-26);
+	if (release == 1) strncat(Crust_png,path,strlen(path)-20);
+	else if (cmdline == 1) strncat(Crust_png,path,strlen(path)-22);
 	strcat(Crust_png,"Graphics/Thermal/Crust.png");
 	Crust_tex = LoadImage(Crust_png);
 	if (Crust_tex == NULL) printf("IcyDwarf: Plot: Crust layer not loaded.\n");
@@ -145,8 +147,8 @@ int Thermal_plot (char path[1024], int NR, int NT, float timestep, int NT_output
 
 	char *Numbers_png = (char*)malloc(1024);          // Don't forget to free!
 	Numbers_png[0] = '\0';
-	if (release == 1) strncat(Numbers_png,path,strlen(path)-24);
-	else if (cmdline == 1) strncat(Numbers_png,path,strlen(path)-26);
+	if (release == 1) strncat(Numbers_png,path,strlen(path)-20);
+	else if (cmdline == 1) strncat(Numbers_png,path,strlen(path)-22);
 	strcat(Numbers_png,"Graphics/Numbers.png");
 	numbers = IMG_Load(Numbers_png);
 	if (numbers == NULL) printf("IcyDwarf: Plot: numbers layer not loaded.\n");
@@ -182,8 +184,8 @@ int Thermal_plot (char path[1024], int NR, int NT, float timestep, int NT_output
 
 	char *FontFile = (char*)malloc(1024);      // Don't forget to free!
 	FontFile[0] = '\0';
-	if (release == 1) strncat(FontFile,path,strlen(path)-24);
-	else if (cmdline == 1) strncat(FontFile,path,strlen(path)-26);
+	if (release == 1) strncat(FontFile,path,strlen(path)-20);
+	else if (cmdline == 1) strncat(FontFile,path,strlen(path)-22);
 	strcat(FontFile,"Graphics/GillSans.ttf");
 
 	ynumber0_tex = renderText("      0",FontFile, axisTextColor, 16, renderer);
@@ -323,7 +325,10 @@ int Thermal_plot (char path[1024], int NR, int NT, float timestep, int NT_output
 
 				// Switch view
 
-				if (e.button.x >= 70 && e.button.x <= 119 && e.button.y >= 575 && e.button.y <= 599) (*view) = 2;
+				if (e.button.x >= 70 && e.button.x <= 119 && e.button.y >= 575 && e.button.y <= 599) {
+					(*view) = 2;
+					return 1;
+				}
 
 				// Play - Stop
 
@@ -331,6 +336,42 @@ int Thermal_plot (char path[1024], int NR, int NT, float timestep, int NT_output
 					for (t=t_init;t<NT_output;t++) {
 
 						stop_clicked = 0;
+
+						SDL_PollEvent(&e);
+						if (e.type == SDL_MOUSEBUTTONDOWN) {
+							// If press stop
+							if (e.button.x >= 76 && e.button.x <= 124 && e.button.y >= 511 && e.button.y <= 539) {
+								t_memory = t; // Memorize where we stopped
+								t_init = t;   // To start where we left off if we play again
+								t = NT_output;       // Exit for loop
+								stop_clicked = 1;
+								break;
+							}
+							// If click on the bar
+							else if (e.button.x >= 20 && e.button.x <= 780 && e.button.y >= 550 && e.button.y <= 567) {
+								t = floor(((float) e.button.x - 20.0)/(780.0-20.0)*500.0);
+							}
+							// If switch view
+							else if (e.button.x >= 70 && e.button.x <= 119 && e.button.y >= 575 && e.button.y <= 599) {
+								(*view) = 2;
+								return 1;
+							}
+							// If switch grid
+							else if (e.button.x >= 648 && e.button.x <= 764 && e.button.y >= 262 && e.button.y <= 327) {
+								if (grid == 1) grid = 0;
+								else grid = 1;
+							}
+							// If switch structure
+							else if (e.button.x >= 648 && e.button.x <= 764 && e.button.y >= 338 && e.button.y <= 400) {
+								if (structure == 1) structure = 0;
+								else structure = 1;
+							}
+							// If switch hold tracks
+							else if (e.button.x >= 648 && e.button.x <= 764 && e.button.y >= 411 && e.button.y <= 458) {
+								if (hold_tracks == 1) hold_tracks = 0;
+								else hold_tracks = 1;
+							}
+						}
 
 						SDL_RenderClear(renderer);
 						ApplySurface(0, 0, background_tex, renderer, NULL);
@@ -434,35 +475,40 @@ int Thermal_plot (char path[1024], int NR, int NT, float timestep, int NT_output
 
 						// Temperature-time plot
 						if (!hold_tracks) {
-							for (T=0;T<=Tmax_int;T++) {
-								for (r=0;r<NR;r++) {
-									pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - T)*temp_time->w + r;
+							for (T=0;T<temp_time->h;T++) {
+								for (r=0;r<temp_time->w;r++) {
+									pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - T-1)*temp_time->w + r+1;
 									*pixmem32 = alpha;
 								}
 							}
 						}
-						for (T=0;T<=Tmax_int;T++) {
+
+						for (T=0;T<Tmax_int;T++) {
 							for (r=0;r<NR;r++) {
 								// Temperature grid every i/2.0 K
 								if (grid) {
 									if ((double) T/((double) itempk/2.0) - (double) floor((double) T/((double) itempk/2.0)) <= 0.1) {
-										pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - T)*temp_time->w + r;
+										xoffset = floor((double)r/(double)NR*temp_time->w);
+										yoffset = floor((double)T/(double)Tmax_int*temp_time->h);
+										pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - yoffset)*temp_time->w + xoffset;
 										*pixmem32 = SDL_MapRGBA(temp_time->format, 255, 255, 255, 20);
 									}
 								}
 								// Temperature profile yellower when more recent, redder when more ancient
 								if (T >= (int) (thoutput[r][t].tempk - 4) && (int) (T <= thoutput[r][t].tempk + 4)) {
-									pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - T)*temp_time->w + r;
+									xoffset = floor((double)r/(double)NR*temp_time->w);
+									yoffset = floor((double)T/(double)Tmax_int*temp_time->h);
+									pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - yoffset)*temp_time->w + xoffset;
 									*pixmem32 = SDL_MapRGBA(temp_time->format, 255, floor(200*(t-21)/(780-21))+55, 55, 255);
 								}
 							}
 						}
 						temp_time_tex = SDL_CreateTextureFromSurface(renderer, temp_time);
 
-						temp_time_clip.x = 0, temp_time_clip.y = temp_time->h - (Tmax_int+1);
-						temp_time_clip.w = NR, temp_time_clip.h = Tmax_int+1;
+						temp_time_clip.x = 0, temp_time_clip.y = 0;
+						temp_time_clip.w = temp_time->w, temp_time_clip.h = temp_time->h;
 						temp_time_dilation.x = 90, temp_time_dilation.y = 87;
-						temp_time_dilation.w = 520, temp_time_dilation.h = 350;
+						temp_time_dilation.w = temp_time->w, temp_time_dilation.h = temp_time->h;
 						SDL_RenderCopy(renderer, temp_time_tex, &temp_time_clip, &temp_time_dilation);
 
 						// Unveil the progress bar
@@ -555,21 +601,6 @@ int Thermal_plot (char path[1024], int NR, int NT, float timestep, int NT_output
 						SDL_DestroyTexture(elapsed_percent_3);
 
 						SDL_Delay(16);
-
-						SDL_PollEvent(&e);
-						if (e.type == SDL_MOUSEBUTTONDOWN) {
-							// If press stop
-							if (e.button.x >= 76 && e.button.x <= 124 && e.button.y >= 511 && e.button.y <= 539) {
-								t_memory = t; // Memorize where we stopped
-								t_init = t;   // To start where we left off if we play again
-								t = NT_output;       // Exit for loop
-								stop_clicked = 1;
-							}
-							// If click on the bar
-							else if (e.button.x >= 20 && e.button.x <= 780 && e.button.y >= 550 && e.button.y <= 567) {
-								t = floor(((float) e.button.x - 20.0)/(780.0-20.0)*500.0);
-							}
-						}
 					}
 					if (stop_clicked == 1) t = t_memory;
 					else t = NT_output-1, t_init = 0;
@@ -695,35 +726,40 @@ int Thermal_plot (char path[1024], int NR, int NT, float timestep, int NT_output
 
 							// Temperature-time plot
 							if (!hold_tracks) {
-								for (T=0;T<=Tmax_int;T++) {
-									for (r=0;r<NR;r++) {
-										pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - T)*temp_time->w + r;
+								for (T=0;T<temp_time->h;T++) {
+									for (r=0;r<temp_time->w;r++) {
+										pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - T-1)*temp_time->w + r+1;
 										*pixmem32 = alpha;
 									}
 								}
 							}
-							for (T=0;T<=Tmax_int;T++) {
+
+							for (T=0;T<Tmax_int;T++) {
 								for (r=0;r<NR;r++) {
 									// Temperature grid every i/2.0 K
 									if (grid) {
 										if ((double) T/((double) itempk/2.0) - (double) floor((double) T/((double) itempk/2.0)) <= 0.1) {
-											pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - T)*temp_time->w + r;
+											xoffset = floor((double)r/(double)NR*temp_time->w);
+											yoffset = floor((double)T/(double)Tmax_int*temp_time->h);
+											pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - yoffset)*temp_time->w + xoffset;
 											*pixmem32 = SDL_MapRGBA(temp_time->format, 255, 255, 255, 20);
 										}
 									}
 									// Temperature profile yellower when more recent, redder when more ancient
 									if (T >= (int) (thoutput[r][t].tempk - 4) && (int) (T <= thoutput[r][t].tempk + 4)) {
-										pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - T)*temp_time->w + r;
+										xoffset = floor((double)r/(double)NR*temp_time->w);
+										yoffset = floor((double)T/(double)Tmax_int*temp_time->h);
+										pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - yoffset)*temp_time->w + xoffset;
 										*pixmem32 = SDL_MapRGBA(temp_time->format, 255, floor(200*(t-21)/(780-21))+55, 55, 255);
 									}
 								}
 							}
 							temp_time_tex = SDL_CreateTextureFromSurface(renderer, temp_time);
 
-							temp_time_clip.x = 0, temp_time_clip.y = temp_time->h - (Tmax_int+1);
-							temp_time_clip.w = NR, temp_time_clip.h = Tmax_int+1;
+							temp_time_clip.x = 0, temp_time_clip.y = 0;
+							temp_time_clip.w = temp_time->w, temp_time_clip.h = temp_time->h;
 							temp_time_dilation.x = 90, temp_time_dilation.y = 87;
-							temp_time_dilation.w = 520, temp_time_dilation.h = 350;
+							temp_time_dilation.w = temp_time->w, temp_time_dilation.h = temp_time->h;
 							SDL_RenderCopy(renderer, temp_time_tex, &temp_time_clip, &temp_time_dilation);
 
 							// Unveil the progress bar
@@ -833,7 +869,7 @@ int Thermal_plot (char path[1024], int NR, int NT, float timestep, int NT_output
 					else structure = 1;
 				}
 
-				// Make structure appear or disappear
+				// Hold tracks switch
 				if (e.button.x >= 648 && e.button.x <= 764 && e.button.y >= 411 && e.button.y <= 458) {
 					if (hold_tracks == 1) hold_tracks = 0;
 					else hold_tracks = 1;
@@ -942,35 +978,40 @@ int Thermal_plot (char path[1024], int NR, int NT, float timestep, int NT_output
 
 		// Temperature-time plot
 		if (!hold_tracks) {
-			for (T=0;T<=Tmax_int;T++) {
-				for (r=0;r<NR;r++) {
-					pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - T)*temp_time->w + r;
+			for (T=0;T<temp_time->h;T++) {
+				for (r=0;r<temp_time->w;r++) {
+					pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - T-1)*temp_time->w + r+1;
 					*pixmem32 = alpha;
 				}
 			}
 		}
-		for (T=0;T<=Tmax_int;T++) {
+
+		for (T=0;T<Tmax_int;T++) {
 			for (r=0;r<NR;r++) {
 				// Temperature grid every i/2.0 K
 				if (grid) {
 					if ((double) T/((double) itempk/2.0) - (double) floor((double) T/((double) itempk/2.0)) <= 0.1) {
-						pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - T)*temp_time->w + r;
+						xoffset = floor((double)r/(double)NR*temp_time->w);
+						yoffset = floor((double)T/(double)Tmax_int*temp_time->h);
+						pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - yoffset)*temp_time->w + xoffset;
 						*pixmem32 = SDL_MapRGBA(temp_time->format, 255, 255, 255, 20);
 					}
 				}
 				// Temperature profile yellower when more recent, redder when more ancient
 				if (T >= (int) (thoutput[r][t].tempk - 4) && (int) (T <= thoutput[r][t].tempk + 4)) {
-					pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - T)*temp_time->w + r;
+					xoffset = floor((double)r/(double)NR*temp_time->w);
+					yoffset = floor((double)T/(double)Tmax_int*temp_time->h);
+					pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - yoffset)*temp_time->w + xoffset;
 					*pixmem32 = SDL_MapRGBA(temp_time->format, 255, floor(200*(t-21)/(780-21))+55, 55, 255);
 				}
 			}
 		}
 		temp_time_tex = SDL_CreateTextureFromSurface(renderer, temp_time);
 
-		temp_time_clip.x = 0, temp_time_clip.y = temp_time->h - (Tmax_int+1);
-		temp_time_clip.w = NR, temp_time_clip.h = Tmax_int+1;
+		temp_time_clip.x = 0, temp_time_clip.y = 0;
+		temp_time_clip.w = temp_time->w, temp_time_clip.h = temp_time->h;
 		temp_time_dilation.x = 90, temp_time_dilation.y = 87;
-		temp_time_dilation.w = 520, temp_time_dilation.h = 350;
+		temp_time_dilation.w = temp_time->w, temp_time_dilation.h = temp_time->h;
 		SDL_RenderCopy(renderer, temp_time_tex, &temp_time_clip, &temp_time_dilation);
 
 		// Unveil the progress bar

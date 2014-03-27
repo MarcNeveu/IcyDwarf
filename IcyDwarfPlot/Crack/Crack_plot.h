@@ -93,8 +93,8 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, int NT_output, 
 
 	char *TextureBackground_png = (char*)malloc(1024);     // Don't forget to free!
 	TextureBackground_png[0] = '\0';
-	if (release == 1) strncat(TextureBackground_png,path,strlen(path)-24);
-	else if (cmdline == 1) strncat(TextureBackground_png,path,strlen(path)-26);
+	if (release == 1) strncat(TextureBackground_png,path,strlen(path)-20);
+	else if (cmdline == 1) strncat(TextureBackground_png,path,strlen(path)-22);
 	strcat(TextureBackground_png,"Graphics/BG/BG.002.png");
 	background_tex = LoadImage(TextureBackground_png);
 	if (background_tex == NULL) printf("IcyDwarf: Plot: Background image not loaded.\n");
@@ -102,8 +102,8 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, int NT_output, 
 
 	char *Transparent_png = (char*)malloc(1024);           // Don't forget to free!
 	Transparent_png[0] = '\0';
-	if (release == 1) strncat(Transparent_png,path,strlen(path)-24);
-	else if (cmdline == 1) strncat(Transparent_png,path,strlen(path)-26);
+	if (release == 1) strncat(Transparent_png,path,strlen(path)-20);
+	else if (cmdline == 1) strncat(Transparent_png,path,strlen(path)-22);
 	strcat(Transparent_png,"Graphics/Transparent.png");
 	crack_time = IMG_Load(Transparent_png);
 	if (crack_time == NULL) printf("IcyDwarf: Plot: crack_time layer not loaded.\n");
@@ -119,8 +119,8 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, int NT_output, 
 
 	char *Numbers_png = (char*)malloc(1024);           // Don't forget to free!
 	Numbers_png[0] = '\0';
-	if (release == 1) strncat(Numbers_png,path,strlen(path)-24);
-	else if (cmdline == 1) strncat(Numbers_png,path,strlen(path)-26);
+	if (release == 1) strncat(Numbers_png,path,strlen(path)-20);
+	else if (cmdline == 1) strncat(Numbers_png,path,strlen(path)-22);
 	strcat(Numbers_png,"Graphics/Numbers.png");
 	numbers = IMG_Load(Numbers_png);
 	if (numbers == NULL) printf("IcyDwarf: Plot: numbers layer not loaded.\n");
@@ -128,8 +128,8 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, int NT_output, 
 
 	char *TextureCracked_png = (char*)malloc(1024);           // Don't forget to free!
 	TextureCracked_png[0] = '\0';
-	if (release == 1) strncat(TextureCracked_png,path,strlen(path)-24);
-	else if (cmdline == 1) strncat(TextureCracked_png,path,strlen(path)-26);
+	if (release == 1) strncat(TextureCracked_png,path,strlen(path)-20);
+	else if (cmdline == 1) strncat(TextureCracked_png,path,strlen(path)-22);
 	strcat(TextureCracked_png,"Graphics/Crack/TextureCracked.png");
 	cracked_rock_tex = LoadImage(TextureCracked_png);
 	if (cracked_rock_tex == NULL) printf("IcyDwarf: Plot: Cracked texture not loaded.\n");
@@ -556,7 +556,10 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, int NT_output, 
 
 				// Switch view
 
-				if (e.button.x >= 19 && e.button.x <= 69 && e.button.y >= 575 && e.button.y <= 599) (*view) = 1;
+				if (e.button.x >= 19 && e.button.x <= 69 && e.button.y >= 575 && e.button.y <= 599) {
+					(*view) = 1;
+					return 1;
+				}
 
 				// Play - Stop
 
@@ -564,6 +567,27 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, int NT_output, 
 					for (t=t_init;t<NT_output;t++) {
 
 						stop_clicked = 0;
+
+						SDL_PollEvent(&e);
+						if (e.type == SDL_MOUSEBUTTONDOWN) {
+							// If press stop
+							if (e.button.x >= 76 && e.button.x <= 124 && e.button.y >= 511 && e.button.y <= 539) {
+								t_memory = t; // Memorize where we stopped
+								t_init = t;   // To start where we left off if we play again
+								t = NT_output;       // Exit for loop
+								stop_clicked = 1;
+								break;
+							}
+							// If click on the bar
+							else if (e.button.x >= 20 && e.button.x <= 780 && e.button.y >= 550 && e.button.y <= 567) {
+								t = floor(((float) e.button.x - 20.0)/(780.0-20.0)*500.0);
+							}
+							// If switch view
+							else if (e.button.x >= 19 && e.button.x <= 69 && e.button.y >= 575 && e.button.y <= 599) {
+								(*view) = 1;
+								return 1;
+							}
+						}
 
 						SDL_RenderClear(renderer);
 						ApplySurface(0, 0, background_tex, renderer, NULL);
@@ -683,21 +707,6 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, int NT_output, 
 						SDL_DestroyTexture(elapsed_percent_3);
 
 						SDL_Delay(16);
-
-						SDL_PollEvent(&e);
-						if (e.type == SDL_MOUSEBUTTONDOWN) {
-							// If press stop
-							if (e.button.x >= 76 && e.button.x <= 124 && e.button.y >= 511 && e.button.y <= 539) {
-								t_memory = t; // Memorize where we stopped
-								t_init = t;   // To start where we left off if we play again
-								t = NT_output;       // Exit for loop
-								stop_clicked = 1;
-							}
-							// If click on the bar
-							else if (e.button.x >= 20 && e.button.x <= 780 && e.button.y >= 550 && e.button.y <= 567) {
-								t = floor(((float) e.button.x - 20.0)/(780.0-20.0)*500.0);
-							}
-						}
 					}
 					if (stop_clicked == 1) t = t_memory;
 					else t = NT_output-1, t_init = 0;
