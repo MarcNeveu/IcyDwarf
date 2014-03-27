@@ -202,7 +202,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 	if (release == 1) strncat(idi,path,strlen(path)-20);
 	else if (cmdline == 1) strncat(idi,path,strlen(path)-22);
 	strcat(idi,"Inputs/IcyDwarfInput.txt");
-printf("%s\n",idi);
+
 	i = 0;
 	f = fopen (idi,"r");
 		if (idi == NULL) {
@@ -214,10 +214,6 @@ printf("%s\n",idi);
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
 			fseek(f,31,SEEK_CUR);   // Messages?
-			scan = fscanf(f, "%lg", &input[i]), i++;
-			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
-
-			fseek(f,31,SEEK_CUR);   // Plots?
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
@@ -249,11 +245,19 @@ printf("%s\n",idi);
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,105,SEEK_CUR);   // Run thermal?
+			fseek(f,105,SEEK_CUR);  // Run thermal?
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,31,SEEK_CUR);  // Core cracks?
+			fseek(f,24,SEEK_CUR);   // Sim starts at (Myr)
+			scan = fscanf(f, "%lg", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,24,SEEK_CUR);   // Initial temp (K)
+			scan = fscanf(f, "%lg", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,31,SEEK_CUR);   // Core cracks?
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
@@ -274,6 +278,10 @@ printf("%s\n",idi);
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
 			fseek(f,24,SEEK_CUR);   // After how many Myr?
+			scan = fscanf(f, "%lg", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,24,SEEK_CUR);   // Min temperature (K)
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
@@ -314,7 +322,6 @@ printf("%s\n",idi);
 		printf("-------------------------------\n");
 		printf("Warnings? \t \t \t %g\n",input[i]), i++;
 		printf("Messages? \t \t \t %g\n",input[i]), i++;
-		printf("Plots? \t \t \t \t %g\n",input[i]), i++;
 		printf("-------------------------------\n");
 		printf("Planet parameters\n");
 		printf("-------------------------------\n");
@@ -332,12 +339,15 @@ printf("%s\n",idi);
 		printf("Subroutines\n");
 		printf("-------------------------------\n");
 		printf("Run thermal? \t \t \t %g\n",input[i]), i++;
+		printf("\t Sim starts at (Myr) \t %g\n",input[i]), i++;
+		printf("\t Initial temp (K) \t %g\n",input[i]), i++;
 		printf("Core cracks? \t \t \t %g\n",input[i]), i++;
 		printf("\t Calculate aTP? \t %g\n",input[i]), i++;
 		printf("\t Water alpha beta? \t %g\n",input[i]), i++;
 		printf("\t CHNOSZ species? \t %g\n",input[i]), i++;
 		printf("Cryovolcanism? \t \t \t %g\n",input[i]), i++;
 		printf("\t After how many Myr? \t %g\n",input[i]), i++;
+		printf("\t Min temperature (K) \t %g\n",input[i]), i++;
 		printf("-------------------------------\n");
 		printf("Core crack options\n");
 		printf("-------------------------------\n");

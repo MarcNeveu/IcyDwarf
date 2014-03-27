@@ -46,11 +46,11 @@
 
 #include "../CHNOSZ_commands.h"
 
-int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p, thermalout **thoutput, int t_cryolava, int warnings, int msgout);
+int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p, thermalout **thoutput, int t_cryolava, double CHNOSZ_T_MIN, int warnings, int msgout);
 double f (float P, float Mliq, double *Abundances, double *K_rxn, double x);
 double f_prime (float P, float Mliq, double *Abundances, double *K_rxn, double x);
 
-int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p, thermalout **thoutput, int t_cryolava, int warnings, int msgout) {
+int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p, thermalout **thoutput, int t_cryolava, double CHNOSZ_T_MIN, int warnings, int msgout) {
 
 	// Counters
 	int r = 0;

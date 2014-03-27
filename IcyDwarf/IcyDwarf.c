@@ -31,8 +31,6 @@ int main(int argc, char *argv[]){
 	// Housekeeping inputs
 	int warnings = 0;                  // Display warnings
 	int msgout = 0;                    // Display messages
-    int plot_on = 0;  				   // Plots
-    int NT_output = 0;                 // Timestep for writing output
 
 	// Planet inputs
     float rho_p = 0.0;                 // Planetary density
@@ -44,8 +42,9 @@ int main(int argc, char *argv[]){
 
     // Grid inputs
 	int NR = 0;                        // Number of grid zones
-	int NT = 0;                        // Number of time intervals
-    float timestep = 0.0;              // Time step of the sim (Gyr)
+	int total_time = 0;                // Total time of sim
+	int output_every = 0;              // Output frequency
+    int NT_output = 0;                 // Time step for writing output
 
     // Call specific subroutines
     int calculate_thermal = 0;         // Run thermal code
@@ -54,16 +53,19 @@ int main(int argc, char *argv[]){
     int calculate_alpha_beta = 0;      // Calculate thermal expansivity and compressibility tables
     int calculate_crack_species = 0;   // Calculate equilibrium constants of species that dissolve or precipitate
     int calculate_cryolava = 0;        // Calculate gas-driven exsolution
-    int t_cryolava = 0;                // Time at which to calculate gas exsolution
 
     // Crack subroutine inputs
     int *crack_input = (int*) malloc(5*sizeof(int));
     int *crack_species = (int*) malloc(4*sizeof(int));
 
+    // Cryolava subroutine inputs
+    int t_cryolava = 0;                // Time at which to calculate gas exsolution
+    double CHNOSZ_T_MIN = 0.0;         // Minimum temperature for the subcrt() routine of CHNOSZ to work
+                                       // Default: 235 K (Cryolava), 245 K (Crack, P>200 bar)
 	int r = 0;
 	int i = 0;
 
-	double *input = (double*) malloc(25*sizeof(double));
+	double *input = (double*) malloc(27*sizeof(double));
 	if (input == NULL) printf("IcyDwarf: Not enough memory to create input[25]\n");
 
 	//-------------------------------------------------------------------
@@ -99,27 +101,26 @@ int main(int argc, char *argv[]){
 	input = icy_dwarf_input (input, path);
 	warnings = (int) input[0];
 	msgout = (int) input[1];
-	plot_on = (int) input[2];
-	rho_p = input[3];
-	r_p = input[4];
-	nh3 = input[5];
-	tzero = 1.5;     // Myr
-	Tsurf = input[6];
-	Tinit = Tsurf;
-	NR = input[7];
-	// timestep = (float) input[9]/1000.0;
-	timestep = 10.0/1000.0; // Change
-	NT = floor(input[8]/(timestep*1000.0))+1;
-	NT_output = floor(input[8]/input[9])+1;
-	calculate_thermal = (int) input[10];
-	calculate_cracking_depth = (int) input[11];
-	calculate_aTP = (int) input[12];
-	calculate_alpha_beta = (int) input[13];
-	calculate_crack_species = (int) input[14];
-	calculate_cryolava = (int) input[15];
-	t_cryolava = (int) input[16]/input[9];
-	for (i=17;i<21;i++) crack_input[i-17] = (int) input[i];
-	for (i=21;i<24;i++) crack_species[i-21] = (int) input[i];
+	rho_p = input[2];
+	r_p = input[3];
+	nh3 = input[4];
+	Tsurf = input[5];
+	NR = input[6];
+	total_time = input[7];
+	output_every = input[8];
+	NT_output = floor(total_time/output_every)+1;
+	calculate_thermal = (int) input[9];
+	tzero = input[10];     // Myr
+	Tinit = input[11];
+	calculate_cracking_depth = (int) input[12];
+	calculate_aTP = (int) input[13];
+	calculate_alpha_beta = (int) input[14];
+	calculate_crack_species = (int) input[15];
+	calculate_cryolava = (int) input[16];
+	t_cryolava = (int) input[17]/input[8];
+	CHNOSZ_T_MIN = input[18];
+	for (i=19;i<23;i++) crack_input[i-19] = (int) input[i];
+	for (i=23;i<26;i++) crack_species[i-23] = (int) input[i];
 
 	//-------------------------------------------------------------------
 	// Run thermal code
@@ -127,7 +128,7 @@ int main(int argc, char *argv[]){
 
 	if (calculate_thermal == 1) {
 		printf("Running thermal evolution code...\n");
-		Thermal(argc, argv, path, NR, r_p, rho_p, warnings, msgout, nh3, tzero, Tsurf, Tinit, input[8], input[9]);
+		Thermal(argc, argv, path, NR, r_p, rho_p, warnings, msgout, nh3, tzero, Tsurf, Tinit, total_time, output_every);
 		printf("\n");
 	}
 
@@ -138,10 +139,10 @@ int main(int argc, char *argv[]){
 	thermalout **thoutput = malloc(NR*sizeof(thermalout*));        // Thermal model output
 	if (thoutput == NULL) printf("IcyDwarf: Not enough memory to create the thoutput structure\n");
 	for (r=0;r<NR;r++) {
-		thoutput[r] = malloc(NT*sizeof(thermalout));
+		thoutput[r] = malloc(NT_output*sizeof(thermalout));
 		if (thoutput[r] == NULL) printf("IcyDwarf: Not enough memory to create the thoutput structure\n");
 	}
-	thoutput = read_thermal_output (thoutput, NR, NT, path);
+	thoutput = read_thermal_output (thoutput, NR, NT_output, path);
 
 	//-------------------------------------------------------------------
 	// Cracking depth calculations
@@ -167,7 +168,7 @@ int main(int argc, char *argv[]){
 
 	if (calculate_cracking_depth == 1) {
 		printf("Calculating cracking depth...\n");
-		Crack(argc, argv, path, NR, NT, r_p, timestep, NT_output, rho_p, thoutput, warnings, msgout,
+		Crack(argc, argv, path, NR, r_p, output_every/1000.0, NT_output, rho_p, thoutput, warnings, msgout,
 				crack_input, crack_species);
 		printf("\n");
 	}
@@ -182,7 +183,7 @@ int main(int argc, char *argv[]){
 			printf("Icy Dwarf: t_cryolava > total time of sim\n");
 			return -1;
 		}
-		Cryolava(argc, argv, path, NR, NT, r_p, thoutput, t_cryolava, warnings, msgout);
+		Cryolava(argc, argv, path, NR, NT_output, r_p, thoutput, t_cryolava, CHNOSZ_T_MIN, warnings, msgout);
 		printf("\n");
 	}
 

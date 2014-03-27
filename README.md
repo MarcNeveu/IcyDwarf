@@ -26,7 +26,7 @@ Go to http://www.r-project.org and follow instructions.
 
 	R
 	
-In R, type the command
+In *R*, type the command
 
 	install.packages(CHNOSZ)
 

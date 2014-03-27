@@ -61,10 +61,10 @@
 
 #include "../CHNOSZ_commands.h"
 
-int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, float timestep, int NT_output, float rho_p, thermalout **thoutput,
+int Crack(int argc, char *argv[], char path[1024], int NR, float r_p, float timestep, int NT_output, float rho_p, thermalout **thoutput,
 		int warnings, int msgout, int *crack_input, int *crack_species);
 
-int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, float timestep, int NT_output, float rho_p, thermalout **thoutput,
+int Crack(int argc, char *argv[], char path[1024], int NR, float r_p, float timestep, int NT_output, float rho_p, thermalout **thoutput,
 		int warnings, int msgout, int *crack_input, int *crack_species) {
 
 	//-------------------------------------------------------------------
@@ -318,7 +318,7 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 //int t_647_end = 0; //ENCELADUS
 ////---------------------------------------------
 
-	for (t=1;t<NT;t++) {
+	for (t=1;t<NT_output;t++) {
 
 		Pressure = calculate_pressure(Pressure, NR, t, thoutput);     // Pressure
 
@@ -647,7 +647,7 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 		//-------------------------------------------------------------------
 
 		t_out++;
-		if (t_out >= floor(NT/NT_output)) {
+		if (t_out > 0) {
 			t_out = 0;
 
 			// Crack type output
@@ -658,7 +658,7 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 			for (r=0;r<NR;r++) {
 				if (Crack[r] > 0.0) break;
 			}
-			Crack_depth[1] = (float) (calculate_seafloor(thoutput,NR,NT,t)-r)/NR*r_p;
+			Crack_depth[1] = (float) (calculate_seafloor(thoutput,NR,NT_output,t)-r)/NR*r_p;
 			if (Crack_depth[1] < 0.0) Crack_depth[1] = 0.0;
 			append_output(2, Crack_depth, path, "Outputs/Crack_depth.txt");
 
@@ -666,7 +666,7 @@ int Crack(int argc, char *argv[], char path[1024], int NR, int NT, float r_p, fl
 			// Depends entirely on porosity! The W/R by volume is porosity. Here, we say W/R = Mliq/Mcracked_rock.
 			Mliq = 0.0;
 			Mcracked_rock = 0.0;
-			Mliq = calculate_mass_liquid (NR, NT, t, thoutput);          // Mass of liquid in kg
+			Mliq = calculate_mass_liquid (NR, NT_output, t, thoutput);          // Mass of liquid in kg
 			WRratio[0] = (double) t*timestep;                            // T in Gyr
 			for (r=0;r<NR;r++) {
 				if (Crack[r] > 0.0) {

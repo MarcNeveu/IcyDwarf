@@ -40,8 +40,6 @@
 #define rhoHydr 2.35e3                                     // Density of hydrated rock
 #define Xc 0.321                                           // Ammonia content of eutectic H2O-NH3 mixture
 #define tempk_dehydration 730.0                            // Dehydration temperature (Castillo-Rogez and McCord 2010)
-#define CHNOSZ_T_MIN 235.0                                 // Minimum temperature for the subcrt() routine of CHNOSZ to work
-                                                           // Default: 235 K (Cryolava), 245 K (Crack, P>200 bar)
 #define NRmax 2000                                         // Max number of grid zones tolerated in Desch09 code
 
 typedef struct {
@@ -249,10 +247,6 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,31,SEEK_CUR);   // Plots?
-			scan = fscanf(f, "%lg", &input[i]), i++;
-			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
-
 			fseek(f,111,SEEK_CUR);  // Density (g cm-3)
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
@@ -281,11 +275,19 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,105,SEEK_CUR);   // Run thermal?
+			fseek(f,105,SEEK_CUR);  // Run thermal?
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,31,SEEK_CUR);  // Core cracks?
+			fseek(f,24,SEEK_CUR);   // Sim starts at (Myr)
+			scan = fscanf(f, "%lg", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,24,SEEK_CUR);   // Initial temp (K)
+			scan = fscanf(f, "%lg", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,31,SEEK_CUR);   // Core cracks?
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
@@ -306,6 +308,10 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
 			fseek(f,24,SEEK_CUR);   // After how many Myr?
+			scan = fscanf(f, "%lg", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,24,SEEK_CUR);   // Min temperature (K)
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
@@ -346,7 +352,6 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 		printf("-------------------------------\n");
 		printf("Warnings? \t \t \t %g\n",input[i]), i++;
 		printf("Messages? \t \t \t %g\n",input[i]), i++;
-		printf("Plots? \t \t \t \t %g\n",input[i]), i++;
 		printf("-------------------------------\n");
 		printf("Planet parameters\n");
 		printf("-------------------------------\n");
@@ -364,12 +369,15 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 		printf("Subroutines\n");
 		printf("-------------------------------\n");
 		printf("Run thermal? \t \t \t %g\n",input[i]), i++;
+		printf("\t Sim starts at (Myr) \t %g\n",input[i]), i++;
+		printf("\t Initial temp (K) \t %g\n",input[i]), i++;
 		printf("Core cracks? \t \t \t %g\n",input[i]), i++;
 		printf("\t Calculate aTP? \t %g\n",input[i]), i++;
 		printf("\t Water alpha beta? \t %g\n",input[i]), i++;
 		printf("\t CHNOSZ species? \t %g\n",input[i]), i++;
 		printf("Cryovolcanism? \t \t \t %g\n",input[i]), i++;
 		printf("\t After how many Myr? \t %g\n",input[i]), i++;
+		printf("\t Min temperature (K) \t %g\n",input[i]), i++;
 		printf("-------------------------------\n");
 		printf("Core crack options\n");
 		printf("-------------------------------\n");

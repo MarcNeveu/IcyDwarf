@@ -17,11 +17,10 @@
 
 #include "../Graphics/Plot.h"
 
-int Crack_plot (char path[1024], int NR, int NT, float timestep, int NT_output, float r_p, thermalout **thoutput, int warnings, int msgout, SDL_Window* window, SDL_Renderer* renderer, int* view, int* quit);
+int Crack_plot (char path[1024], int NR, int total_time, int NT_output, float r_p, thermalout **thoutput, int warnings, int msgout, SDL_Window* window, SDL_Renderer* renderer, int* view, int* quit);
 
-int Crack_plot (char path[1024], int NR, int NT, float timestep, int NT_output, float r_p, thermalout **thoutput, int warnings, int msgout, SDL_Window* window, SDL_Renderer* renderer, int* view, int* quit) {
+int Crack_plot (char path[1024], int NR, int total_time, int NT_output, float r_p, thermalout **thoutput, int warnings, int msgout, SDL_Window* window, SDL_Renderer* renderer, int* view, int* quit) {
 
-	float total_time = NT*timestep;
 	int r = 0;
 	int t = 0;
 
@@ -225,7 +224,7 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, int NT_output, 
 		}
 	}
 
-	min_depth = calculate_seafloor (thoutput, NR, NT, NT-1);
+	min_depth = calculate_seafloor (thoutput, NR, NT_output, NT_output-1);
 	max_depth = min_depth;
 	for (t=0;t<NT_output;t++) {
 		for (r=0;r<NR;r++) {
@@ -623,20 +622,20 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, int NT_output, 
 						// Time elapsed
 
 						elapsed_digit_1 = SDL_CreateTextureFromSurface(renderer, numbers);
-						elapsed_digit_clip_1 = ClipNumber(floor(t*NT/NT_output/100.0),18);
+						elapsed_digit_clip_1 = ClipNumber(floor(t/100.0),18);
 						elapsed_digit_dest_1.x = 625, elapsed_digit_dest_1.y = 502;
 						elapsed_digit_dest_1.w = 12, elapsed_digit_dest_1.h = 20;
 						SDL_RenderCopy(renderer, elapsed_digit_1, &elapsed_digit_clip_1, &elapsed_digit_dest_1);
 
 						elapsed_digit_2 = SDL_CreateTextureFromSurface(renderer, numbers);
-						int t_10 = floor((t*NT/NT_output-floor(t*NT/NT_output/100.0)*100.0)/10.0);
+						int t_10 = floor((t-floor(t/100.0)*100.0)/10.0);
 						elapsed_digit_clip_2 = ClipNumber(t_10,18);
 						elapsed_digit_dest_2.x = 640, elapsed_digit_dest_2.y = elapsed_digit_dest_1.y;
 						elapsed_digit_dest_2.w = 12, elapsed_digit_dest_2.h = 20;
 						SDL_RenderCopy(renderer, elapsed_digit_2, &elapsed_digit_clip_2, &elapsed_digit_dest_2);
 
 						elapsed_digit_3 = SDL_CreateTextureFromSurface(renderer, numbers);
-						int t_100 = floor(t*NT/NT_output-floor(t*NT/NT_output/100.0)*100.0-floor(t_10)*10.0);
+						int t_100 = floor(t-floor(t/100.0)*100.0-floor(t_10)*10.0);
 						elapsed_digit_clip_3 = ClipNumber(t_100,18);
 						elapsed_digit_dest_3.x = 650, elapsed_digit_dest_3.y = elapsed_digit_dest_1.y;
 						elapsed_digit_dest_3.w = 12, elapsed_digit_dest_3.h = 20;
@@ -644,7 +643,7 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, int NT_output, 
 
 						// % history elapsed
 
-						percent = t*NT/NT_output/4.56;
+						percent = t/4.56;
 
 						elapsed_percent_1 = SDL_CreateTextureFromSurface(renderer, numbers);
 						elapsed_percent_clip_1 = ClipNumber(floor(percent/100.0),18);
@@ -764,20 +763,20 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, int NT_output, 
 							// Time elapsed
 
 							elapsed_digit_1 = SDL_CreateTextureFromSurface(renderer, numbers);
-							elapsed_digit_clip_1 = ClipNumber(floor(t*NT/NT_output/100.0),18);
+							elapsed_digit_clip_1 = ClipNumber(floor(t/100.0),18);
 							elapsed_digit_dest_1.x = 625, elapsed_digit_dest_1.y = 502;
 							elapsed_digit_dest_1.w = 12, elapsed_digit_dest_1.h = 20;
 							SDL_RenderCopy(renderer, elapsed_digit_1, &elapsed_digit_clip_1, &elapsed_digit_dest_1);
 
 							elapsed_digit_2 = SDL_CreateTextureFromSurface(renderer, numbers);
-							int t_10 = floor((t*NT/NT_output-floor(t*NT/NT_output/100.0)*100.0)/10.0);
+							int t_10 = floor((t-floor(t/100.0)*100.0)/10.0);
 							elapsed_digit_clip_2 = ClipNumber(t_10,18);
 							elapsed_digit_dest_2.x = 640, elapsed_digit_dest_2.y = elapsed_digit_dest_1.y;
 							elapsed_digit_dest_2.w = 12, elapsed_digit_dest_2.h = 20;
 							SDL_RenderCopy(renderer, elapsed_digit_2, &elapsed_digit_clip_2, &elapsed_digit_dest_2);
 
 							elapsed_digit_3 = SDL_CreateTextureFromSurface(renderer, numbers);
-							int t_100 = floor(t*NT/NT_output-floor(t*NT/NT_output/100.0)*100.0-floor(t_10)*10.0);
+							int t_100 = floor(t-floor(t/100.0)*100.0-floor(t_10)*10.0);
 							elapsed_digit_clip_3 = ClipNumber(t_100,18);
 							elapsed_digit_dest_3.x = 650, elapsed_digit_dest_3.y = elapsed_digit_dest_1.y;
 							elapsed_digit_dest_3.w = 12, elapsed_digit_dest_3.h = 20;
@@ -785,7 +784,7 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, int NT_output, 
 
 							// % history elapsed
 
-							percent = t*NT/NT_output/4.56;
+							percent = t/4.56;
 
 							elapsed_percent_1 = SDL_CreateTextureFromSurface(renderer, numbers);
 							elapsed_percent_clip_1 = ClipNumber(floor(percent/100.0),18);
@@ -888,20 +887,20 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, int NT_output, 
 		// Time elapsed
 
 		elapsed_digit_1 = SDL_CreateTextureFromSurface(renderer, numbers);
-		elapsed_digit_clip_1 = ClipNumber(floor(t*NT/NT_output/100.0),18);
+		elapsed_digit_clip_1 = ClipNumber(floor(t/100.0),18);
 		elapsed_digit_dest_1.x = 625, elapsed_digit_dest_1.y = 502;
 		elapsed_digit_dest_1.w = 12, elapsed_digit_dest_1.h = 20;
 		SDL_RenderCopy(renderer, elapsed_digit_1, &elapsed_digit_clip_1, &elapsed_digit_dest_1);
 
 		elapsed_digit_2 = SDL_CreateTextureFromSurface(renderer, numbers);
-		int t_10 = floor((t*NT/NT_output-floor(t*NT/NT_output/100.0)*100.0)/10.0);
+		int t_10 = floor((t-floor(t/100.0)*100.0)/10.0);
 		elapsed_digit_clip_2 = ClipNumber(t_10,18);
 		elapsed_digit_dest_2.x = 640, elapsed_digit_dest_2.y = elapsed_digit_dest_1.y;
 		elapsed_digit_dest_2.w = 12, elapsed_digit_dest_2.h = 20;
 		SDL_RenderCopy(renderer, elapsed_digit_2, &elapsed_digit_clip_2, &elapsed_digit_dest_2);
 
 		elapsed_digit_3 = SDL_CreateTextureFromSurface(renderer, numbers);
-		int t_100 = floor(t*NT/NT_output-floor(t*NT/NT_output/100.0)*100.0-floor(t_10)*10.0);
+		int t_100 = floor(t-floor(t/100.0)*100.0-floor(t_10)*10.0);
 		elapsed_digit_clip_3 = ClipNumber(t_100,18);
 		elapsed_digit_dest_3.x = 650, elapsed_digit_dest_3.y = elapsed_digit_dest_1.y;
 		elapsed_digit_dest_3.w = 12, elapsed_digit_dest_3.h = 20;
@@ -909,7 +908,7 @@ int Crack_plot (char path[1024], int NR, int NT, float timestep, int NT_output, 
 
 		// % history elapsed
 
-		percent = t*NT/NT_output/4.56;
+		percent = t/4.56;
 
 		elapsed_percent_1 = SDL_CreateTextureFromSurface(renderer, numbers);
 		elapsed_percent_clip_1 = ClipNumber(floor(percent/100.0),18);

@@ -25,7 +25,6 @@ int main(int argc, char *argv[]){
 	int warnings = 0;                  // Display warnings
 	int msgout = 0;                    // Display messages
     int view = 0;  				       // Plot view
-    int NT_output = 0;                 // Timestep for writing output
     int quit = 0;                      // Close window
 
 	// Planet inputs
@@ -33,13 +32,12 @@ int main(int argc, char *argv[]){
     float r_p = 0.0;                   // Planetary radius
     float nh3 = 0.0;                   // Ammonia w.r.t. water
     float Tsurf = 0.0;				   // Surface temperature
-    float Tinit = 0.0;                 // Initial temperature
-    float tzero = 0.0;                 // Time zero of the sim (Myr)
 
     // Grid inputs
 	int NR = 0;                        // Number of grid zones
-	int NT = 0;                        // Number of time intervals
-    float timestep = 0.0;              // Time step of the sim (Gyr)
+	int total_time = 0;                // Total time of sim
+	int output_every = 0;              // Output frequency
+    int NT_output = 0;                 // Time step for writing output
 
     // Call specific subroutines
     int t_cryolava = 0;                // Time at which to calculate gas exsolution
@@ -76,19 +74,16 @@ int main(int argc, char *argv[]){
 
 	warnings = (int) input[0];
 	msgout = (int) input[1];
-	rho_p = input[3];
-	r_p = input[4];
-	nh3 = input[5];
-	tzero = 1.5;     // Myr
-	Tsurf = input[6];
-	Tinit = Tsurf;
-	NR = input[7];
-	// timestep = (float) input[9]/1000.0;
-	timestep = 10.0/1000.0; // Change
-	NT = floor(input[8]/(timestep*1000.0))+1;
-	NT_output = floor(input[8]/input[9])+1;
+	rho_p = input[2];
+	r_p = input[3];
+	nh3 = input[4];
+	Tsurf = input[5];
+	NR = input[6];
+	total_time = input[7];
+	output_every = input[8];
+	NT_output = floor(total_time/output_every)+1;
 
-	t_cryolava = (int) input[16]/input[9];
+	t_cryolava = (int) (input[17]/output_every);
 
 	//-------------------------------------------------------------------
 	// Read thermal output (currently kbo.dat, need to read Thermal.txt)
@@ -97,10 +92,10 @@ int main(int argc, char *argv[]){
 	thermalout **thoutput = malloc(NR*sizeof(thermalout*));        // Thermal model output
 	if (thoutput == NULL) printf("IcyDwarf: Not enough memory to create the thoutput structure\n");
 	for (r=0;r<NR;r++) {
-		thoutput[r] = malloc(NT*sizeof(thermalout));
+		thoutput[r] = malloc(NT_output*sizeof(thermalout));
 		if (thoutput[r] == NULL) printf("IcyDwarf: Not enough memory to create the thoutput structure\n");
 	}
-	thoutput = read_thermal_output (thoutput, NR, NT, path);
+	thoutput = read_thermal_output (thoutput, NR, NT_output, path);
 
 	//-------------------------------------------------------------------
 	// Launch Sample DirectMedia Layer (SDL) display
@@ -145,9 +140,9 @@ int main(int argc, char *argv[]){
 
 	while (!quit) {
 		if (view == 1) // Display thermal tab
-			Thermal_plot (path, NR, NT, timestep, NT_output, r_p, thoutput, warnings, msgout, window, renderer, &view, &quit);
+			Thermal_plot (path, NR, NT_output, r_p, thoutput, warnings, msgout, window, renderer, &view, &quit);
 		if (view == 2) // Display crack tab
-			Crack_plot (path, NR, NT, timestep, NT_output, r_p, thoutput, warnings, msgout, window, renderer, &view, &quit);
+			Crack_plot (path, NR, total_time, NT_output, r_p, thoutput, warnings, msgout, window, renderer, &view, &quit);
 	}
 
 	//-------------------------------------------------------------------
