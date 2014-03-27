@@ -31,10 +31,10 @@ In R, type the command
 *Rcpp* and *RInside* are libraries that allow *R* applications to be embedded in C or C++ codes. 
 Go to http://cran.r-project.org/web/packages/Rcpp/index.html and http://cran.r-project.org/web/packages/RInside/index.html to download the respective archives. On Mac, unzip the archives in */Library/Frameworks/R.framework/Resources/library/*, so that *Rcpp* and *RInside* are two subfolders of *library*.
 
-## Install *SDL2* (only to use IcyDwarfPlot)
+## Install *SDL2* (needed only for *IcyDwarfPlot*)
 Go to http://www.libsdl.org/projects. Download and install *SDL2*, *SDL2_image*, and *SDL2_ttf*. *SDL2_mixer* is not needed as the code doesn't play music for you yet.
 
-## Install IcyDwarf
+## Install *IcyDwarf*
 Go to https://github.com/MarcNeveu/IcyDwarf. Click *Download ZIP* on the bottom right side of the page. Unzip IcyDwarf-master.zip. Rename the unzipped folder *IcyDwarf-master* to *IcyDwarf*.
 Move the renamed *IcyDwarf* folder to any folder you would like, we will call it *Path_to_GitFolder* here. All source files should be in: 
 - */Path_to_GitFolder/IcyDwarf/IcyDwarf* and subfolders
@@ -72,17 +72,7 @@ The first *n_layer* lines list these properties in each layer, from the center t
 The crack routine outputs three files: 
 - *Crack_depth.txt* (two columns: time in Gyr, depth of cracked zone in km)
 - *Crack_WRratio.txt* (two columns: time in Gyr, water:rock ratio by mass in cracked zone)
-- *Crack.txt* (*n_layer* columns, *n_output* rows, each value is an integer:
-
-- 0: no cracks
-- 1: cracks from thermal contraction
-- 2: cracks from thermal expansion
-- 3: cracks from hydration
-- 4: cracks from dehydration
-- 5: cracks from pore water dilation
-- 6: mineral dissolution widening
-- 7: mineral precipitation shrinking
-- -1: mineral precipitation clogging.
+- *Crack.txt* (*n_layer* columns, *n_output* rows, each value is an integer: 0 = no cracks; 1 = cracks from thermal contraction; 2 = cracks from thermal expansion; 3 = cracks from hydration; 4 = cracks from dehydration; 5 = cracks from pore water dilation; 6 = mineral dissolution widening; 7 = mineral precipitation shrinking; -1 = mineral precipitation clogging.
 
 All thermal and crack output files can be read and displayed by *IcyDwarfPlot*.
 
@@ -97,7 +87,7 @@ The cryolava routine outputs three files:
 
 If you wish to modify the code, set up your compiler and linker so that all the relevant flags are added. 
 
-## Compiler setup (gcc on Mac OS 10.9 Mavericks)
+## Compiler setup (*gcc* on Mac OS 10.9 Mavericks)
 
 My compiling instructions look like this (I listed each include as a new line for clarity, instead of separating them by a space:
 
@@ -108,23 +98,16 @@ For both IcyDwarf and IcyDwarfPlot:
 For IcyDwarf only:
 
 *-/Library/Frameworks/R.framework/Versions/3.0/Resources/include*
-
 *-/Library/Frameworks/R.framework/Versions/3.0/Resources/library/RInside/include*
 
 For IcyDwarfPlot only:
 
 *-I/Library/Frameworks/SDL2.framework/Versions/A/Headers*
-
 *-I/Library/Frameworks/SDL2_image.framework/Versions/A/Headers*
-
 *-I/Library/Frameworks/SDL2_ttf.framework/Versions/A/Headers*
-
 *-I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers*
-
 *-I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/GLUT.framework/Versions/A/Headers*
-
 *-I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/OpenGL.framework/Versions/A/Headers*
-
 *-O3 -Wall -c -fmessage-length=0*
 
 ## Linker setup (Mac OS 10.9 Mavericks)
