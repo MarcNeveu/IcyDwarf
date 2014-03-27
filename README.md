@@ -18,13 +18,16 @@ The two codes can run independently of each other, so it's not necessary to inst
 The installation steps outlined below are valid for Mac (preferably OS 10.9). *IcyDwarf* and *IcyDwarfPlot* should also run on Windows and Linux, but I don't know how to set up the compilation and linking flags, as well as the *R* and *SDL* dependencies. Check out their official websites (links below) for more information. 
 
 ## Install *R*
-*R* is needed only for *IcyDwarf*, to run the geochemistry package *CHNOSZ*. *R* is used to run the package CHNOSZ (see step 2) for geochemical calculations.
+*R* is needed only for *IcyDwarf*, to run the geochemistry package *CHNOSZ*.
 Go to http://www.r-project.org and follow instructions.
 
 ## Install *CHNOSZ*
-*CHNOSZ* is needed only for *IcyDwarf*. Open R using either the installed application icon or in a terminal by typing
+*CHNOSZ* is needed only for *IcyDwarf*. Open *R* using either the installed application icon or in a terminal by typing
+
 	R
+	
 In R, type the command
+
 	install.packages(CHNOSZ)
 
 ## Install *Rcpp* and *RInside*
