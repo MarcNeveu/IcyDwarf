@@ -17,22 +17,21 @@ The two codes can run independently of each other, so it's not necessary to inst
 
 The installation steps outlined below are valid for Mac (preferably OS 10.9). *IcyDwarf* and *IcyDwarfPlot* should also run on Windows and Linux, but I don't know how to set up the compilation and linking flags, as well as the *R* and *SDL* dependencies. Check out their official websites (links below) for more information. 
 
-## Install *R* (needed only for *IcyDwarf*)
-R is used to run the package CHNOSZ (see step 2) for geochemical calculations.
+## Install *R*
+*R* is needed only for *IcyDwarf*, to run the geochemistry package *CHNOSZ*. *R* is used to run the package CHNOSZ (see step 2) for geochemical calculations.
 Go to http://www.r-project.org and follow instructions.
 
-## Install *CHNOSZ* (needed only for *IcyDwarf*)
-Open R using either the installed application icon or in a terminal by typing
+## Install *CHNOSZ*
+*CHNOSZ* is needed only for *IcyDwarf*. Open R using either the installed application icon or in a terminal by typing
 	R
 In R, type the command
 	install.packages(CHNOSZ)
 
 ## Install *Rcpp* and *RInside*
-*Rcpp* and *RInside* are libraries that allow *R* applications to be embedded in C or C++ codes. 
-Go to http://cran.r-project.org/web/packages/Rcpp/index.html and http://cran.r-project.org/web/packages/RInside/index.html to download the respective archives. On Mac, unzip the archives in */Library/Frameworks/R.framework/Resources/library/*, so that *Rcpp* and *RInside* are two subfolders of *library*.
+*Rcpp* and *RInside* are libraries that allow *R* applications to be embedded in C or C++ codes. They are needed only for *IcyDwarf*. Go to http://cran.r-project.org/web/packages/Rcpp/index.html and http://cran.r-project.org/web/packages/RInside/index.html to download the respective archives. On Mac, unzip the archives in */Library/Frameworks/R.framework/Resources/library/*, so that *Rcpp* and *RInside* are two subfolders of *library*.
 
-## Install *SDL2* (needed only for *IcyDwarfPlot*)
-Go to http://www.libsdl.org/projects. Download and install *SDL2*, *SDL2_image*, and *SDL2_ttf*. *SDL2_mixer* is not needed as the code doesn't play music for you yet.
+## Install *SDL2*
+*SDL2* is a graphic library, needed only for *IcyDwarfPlot*. Go to http://www.libsdl.org/projects. Download and install *SDL2*, *SDL2_image*, and *SDL2_ttf*. *SDL2_mixer* is not needed as the code doesn't play music for you yet.
 
 ## Install *IcyDwarf*
 Go to https://github.com/MarcNeveu/IcyDwarf. Click *Download ZIP* on the bottom right side of the page. Unzip IcyDwarf-master.zip. Rename the unzipped folder *IcyDwarf-master* to *IcyDwarf*.
@@ -96,19 +95,17 @@ For both IcyDwarf and IcyDwarfPlot:
 *-I/usr/include*
 
 For IcyDwarf only:
-
-*-/Library/Frameworks/R.framework/Versions/3.0/Resources/include*
-*-/Library/Frameworks/R.framework/Versions/3.0/Resources/library/RInside/include*
+- *-/Library/Frameworks/R.framework/Versions/3.0/Resources/include*
+- *-/Library/Frameworks/R.framework/Versions/3.0/Resources/library/RInside/include*
 
 For IcyDwarfPlot only:
-
-*-I/Library/Frameworks/SDL2.framework/Versions/A/Headers*
-*-I/Library/Frameworks/SDL2_image.framework/Versions/A/Headers*
-*-I/Library/Frameworks/SDL2_ttf.framework/Versions/A/Headers*
-*-I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers*
-*-I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/GLUT.framework/Versions/A/Headers*
-*-I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/OpenGL.framework/Versions/A/Headers*
-*-O3 -Wall -c -fmessage-length=0*
+- *-I/Library/Frameworks/SDL2.framework/Versions/A/Headers*
+- *-I/Library/Frameworks/SDL2_image.framework/Versions/A/Headers*
+- *-I/Library/Frameworks/SDL2_ttf.framework/Versions/A/Headers*
+- *-I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers*
+- *-I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/GLUT.framework/Versions/A/Headers*
+- *-I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/OpenGL.framework/Versions/A/Headers*
+- *-O3 -Wall -c -fmessage-length=0*
 
 ## Linker setup (Mac OS 10.9 Mavericks)
 
@@ -119,9 +116,8 @@ My linker flags for IcyDwarf look like this:
 Linker library: *R*
 
 Linker library search paths:
-
-*/Path_to_GitFolder/IcyDwarf/IcyDwarf*
-*/Library/Frameworks/R.framework/Versions/3.0/Resources/lib* (likely to change with new R versions)
+- */Path_to_GitFolder/IcyDwarf/IcyDwarf*
+- */Library/Frameworks/R.framework/Versions/3.0/Resources/lib* (likely to change with new R versions)
 
 Overall linker instructions:
 
