@@ -60,8 +60,8 @@ typedef struct {
 #include <stdlib.h>
 
 int calculate_seafloor (thermalout **thoutput, int NR, int NT, int t);
-double *icy_dwarf_input (double *input, char path[1024]);
-thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char path[1024]);
+int icy_dwarf_input (double **input, char (*thermal_file)[1024], char path[1024]);
+thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char path[1024], char thermal_file[1024]);
 float **read_input (int H, int L, float **Input, char path[1024], char filename[1024]);
 
 //-------------------------------------------------------------------
@@ -184,24 +184,24 @@ return r_seafloor;
 }
 
 //-------------------------------------------------------------------
-//                       Read IcyDwarf input file
+//                    Read IcyDwarf Plot input file
 //-------------------------------------------------------------------
 
-double *icy_dwarf_input (double *input, char path[1024]) {
+int icy_dwarf_input (double **input, char (*thermal_file)[1024], char path[1024]) {
 
 	FILE *f;
 	int i = 0;
 	int scan = 0;
 
 	for (i=0;i<18;i++) {
-		input[i] = 0.0;
+		(*input)[i] = 0.0;
 	}
 
 	char *idi = (char*)malloc(1024);
 	idi[0] = '\0';
 	if (release == 1) strncat(idi,path,strlen(path)-20);
 	else if (cmdline == 1) strncat(idi,path,strlen(path)-22);
-	strcat(idi,"Inputs/IcyDwarfInput.txt");
+	strcat(idi,"Inputs/IcyDwarfPlotInput.txt");
 
 	i = 0;
 	f = fopen (idi,"r");
@@ -209,108 +209,44 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 			printf("IcyDwarf: Missing IcyDwarfInput.txt file.\n");
 		}
 		else {
-			fseek(f,155,SEEK_SET);  // Warnings?
-			scan = fscanf(f, "%lg", &input[i]), i++;   // Somehow Valgrind indicates a memory leak here.
+			fseek(f,159,SEEK_SET);  // Warnings?
+			scan = fscanf(f, "%lg", &(*input)[i]), i++;   // Somehow Valgrind indicates a memory leak here.
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
 			fseek(f,31,SEEK_CUR);   // Messages?
-			scan = fscanf(f, "%lg", &input[i]), i++;
+			scan = fscanf(f, "%lg", &(*input)[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
 			fseek(f,111,SEEK_CUR);  // Density (g cm-3)
-			scan = fscanf(f, "%lg", &input[i]), i++;
+			scan = fscanf(f, "%lg", &(*input)[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
 			fseek(f,31,SEEK_CUR);   // Radius (km)
-			scan = fscanf(f, "%lg", &input[i]), i++;
+			scan = fscanf(f, "%lg", &(*input)[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
 			fseek(f,31,SEEK_CUR);   // Ammonia w.r.t. water
-			scan = fscanf(f, "%lg", &input[i]), i++;
+			scan = fscanf(f, "%lg", &(*input)[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
 			fseek(f,31,SEEK_CUR);   // Surface temperature (K)
-			scan = fscanf(f, "%lg", &input[i]), i++;
+			scan = fscanf(f, "%lg", &(*input)[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
 			fseek(f,98,SEEK_CUR);   // Number of grid zones
-			scan = fscanf(f, "%lg", &input[i]), i++;
+			scan = fscanf(f, "%lg", &(*input)[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
 			fseek(f,31,SEEK_CUR);   // Total time of sim (Myr)
-			scan = fscanf(f, "%lg", &input[i]), i++;
+			scan = fscanf(f, "%lg", &(*input)[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
 			fseek(f,31,SEEK_CUR);   // Output every... (Myr)
-			scan = fscanf(f, "%lg", &input[i]), i++;
+			scan = fscanf(f, "%lg", &(*input)[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,105,SEEK_CUR);  // Run thermal?
-			scan = fscanf(f, "%lg", &input[i]), i++;
-			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
-
-			fseek(f,24,SEEK_CUR);   // Sim starts at (Myr)
-			scan = fscanf(f, "%lg", &input[i]), i++;
-			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
-
-			fseek(f,24,SEEK_CUR);   // Initial temp (K)
-			scan = fscanf(f, "%lg", &input[i]), i++;
-			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
-
-			fseek(f,31,SEEK_CUR);   // Core cracks?
-			scan = fscanf(f, "%lg", &input[i]), i++;
-			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
-
-			fseek(f,24,SEEK_CUR);   // Calculate aTP?
-			scan = fscanf(f, "%lg", &input[i]), i++;
-			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
-
-			fseek(f,24,SEEK_CUR);   // Water alpha beta?
-			scan = fscanf(f, "%lg", &input[i]), i++;
-			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
-
-			fseek(f,24,SEEK_CUR);   // CHNOSZ species?
-			scan = fscanf(f, "%lg", &input[i]), i++;
-			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
-
-			fseek(f,31,SEEK_CUR);   // Cryovolcanism?
-			scan = fscanf(f, "%lg", &input[i]), i++;
-			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
-
-			fseek(f,24,SEEK_CUR);   // After how many Myr?
-			scan = fscanf(f, "%lg", &input[i]), i++;
-			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
-
-			fseek(f,24,SEEK_CUR);   // Min temperature (K)
-			scan = fscanf(f, "%lg", &input[i]), i++;
-			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
-
-			fseek(f,112,SEEK_CUR);  // Thermal mismatch?
-			scan = fscanf(f, "%lg", &input[i]), i++;
-			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
-
-			fseek(f,31,SEEK_CUR);   // Pore water expansion?
-			scan = fscanf(f, "%lg", &input[i]), i++;
-			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
-
-			fseek(f,31,SEEK_CUR);   // Hydration/dehydration?
-			scan = fscanf(f, "%lg", &input[i]), i++;
-			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
-
-			fseek(f,31,SEEK_CUR);   // Dissolution/ppt?
-			scan = fscanf(f, "%lg", &input[i]), i++;
-			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
-
-			fseek(f,24,SEEK_CUR);   // Silica?
-			scan = fscanf(f, "%lg", &input[i]), i++;
-			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
-
-			fseek(f,24,SEEK_CUR);   // Serpentine?
-			scan = fscanf(f, "%lg", &input[i]), i++;
-			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
-
-			fseek(f,24,SEEK_CUR);   // Carbonate?
-			scan = fscanf(f, "%lg", &input[i]), i++;
+			fseek(f,112,SEEK_CUR);  // Thermal output file?
+			scan = fscanf(f, "%s", (*thermal_file));
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 		}
 		fclose(f);
@@ -320,56 +256,38 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 		printf("-------------------------------\n");
 		printf("Housekeeping\n");
 		printf("-------------------------------\n");
-		printf("Warnings? \t \t \t %g\n",input[i]), i++;
-		printf("Messages? \t \t \t %g\n",input[i]), i++;
+		printf("Warnings? \t \t \t %g\n",(*input)[i]), i++;
+		printf("Messages? \t \t \t %g\n",(*input)[i]), i++;
 		printf("-------------------------------\n");
 		printf("Planet parameters\n");
 		printf("-------------------------------\n");
-		printf("Density (g cm-3) \t \t %g\n",input[i]), i++;
-		printf("Radius (km) \t \t \t %g\n",input[i]), i++;
-		printf("Ammonia w.r.t. water \t \t %g\n",input[i]), i++;
-		printf("Surface temperature (K) \t %g\n",input[i]), i++;
+		printf("Density (g cm-3) \t \t %g\n",(*input)[i]), i++;
+		printf("Radius (km) \t \t \t %g\n",(*input)[i]), i++;
+		printf("Ammonia w.r.t. water \t \t %g\n",(*input)[i]), i++;
+		printf("Surface temperature (K) \t %g\n",(*input)[i]), i++;
 		printf("-------------------------------\n");
 		printf("Grid\n");
 		printf("-------------------------------\n");
-		printf("Number of grid zones \t \t %g\n",input[i]), i++;
-		printf("Total time of sim (Myr) \t %g\n",input[i]), i++;
-		printf("Output every... (Myr) \t \t %g\n",input[i]), i++;
+		printf("Number of grid zones \t \t %g\n",(*input)[i]), i++;
+		printf("Total time of sim (Myr) \t %g\n",(*input)[i]), i++;
+		printf("Output every... (Myr) \t \t %g\n",(*input)[i]), i++;
 		printf("-------------------------------\n");
 		printf("Subroutines\n");
 		printf("-------------------------------\n");
-		printf("Run thermal? \t \t \t %g\n",input[i]), i++;
-		printf("\t Sim starts at (Myr) \t %g\n",input[i]), i++;
-		printf("\t Initial temp (K) \t %g\n",input[i]), i++;
-		printf("Core cracks? \t \t \t %g\n",input[i]), i++;
-		printf("\t Calculate aTP? \t %g\n",input[i]), i++;
-		printf("\t Water alpha beta? \t %g\n",input[i]), i++;
-		printf("\t CHNOSZ species? \t %g\n",input[i]), i++;
-		printf("Cryovolcanism? \t \t \t %g\n",input[i]), i++;
-		printf("\t After how many Myr? \t %g\n",input[i]), i++;
-		printf("\t Min temperature (K) \t %g\n",input[i]), i++;
-		printf("-------------------------------\n");
-		printf("Core crack options\n");
-		printf("-------------------------------\n");
-		printf("Thermal mismatch? \t \t %g\n",input[i]), i++;
-		printf("Pore water expansion? \t \t %g\n",input[i]), i++;
-		printf("Hydration/dehydration? \t \t %g\n",input[i]), i++;
-		printf("Dissolution/ppt? \t \t %g\n",input[i]), i++;
-		printf("\t Silica? \t \t %g\n",input[i]), i++;
-		printf("\t Serpentine? \t \t %g\n",input[i]), i++;
-		printf("\t Carbonate? \t \t %g\n",input[i]), i++;
+		printf("Thermal plot\n");
+		printf("\t IcyDwarf output \t %s\n",(*thermal_file));
 		printf("\n");
 
 	free (idi);
 
-	return input;
+	return 0;
 }
 
 //-------------------------------------------------------------------
 //                   Read output of the thermal code
 //-------------------------------------------------------------------
 
-thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char path[1024]) {
+thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char path[1024], char thermal_file[1024]) {
 
 	FILE *fid;
 	int r = 0;
@@ -385,7 +303,8 @@ thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char pa
 	thermal_txt[0] = '\0';
 	if (release == 1) strncat(thermal_txt,path,strlen(path)-20);
 	else if (cmdline == 1) strncat(thermal_txt,path,strlen(path)-22);
-	strcat(thermal_txt,"Outputs/kbo.dat");
+	strcat(thermal_txt,"Outputs/");
+	strcat(thermal_txt,thermal_file);
 
 	fid = fopen (thermal_txt,"r");
 	if (fid == NULL) {

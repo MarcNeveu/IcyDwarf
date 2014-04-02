@@ -39,7 +39,7 @@
 int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p,
 		int warnings, int msgout, double Xp, double *Xhydr, double tzero, double Tsurf, double Tinit, double fulltime, double dtoutput);
 
-int state (int itime, int ir, double E, double *frock, double *fh2os, double *fadhs, double *fh2ol, double *fnh3l, double *T);
+int state (char path[1024], int itime, int ir, double E, double *frock, double *fh2os, double *fadhs, double *fh2ol, double *fnh3l, double *T);
 
 double heatRock (double T);
 
@@ -287,7 +287,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	fadhs = Madhs[ir] / dM[ir];
     	fh2ol = Mh2ol[ir] / dM[ir];
     	fnh3l = Mnh3l[ir] / dM[ir];
-    	state (itime, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, &temp1);
+    	state (path, itime, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, &temp1);
     	T[ir] = temp1;
     	Mrock[ir] = dM[ir]*frock;
     	Mh2os[ir] = dM[ir]*fh2os;
@@ -317,8 +317,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
     	Tdehydr = 700.0;
 
-    	for (ir=0;ir<ircore;ir++) { // TODO do not run if rock is already dehydrated
-    		if (T[ir] > Tdehydr) {
+    	for (ir=0;ir<ircore;ir++) {
+    		if (T[ir] > Tdehydr && Xhydr[ir] >= 0.01) {
     			dehydrate(T[ir], dM[ir], dVol[ir], &dE[ir], &Mrock[ir], &Mh2ol[ir], &Vrock[ir], &Vh2ol[ir], &Erock[ir], &Eslush[ir],
     					rhoRockth, rhoHydrth, rhoH2olth, &Xhydr[ir]);
     		}
@@ -335,7 +335,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			fadhs = Madhs[ir] / dM[ir];
 			fh2ol = Mh2ol[ir] / dM[ir];
 			fnh3l = Mnh3l[ir] / dM[ir];
-	    	state (itime, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, &temp1);
+	    	state (path, itime, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, &temp1);
 			T[ir] = temp1;
 			Mrock[ir] = dM[ir]*frock;
 			Mh2os[ir] = dM[ir]*fh2os;
@@ -372,7 +372,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			fadhs = Madhs[ir] / dM[ir];
 			fh2ol = Mh2ol[ir] / dM[ir];
 			fnh3l = Mnh3l[ir] / dM[ir];
-	    	state (itime, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, &temp1);
+	    	state (path, itime, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, &temp1);
 			T[ir] = temp1;
 			Mrock[ir] = dM[ir]*frock;
 			Mh2os[ir] = dM[ir]*fh2os;
@@ -500,7 +500,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			fadhs = Madhs[ir] / dM[ir];
 			fh2ol = Mh2ol[ir] / dM[ir];
 			fnh3l = Mnh3l[ir] / dM[ir];
-	    	state (itime, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, &temp1);
+	    	state (path, itime, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, &temp1);
 	    	T[ir] = temp1;
 			Mrock[ir] = dM[ir]*frock;
 			Mh2os[ir] = dM[ir]*fh2os;
@@ -615,7 +615,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
  *
  *--------------------------------------------------------------------*/
 
-int state (int itime, int ir, double E, double *frock, double *fh2os, double *fadhs, double *fh2ol, double *fnh3l, double *T) {
+int state (char path[1024], int itime, int ir, double E, double *frock, double *fh2os, double *fadhs, double *fh2ol, double *fnh3l, double *T) {
 
 	int iter = 0;
 
@@ -684,6 +684,32 @@ int state (int itime, int ir, double E, double *frock, double *fh2os, double *fa
     		printf("Thermal: Tlo=%g K, Thi=%g K, Tmd=%g K\n", Tlo, Thi, Tmd);
     		printf("Thermal: Elo=%g, Ehi=%g, Emd=%g, E=%g\n", Elo, Ehi, Emd, E);
     		printf("Thermal: frock=%g, gh2os=%g, gadhs=%g, gh2ol=%g, gnh3l=%g, X=%g\n", (*frock), gh2os, gadhs, gh2ol, gnh3l, X);
+
+    		FILE *fout;
+
+    		// Turn working directory into full file path by moving up two directories
+    		// to IcyDwarf (e.g., removing "Release/IcyDwarf" characters) and specifying
+    		// the right path end.
+
+    		char *title = (char*)malloc(1024*sizeof(char));       // Don't forget to free!
+    		title[0] = '\0';
+    		if (release == 1) strncat(title,path,strlen(path)-16);
+    		else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+    		strcat(title,"Outputs/Thermal.txt");
+
+    		fout = fopen(title,"a");
+    		if (fout == NULL) {
+    			printf("IcyDwarf: Error opening %s output file.\n",title);
+    		}
+    		else {
+    	  		fprintf(fout,"Thermal: Could not compute temperature\n");
+				fprintf(fout,"Thermal: itime=%d, ir=%d\n",itime, ir);
+				fprintf(fout,"Thermal: Tlo=%g K, Thi=%g K, Tmd=%g K\n", Tlo, Thi, Tmd);
+				fprintf(fout,"Thermal: Elo=%g, Ehi=%g, Emd=%g, E=%g\n", Elo, Ehi, Emd, E);
+				fprintf(fout,"Thermal: frock=%g, gh2os=%g, gadhs=%g, gh2ol=%g, gnh3l=%g, X=%g\n", (*frock), gh2os, gadhs, gh2ol, gnh3l, X);
+    		}
+    		fclose (fout);
+    		free (title);
     		exit(0);
     	}
 	}
@@ -1325,8 +1351,8 @@ int dehydrate(double T, double dM, double dVol, double *dE, double *Mrock, doubl
 	(*Mrock) = dM - (*Mh2ol);
 
 	// Update Xhydr: not 0 to conserve mass and volume in each shell, but has decreased
-	// TODO Set (*Xhydr) at 0 if it's close to 0, otherwise it can take a value of order 1.0e-16
 	(*Xhydr) = ((*Mrock)/(*Vrock) - rhoRockth) / (rhoHydrth - rhoRockth);
+	if (fabs(*Xhydr) < 0.01) (*Xhydr) = 0.0;
 
 	// TODO Update energies
 

@@ -851,6 +851,17 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, float r_
 					}
 					t_init = t;  // To pick up the animation back where we're leaving off
 				}
+
+				// Advance forward/backward one frame at a time
+				if (e.button.x >= 132 && e.button.x <= 180 && e.button.y >= 511 && e.button.y <= 539 && t>0) {
+					t--;
+					t_init = t;
+				}
+				if (e.button.x >= 188 && e.button.x <= 236 && e.button.y >= 511 && e.button.y <= 539 && t<NT_output-1) {
+					t++;
+					t_init = t;
+				}
+
 			}
 		}
 		SDL_RenderClear(renderer);

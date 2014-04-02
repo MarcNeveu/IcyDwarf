@@ -317,6 +317,7 @@ int Thermal_plot (char path[1024], int NR, int NT_output, float r_p, thermalout 
 	int stop_clicked = 0;
 
 	while (!(*quit) && (*view) == 1){
+
 		//Event polling
 		while (SDL_PollEvent(&e)){
 			//If user closes the window
@@ -857,6 +858,16 @@ int Thermal_plot (char path[1024], int NR, int NT_output, float r_p, thermalout 
 					t_init = t;  // To pick up the animation back where we're leaving off
 				}
 
+				// Advance forward/backward one frame at a time
+				if (e.button.x >= 132 && e.button.x <= 180 && e.button.y >= 511 && e.button.y <= 539 && t>0) {
+					t--;
+					t_init = t;
+				}
+				if (e.button.x >= 188 && e.button.x <= 236 && e.button.y >= 511 && e.button.y <= 539 && t<NT_output-1) {
+					t++;
+					t_init = t;
+				}
+
 				// Make grid appear or disappear
 				if (e.button.x >= 648 && e.button.x <= 764 && e.button.y >= 262 && e.button.y <= 327) {
 					if (grid == 1) grid = 0;
@@ -985,7 +996,6 @@ int Thermal_plot (char path[1024], int NR, int NT_output, float r_p, thermalout 
 				}
 			}
 		}
-
 		for (T=0;T<Tmax_int;T++) {
 			for (r=0;r<NR;r++) {
 				// Temperature grid every i/2.0 K
@@ -998,7 +1008,7 @@ int Thermal_plot (char path[1024], int NR, int NT_output, float r_p, thermalout 
 					}
 				}
 				// Temperature profile yellower when more recent, redder when more ancient
-				if (T >= (int) (thoutput[r][t].tempk - 4) && (int) (T <= thoutput[r][t].tempk + 4)) {
+				if (T >= (int) thoutput[r][t].tempk - 4 && T <= (int) thoutput[r][t].tempk + 4) {
 					xoffset = floor((double)r/(double)NR*temp_time->w);
 					yoffset = floor((double)T/(double)Tmax_int*temp_time->h);
 					pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - yoffset)*temp_time->w + xoffset;

@@ -14,7 +14,7 @@
 #define ICYDWARF_H_
 
 #define release 0                                          // 0 for Debug, 1 for Release
-#define cmdline 1										   // If execution from terminal as "./IcyDwarf",
+#define cmdline 0										   // If execution from terminal as "./IcyDwarf",
                                                            // overwritten by release.
 // Physical parameters and constants
 #define G 6.67e-11                                         // Gravitational constant (SI)
@@ -415,11 +415,11 @@ thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char pa
 	kbo_dat[0] = '\0';
 	if (release == 1) strncat(kbo_dat,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(kbo_dat,path,strlen(path)-18);
-	strcat(kbo_dat,"Outputs/kbo.dat");
+	strcat(kbo_dat,"Outputs/Thermal.txt");
 
 	fid = fopen (kbo_dat,"r");
 	if (fid == NULL) {
-		printf("IcyDwarf: Missing kbo.dat file.\n");
+		printf("IcyDwarf: Missing Thermal.txt file.\n");
 	}
 	else {
 		for (t=0;t<NT;t++) {

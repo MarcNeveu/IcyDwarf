@@ -26,6 +26,8 @@ int main(int argc, char *argv[]){
 	int msgout = 0;                    // Display messages
     int view = 0;  				       // Plot view
     int quit = 0;                      // Close window
+    char thermal_file[1024];           // Path to thermal output file
+	thermal_file[0] = '\0';
 
 	// Planet inputs
     float rho_p = 0.0;                 // Planetary density
@@ -44,7 +46,7 @@ int main(int argc, char *argv[]){
 
 	int r = 0;
 
-	double *input = (double*) malloc(25*sizeof(double));
+	double *input = (double*) malloc(20*sizeof(double));
 	if (input == NULL) printf("IcyDwarf: Not enough memory to create input[25]\n");
 
 	//-------------------------------------------------------------------
@@ -70,7 +72,7 @@ int main(int argc, char *argv[]){
 	else
 	    printf("IcyDwarf: Couldn't retrieve executable directory. Buffer too small; need size %u\n", size);
 
-	input = icy_dwarf_input (input, path);
+	icy_dwarf_input (&input, &thermal_file, path);
 
 	warnings = (int) input[0];
 	msgout = (int) input[1];
@@ -95,7 +97,7 @@ int main(int argc, char *argv[]){
 		thoutput[r] = malloc(NT_output*sizeof(thermalout));
 		if (thoutput[r] == NULL) printf("IcyDwarf: Not enough memory to create the thoutput structure\n");
 	}
-	thoutput = read_thermal_output (thoutput, NR, NT_output, path);
+	thoutput = read_thermal_output (thoutput, NR, NT_output, path, thermal_file);
 
 	//-------------------------------------------------------------------
 	// Launch Sample DirectMedia Layer (SDL) display
