@@ -22,14 +22,14 @@ Output every (Myr)            10
 -------------------------------
 Subroutines
 -------------------------------
-Run thermal?                  0
+Run thermal?                  1
 	Sim starts at (Myr)   1.5
 	Initial temp (K)      168
 Core cracks?                  0
 	Calculate aTP?        0
 	Water alpha beta?     0
 	CHNOSZ species?       0
-Cryovolcanism?                1
+Cryovolcanism?                0
 	After how many Myr?   2500
 	Min temperature (K)   273
 -------------------------------

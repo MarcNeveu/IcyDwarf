@@ -14,7 +14,7 @@
 #define ICYDWARF_H_
 
 #define release 0                                          // 0 for Debug, 1 for Release
-#define cmdline 0										   // If execution from terminal as "./IcyDwarf",
+#define cmdline 1										   // If execution from terminal as "./IcyDwarf",
                                                            // overwritten by release.
 // Physical parameters and constants
 #define G 6.67e-11                                         // Gravitational constant (SI)
@@ -32,7 +32,7 @@
 #define PI_greek 3.14159265358979323846                    // Pi
 
 // General parameters
-#define rhoRock 2.35e3                                     // Density of rock
+#define rhoRock 3.25e3                                     // Density of rock
 #define rhoH2os 0.935e3                                    // Density of H2O(s)
 #define rhoH2ol 1.00e3                                     // Density of H2O(l)
 #define rhoAdhs 0.985e3                                    // Density of ADH(s)

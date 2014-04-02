@@ -74,7 +74,7 @@ int main(int argc, char *argv[]){
 
 	printf("\n");
 	printf("-------------------------------------------------------------------\n");
-	printf("IcyDwarf v.14.3\n");
+	printf("IcyDwarf v.14.4\n");
 	if (release == 1) printf("Release mode\n");
 	else if (cmdline == 1) printf("Command line mode\n");
 	printf("-------------------------------------------------------------------\n");
@@ -126,9 +126,13 @@ int main(int argc, char *argv[]){
 	// Run thermal code
 	//-------------------------------------------------------------------
 
+    double *Xhydr = (double*) malloc(NR*sizeof(double));
+    if (Xhydr == NULL) printf("IcyDwarf: Not enough memory to create Xhydr[NR]\n");
+	for (r=0;r<NR;r++) Xhydr[r] = 1.0;
+
 	if (calculate_thermal == 1) {
 		printf("Running thermal evolution code...\n");
-		Thermal(argc, argv, path, NR, r_p, rho_p, warnings, msgout, nh3, tzero, Tsurf, Tinit, total_time, output_every);
+		Thermal(argc, argv, path, NR, r_p, rho_p, warnings, msgout, nh3, Xhydr, tzero, Tsurf, Tinit, total_time, output_every);
 		printf("\n");
 	}
 
@@ -198,6 +202,7 @@ int main(int argc, char *argv[]){
 	free (input);
 	free (crack_input);
 	free (crack_species);
+	free (Xhydr);
 
 	Rf_endEmbeddedR(0);                                     // Close R and CHNOSZ
 

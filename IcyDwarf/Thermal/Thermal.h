@@ -22,14 +22,13 @@
 #ifndef THERMAL_H_
 #define THERMAL_H_
 
-#define ErockA 1.40e4             // Parameters for equation of state of dry rock
-#define ErockB 1.05875e9
-#define ErockC 6.885e6
-#define ErockD 2.963636e3
-#define ErockE 8.199011e9
-#define ErockF 1.20e7
-#define qh2o 7.73e4               // Heat capacity of water ice (cgs)
-#define qadh 1.12e5               // Heat capacity of ADH ice (cgs)
+#define ErockA 770.0/275.0/2.0*1.0e4   // Heat capacity of rock (cgs, 1 cgs = 1 erg/g/K = 1e-4 J/kg/K) below 275 K
+#define ErockC (607.0+163.0/2.0)*1.0e4 // Between 275 and 1000 K, term 1
+#define ErockD 163.0/275.0/2.0*1.0e4   // Between 275 and 1000 K, term 2
+#define ErockF 1.20e7                  // Above 1000 K, in cgs
+
+#define qh2o 773.0/100.0*1.0e4         // Heat capacity of water ice (erg/g/K)
+#define qadh 1120.0/100.0*1.0e4        // Heat capacity of ADH ice (erg/g/K)
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,7 +37,7 @@
 #include "../IcyDwarf.h"
 
 int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p,
-		int warnings, int msgout, double Xp, double tzero, double Tsurf, double Tinit, double fulltime, double dtoutput);
+		int warnings, int msgout, double Xp, double *Xhydr, double tzero, double Tsurf, double Tinit, double fulltime, double dtoutput);
 
 int state (int itime, int ir, double E, double *frock, double *fh2os, double *fadhs, double *fh2ol, double *fnh3l, double *T);
 
@@ -46,7 +45,7 @@ double heatRock (double T);
 
 int heatIce (double T, double X, double *E, double *gh2os, double *gadhs, double *gh2ol, double *gnh3l);
 
-int kapcond(double T, double frock, double fh2os, double fadhs, double fh2ol, double dnh3l, double *kap);
+int kapcond(double T, double frock, double fh2os, double fadhs, double fh2ol, double dnh3l, double *kap, double Xhydr);
 
 int decay(double *t, double *tzero, double *S);
 
@@ -54,8 +53,12 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 		double **Mh2ol, double **Mnh3l, double **Vrock, double **Vh2os, double **Vadhs, double **Vh2ol, double **Vnh3l, double **Erock,
 		double **Eh2os, double **Eslush, double rhoH2olth, double rhoNh3lth);
 
+int dehydrate(double T, double dM, double dVol, double *dE, double *Mrock, double *Mh2ol, double *Vrock,
+		double *Vh2ol, double *Erock, double *Eslush, double rhoRockth, double rhoHydrth, double rhoH2olth,
+		double *Xhydr);
+
 int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p,
-		int warnings, int msgout, double Xp, double tzero, double Tsurf, double Tinit, double fulltime, double dtoutput) {
+		int warnings, int msgout, double Xp, double *Xhydr, double tzero, double Tsurf, double Tinit, double fulltime, double dtoutput) {
 
 	//-------------------------------------------------------------------
 	//                 Declarations and initializations
@@ -158,6 +161,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double temp1 = 0.0; // Temporary temperature (K)
 
 	double S = 0.0;     // Radiogenic power, specific (erg/s/g)
+	double Tdehydr = 0.0; // Temperature at which dehydration proceeds (K)
 	double Tdiff = 0.0; // Temperature at which differentiation proceeds (K)
 	double kap1 = 0.0;  // Temporary thermal conductivity (erg/s/cm/K)
 	double dr = 0.0;    // Physical thickness of a shell (cm)
@@ -180,12 +184,13 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
 	double Nu0 = 0.0;   // Critical Nusselt number = Ra_c^0.25
 
-	double rhoRockth = 3.25;  // Density of rock, just for this thermal routine (g/cm3)
-	double rhoH2olth = 0.0;   // Density of liquid water, just for this thermal routine (g/cm3)
-	double rhoH2osth = 0.935; // Density of ice, just for this thermal routine (g/cm3)
-	double rhoNh3lth = 0.0;   // Density of liquid ammonia, just for this thermal routine (g/cm3)
-	double rhoAdhsth = 0.985; // Density of ammonia dihydrate, just for this thermal routine (g/cm3)
-	double rhoIce = 0.0;      // Density of the bulk ice (g/cm3)
+	double rhoRockth = rhoRock/1000.0;  // Density of dry rock, just for this thermal routine (g/cm3)
+	double rhoHydrth = rhoHydr/1000.0;  // Density of hydrated rock, just for this thermal routine (g/cm3)
+	double rhoH2olth = 0.0;             // Density of liquid water, just for this thermal routine (g/cm3)
+	double rhoH2osth = 0.935;           // Density of ice, just for this thermal routine (g/cm3) TODO appropriate for KBOs, but 0.918 for Ceres
+	double rhoNh3lth = 0.0;             // Density of liquid ammonia, just for this thermal routine (g/cm3)
+	double rhoAdhsth = 0.985;           // Density of ammonia dihydrate, just for this thermal routine (g/cm3)
+	double rhoIce = 0.0;                // Density of the bulk ice (g/cm3)
 
 	// Zero all the arrays
     for (ir=0;ir<NR;ir++) {
@@ -235,7 +240,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     rhoNh3lth = (1.0/rhoH2olth) + (1.0/rhoAdhsth - 1.0/rhoH2osth) / Xc;  // Slush mass balance
     rhoNh3lth = 1.0/rhoNh3lth;
     rhoIce = 1.0 / ((Xp/Xc)/rhoAdhsth + (1.0-Xp/Xc)/rhoH2osth);          // Bulk ice density
-    frockp = (1.0-rhoIce/rho_p) / (1.0-rhoIce/rhoRockth);
+    frockp = (1.0-rhoIce/rho_p) / (1.0-rhoIce/(Xhydr[0]*rhoHydrth+(1.0-Xhydr[0])*rhoRockth));
 
     dr = r_p/((double) NR);
 
@@ -247,7 +252,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	Mh2os[ir] = dM[ir]*(1.0-frockp)*(1.0-Xp/Xc);
     	Madhs[ir] = dM[ir]*(1.0-frockp)*(Xp/Xc);
 
-    	// I do not understand this init of the energies. Why prop to T^2?
+    	// Init of the energies, prop to Cp(T) * deltaT. Because often Cp(T) prop to T, energies prop to T*deltaT.
     	e1 = heatRock(Tinit);
     	Erock[ir] = Mrock[ir]*e1;
     	e1 = qh2o*Tinit*Tinit/2.0;
@@ -255,7 +260,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	Eh2os[ir] = Mh2os[ir]*e1;
     	Eslush[ir] = Madhs[ir]*e2;
     	dE[ir] = Erock[ir] + Eh2os[ir] + Eslush[ir];
-    	Vrock[ir] = Mrock[ir] / rhoRockth;
+    	Vrock[ir] = Mrock[ir] / (Xhydr[ir]*rhoHydrth+(1.0-Xhydr[ir])*rhoRockth);
     	Vh2os[ir] = Mh2os[ir] / rhoH2osth;
     	Vadhs[ir] = Madhs[ir] / rhoAdhsth;
     	T[ir] = Tinit;
@@ -305,6 +310,39 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     for (itime=0;itime<ntime;itime++) {
 
     	time = time + dtime;
+
+    	//-------------------------------------------------------------------
+    	//                        Dehydrate the rock
+    	//-------------------------------------------------------------------
+
+    	Tdehydr = 700.0;
+
+    	for (ir=0;ir<ircore;ir++) { // TODO do not run if rock is already dehydrated
+    		if (T[ir] > Tdehydr) {
+    			dehydrate(T[ir], dM[ir], dVol[ir], &dE[ir], &Mrock[ir], &Mh2ol[ir], &Vrock[ir], &Vh2ol[ir], &Erock[ir], &Eslush[ir],
+    					rhoRockth, rhoHydrth, rhoH2olth, &Xhydr[ir]);
+    		}
+    	}
+
+		//-------------------------------------------------------------------
+		//               Allow for chemical equilibrium again
+		//-------------------------------------------------------------------
+
+		for (ir=0;ir<NR;ir++) {
+			e1 = dE[ir] / dM[ir];
+			frock = Mrock[ir] / dM[ir];
+			fh2os = Mh2os[ir] / dM[ir];
+			fadhs = Madhs[ir] / dM[ir];
+			fh2ol = Mh2ol[ir] / dM[ir];
+			fnh3l = Mnh3l[ir] / dM[ir];
+	    	state (itime, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, &temp1);
+			T[ir] = temp1;
+			Mrock[ir] = dM[ir]*frock;
+			Mh2os[ir] = dM[ir]*fh2os;
+			Madhs[ir] = dM[ir]*fadhs;
+			Mh2ol[ir] = dM[ir]*fh2ol;
+			Mnh3l[ir] = dM[ir]*fnh3l;
+		}
 
     	//-------------------------------------------------------------------
     	//           Differentiate the rock, liquids, and H2O ice
@@ -396,7 +434,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			fnh3l = fabs(Vnh3l[ir] / dVol[ir]);
 			kap1 = S / (4.0*PI_greek*Gcgs);
 
-			kapcond(T[ir], frock, fh2os, fadhs, fh2ol, fnh3l, &kap1);
+			kapcond(T[ir], frock, fh2os, fadhs, fh2ol, fnh3l, &kap1, Xhydr[ir]);
 
 			if (fh2ol + fnh3l >= 0.02)
 				kappa[ir] = 400.0*1.0e5;  // cgs
@@ -500,7 +538,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
 		// Update volumes
 		for (ir=0;ir<NR;ir++) {
-			Vrock[ir] = Mrock[ir] / rhoRockth;
+			Vrock[ir] = Mrock[ir] / (Xhydr[ir]*rhoHydrth+(1.0-Xhydr[ir])*rhoRockth);
 			Vh2os[ir] = Mh2os[ir] / rhoH2osth;
 			Vadhs[ir] = Madhs[ir] / rhoAdhsth;
 			Vh2ol[ir] = Mh2ol[ir] / rhoH2olth;
@@ -523,7 +561,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 				Thermal[5] = Mh2ol[ir];
 				Thermal[6] = Mnh3l[ir];
 				Thermal[7] = Nu[ir];
-				Thermal[8] = 0.0;
+				Thermal[8] = Xhydr[ir];
 				append_output(9, Thermal, path, "Outputs/Thermal.txt");
 			}
 		}
@@ -683,9 +721,9 @@ double heatRock (double T) {
 
 	erock = ErockA*T*T;
 	if (T > 275.0) {
-		erock = ErockB + (T-275.0)*(ErockC+ErockD*T);
+		erock = ErockA*275.0*275.0 + (T-275.0)*(ErockC+ErockD*T);
 		if (T > 1000.0) {
-			erock = ErockE + (ErockF)*(T-1000.0);
+			erock = ErockA*275.0*275.0 + (1000.0-275.0)*(ErockC+ErockD*1000.0) + (ErockF)*(T-1000.0);
 		}
 	}
 
@@ -711,7 +749,8 @@ int heatIce (double T, double X, double *E, double *gh2os, double *gadhs, double
 	double T2 = 0.0;        // Temporary temperature (K)
 	double r = 0.0;         // Square root
 
-	double ch2ol = 4.2e7;   // Heat capacity of liquid water (cgs)
+	double ch2ol = 4.1885e7;// Heat capacity of liquid water (cgs) TODO Adjust in supercooled regime
+	                        // where it goes up to 8e7 cgs at 230 K and diverges at 228 K
 	double cnh3l = 4.7e7;   // Heat capacity of liquid ammonia (cgs)
 	double ladh = 1.319e9;  // Latent heat of ADH melting (cgs)
 	double lh2o = 3.335e9;  // Latent heat of H2O melting (cgs)
@@ -900,10 +939,11 @@ int heatIce (double T, double X, double *E, double *gh2os, double *gadhs, double
  *
  *--------------------------------------------------------------------*/
 
-int kapcond(double T, double frock, double fh2os, double fadhs, double fh2ol, double fnh3l, double *kap) {
+int kapcond(double T, double frock, double fh2os, double fadhs, double fh2ol, double fnh3l, double *kap, double Xhydr) {
 
 	// Solid phases
-	double kaprock = 1.0e5;     // cgs
+	double kaprock = 3.0e5;     // cgs
+	double kaphydr = 1.0e5;
 	double kaph2os = 5.67e7/T;
 	double kapadhs = 1.2e5;
 
@@ -917,7 +957,7 @@ int kapcond(double T, double frock, double fh2os, double fadhs, double fh2ol, do
 
 	// Combined conductivities (equations (7) and (8) of D09)
 	if (frock == 1.0)
-		(*kap) = kaprock;
+		(*kap) = Xhydr*kaphydr + (1-Xhydr)*kaprock;
 	else {
 		// Geometric mean for ice phases (equation 7)
 		kapice = fh2os*log(kaph2os) + fadhs*log(kapadhs) + fh2ol*log(kaph2ol) + fnh3l*log(kapnh3l);
@@ -1068,11 +1108,24 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 	jr = 0;
 	(*ircore) = jr;
 	for (ir=0;ir<=(*irdiff);ir++) {
+		if (Vrocknew[jr] > Volcell[jr]) {
+			q = (Vrocknew[jr]-Volcell[jr]) / (*Vrock)[ir];
+			Vrocknew[jr] = Volcell[jr];
+			Mrocknew[jr] = Mrocknew[jr] - q*(*Mrock)[ir];
+			Erocknew[jr] = Erocknew[jr] - q*(*Erock)[ir];
+			Volcell[jr] = 0.0;
+			jr++;
+			(*ircore) = jr;
+			Vrocknew[jr] = q*(*Vrock)[ir];
+			Mrocknew[jr] = q*(*Mrock)[ir];
+			Erocknew[jr] = q*(*Erock)[ir];
+		}
+
 		Vrocknew[jr] = Vrocknew[jr] + (*Vrock)[ir];
 		Mrocknew[jr] = Mrocknew[jr] + (*Mrock)[ir];
 		Erocknew[jr] = Erocknew[jr] + (*Erock)[ir];
 
-		if (Vrocknew[jr] > Volcell[jr]) {
+		if (Vrocknew[jr] >= Volcell[jr]) {
 			q = (Vrocknew[jr]-Volcell[jr]) / (*Vrock)[ir];
 			Vrocknew[jr] = Volcell[jr];
 			Mrocknew[jr] = Mrocknew[jr] - q*(*Mrock)[ir];
@@ -1092,6 +1145,30 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 	//-------------------------------------------------------------------
 
 	for (ir=0;ir<=(*irdiff);ir++) {
+		Volume1 = Vadhsnew[jr] + Vh2olnew[jr] + Vnh3lnew[jr];
+		Volume2 = (*Vadhs)[ir] + (*Vh2ol)[ir] + (*Vnh3l)[ir];
+		if (Volume1 >= Volcell[jr]) {
+			nextcell = 1;                   // Slush fills more than one layer
+			q = (Volume1-Volcell[jr]) / Volume2;
+			Vh2olnew[jr] = Vh2olnew[jr] - q*(*Vh2ol)[ir];
+			Vnh3lnew[jr] = Vnh3lnew[jr] - q*(*Vnh3l)[ir];
+			Vadhsnew[jr] = Vadhsnew[jr] - q*(*Vadhs)[ir];
+			Mh2olnew[jr] = Mh2olnew[jr] - q*(*Mh2ol)[ir];
+			Mnh3lnew[jr] = Mnh3lnew[jr] - q*(*Mnh3l)[ir];
+			Madhsnew[jr] = Madhsnew[jr] - q*(*Madhs)[ir];
+			Eslushnew[jr] = Eslushnew[jr] - q*(*Eslush)[ir];
+			Volcell[jr] = 0.0;
+			jr++;
+			(*irice) = jr;
+			Vadhsnew[jr] = q*(*Vadhs)[ir];
+			Vh2olnew[jr] = q*(*Vh2ol)[ir];
+			Vnh3lnew[jr] = q*(*Vnh3l)[ir];
+			Madhsnew[jr] = q*(*Madhs)[ir];
+			Mh2olnew[jr] = q*(*Mh2ol)[ir];
+			Mnh3lnew[jr] = q*(*Mnh3l)[ir];
+			Eslushnew[jr] = q*(*Eslush)[ir];
+		}
+
 		Vadhsnew[jr] = Vadhsnew[jr] + (*Vadhs)[ir];
 		Vh2olnew[jr] = Vh2olnew[jr] + (*Vh2ol)[ir];
 		Vnh3lnew[jr] = Vnh3lnew[jr] + (*Vnh3l)[ir];
@@ -1099,9 +1176,9 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 		Mh2olnew[jr] = Mh2olnew[jr] + (*Mh2ol)[ir];
 		Mnh3lnew[jr] = Mnh3lnew[jr] + (*Mnh3l)[ir];
 		Eslushnew[jr] = Eslushnew[jr] + (*Eslush)[ir];
+
 		Volume1 = Vadhsnew[jr] + Vh2olnew[jr] + Vnh3lnew[jr];
 		Volume2 = (*Vadhs)[ir] + (*Vh2ol)[ir] + (*Vnh3l)[ir];
-
 		if (Volume1 >= Volcell[jr]) {
 			nextcell = 1;                   // Slush fills more than one layer
 			q = (Volume1-Volcell[jr]) / Volume2;
@@ -1134,6 +1211,18 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 	//-------------------------------------------------------------------
 
 	for (ir=0;ir<=(*irdiff);ir++) {
+		if (Vh2osnew[jr] >= Volcell[jr]) {
+			q = (Vh2osnew[jr] - Volcell[jr]) / (*Vh2os)[ir];
+			Vh2osnew[jr] = Volcell[jr];
+			Mh2osnew[jr] = Mh2osnew[jr] - q*(*Mh2os)[ir];
+			Eh2osnew[jr] = Eh2osnew[jr] - q*(*Eh2os)[ir];
+			Volcell[jr] = 0.0;
+			jr++;
+			Vh2osnew[jr] = q*(*Vh2os)[ir];
+			Mh2osnew[jr] = q*(*Mh2os)[ir];
+			Eh2osnew[jr] = q*(*Eh2os)[ir];
+		}
+
 		Vh2osnew[jr] = Vh2osnew[jr] + (*Vh2os)[ir];
 		Mh2osnew[jr] = Mh2osnew[jr] + (*Mh2os)[ir];
 		Eh2osnew[jr] = Eh2osnew[jr] + (*Eh2os)[ir];
@@ -1206,6 +1295,40 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 	free (Eh2osnew);
 	free (Eslushnew);
 	free (Volcell);
+
+	return 0;
+}
+
+/*--------------------------------------------------------------------
+ *
+ * Subroutine dehydrate
+ *
+ * Separates hydrated rock into dry rock and liquid water in each cell
+ * where T>Tdehydr in the core.
+ *
+ *--------------------------------------------------------------------*/
+
+int dehydrate(double T, double dM, double dVol, double *dE, double *Mrock, double *Mh2ol, double *Vrock,
+		double *Vh2ol, double *Erock, double *Eslush, double rhoRockth, double rhoHydrth, double rhoH2olth,
+		double *Xhydr){
+
+	// Set hydration level: 1 at 700 K, 0 at 850 K, linear in between
+	if (T<700.0) (*Xhydr) = 1.0;
+	else if (T>=700.0 && T<850.0) (*Xhydr) = 1.0 - (T-700.0)/(850.0-700.0);
+	else (*Xhydr) = 0.0;
+
+	// Split cell into water and rock
+	(*Vrock) = (*Mrock)/((*Xhydr)*rhoHydrth + (1.0-(*Xhydr))*rhoRockth);
+	(*Vh2ol) = dVol - (*Vrock);
+
+	(*Mh2ol) = (*Vh2ol)*rhoH2olth;
+	(*Mrock) = dM - (*Mh2ol);
+
+	// Update Xhydr: not 0 to conserve mass and volume in each shell, but has decreased
+	// TODO Set (*Xhydr) at 0 if it's close to 0, otherwise it can take a value of order 1.0e-16
+	(*Xhydr) = ((*Mrock)/(*Vrock) - rhoRockth) / (rhoHydrth - rhoRockth);
+
+	// TODO Update energies
 
 	return 0;
 }
