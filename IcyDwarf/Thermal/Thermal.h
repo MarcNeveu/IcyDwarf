@@ -216,6 +216,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	T[ir] = 0.0;
     	kappa[ir] = 0.0;
     	Qth[ir] = 0.0;
+    	Xhydr_old[ir] = 0.0;
     	Nu[ir] = 1.0;
     }
 
@@ -319,8 +320,11 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
     	Tdehydr = 700.0;
 
-    	for (ir=0;ir<ircore;ir++) {
+    	for (ir=0;ir<NR;ir++) {
     		Xhydr_old[ir] = Xhydr[ir];
+    	}
+
+    	for (ir=0;ir<ircore;ir++) {
     		if (T[ir] > Tdehydr && Xhydr[ir] >= 0.01) {
     			dehydrate(T[ir], dM[ir], dVol[ir], &Mrock[ir], &Mh2ol[ir], &Vrock[ir], &Vh2ol[ir],
     					rhoRockth, rhoHydrth, rhoH2olth, &Xhydr[ir]);
@@ -367,8 +371,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	// Update Xhydr
     	for (ir=0;ir<NR;ir++) {
 			(*Xhydr) = ((*Mrock)/(*Vrock) - rhoRockth) / (rhoHydrth - rhoRockth);
-			if (fabs(*Xhydr) < 0.01) (*Xhydr) = 0.0;   // Avoid numerical residuals
-			if (fabs(*Xhydr) > 0.99) (*Xhydr) = 1.0;
+			if (fabs(*Xhydr) < 1.0e-10) (*Xhydr) = 0.0;   // Avoid numerical residuals
+			if (fabs(*Xhydr) > 1.0-1.0e-10) (*Xhydr) = 1.0;
     	}
 
 		//-------------------------------------------------------------------
@@ -432,7 +436,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
 		for (ir=0;ir<NR;ir++) {
 			if (fabs(Xhydr_old[ir] - Xhydr[ir]) > 0.01) {
-				Qth[ir] = Qth[ir] + (Xhydr[ir] - Xhydr_old[ir])*Mrock[ir]*Hhydr;
+				Qth[ir] = Qth[ir] + (Xhydr[ir] - Xhydr_old[ir])*Mrock[ir]*Hhydr/dtime;
 			}
 		}
 
@@ -1369,8 +1373,8 @@ int dehydrate(double T, double dM, double dVol, double *Mrock, double *Mh2ol, do
 
 	// Update Xhydr: not 0 to conserve mass and volume in each shell, but has decreased
 	(*Xhydr) = ((*Mrock)/(*Vrock) - rhoRockth) / (rhoHydrth - rhoRockth);
-	if (fabs(*Xhydr) < 0.01) (*Xhydr) = 0.0;  // Avoid numerical residuals
-	if (fabs(*Xhydr) > 0.99) (*Xhydr) = 1.0;
+	if (fabs(*Xhydr) < 1.0e-10) (*Xhydr) = 0.0;  // Avoid numerical residuals
+	if (fabs(*Xhydr) > 1.0-1.0e-10) (*Xhydr) = 1.0;
 
 	return 0;
 }
