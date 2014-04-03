@@ -24,8 +24,8 @@
 #define gram 1.0e-3                                        // g to kg
 #define bar 1.0e5                                          // bar to Pa
 #define Kelvin 273.15                                      // Celsius to Kelvin
-#define Gyr2sec (1.0e9*365.25*86400.0)                     // Gyr to seconds
-#define Myr2sec (1.0e6*365.25*86400.0)                     // Myr to seconds
+#define Gyr2sec 3.15576e16                                 // =1.0e9*365.25*86400.0 Gyr to seconds
+#define Myr2sec 3.15576e13                                 // =1.0e6*365.25*86400.0 Myr to seconds
 #define MeV2erg 1.602e-6                                   // MeV to erg
 #define R_G 8.3145                                         // Universal gas constant (J/(mol K))
 #define k_B 1.3806502e-23                                  // Boltzmann's constant (J/K)
@@ -38,11 +38,6 @@
 #define rhoAdhs 0.985e3                                    // Density of ADH(s)
 #define rhoNh3l 0.74e3                                     // Density of NH3(l)
 #define rhoHydr 2.35e3                                     // Density of hydrated rock
-#define Xc 0.321                                           // Ammonia content of eutectic H2O-NH3 mixture
-#define tempk_dehydration 730.0                            // Dehydration temperature (Castillo-Rogez and McCord 2010)
-#define CHNOSZ_T_MIN 235.0                                 // Minimum temperature for the subcrt() routine of CHNOSZ to work
-                                                           // Default: 235 K (Cryolava), 245 K (Crack, P>200 bar)
-#define NRmax 2000                                         // Max number of grid zones tolerated in Desch09 code
 
 typedef struct {
     float radius; // Radius in km
@@ -247,6 +242,10 @@ int icy_dwarf_input (double **input, char (*thermal_file)[1024], char path[1024]
 
 			fseek(f,112,SEEK_CUR);  // Thermal output file?
 			scan = fscanf(f, "%s", (*thermal_file));
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at thermal file entry\n");
+
+			fseek(f,24,SEEK_CUR);  // Max temp for plot?
+			scan = fscanf(f, "%lg", &(*input)[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 		}
 		fclose(f);
@@ -276,6 +275,7 @@ int icy_dwarf_input (double **input, char (*thermal_file)[1024], char path[1024]
 		printf("-------------------------------\n");
 		printf("Thermal plot\n");
 		printf("\t IcyDwarf output \t %s\n",(*thermal_file));
+		printf("\t Max temp (K; 0=auto) \t %g\n",(*input)[i]), i++;
 		printf("\n");
 
 	free (idi);

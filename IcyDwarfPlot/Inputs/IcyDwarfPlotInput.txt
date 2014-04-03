@@ -23,5 +23,6 @@ Output every (Myr)            10
 Subroutines
 -------------------------------
 Thermal plot
-	IcyDwarf output       Thermal.txt
+	IcyDwarf output       Thermal_04.txt
+	Max temp (K; 0=auto)  2800
 

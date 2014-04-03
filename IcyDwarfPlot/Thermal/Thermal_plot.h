@@ -10,9 +10,9 @@
 
 #include "../Graphics/Plot.h"
 
-int Thermal_plot (char path[1024], int NR, int NT_output, float r_p, thermalout **thoutput, int warnings, int msgout, SDL_Window* window, SDL_Renderer* renderer, int* view, int* quit);
+int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, float r_p, thermalout **thoutput, int warnings, int msgout, SDL_Window* window, SDL_Renderer* renderer, int* view, int* quit);
 
-int Thermal_plot (char path[1024], int NR, int NT_output, float r_p, thermalout **thoutput, int warnings, int msgout, SDL_Window* window, SDL_Renderer* renderer, int* view, int* quit) {
+int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, float r_p, thermalout **thoutput, int warnings, int msgout, SDL_Window* window, SDL_Renderer* renderer, int* view, int* quit) {
 
 	int r = 0;
 	int t = 0;
@@ -171,11 +171,16 @@ int Thermal_plot (char path[1024], int NR, int NT_output, float r_p, thermalout 
 
 	double Tmax = 0.0; // Max temperature ever encountered in any layer
 	int Tmax_int = 0;
-	for (t=0;t<NT_output;t++) {
-		for (r=0;r<NR;r++) {
-			if (thoutput[r][t].tempk > Tmax) Tmax = thoutput[r][t].tempk;
+
+	if (Tmax_input == 0) {
+		for (t=0;t<NT_output;t++) {
+			for (r=0;r<NR;r++) {
+				if (thoutput[r][t].tempk > Tmax) Tmax = thoutput[r][t].tempk;
+			}
 		}
 	}
+	else Tmax = Tmax_input;
+
 	Tmax_int = (int) Tmax + 1;
 
 	// Axis numbers

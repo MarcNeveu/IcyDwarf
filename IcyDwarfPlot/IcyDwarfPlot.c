@@ -42,7 +42,7 @@ int main(int argc, char *argv[]){
     int NT_output = 0;                 // Time step for writing output
 
     // Call specific subroutines
-    int t_cryolava = 0;                // Time at which to calculate gas exsolution
+    int Tmax = 0;                      // Max temperature for display
 
 	int r = 0;
 
@@ -55,7 +55,7 @@ int main(int argc, char *argv[]){
 
 	printf("\n");
 	printf("-------------------------------------------------------------------\n");
-	printf("IcyDwarfPlot v14.3\n");
+	printf("IcyDwarfPlot v14.4\n");
 	if (release == 1) printf("Release mode\n");
 	else if (cmdline == 1) printf("Command line mode\n");
 	printf("-------------------------------------------------------------------\n");
@@ -84,8 +84,7 @@ int main(int argc, char *argv[]){
 	total_time = input[7];
 	output_every = input[8];
 	NT_output = floor(total_time/output_every)+1;
-
-	t_cryolava = (int) (input[17]/output_every);
+	Tmax = input[9];
 
 	//-------------------------------------------------------------------
 	// Read thermal output (currently kbo.dat, need to read Thermal.txt)
@@ -142,7 +141,7 @@ int main(int argc, char *argv[]){
 
 	while (!quit) {
 		if (view == 1) // Display thermal tab
-			Thermal_plot (path, NR, NT_output, r_p, thoutput, warnings, msgout, window, renderer, &view, &quit);
+			Thermal_plot (path, Tmax, NR, NT_output, r_p, thoutput, warnings, msgout, window, renderer, &view, &quit);
 		if (view == 2) // Display crack tab
 			Crack_plot (path, NR, total_time, NT_output, r_p, thoutput, warnings, msgout, window, renderer, &view, &quit);
 	}

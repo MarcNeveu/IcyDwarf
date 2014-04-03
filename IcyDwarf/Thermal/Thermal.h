@@ -22,13 +22,13 @@
 #ifndef THERMAL_H_
 #define THERMAL_H_
 
-#define ErockA 770.0/275.0/2.0*1.0e4   // Heat capacity of rock (cgs, 1 cgs = 1 erg/g/K = 1e-4 J/kg/K) below 275 K
-#define ErockC (607.0+163.0/2.0)*1.0e4 // Between 275 and 1000 K, term 1
-#define ErockD 163.0/275.0/2.0*1.0e4   // Between 275 and 1000 K, term 2
+#define ErockA 1.40e4                  // =770.0/275.0/2.0*1.0e4, heat capacity of rock (cgs, 1 cgs = 1 erg/g/K = 1e-4 J/kg/K) below 275 K
+#define ErockC 6.885e6                 // =(607.0+163.0/2.0)*1.0e4 between 275 and 1000 K, term 1
+#define ErockD 2.963636e3              // =163.0/275.0/2.0*1.0e4 between 275 and 1000 K, term 2
 #define ErockF 1.20e7                  // Above 1000 K, in cgs
 
-#define qh2o 773.0/100.0*1.0e4         // Heat capacity of water ice (erg/g/K)
-#define qadh 1120.0/100.0*1.0e4        // Heat capacity of ADH ice (erg/g/K)
+#define qh2o 7.73e4                    // =773.0/100.0*1.0e4, heat capacity of water ice (erg/g/K)
+#define qadh 1.12e5                    // =1120.0/100.0*1.0e4, heat capacity of ADH ice (erg/g/K)
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -53,9 +53,8 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 		double **Mh2ol, double **Mnh3l, double **Vrock, double **Vh2os, double **Vadhs, double **Vh2ol, double **Vnh3l, double **Erock,
 		double **Eh2os, double **Eslush, double rhoH2olth, double rhoNh3lth);
 
-int dehydrate(double T, double dM, double dVol, double *dE, double *Mrock, double *Mh2ol, double *Vrock,
-		double *Vh2ol, double *Erock, double *Eslush, double rhoRockth, double rhoHydrth, double rhoH2olth,
-		double *Xhydr);
+int dehydrate(double T, double dM, double dVol, double *Mrock, double *Mh2ol, double *Vrock,
+		double *Vh2ol, double rhoRockth, double rhoHydrth, double rhoH2olth, double *Xhydr);
 
 int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p,
 		int warnings, int msgout, double Xp, double *Xhydr, double tzero, double Tsurf, double Tinit, double fulltime, double dtoutput) {
@@ -150,6 +149,9 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
 	double *Qth = (double*) malloc((NR)*sizeof(double));      // Heating power (erg/s)
 	if (Qth == NULL) printf("Thermal: Not enough memory to create Qth[NR]\n");
+
+	double *Xhydr_old = (double*) malloc((NR)*sizeof(double));// Old degree of hydration, 0=dry, 1=hydrated
+	if (Xhydr_old == NULL) printf("Thermal: Not enough memory to create Xhydr_old[NR]\n");
 
 	double e1 = 0.0;    // Temporary specific energy (erg/g)
 	double e2 = 0.0;    // Temporary specific energy (erg/g)
@@ -318,8 +320,9 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	Tdehydr = 700.0;
 
     	for (ir=0;ir<ircore;ir++) {
+    		Xhydr_old[ir] = Xhydr[ir];
     		if (T[ir] > Tdehydr && Xhydr[ir] >= 0.01) {
-    			dehydrate(T[ir], dM[ir], dVol[ir], &dE[ir], &Mrock[ir], &Mh2ol[ir], &Vrock[ir], &Vh2ol[ir], &Erock[ir], &Eslush[ir],
+    			dehydrate(T[ir], dM[ir], dVol[ir], &Mrock[ir], &Mh2ol[ir], &Vrock[ir], &Vh2ol[ir],
     					rhoRockth, rhoHydrth, rhoH2olth, &Xhydr[ir]);
     		}
     	}
@@ -361,6 +364,13 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     				 &Vrock, &Vh2os, &Vadhs, &Vh2ol, &Vnh3l, &Erock, &Eh2os, &Eslush, rhoH2olth, rhoNh3lth);
     	}
 
+    	// Update Xhydr
+    	for (ir=0;ir<NR;ir++) {
+			(*Xhydr) = ((*Mrock)/(*Vrock) - rhoRockth) / (rhoHydrth - rhoRockth);
+			if (fabs(*Xhydr) < 0.01) (*Xhydr) = 0.0;   // Avoid numerical residuals
+			if (fabs(*Xhydr) > 0.99) (*Xhydr) = 1.0;
+    	}
+
 		//-------------------------------------------------------------------
 		//               Allow for chemical equilibrium again
 		//-------------------------------------------------------------------
@@ -400,8 +410,9 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
 		//-------------------------------------------------------------------
 		// Calculate heating from:
-		// - radioactive decay in rocky layers,
-		// - gravitational potential energy release in liquid layers.
+		// - radioactive decay in rocky layers
+		// - gravitational potential energy release in differentiated layers
+		// - hydration / dehydration (cooling)
 		//-------------------------------------------------------------------
 
 		decay(&time, &tzero, &S);
@@ -416,6 +427,12 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			}
 			for (ir=0;ir<=irdiff;ir++) {
 				Qth[ir] = Qth[ir] + (Phi-Phiold)/dtime * (dVol[ir]/Volume1);
+			}
+		}
+
+		for (ir=0;ir<NR;ir++) {
+			if (fabs(Xhydr_old[ir] - Xhydr[ir]) > 0.01) {
+				Qth[ir] = Qth[ir] + (Xhydr[ir] - Xhydr_old[ir])*Mrock[ir]*Hhydr;
 			}
 		}
 
@@ -598,6 +615,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	free (kappa);
 	free (RRflux);
 	free (Qth);
+	free (Xhydr_old);
 	free (Nu);
 
 	return 0;
@@ -1334,9 +1352,8 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
  *
  *--------------------------------------------------------------------*/
 
-int dehydrate(double T, double dM, double dVol, double *dE, double *Mrock, double *Mh2ol, double *Vrock,
-		double *Vh2ol, double *Erock, double *Eslush, double rhoRockth, double rhoHydrth, double rhoH2olth,
-		double *Xhydr){
+int dehydrate(double T, double dM, double dVol, double *Mrock, double *Mh2ol, double *Vrock,
+		double *Vh2ol, double rhoRockth, double rhoHydrth, double rhoH2olth, double *Xhydr){
 
 	// Set hydration level: 1 at 700 K, 0 at 850 K, linear in between
 	if (T<700.0) (*Xhydr) = 1.0;
@@ -1352,9 +1369,8 @@ int dehydrate(double T, double dM, double dVol, double *dE, double *Mrock, doubl
 
 	// Update Xhydr: not 0 to conserve mass and volume in each shell, but has decreased
 	(*Xhydr) = ((*Mrock)/(*Vrock) - rhoRockth) / (rhoHydrth - rhoRockth);
-	if (fabs(*Xhydr) < 0.01) (*Xhydr) = 0.0;
-
-	// TODO Update energies
+	if (fabs(*Xhydr) < 0.01) (*Xhydr) = 0.0;  // Avoid numerical residuals
+	if (fabs(*Xhydr) > 0.99) (*Xhydr) = 1.0;
 
 	return 0;
 }

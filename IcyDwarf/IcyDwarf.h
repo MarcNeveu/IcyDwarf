@@ -24,8 +24,8 @@
 #define gram 1.0e-3                                        // g to kg
 #define bar 1.0e5                                          // bar to Pa
 #define Kelvin 273.15                                      // Celsius to Kelvin
-#define Gyr2sec (1.0e9*365.25*86400.0)                     // Gyr to seconds
-#define Myr2sec (1.0e6*365.25*86400.0)                     // Myr to seconds
+#define Gyr2sec 3.15576e16                                 // =1.0e9*365.25*86400.0 Gyr to seconds
+#define Myr2sec 3.15576e13                                 // =1.0e6*365.25*86400.0 Myr to seconds
 #define MeV2erg 1.602e-6                                   // MeV to erg
 #define R_G 8.3145                                         // Universal gas constant (J/(mol K))
 #define k_B 1.3806502e-23                                  // Boltzmann's constant (J/K)
@@ -39,8 +39,9 @@
 #define rhoNh3l 0.74e3                                     // Density of NH3(l)
 #define rhoHydr 2.35e3                                     // Density of hydrated rock
 #define Xc 0.321                                           // Ammonia content of eutectic H2O-NH3 mixture
-#define tempk_dehydration 730.0                            // Dehydration temperature (Castillo-Rogez and McCord 2010)
+#define tempk_dehydration 730.0                            // TODO Harmonize with thermal code. Dehydration temperature (Castillo-Rogez and McCord 2010)
 #define NRmax 2000                                         // Max number of grid zones tolerated in Desch09 code
+#define Hhydr 5.75e9                                       // Heat of hydration, erg/(g forsterite) (=575e3 kJ/(kg forsterite))
 
 typedef struct {
     float radius; // Radius in km

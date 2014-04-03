@@ -126,7 +126,7 @@ int main(int argc, char *argv[]){
 	// Run thermal code
 	//-------------------------------------------------------------------
 
-    double *Xhydr = (double*) malloc(NR*sizeof(double));
+    double *Xhydr = (double*) malloc(NR*sizeof(double)); // Degree of hydration, 0=dry, 1=hydrated
     if (Xhydr == NULL) printf("IcyDwarf: Not enough memory to create Xhydr[NR]\n");
 	for (r=0;r<NR;r++) Xhydr[r] = 1.0;
 
