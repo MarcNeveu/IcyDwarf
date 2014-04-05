@@ -87,10 +87,31 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 	double dX = 0.0;                   // Increment by which root search interval was narrowed
 	double dXold = 0.0;
 
-	double *Pressure = (double*) malloc(NR*sizeof(double));     // Pressure in Pa
+	double *Pressure = (double*) malloc(NR*sizeof(double));   // Pressure in Pa
 	if (Pressure == NULL) printf("Cryolava: Not enough memory to create Pressure[NR]\n");
 
-	float Mliq = 0.0;                                              // Mass of liquid in the planet
+	double *dM = (double*) malloc((NR)*sizeof(double));       // Mass of a layer (g)
+	if (dM == NULL) printf("Thermal: Not enough memory to create dM[NR]\n");
+
+	double *Mrock = (double*) malloc((NR)*sizeof(double));    // Mass of rock (g)
+	if (Mrock == NULL) printf("Thermal: Not enough memory to create Mrock[NR]\n");
+
+	double *Mh2os = (double*) malloc((NR)*sizeof(double));    // Mass of water ice (g)
+	if (Mh2os == NULL) printf("Thermal: Not enough memory to create Mh2os[NR]\n");
+
+	double *Madhs = (double*) malloc((NR)*sizeof(double));    // Mass of ammonia dihydrate ice (g)
+	if (Madhs == NULL) printf("Thermal: Not enough memory to create Madhs[NR]\n");
+
+	double *Mh2ol = (double*) malloc((NR)*sizeof(double));    // Mass of liquid water (g)
+	if (Mh2ol == NULL) printf("Thermal: Not enough memory to create Mh2ol[NR]\n");
+
+	double *Mnh3l = (double*) malloc((NR)*sizeof(double));    // Mass of liquid ammonia (g)
+	if (Mnh3l == NULL) printf("Thermal: Not enough memory to create Mnh3l[NR]\n");
+
+	double *radius = (double*) malloc((NR)*sizeof(double));   // Radius (cm)
+	if (radius == NULL) printf("Thermal: Not enough memory to create radius[NR]\n");
+
+	float Mliq = 0.0;                                         // Mass of liquid in the planet
 
 	t = t_cryolava;
 
@@ -99,7 +120,16 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 		printf("Cryolava: No liquid at t_cryolava=%d\n",t);
 		return -1;
 	}
-	Pressure = calculate_pressure(Pressure,NR,t,thoutput);         // Calculate pressures
+	for (r=0;r<NR;r++) {
+		Mrock[r] = thoutput[r][t].mrock;
+		Mh2os[r] = thoutput[r][t].mh2os;
+		Madhs[r] = thoutput[r][t].madhs;
+		Mh2ol[r] = thoutput[r][t].mh2ol;
+		Mnh3l[r] = thoutput[r][t].mnh3l;
+		dM[r] = Mrock[r] + Mh2os[r] + Madhs[r] + Mh2ol[r] + Mnh3l[r];
+		radius[r] = thoutput[r][t].radius*km2cm;
+	}
+	Pressure = calculate_pressure(Pressure, NR, dM, Mrock, Mh2os, Madhs, Mh2ol, Mnh3l, radius);         // Calculate pressures
 
 	// Find the seafloor radius and get the temperature there
 	r_seafloor =  calculate_seafloor (thoutput, NR, NT, t);
@@ -367,6 +397,13 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 		free(x_vap[r]);
 	}
 	free(Pressure);
+	free(dM);
+	free(Mrock);
+	free(Mh2os);
+	free(Madhs);
+	free(Mh2ol);
+	free(Mnh3l);
+	free(radius);
 	free(WrtH2O);
 	free(Abundances);
 	free(Partial_P);

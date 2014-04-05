@@ -132,7 +132,7 @@ int main(int argc, char *argv[]){
 
 	if (calculate_thermal == 1) {
 		printf("Running thermal evolution code...\n");
-		Thermal(argc, argv, path, NR, r_p, rho_p, warnings, msgout, nh3, Xhydr, tzero, Tsurf, Tinit, total_time, output_every);
+		Thermal(argc, argv, path, NR, r_p, rho_p, warnings, msgout, nh3, Xhydr, tzero, Tsurf, Tinit, total_time, output_every, crack_input, crack_species);
 		printf("\n");
 	}
 
@@ -167,13 +167,6 @@ int main(int argc, char *argv[]){
 	if (calculate_crack_species == 1) {
 		printf("Calculating log K for crack species using CHNOSZ...\n");
 		Crack_species_CHNOSZ(argc, argv, path, warnings, msgout);
-		printf("\n");
-	}
-
-	if (calculate_cracking_depth == 1) {
-		printf("Calculating cracking depth...\n");
-		Crack(argc, argv, path, NR, r_p, output_every/1000.0, NT_output, rho_p, thoutput, warnings, msgout,
-				crack_input, crack_species);
 		printf("\n");
 	}
 

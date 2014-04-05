@@ -11,8 +11,8 @@
 #define CRACK_PARAMETERS_H_
 
 // General parameters
-#define E_Young 200.0e9                                     // Young's modulus (Pa) for partially hydrated rock (Christensen 1966)
-						                                      // Serpentinite = 35 GPa, olivine = 200 GPa, Vance et al. had 197 GPa
+#define E_Young 200.0e9                                    // Young's modulus (Pa) for partially hydrated rock (Christensen 1966)
+						                                     // Serpentinite = 35 GPa, olivine = 200 GPa, Vance et al. had 197 GPa
 #define nu_Poisson 0.30                                    // Poisson's ratio
 #define smallest_crack_size 1.0e-2                         // Smallest 1-D or 2-D crack size in m
 
@@ -24,7 +24,7 @@
 #define n_flow_law 1.0                                     // Stress in Pa exponent of Rutter and Brodie (1988), default 1.0 (diffusion creep), Hilairet et al. 2007 3.8 dislocation creep
 #define p_flow_law 3.0                                     // Grain size in microns exponent of Rutter and Brodie (1988), default -3
 #define d_flow_law 500.0                                   // Grain size in microns
-#define strain_rate 1.0/(timestep*Gyr2sec)                 // Flow law strain rate in s-1
+#define strain_rate 1.0e-15                                // Flow law strain rate in s-1
 
 // Thermal expansion/contraction mismatch (Vance et al. 2007)
 #define K_IC 0.1e6                                         // Critical stress intensity (Pa m^0.5) (default 0.6e6)

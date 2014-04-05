@@ -39,7 +39,6 @@
 #define rhoNh3l 0.74e3                                     // Density of NH3(l)
 #define rhoHydr 2.35e3                                     // Density of hydrated rock
 #define Xc 0.321                                           // Ammonia content of eutectic H2O-NH3 mixture
-#define tempk_dehydration 730.0                            // TODO Harmonize with thermal code. Dehydration temperature (Castillo-Rogez and McCord 2010)
 #define NRmax 2000                                         // Max number of grid zones tolerated in Desch09 code
 #define Hhydr 5.75e9                                       // Heat of hydration, erg/(g forsterite) (=575e3 kJ/(kg forsterite))
 
@@ -58,7 +57,7 @@ typedef struct {
 #include <stdio.h>
 #include <stdlib.h>
 
-double *calculate_pressure (double *Pressure, int NR, int t, thermalout **thoutput);
+double *calculate_pressure (double *Pressure, int NR, double *dM, double *Mrock, double *Mh2os, double *Madhs, double *Mh2ol, double *Mnh3l, double *r);
 float calculate_mass_liquid (int NR, int NT, int t, thermalout **thoutput);
 int calculate_seafloor (thermalout **thoutput, int NR, int NT, int t);
 int look_up (float x, float x_var, float x_step, int size, int warnings);
@@ -71,16 +70,14 @@ int append_output (int L, double *Output, char path[1024], char filename[1024]);
 
 //-------------------------------------------------------------------
 //                        Calculate pressure
+//  This routine is in SI, unlike the thermal code which is in cgs
 //-------------------------------------------------------------------
 
-double *calculate_pressure (double *Pressure, int NR, int t, thermalout **thoutput) {
+double *calculate_pressure (double *Pressure, int NR, double *dM, double *Mrock, double *Mh2os, double *Madhs, double *Mh2ol, double *Mnh3l, double *r) {
 
-	int r = 0;
+	int ir = 0;
 
 	// Calculate the mass fractions of material in each layer over time
-	float *dM = (float*) malloc(NR*sizeof(float));               // Total mass of a shell in g
-	if (dM == NULL) printf("IcyDwarf: Not enough memory to create dM[NR]\n");
-
 	float *frock = (float*) malloc(NR*sizeof(float));            // Fraction of rock in a shell
 	if (frock == NULL) printf("IcyDwarf: Not enough memory to create frock[NR]\n");
 
@@ -96,15 +93,12 @@ double *calculate_pressure (double *Pressure, int NR, int t, thermalout **thoutp
 	float *fnh3l = (float*) malloc(NR*sizeof(float));            // Fraction of liquid ammonia in a shell
 	if (fnh3l == NULL) printf("IcyDwarf: Not enough memory to create fnh3l[NR]\n");
 
-	for (r=0;r<NR;r++) {
-		dM[r] = thoutput[r][t].mrock + thoutput[r][t].mh2os +
-				   thoutput[r][t].mh2ol + thoutput[r][t].madhs +
-				   thoutput[r][t].mnh3l;
-		frock[r] = thoutput[r][t].mrock / dM[r];
-		fh2os[r] = thoutput[r][t].mh2os / dM[r];
-		fh2ol[r] = thoutput[r][t].mh2ol / dM[r];
-		fadhs[r] = thoutput[r][t].madhs / dM[r];
-		fnh3l[r] = thoutput[r][t].mnh3l / dM[r];
+	for (ir=0;ir<NR;ir++) {
+		frock[ir] = Mrock[ir] / dM[ir];
+		fh2os[ir] = Mh2os[ir] / dM[ir];
+		fh2ol[ir] = Mh2ol[ir] / dM[ir];
+		fadhs[ir] = Madhs[ir] / dM[ir];
+		fnh3l[ir] = Mnh3l[ir] / dM[ir];
 	}
 
 	// Calculate the pressure in each layer over time (in Pa)
@@ -120,28 +114,27 @@ double *calculate_pressure (double *Pressure, int NR, int t, thermalout **thoutp
 	float dIntPrec = 0.0;
 	float Pintegral = 0.0;
 
-	for (r=0;r<NR;r++) {
-		for (j=r;j<NR-1;j++) { // Integral using trapezoidal method
+	for (ir=0;ir<NR;ir++) {
+		for (j=ir;j<NR-1;j++) { // Integral using trapezoidal method
 			Minf = 0.0;        // Calculate total mass (grams) below current layer
 			for (u=0;u<j;u++) {
 				Minf = Minf + dM[u];
 			}
 			dInt = (frock[j]*rhoRock + fh2os[j]*rhoH2os +
 					fh2ol[j]*rhoH2ol + fadhs[j]*rhoAdhs +
-					fnh3l[j]*rhoNh3l) * G/(thoutput[j][t].radius*thoutput[j][t].radius*km*km);
+					fnh3l[j]*rhoNh3l) * G/(r[j+1]*r[j+1]/km2cm/km2cm*km*km);
 			Pintegral = Pintegral +
-					(dInt+dIntPrec)/2.0 * Minf*gram*(thoutput[j+1][t].radius - thoutput[j][t].radius)*km;
+					(dInt+dIntPrec)/2.0 * Minf*gram*(r[j+2] - r[j+1])/km2cm*km;
 			dIntPrec = dInt;
 		}
-		Pressure[r] = Pintegral;
-		if (!(Pressure[r] >= 0.0)) printf("Error calculating pressure at t=%d, r=%d\n",t,r);
+		Pressure[ir] = Pintegral;
+		if (!(Pressure[ir] >= 0.0)) printf("Error calculating pressure at r=%d\n",ir);
 		Pintegral = 0.0;
 		dInt = 0.0;
 		dIntPrec = 0.0;
 	}
 
 	// Free mallocs
-	free(dM);
 	free(frock);
 	free(fh2os);
 	free(fadhs);
