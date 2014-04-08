@@ -99,6 +99,9 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double *dM = (double*) malloc((NR)*sizeof(double));       // Mass of a layer (g)
 	if (dM == NULL) printf("Thermal: Not enough memory to create dM[NR]\n");
 
+	double *dM_old = (double*) malloc((NR)*sizeof(double));   // Old mass of a layer (g)
+	if (dM_old == NULL) printf("Thermal: Not enough memory to create dM_old[NR]\n");
+
 	double *M = (double*) malloc((NR)*sizeof(double));        // Mass under a layer (g)
 	if (M == NULL) printf("Thermal: Not enough memory to create M[NR]\n");
 
@@ -522,23 +525,26 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 //    		Mnh3l[ir] = thoutput[ir][itime].mnh3l;
 //    		dM[ir] = Mrock[ir] + Mh2os[ir] + Madhs[ir] + Mh2ol[ir] + Mnh3l[ir];
 //    	}
-    	double Mtot = 0.0;
-    	double Vtot = 0.0;
-    	for (ir=0;ir<NR;ir++) {
-    		Mtot = Mtot + dM[ir];
-    		Vtot = Vtot + dVol[ir];
-    	}
-    	printf("%d %.16e %.16e \n",itime,Mtot,Vtot);
-    	for (ir=0;ir<NR;ir++) {
-    		printf("%d %g\n",ir,Vh2ol[ir]);
-    	}
 //    	// END DEBUG
 
     	//-------------------------------------------------------------------
-    	//                    Calculate pressure everywhere
+    	//     Calculate pressure everywhere. This takes time, so do that
+    	//          only if the structure has changed significantly
     	//-------------------------------------------------------------------
 
-    	Pressure = calculate_pressure(Pressure, NR, dM, Mrock, Mh2os, Madhs, Mh2ol, Mnh3l, r);     // Pressure
+    	i = 0;
+    	for (ir=0;ir<NR;ir++) {
+			if (fabs(dM[ir] - dM_old[ir])/dM_old[ir] > 0.05) {
+				i = 1;
+				break;
+			}
+    	}
+    	if (i == 1) {
+    		Pressure = calculate_pressure(Pressure, NR, dM, Mrock, Mh2os, Madhs, Mh2ol, Mnh3l, r);     // Pressure
+    	}
+    	for (ir=0;ir<NR;ir++) {
+    		dM_old[ir] = dM[ir];
+    	}
 
     	//-------------------------------------------------------------------
     	//               Rock hydration & dehydration, cracking
@@ -556,7 +562,6 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     				Xhydr[ir], Xhydr_old[ir], Tdehydr, dtime, Mrock[ir], Mrock_init[ir], &Act[ir], &Act_old[ir],
     				warnings, msgout, crack_input, crack_species, aTP, integral, alpha, beta, silica, chrysotile, magnesite);
     		if (Crack[ir] > 0 && T[ir] < Tdehydr && Mrock[ir] == dM[ir] && Xhydr[ir] <= 0.99) {
-    			printf("%d, T=%g, Xhydr=%g, ircore=%d, irice=%d, Checking seafloor link\n",ir,T[ir],Xhydr[ir],ircore,irice);
     			// Look if layer is connected to the seafloor by hydrated rock
     			seafloor_link = 1;
     			for (jr=ir;jr<ircore;jr++) {
@@ -565,7 +570,6 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     				}
     			}
     			if (seafloor_link == 1) {
-    				printf("%d, Hydrating\n",ir);
     				hydrate(T[ir], dM[ir], dVol, &Mrock, &Mh2ol, &Vrock, &Vh2ol,
     				    rhoRockth, rhoHydrth, rhoH2olth, &Xhydr, ir, ircore, irice, NR);
     			}
@@ -891,6 +895,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	free (r);
 	free (dVol);
 	free (dM);
+	free (dM_old);
 	free (M);
 	free (dE);
 	free (Mrock);
@@ -1715,23 +1720,18 @@ int hydrate(double T, double dM, double *dVol, double **Mrock, double **Mh2ol, d
 		Vliq = Vliq + (*Vh2ol)[jr];
 	}
 
-//	for (jr=0;jr<NR;jr++) {
-//		printf("%d %g\n",jr,(*Vh2ol)[jr]);
-//	}
-
 	// Merge water and rock into the cell: equivalently, swap rock in the core and water in the ocean
 	// 1- Find out what the volume of rock becomes: dVol -> (1+x)*dVol. x*dVol = Vmoved is the volume moved
 	Vmoved = (*Mrock)[ir]/((*Xhydr)[ir]*rhoHydrth + (1.0-(*Xhydr)[ir])*rhoRockth) - dVol[ir];
 	// 2- This is also the volume of water displaced (no compaction). Is there enough water for that?
-//	printf("%d %g %g\n",ir,Vmoved,Vliq);
+
 	if (Vmoved > Vliq) {          // If no, get out
 
 		// Update Xhydr: not 1 to conserve mass and volume in each shell, but has increased
 		(*Xhydr)[ir] = ((*Mrock)[ir]/(*Vrock)[ir] - rhoRockth) / (rhoHydrth - rhoRockth);
 		if (fabs((*Xhydr)[ir]) < 1.0e-10) (*Xhydr)[ir] = 0.0;  // Avoid numerical residuals
 		if (fabs((*Xhydr)[ir]) > 1.0-1.0e-10) (*Xhydr)[ir] = 1.0;
-printf("Exiting\n");
-exit(0);
+
 		return -1;
 	}
 	else {                        // If yes, swap. The mass of water moved is split half and half in rock b/w the swapping layers
@@ -1746,7 +1746,7 @@ exit(0);
 		else {
 			q = (Vmoved - (dVol[ircore] - (*Vrock)[ircore]))/Vmoved; // Fraction of Vmoved that didn't fit
 			(*Vrock)[ircore] = dVol[ircore];
-			(*Vh2ol)[ircore] = 0.0; // TODO What about Vnh3l[ircore]?
+			(*Vh2ol)[ircore] = 0.0; // What about Vnh3l[ircore]?
 			(*Vrock)[ircore+1] = (*Vrock)[ircore+1] + q*Vmoved;
 			(*Vh2ol)[ircore+1] = (*Vh2ol)[ircore+1] - q*Vmoved;
 			(*Mrock)[ircore] = (*Mrock)[ircore] + (1.0-q)*Vmoved*((*Xhydr)[ir]*rhoHydrth + (1.0-(*Xhydr)[ir])*rhoRockth);
