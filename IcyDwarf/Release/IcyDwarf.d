@@ -1,5 +1,5 @@
 IcyDwarf.d: ../IcyDwarf.c ../modifdyld.h ../IcyDwarf.h ../Crack/Crack.h \
-  ../Crack/Crack_parameters.h \
+  ../Crack/Crack_tables.h \
   /Library/Frameworks/R.framework/Versions/3.0/Resources/include/R.h \
   /Library/Frameworks/R.framework/Versions/3.0/Resources/include/Rconfig.h \
   /Library/Frameworks/R.framework/Versions/3.0/Resources/include/R_ext/Arith.h \
@@ -16,8 +16,8 @@ IcyDwarf.d: ../IcyDwarf.c ../modifdyld.h ../IcyDwarf.h ../Crack/Crack.h \
   /Library/Frameworks/R.framework/Versions/3.0/Resources/include/Rdefines.h \
   /Library/Frameworks/R.framework/Versions/3.0/Resources/include/Rinternals.h \
   /Library/Frameworks/R.framework/Versions/3.0/Resources/include/Rembedded.h \
-  ../Crack/../CHNOSZ_commands.h ../Crack/Crack_tables.h \
-  ../Cryolava/Cryolava.h ../Thermal/Thermal.h
+  ../Crack/../CHNOSZ_commands.h ../Cryolava/Cryolava.h \
+  ../Thermal/Thermal.h
 
 ../modifdyld.h:
 
@@ -25,7 +25,7 @@ IcyDwarf.d: ../IcyDwarf.c ../modifdyld.h ../IcyDwarf.h ../Crack/Crack.h \
 
 ../Crack/Crack.h:
 
-../Crack/Crack_parameters.h:
+../Crack/Crack_tables.h:
 
 /Library/Frameworks/R.framework/Versions/3.0/Resources/include/R.h:
 
@@ -60,8 +60,6 @@ IcyDwarf.d: ../IcyDwarf.c ../modifdyld.h ../IcyDwarf.h ../Crack/Crack.h \
 /Library/Frameworks/R.framework/Versions/3.0/Resources/include/Rembedded.h:
 
 ../Crack/../CHNOSZ_commands.h:
-
-../Crack/Crack_tables.h:
 
 ../Cryolava/Cryolava.h:
 
