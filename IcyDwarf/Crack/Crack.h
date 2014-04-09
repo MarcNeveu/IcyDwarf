@@ -54,14 +54,6 @@
 #include <math.h>
 
 #include "../IcyDwarf.h"
-#include "Crack_parameters.h"
-
-#include <R.h>
-#include <Rdefines.h>
-#include <Rinternals.h>
-#include <Rembedded.h>
-
-#include "../CHNOSZ_commands.h"
 
 int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_old, double *Pressure,
 		double *Crack, double Crack_old, double *Crack_size, double Crack_size_old,
@@ -196,7 +188,7 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 
 		if (dTdt == 0.0) dTdt = 1.0e-6; // To ensure continuity of T', otherwise T'=0
 		Tprime = Q/R_G/log(12.0*Omega*D0_deltab*E_Young/
-						(sqrt(3.0)*n_fit*k_B*L*L*L*fabs(dTdt)/Gyr2sec));
+						(sqrt(3.0)*n_fit*k_B*L_size*L_size*L_size*fabs(dTdt)/Gyr2sec));
 
 		// Calculate the stress intensity K_I in each layer over time,
 		// eq (4) of Vance et al. (2007)

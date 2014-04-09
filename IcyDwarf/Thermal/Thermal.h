@@ -22,14 +22,6 @@
 #ifndef THERMAL_H_
 #define THERMAL_H_
 
-#define ErockA 1.40e4                  // =770.0/275.0/2.0*1.0e4, heat capacity of rock (cgs, 1 cgs = 1 erg/g/K = 1e-4 J/kg/K) below 275 K
-#define ErockC 6.885e6                 // =(607.0+163.0/2.0)*1.0e4 between 275 and 1000 K, term 1
-#define ErockD 2.963636e3              // =163.0/275.0/2.0*1.0e4 between 275 and 1000 K, term 2
-#define ErockF 1.20e7                  // Above 1000 K, in cgs
-
-#define qh2o 7.73e4                    // =773.0/100.0*1.0e4, heat capacity of water ice (erg/g/K)
-#define qadh 1.12e5                    // =1120.0/100.0*1.0e4, heat capacity of ADH ice (erg/g/K)
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -57,7 +49,7 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 int dehydrate(double T, double dM, double dVol, double *Mrock, double *Mh2ol, double *Vrock,
 		double *Vh2ol, double rhoRockth, double rhoHydrth, double rhoH2olth, double *Xhydr);
 
-int hydrate(double T, double dM, double *dVol, double **Mrock, double **Mh2ol, double **Vrock,
+int hydrate(double T, double **dM, double *dVol, double **Mrock, double *Mh2os, double *Madhs, double **Mh2ol, double *Mnh3l, double **Vrock,
 		double **Vh2ol, double rhoRockth, double rhoHydrth, double rhoH2olth, double **Xhydr, int ir, int ircore, int irice, int NR);
 
 int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p,
@@ -83,8 +75,9 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	int i = 0;
 
 	int irdiff = 0;   // Radius of differentiation
-	int ircore = 0;   // Radius of the core
 	int irice = 0;    // Radius of the top of the slush
+	int ircore = 0;   // Radius of the core
+	int ircrack = 0;  // Inner radius of the continuously cracked rock layer in contact with the ocean
 
 	double Thermal[9];										  // Thermal[9], output
 	for (ir=0;ir<9;ir++)
@@ -231,6 +224,9 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double *Nu = (double*) malloc((NR)*sizeof(double));      // Nusselt number
 	if (Nu == NULL) printf("Thermal: Not enough memory to create Nu[NR]\n");
 
+	double *Nu_hydcirc = (double*) malloc((NR)*sizeof(double));      // Nusselt number for hydrothermal circulation
+	if (Nu_hydcirc == NULL) printf("Thermal: Not enough memory to create Nu_hydcirc[NR]\n");
+
 	double Nu0 = 0.0;   // Critical Nusselt number = Ra_c^0.25
 
 	double rhoRockth = rhoRock/1000.0;  // Density of dry rock, just for this thermal routine (g/cm3)
@@ -304,6 +300,9 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	}
 
 	int seafloor_link = 0;
+	double Vcracked = 0.0;                                       // Volume of cracked rock
+	double Vliq = 0.0;                                           // Volume of liquid
+	double Tcelsius = 0.0;
 
 	// Zero all the arrays
     for (ir=0;ir<NR;ir++) {
@@ -552,7 +551,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
     	Tdehydr = 700.0;
 
-    	// DEBUG for (ir=0;ir<NR;ir++) {
+    	// DEBUG of crack routine for (ir=0;ir<NR;ir++) {
     	for (ir=0;ir<ircore;ir++) {
     		Crack_old[ir] = Crack[ir];
     		Crack_size_old[ir] = Crack_size[ir];
@@ -561,18 +560,29 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     		crack(argc, argv, path, ir, T[ir], T_old[ir], Pressure, &Crack[ir], Crack_old[ir], &Crack_size[ir], Crack_size_old[ir],
     				Xhydr[ir], Xhydr_old[ir], Tdehydr, dtime, Mrock[ir], Mrock_init[ir], &Act[ir], &Act_old[ir],
     				warnings, msgout, crack_input, crack_species, aTP, integral, alpha, beta, silica, chrysotile, magnesite);
-    		if (Crack[ir] > 0 && T[ir] < Tdehydr && Mrock[ir] == dM[ir] && Xhydr[ir] <= 0.99) {
-    			// Look if layer is connected to the seafloor by hydrated rock
-    			seafloor_link = 1;
-    			for (jr=ir;jr<ircore;jr++) {
-    				if (Crack[jr] == 0 || Crack[jr] == -1) {                  // No crack or crack shut
+    	}
+		// Find the depth of the continuous cracked layer in contact with the ocean
+    	ircrack = 0;
+    	seafloor_link = 0;
+		for (ir=0;ir<ircore;ir++) {
+			if (Crack[ir] > 0.0) {
+				seafloor_link = 1;
+				for (jr=ir;jr<ircore;jr++) {
+    				if (Crack[jr] <= 0.0) {                  // No crack or crack shut
     					seafloor_link = 0;
+    					break;
     				}
-    			}
-    			if (seafloor_link == 1) {
-    				hydrate(T[ir], dM[ir], dVol, &Mrock, &Mh2ol, &Vrock, &Vh2ol,
-    				    rhoRockth, rhoHydrth, rhoH2olth, &Xhydr, ir, ircore, irice, NR);
-    			}
+				}
+				if (seafloor_link == 1) {
+					ircrack = ir;
+					break;
+				}
+			}
+		}
+    	for (ir=ircrack;ir<ircore;ir++) {
+    		if (T[ir] < Tdehydr && Mrock[ir] == dM[ir] && Xhydr[ir] <= 0.99) {
+				hydrate(T[ir], &dM, dVol, &Mrock, Mh2os, Madhs, &Mh2ol, Mnh3l, &Vrock, &Vh2ol,
+					rhoRockth, rhoHydrth, rhoH2olth, &Xhydr, ir, ircore, irice, NR);
     		}
     		if (T[ir] > Tdehydr && Xhydr[ir] >= 0.01) {
     			dehydrate(T[ir], dM[ir], dVol[ir], &Mrock[ir], &Mh2ol[ir], &Vrock[ir], &Vh2ol[ir],
@@ -713,6 +723,36 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		}
 
 		//-------------------------------------------------------------------
+		//       Convection in cracked layer (hydrothermal circulation)
+		//-------------------------------------------------------------------
+
+		Vcracked = 0.0;
+		Vliq = 0.0;
+
+		if (ircrack > 0 && ircrack < ircore) {
+			for (ir=ircrack;ir<ircore;ir++) {
+				Vcracked = Vcracked + dVol[ir];
+			}
+			for (ir=ircore;ir<irice;ir++) { // Check if there is enough liquid to circulate
+				Vliq = Vliq + Vh2ol[ir];
+			}
+
+			if (Vliq >= porosity*Vcracked) {
+
+				jr = floor(((double)ircrack + (double)ircore)/2.0);
+				Tcelsius = T[jr] - Kelvin;
+				nu1 = 1.0e-3 * 10.0 * pow(10,(20.0-Tcelsius)/(Tcelsius+96.0) *
+						(1.2378 - 1.303e-3*(20.0-Tcelsius) + 3.06e-6*(20.0-Tcelsius)*(20.0-Tcelsius) + 2.55e-8*(20.0-Tcelsius)*(20.0-Tcelsius)*(20.0-Tcelsius)));
+				kap1 = rhoH2olth*ch2ol/porosity*permeability/cm/cm/nu1*(Pressure[ircrack]-Pressure[ircore]);
+
+				for (ir=ircrack;ir<=ircore;ir++) {  // Capped at 500 W/m/K for numerical stability
+					if (kap1 < 5.0e7) kappa[ir] = kap1;
+					else kappa[ir] = 5.0e7;
+				}
+			}
+		}
+
+		//-------------------------------------------------------------------
 		//                    Convection in H2O(s) layer
 		//-------------------------------------------------------------------
 
@@ -723,10 +763,10 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			jr = irice + 1;
 			alf1 = -0.5 + 6.0*(T[jr]-50.0)/200.0; // Not as in D09!
 			alf1 = alf1 * 1.0e-5;
-			cp1 = 7.73e4*T[jr];                   // SI it seems?
+			cp1 = 7.73e4*T[jr];                   // cgs
 			kap1 = 5.67e7/T[jr];                  // cgs
 			kdiff1 = kap1 / (rhoH2osth*cp1);
-			nu1 = (1.0e15)*exp(25.0*(273.0/T[jr]-1.0)); // 1.0e14 in SI?
+			nu1 = (1.0e15)*exp(25.0*(273.0/T[jr]-1.0)); // 1.0e14 in SI
 			dT = T[irice] - T[irdiff];
 			dr = r[irdiff+1] - r[irice+1];
 			jr = (int) (irice+irdiff)/2;
@@ -923,6 +963,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	free (Crack_size);
 	free (Crack_size_old);
 	free (Nu);
+	free (Nu_hydcirc);
 	free (Mrock_init);
 	free (aTP);             // Thermal mismatch-specific
 	free (integral);
@@ -1012,7 +1053,7 @@ int state (char path[1024], int itime, int ir, double E, double *frock, double *
     	}
     	else {
     		printf("Thermal: Could not compute temperature\n");
-    		printf("Thermal: itime=%d, ir=%d\n",itime, ir);
+    		printf("Thermal: itime=%d, ir=%d, iter=%d\n",itime, ir, iter);
     		printf("Thermal: Tlo=%g K, Thi=%g K, Tmd=%g K\n", Tlo, Thi, Tmd);
     		printf("Thermal: Elo=%g, Ehi=%g, Emd=%g, E=%g\n", Elo, Ehi, Emd, E);
     		printf("Thermal: frock=%g, gh2os=%g, gadhs=%g, gh2ol=%g, gnh3l=%g, X=%g\n", (*frock), gh2os, gadhs, gh2ol, gnh3l, X);
@@ -1106,12 +1147,6 @@ int heatIce (double T, double X, double *E, double *gh2os, double *gadhs, double
 	double Tliq = 0.0;      // Temperature of the liquid (K)
 	double T2 = 0.0;        // Temporary temperature (K)
 	double r = 0.0;         // Square root
-
-	double ch2ol = 4.1885e7;// Heat capacity of liquid water (cgs) TODO Adjust in supercooled regime
-	                        // where it goes up to 8e7 cgs at 230 K and diverges at 228 K
-	double cnh3l = 4.7e7;   // Heat capacity of liquid ammonia (cgs)
-	double ladh = 1.319e9;  // Latent heat of ADH melting (cgs)
-	double lh2o = 3.335e9;  // Latent heat of H2O melting (cgs)
 
 	Xb = Xc*sqrt(2.0/95.0); // Artificial point of simplified phase diagram of H2O-NH3 system
 
@@ -1466,7 +1501,7 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 	jr = 0;
 	(*ircore) = jr;
 	for (ir=0;ir<=(*irdiff);ir++) {
-		if (Vrocknew[jr] > Volcell[jr]) {
+		if (Vrocknew[jr] > Volcell[jr] && (*Vrock)[ir] > 0.0) {
 			q = (Vrocknew[jr]-Volcell[jr]) / (*Vrock)[ir];
 			Vrocknew[jr] = Volcell[jr];
 			Mrocknew[jr] = Mrocknew[jr] - q*(*Mrock)[ir];
@@ -1483,7 +1518,7 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 		Mrocknew[jr] = Mrocknew[jr] + (*Mrock)[ir];
 		Erocknew[jr] = Erocknew[jr] + (*Erock)[ir];
 
-		if (Vrocknew[jr] >= Volcell[jr]) {
+		if (Vrocknew[jr] >= Volcell[jr] && (*Vrock)[ir] > 0.0) {
 			q = (Vrocknew[jr]-Volcell[jr]) / (*Vrock)[ir];
 			Vrocknew[jr] = Volcell[jr];
 			Mrocknew[jr] = Mrocknew[jr] - q*(*Mrock)[ir];
@@ -1505,7 +1540,7 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 	for (ir=0;ir<=(*irdiff);ir++) {
 		Volume1 = Vadhsnew[jr] + Vh2olnew[jr] + Vnh3lnew[jr];
 		Volume2 = (*Vadhs)[ir] + (*Vh2ol)[ir] + (*Vnh3l)[ir];
-		if (Volume1 >= Volcell[jr]) {
+		if (Volume1 >= Volcell[jr] && Volume2 > 0.0) {
 			nextcell = 1;                   // Slush fills more than one layer
 			q = (Volume1-Volcell[jr]) / Volume2;
 			Vh2olnew[jr] = Vh2olnew[jr] - q*(*Vh2ol)[ir];
@@ -1537,7 +1572,7 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 
 		Volume1 = Vadhsnew[jr] + Vh2olnew[jr] + Vnh3lnew[jr];
 		Volume2 = (*Vadhs)[ir] + (*Vh2ol)[ir] + (*Vnh3l)[ir];
-		if (Volume1 >= Volcell[jr]) {
+		if (Volume1 >= Volcell[jr] && Volume2 > 0.0) {
 			nextcell = 1;                   // Slush fills more than one layer
 			q = (Volume1-Volcell[jr]) / Volume2;
 			Vh2olnew[jr] = Vh2olnew[jr] - q*(*Vh2ol)[ir];
@@ -1569,7 +1604,7 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 	//-------------------------------------------------------------------
 
 	for (ir=0;ir<=(*irdiff);ir++) {
-		if (Vh2osnew[jr] >= Volcell[jr]) {
+		if (Vh2osnew[jr] >= Volcell[jr] && (*Vh2os)[ir] > 0.0) {
 			q = (Vh2osnew[jr] - Volcell[jr]) / (*Vh2os)[ir];
 			Vh2osnew[jr] = Volcell[jr];
 			Mh2osnew[jr] = Mh2osnew[jr] - q*(*Mh2os)[ir];
@@ -1585,7 +1620,7 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 		Mh2osnew[jr] = Mh2osnew[jr] + (*Mh2os)[ir];
 		Eh2osnew[jr] = Eh2osnew[jr] + (*Eh2os)[ir];
 
-		if (Vh2osnew[jr] >= Volcell[jr]) {
+		if (Vh2osnew[jr] >= Volcell[jr] && (*Vh2os)[ir] > 0.0) {
 			q = (Vh2osnew[jr] - Volcell[jr]) / (*Vh2os)[ir];
 			Vh2osnew[jr] = Volcell[jr];
 			Mh2osnew[jr] = Mh2osnew[jr] - q*(*Mh2os)[ir];
@@ -1633,6 +1668,7 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 		// Totals
 		(*dM)[ir] = (*Mrock)[ir] + (*Mh2os)[ir] + (*Madhs)[ir] + (*Mh2ol)[ir] + (*Mnh3l)[ir];
 		(*dE)[ir] = (*Erock)[ir] + (*Eh2os)[ir] + (*Eslush)[ir];
+
 	}
 
 	//-------------------------------------------------------------------
@@ -1702,7 +1738,7 @@ int dehydrate(double T, double dM, double dVol, double *Mrock, double *Mh2ol, do
  *
  *--------------------------------------------------------------------*/
 
-int hydrate(double T, double dM, double *dVol, double **Mrock, double **Mh2ol, double **Vrock,
+int hydrate(double T, double **dM, double *dVol, double **Mrock, double *Mh2os, double *Madhs, double **Mh2ol, double *Mnh3l, double **Vrock,
 		double **Vh2ol, double rhoRockth, double rhoHydrth, double rhoH2olth, double **Xhydr, int ir, int ircore, int irice, int NR){
 
 	int jr = 0;
@@ -1742,6 +1778,9 @@ int hydrate(double T, double dM, double *dVol, double **Mrock, double **Mh2ol, d
 			(*Mh2ol)[ircore] = (*Mh2ol)[ircore] - Vmoved*rhoH2olth;
 			(*Mrock)[ircore] = (*Mrock)[ircore] + Vmoved*((*Xhydr)[ir]*rhoHydrth + (1.0-(*Xhydr)[ir])*rhoRockth) + Vmoved*rhoH2olth*0.5;
 			(*Mrock)[ir] = (*Mrock)[ir] - Vmoved*((*Xhydr)[ir]*rhoHydrth + (1.0-(*Xhydr)[ir])*rhoRockth) + Vmoved*rhoH2olth*0.5;
+
+			(*dM)[ir] = (*Mrock)[ir] + Mh2os[ir] + Madhs[ir] + (*Mh2ol)[ir] + Mnh3l[ir];
+			(*dM)[ircore] = (*Mrock)[ircore] + Mh2os[ircore] + Madhs[ircore] + (*Mh2ol)[ircore] + Mnh3l[ircore];
 		}
 		else {
 			q = (Vmoved - (dVol[ircore] - (*Vrock)[ircore]))/Vmoved; // Fraction of Vmoved that didn't fit
@@ -1754,6 +1793,10 @@ int hydrate(double T, double dM, double *dVol, double **Mrock, double **Mh2ol, d
 			(*Mh2ol)[ircore+1] = (*Mh2ol)[ircore+1] - q*Vmoved*rhoH2olth;
 			(*Mrock)[ircore+1] = (*Mrock)[ircore+1] + q*Vmoved*((*Xhydr)[ir]*rhoHydrth + (1.0-(*Xhydr)[ir])*rhoRockth) + q*Vmoved*rhoH2olth*0.5;
 			(*Mrock)[ir] = (*Mrock)[ir] - Vmoved*((*Xhydr)[ir]*rhoHydrth + (1.0-(*Xhydr)[ir])*rhoRockth) + q*Vmoved*rhoH2olth*0.5;
+
+			(*dM)[ir] = (*Mrock)[ir] + Mh2os[ir] + Madhs[ir] + (*Mh2ol)[ir] + Mnh3l[ir];
+			(*dM)[ircore] = (*Mrock)[ircore] + Mh2os[ircore] + Madhs[ircore] + (*Mh2ol)[ircore] + Mnh3l[ircore];
+			(*dM)[ircore+1] = (*Mrock)[ircore+1] + Mh2os[ircore+1] + Madhs[ircore+1] + (*Mh2ol)[ircore+1] + Mnh3l[ircore+1];
 
 			// Update Xhydr to reflect mass and volume conservation
 			(*Xhydr)[ircore+1] = ((*Mrock)[ircore+1]/(*Vrock)[ircore+1] - rhoRockth) / (rhoHydrth - rhoRockth);

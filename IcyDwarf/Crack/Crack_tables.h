@@ -29,8 +29,14 @@
 #include <math.h>
 #include <string.h>
 
+#include <R.h>
+#include <Rdefines.h>
+#include <Rinternals.h>
+#include <Rembedded.h>
+
+#include "../CHNOSZ_commands.h"
+
 #include "../IcyDwarf.h"
-#include "Crack_parameters.h"
 
 int aTP(char path[1024], int warnings, int msgout);
 int Crack_water_CHNOSZ(int argc, char *argv[], char path[1024], int warnings, int msgout);
@@ -68,12 +74,12 @@ int aTP(char path[1024], int warnings, int msgout) {
 		integral[j][1] = 0.0;
 		for (i=0;i<int_steps-1;i++) {               // Integration by trapezoidal method
 			x = (double) (a_var/int_steps*(i+1));
-			                                        // deltaT = T'-T is negative, and sigma_yy is positive for x<L,
-			                                        // negative for L<x<2L, 0 for x=L.
-	        sigma_yy = (4.0*L*L/(4.0*L*L+(2.0*L-x)*(2.0*L-x))
-	        		- 4.0*L*L/(4.0*L*L+x*x)
-	        		+ log((2.0*L-x)/x)
-	        		- 0.5*log((4.0*L*L+(2.0*L-x)*(2.0*L-x)) / (4.0*L*L+x*x)));
+			                                        // deltaT = T'-T is negative, and sigma_yy is positive for x<L_size,
+			                                        // negative for L_size<x<2L_size, 0 for x=L_size.
+	        sigma_yy = (4.0*L_size*L_size/(4.0*L_size*L_size+(2.0*L_size-x)*(2.0*L_size-x))
+	        		- 4.0*L_size*L_size/(4.0*L_size*L_size+x*x)
+	        		+ log((2.0*L_size-x)/x)
+	        		- 0.5*log((4.0*L_size*L_size+(2.0*L_size-x)*(2.0*L_size-x)) / (4.0*L_size*L_size+x*x)));
 	        dInt = sigma_yy*sqrt(x)/sqrt(a_var-x);
 	        integral[j][1] = integral[j][1] + (dInt + dIntPrec)/2.0 * 1.0/int_steps*a_var;
 	        dIntPrec = dInt;
