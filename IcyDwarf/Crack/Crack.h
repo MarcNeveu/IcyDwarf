@@ -57,13 +57,13 @@
 
 int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_old, double *Pressure,
 		double *Crack, double Crack_old, double *Crack_size, double Crack_size_old,
-		double Xhydr, double Xhydr_old, double Tdehydr, double dtime, double Mrock, double Mrock_init, double **Act, double **Act_old,
+		double Xhydr, double Xhydr_old, double dtime, double Mrock, double Mrock_init, double **Act, double **Act_old,
 		int warnings, int msgout, int *crack_input, int *crack_species, float **aTP, float **integral, float **alpha, float **beta,
 		float **silica, float **chrysotile, float **magnesite);
 
 int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_old, double *Pressure,
 		double *Crack, double Crack_old, double *Crack_size, double Crack_size_old,
-		double Xhydr, double Xhydr_old, double Tdehydr, double dtime, double Mrock, double Mrock_init, double **Act, double **Act_old,
+		double Xhydr, double Xhydr_old, double dtime, double Mrock, double Mrock_init, double **Act, double **Act_old,
 		int warnings, int msgout, int *crack_input, int *crack_species, float **aTP, float **integral, float **alpha, float **beta,
 		float **silica, float **chrysotile, float **magnesite) {
 
@@ -228,7 +228,7 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 
 		P_hydr = 0.0;
 		// Only where there are cracks, where hydration has increased, and where it's not fully hydrated
-		if (Crack_old > 0.0 && Xhydr > Xhydr_old && Xhydr < 1.0 && T < Tdehydr) {
+		if (Crack_old > 0.0 && Xhydr > Xhydr_old && Xhydr < 1.0 && T < Tdehydr_max) {
 
 			// Initialize crack size
 			(*Crack_size) = smallest_crack_size;  // I guess because smallest_crack_size is a #define, the code adds a residual 4.74e-11.
@@ -237,7 +237,7 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 				(*Crack_size) = Crack_size_old;
 			}
 			d_crack_size = 0.0;
-			if (T < Tdehydr) { // Hydration
+			if (T < Tdehydr_max) { // Hydration
 				d_crack_size = - 2.0*(pow((rhoRock/rhoHydr),0.333) - 1.0) * hydration_rate * dtime;
 				if ((*Crack_size) + d_crack_size < 0.0) {
 					P_hydr = E_Young*(-d_crack_size-(*Crack_size))/(hydration_rate*dtime); // Residual rock swell builds up stresses
@@ -268,7 +268,7 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 		P_fluid = 0.0;
 
 		// Don't do calculations in undifferentiated or water areas, in dehydrated areas, or if no heating
-		if (Xhydr >= 0.0 && T < Tdehydr && Mrock > Mrock_init && T > T_old) {
+		if (Xhydr >= 0.0 && T < Tdehydr_max && Mrock > Mrock_init && T > T_old) {
 
 			// Look up the right value of alpha and beta, given P and T
 			tempk_int = look_up (T, (float) tempk_min, delta_tempk, sizeaTP, warnings);

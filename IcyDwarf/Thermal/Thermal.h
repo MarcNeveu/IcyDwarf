@@ -201,9 +201,9 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double fh2ol = 0.0; // Liquid water mass fraction
 	double fnh3l = 0.0; // Liquid ammonia mass fraction
 	double temp1 = 0.0; // Temporary temperature (K)
+	double Xhydr_temp = 0.0; // Temporary hydration index
 
 	double S = 0.0;     // Radiogenic power, specific (erg/s/g)
-	double Tdehydr = 0.0; // Temperature at which dehydration proceeds (K)
 	double Tdiff = 0.0; // Temperature at which differentiation proceeds (K)
 	double kap1 = 0.0;  // Temporary thermal conductivity (erg/s/cm/K)
 	double dr = 0.0;    // Physical thickness of a shell (cm)
@@ -224,8 +224,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double *Nu = (double*) malloc((NR)*sizeof(double));      // Nusselt number
 	if (Nu == NULL) printf("Thermal: Not enough memory to create Nu[NR]\n");
 
-	double *Nu_hydcirc = (double*) malloc((NR)*sizeof(double));      // Nusselt number for hydrothermal circulation
-	if (Nu_hydcirc == NULL) printf("Thermal: Not enough memory to create Nu_hydcirc[NR]\n");
+	int *dont_dehydrate = (int*) malloc((NR)*sizeof(int));      // Don't dehydrate a layer that just got hydrated
+	if (dont_dehydrate == NULL) printf("Thermal: Not enough memory to create dont_dehydrate[NR]\n");
 
 	double Nu0 = 0.0;   // Critical Nusselt number = Ra_c^0.25
 
@@ -509,10 +509,6 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
     	time = time + dtime;
 
-    	for (ir=0;ir<NR;ir++) {
-    		Xhydr_old[ir] = Xhydr[ir];
-    	}
-
 //    	// DEBUG of crack routine
 //    	for (ir=0;ir<NR;ir++) {
 //    		r[ir+1] = thoutput[ir][itime].radius*km2cm;
@@ -533,6 +529,9 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
     	i = 0;
     	for (ir=0;ir<NR;ir++) {
+    		Xhydr_old[ir] = Xhydr[ir];
+    		dM_old[ir] = dM[ir];
+    		dont_dehydrate[ir] = 0;
 			if (fabs(dM[ir] - dM_old[ir])/dM_old[ir] > 0.05) {
 				i = 1;
 				break;
@@ -541,15 +540,10 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	if (i == 1) {
     		Pressure = calculate_pressure(Pressure, NR, dM, Mrock, Mh2os, Madhs, Mh2ol, Mnh3l, r);     // Pressure
     	}
-    	for (ir=0;ir<NR;ir++) {
-    		dM_old[ir] = dM[ir];
-    	}
 
     	//-------------------------------------------------------------------
     	//               Rock hydration & dehydration, cracking
     	//-------------------------------------------------------------------
-
-    	Tdehydr = 700.0;
 
     	// DEBUG of crack routine for (ir=0;ir<NR;ir++) {
     	for (ir=0;ir<ircore;ir++) {
@@ -558,7 +552,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     		Crack[ir] = 0.0;
     		Crack_size[ir] = 0.0;
     		crack(argc, argv, path, ir, T[ir], T_old[ir], Pressure, &Crack[ir], Crack_old[ir], &Crack_size[ir], Crack_size_old[ir],
-    				Xhydr[ir], Xhydr_old[ir], Tdehydr, dtime, Mrock[ir], Mrock_init[ir], &Act[ir], &Act_old[ir],
+    				Xhydr[ir], Xhydr_old[ir], dtime, Mrock[ir], Mrock_init[ir], &Act[ir], &Act_old[ir],
     				warnings, msgout, crack_input, crack_species, aTP, integral, alpha, beta, silica, chrysotile, magnesite);
     	}
 		// Find the depth of the continuous cracked layer in contact with the ocean
@@ -580,11 +574,13 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			}
 		}
     	for (ir=ircrack;ir<ircore;ir++) {
-    		if (T[ir] < Tdehydr && Mrock[ir] == dM[ir] && Xhydr[ir] <= 0.99) {
+    		if (T[ir] < Tdehydr_max && Mrock[ir] == dM[ir] && Xhydr[ir] <= 0.99) {
+    			Xhydr_temp = Xhydr[ir];
 				hydrate(T[ir], &dM, dVol, &Mrock, Mh2os, Madhs, &Mh2ol, Mnh3l, &Vrock, &Vh2ol,
 					rhoRockth, rhoHydrth, rhoH2olth, &Xhydr, ir, ircore, irice, NR);
+				if (Xhydr[ir] >= Xhydr_temp) dont_dehydrate[ir] = 1;
     		}
-    		if (T[ir] > Tdehydr && Xhydr[ir] >= 0.01) {
+    		if (T[ir] > Tdehydr_min && Xhydr[ir] >= 0.01 && dont_dehydrate[ir] == 0) {
     			dehydrate(T[ir], dM[ir], dVol[ir], &Mrock[ir], &Mh2ol[ir], &Vrock[ir], &Vh2ol[ir],
     					rhoRockth, rhoHydrth, rhoH2olth, &Xhydr[ir]);
     		}
@@ -628,10 +624,12 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	}
 
     	// Update Xhydr
-    	for (ir=0;ir<NR;ir++) {
-			(*Xhydr) = ((*Mrock)/(*Vrock) - rhoRockth) / (rhoHydrth - rhoRockth);
-			if (fabs(*Xhydr) < 1.0e-10) (*Xhydr) = 0.0;   // Avoid numerical residuals
-			if (fabs(*Xhydr) > 1.0-1.0e-10) (*Xhydr) = 1.0;
+    	for (ir=0;ir<ircore;ir++) {
+    		if (Mrock[ir] > Mrock_init[ir]) {
+				Xhydr[ir] = (Mrock[ir]/Vrock[ir] - rhoRockth) / (rhoHydrth - rhoRockth);
+				if (Xhydr[ir] < 1.0e-10) Xhydr[ir] = 0.0;   // Avoid numerical residuals
+				if (Xhydr[ir] > 1.0-1.0e-10) Xhydr[ir] = 1.0;
+    		}
     	}
 
 		//-------------------------------------------------------------------
@@ -693,7 +691,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			}
 		}
 
-		for (ir=0;ir<NR;ir++) {
+		for (ir=0;ir<ircore;ir++) {
 			if (fabs(Xhydr_old[ir] - Xhydr[ir]) > 0.01) {
 				Qth[ir] = Qth[ir] + (Xhydr[ir] - Xhydr_old[ir])*Mrock[ir]*Hhydr/dtime;
 			}
@@ -746,8 +744,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 				kap1 = rhoH2olth*ch2ol/porosity*permeability/cm/cm/nu1*(Pressure[ircrack]-Pressure[ircore]);
 
 				for (ir=ircrack;ir<=ircore;ir++) {  // Capped at 500 W/m/K for numerical stability
-					if (kap1 < 5.0e7) kappa[ir] = kap1;
-					else kappa[ir] = 5.0e7;
+					if (kap1 < 1.0e7) kappa[ir] = kap1;
+					else kappa[ir] = 1.0e7;
 				}
 			}
 		}
@@ -852,7 +850,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
 		// Update volumes
 		for (ir=0;ir<NR;ir++) {
-			Vrock[ir] = Mrock[ir] / (Xhydr[ir]*rhoHydrth+(1.0-Xhydr[ir])*rhoRockth);
+			Vrock[ir] = Mrock[ir] / (Xhydr[ir]*rhoHydrth+(1.0-Xhydr[ir])*rhoRockth); // /rhoRockth where there is no rock (Xhydr = 0)
 			Vh2os[ir] = Mh2os[ir] / rhoH2osth;
 			Vadhs[ir] = Madhs[ir] / rhoAdhsth;
 			Vh2ol[ir] = Mh2ol[ir] / rhoH2olth;
@@ -883,7 +881,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			append_output(NR, Crack, path, "Outputs/Crack.txt");        // Crack type
 
 			// Crack depth (km)
-			Crack_depth[0] = (double) itime*dtime/Gyr2sec;               // t in Myr
+			Crack_depth[0] = (double) itime*dtime/Gyr2sec;              // t in Myr
 			for (ir=0;ir<NR;ir++) {
 				if (Crack[ir] > 0.0) break;
 			}
@@ -963,7 +961,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	free (Crack_size);
 	free (Crack_size_old);
 	free (Nu);
-	free (Nu_hydcirc);
+	free (dont_dehydrate);
 	free (Mrock_init);
 	free (aTP);             // Thermal mismatch-specific
 	free (integral);
@@ -1042,7 +1040,7 @@ int state (char path[1024], int itime, int ir, double E, double *frock, double *
     	heatIce (Tp, X, &Eice, &gh2os, &gadhs, &gh2ol, &gnh3l);
     	Ehi = (*frock)*Erock + (1.0-(*frock))*Eice;
 
-    	if (E >= Elo && E <= Ehi) {
+    	if (E >= Elo && E <= Ehi && Elo > 0.0 && Ehi > 0.0 && Emd > 0.0) {
     		if (E <= Emd) {
     			Thi = Tmd;
     		}
@@ -1698,16 +1696,16 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
  * Subroutine dehydrate
  *
  * Separates hydrated rock into dry rock and liquid water in each cell
- * where T>Tdehydr in the core.
+ * where T>Tdehydr_min in the core.
  *
  *--------------------------------------------------------------------*/
 
 int dehydrate(double T, double dM, double dVol, double *Mrock, double *Mh2ol, double *Vrock,
 		double *Vh2ol, double rhoRockth, double rhoHydrth, double rhoH2olth, double *Xhydr){
 
-	// Set hydration level: 1 at 700 K, 0 at 850 K, linear in between
-	if (T<700.0) (*Xhydr) = 1.0;
-	else if (T>=700.0 && T<850.0) (*Xhydr) = 1.0 - (T-700.0)/(850.0-700.0);
+	// Set hydration level: 1 at Tdehydr_min, 0 at Tdehydr_max, linear in between
+	if (T<Tdehydr_min) (*Xhydr) = 1.0;
+	else if (T>=Tdehydr_min && T<Tdehydr_max) (*Xhydr) = 1.0 - (T-Tdehydr_min)/(Tdehydr_max-Tdehydr_min);
 	else (*Xhydr) = 0.0;
 
 	// Split cell into water and rock
@@ -1731,7 +1729,7 @@ int dehydrate(double T, double dM, double dVol, double *Mrock, double *Mh2ol, do
  *
  * Merges dry rock and liquid water into hydrated rock in each cell
  * that (1) has a connection with liquid water or hydrated rock and
- * (2) where T < Tdehydr.
+ * (2) where T < Tdehydr_max.
  * TODO hydrate only where hydrothermal circulation can occur, and
  * take into account a slow migration of the hydration front (1 km/Myr,
  * MacDonald and Fyfe, 1985).
@@ -1745,11 +1743,18 @@ int hydrate(double T, double **dM, double *dVol, double **Mrock, double *Mh2os, 
 	double Vliq = 0.0;
 	double Vmoved = 0.0;
 	double q = 0.0;   // Similar q as in the separate() routine
+	double Xhydr_old = 0.0;
 
-	// Set hydration level: 1 at 700 K, 0 at 850 K, linear in between
-	if (T<700.0) (*Xhydr)[ir] = 1.0;
-	else if (T>=700.0 && T<850.0) (*Xhydr)[ir] = 1.0 - (T-700.0)/(850.0-700.0);
+	Xhydr_old = (*Xhydr)[ir];
+
+	// Set hydration level: 1 at Tdehydr_min, 0 at Tdehydr_max, linear in between
+	if (T<Tdehydr_min) (*Xhydr)[ir] = 1.0;
+	else if (T>=Tdehydr_min && T<Tdehydr_max) (*Xhydr)[ir] = 1.0 - (T-Tdehydr_min)/(Tdehydr_max-Tdehydr_min);
 	else (*Xhydr)[ir] = 0.0;
+
+	if ((*Xhydr)[ir] < Xhydr_old) {
+		return 1; // We'll dehydrate instead
+	}
 
 	// Determine how much liquid there is
 	for (jr=ircore;jr<irice+1;jr++) {

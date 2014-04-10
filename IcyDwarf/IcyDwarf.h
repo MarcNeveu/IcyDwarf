@@ -18,7 +18,7 @@
 //-------------------------------------------------------------------
 
 #define release 0                                          // 0 for Debug, 1 for Release
-#define cmdline 1										   // If execution from terminal as "./IcyDwarf",
+#define cmdline 0										   // If execution from terminal as "./IcyDwarf",
                                                            // overwritten by release.
 //-------------------------------------------------------------------
 // PHYSICAL AND MATHEMATICAL CONSTANTS
@@ -77,6 +77,8 @@
 #define lh2o 3.335e9                                       // Latent heat of H2O melting (cgs)
 #define porosity 0.01                                      // Bulk porosity, dimensionless
 #define permeability 1.0e-15                               // Bulk permeability, m^2
+#define Tdehydr_min 700.0                                  // Temperature at which silicates are fully hydrated, K
+#define Tdehydr_max 850.0                                  // Temperature at which silicates are fully dehydrated, K
 
 //-------------------------------------------------------------------
 // CRACKING PARAMETERS
