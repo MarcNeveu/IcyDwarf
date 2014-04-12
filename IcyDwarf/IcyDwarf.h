@@ -79,6 +79,14 @@
 #define permeability 1.0e-15                               // Bulk permeability, m^2
 #define Tdehydr_min 700.0                                  // Temperature at which silicates are fully hydrated, K
 #define Tdehydr_max 850.0                                  // Temperature at which silicates are fully dehydrated, K
+#define kap_hydro 5.0e6                                    // Thermal conductivity of layer undergoing hydrothermal circulation (cgs, 1e5 cgs = 1 W/m/K)
+#define kaprock 4.2e5                                      // Thermal conductivity of dry silicate rock end member (cgs)
+#define kaphydr 1.0e5                                      // Thermal conductivity of hydrated silicate rock end member (cgs).
+                                                              // 0.5 to 2.5 W/m/K (Yomogida and Matsui 1983, Clauser and Huenges 1995, Opeil et al. 2010)
+// Thermal conductivity of water ice depends on temperature, see kapcond() subroutine in Thermal.h
+#define kapadhs 1.2e5                                      // Thermal conductivity of ammonia dihydrate ice (cgs)
+#define kaph2ol 6.1e4                                      // Thermal conductivity of liquid water (cgs)
+#define kapnh3l 2.2e3                                      // Thermal conductivity of liquid ammonia (cgs)
 
 //-------------------------------------------------------------------
 // CRACKING PARAMETERS

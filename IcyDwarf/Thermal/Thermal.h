@@ -551,9 +551,11 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     		Crack_size_old[ir] = Crack_size[ir];
     		Crack[ir] = 0.0;
     		Crack_size[ir] = 0.0;
-    		crack(argc, argv, path, ir, T[ir], T_old[ir], Pressure, &Crack[ir], Crack_old[ir], &Crack_size[ir], Crack_size_old[ir],
-    				Xhydr[ir], Xhydr_old[ir], dtime, Mrock[ir], Mrock_init[ir], &Act[ir], &Act_old[ir],
-    				warnings, msgout, crack_input, crack_species, aTP, integral, alpha, beta, silica, chrysotile, magnesite);
+    		if (T[ir]<Tdehydr_max) {
+    			crack(argc, argv, path, ir, T[ir], T_old[ir], Pressure, &Crack[ir], Crack_old[ir], &Crack_size[ir], Crack_size_old[ir],
+						Xhydr[ir], Xhydr_old[ir], dtime, Mrock[ir], Mrock_init[ir], &Act[ir], &Act_old[ir],
+						warnings, msgout, crack_input, crack_species, aTP, integral, alpha, beta, silica, chrysotile, magnesite);
+    		}
     	}
 		// Find the depth of the continuous cracked layer in contact with the ocean
     	ircrack = 0;
@@ -696,6 +698,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 				Qth[ir] = Qth[ir] + (Xhydr[ir] - Xhydr_old[ir])*Mrock[ir]*Hhydr/dtime;
 			}
 		}
+		// ir = 150;
+		// printf("%d %g %g %g\n",itime, Mrock[ir]*S, (Phi-Phiold)/dtime * (dVol[ir]/Volume1), (Xhydr[ir] - Xhydr_old[ir])*Mrock[ir]*Hhydr/dtime);
 
 		//-------------------------------------------------------------------
 		// Calculate fluxes.
@@ -744,8 +748,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 				kap1 = rhoH2olth*ch2ol/porosity*permeability/cm/cm/nu1*(Pressure[ircrack]-Pressure[ircore]);
 
 				for (ir=ircrack;ir<=ircore;ir++) {  // Capped at 500 W/m/K for numerical stability
-					if (kap1 < 1.0e7) kappa[ir] = kap1;
-					else kappa[ir] = 1.0e7;
+					if (kap1 < kap_hydro) kappa[ir] = kap1;
+					else kappa[ir] = kap_hydro;
 				}
 			}
 		}
@@ -886,7 +890,6 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 				if (Crack[ir] > 0.0) break;
 			}
 
-			// DEBUG Crack_depth[1] = (double) (185-ir)/(double)NR*r_p/km2cm;
 			Crack_depth[1] = (double) (ircore-ir)/(double)NR*r_p/km2cm;
 			if (Crack_depth[1] < 0.0) Crack_depth[1] = 0.0;
 			append_output(2, Crack_depth, path, "Outputs/Crack_depth.txt");
@@ -1332,15 +1335,7 @@ int heatIce (double T, double X, double *E, double *gh2os, double *gadhs, double
 
 int kapcond(double T, double frock, double fh2os, double fadhs, double fh2ol, double fnh3l, double *kap, double Xhydr) {
 
-	// Solid phases
-	double kaprock = 3.0e5;     // cgs
-	double kaphydr = 1.0e5;
-	double kaph2os = 5.67e7/T;
-	double kapadhs = 1.2e5;
-
-	// Liquid phases
-	double kaph2ol = 6.1e4;
-	double kapnh3l = 2.2e3;
+    double kaph2os = 5.67e7/T;  // Thermal conductivity of water ice (cgs) (Klinger 1980)
 
 	double kapice = 0.0;
 	double b1 = 0.0;            // Coefs of the quadratic equation of Sirono and Yamamoto (1997) to combine
