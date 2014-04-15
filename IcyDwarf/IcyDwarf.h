@@ -18,7 +18,7 @@
 //-------------------------------------------------------------------
 
 #define release 0                                          // 0 for Debug, 1 for Release
-#define cmdline 0										   // If execution from terminal as "./IcyDwarf",
+#define cmdline 1										   // If execution from terminal as "./IcyDwarf",
                                                            // overwritten by release.
 //-------------------------------------------------------------------
 // PHYSICAL AND MATHEMATICAL CONSTANTS
@@ -79,7 +79,7 @@
 #define permeability 1.0e-15                               // Bulk permeability, m^2
 #define Tdehydr_min 700.0                                  // Temperature at which silicates are fully hydrated, K
 #define Tdehydr_max 850.0                                  // Temperature at which silicates are fully dehydrated, K
-#define kap_hydro 5.0e6                                    // Thermal conductivity of layer undergoing hydrothermal circulation (cgs, 1e5 cgs = 1 W/m/K)
+#define kap_hydro 1.0e7                                    // Thermal conductivity of layer undergoing hydrothermal circulation (cgs, 1e5 cgs = 1 W/m/K)
 #define kaprock 4.2e5                                      // Thermal conductivity of dry silicate rock end member (cgs)
 #define kaphydr 1.0e5                                      // Thermal conductivity of hydrated silicate rock end member (cgs).
                                                               // 0.5 to 2.5 W/m/K (Yomogida and Matsui 1983, Clauser and Huenges 1995, Opeil et al. 2010)
@@ -87,6 +87,7 @@
 #define kapadhs 1.2e5                                      // Thermal conductivity of ammonia dihydrate ice (cgs)
 #define kaph2ol 6.1e4                                      // Thermal conductivity of liquid water (cgs)
 #define kapnh3l 2.2e3                                      // Thermal conductivity of liquid ammonia (cgs)
+#define Ra_cr 30.0                                         // Critical Rayleigh number for convection of aqueous fluid in a porous medium (Lapwood 1948)
 
 //-------------------------------------------------------------------
 // CRACKING PARAMETERS
@@ -122,7 +123,7 @@
 #define a_min 1.0e-7                                       // Minimum flaw size (m) below which flaws are neglected
 
 // Hydration/dehydration stresses
-#define hydration_rate 1.0e3                               // Rate of progression of a hydration front in rock in m/Gyr
+#define hydration_rate 1.0e6                               // Rate of progression of a hydration front in rock in m/Gyr
 
 // Pore water expansion upon heating
 #define aspect_ratio 1.0e4                                 // Aspect ratio (width/length) of 2D water pores

@@ -52,6 +52,8 @@ int dehydrate(double T, double dM, double dVol, double *Mrock, double *Mh2ol, do
 int hydrate(double T, double **dM, double *dVol, double **Mrock, double *Mh2os, double *Madhs, double **Mh2ol, double *Mnh3l, double **Vrock,
 		double **Vh2ol, double rhoRockth, double rhoHydrth, double rhoH2olth, double **Xhydr, int ir, int ircore, int irice, int NR);
 
+double viscosity(double T, double Mh2ol, double Mnh3l);
+
 int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p,
 		int warnings, int msgout, double Xp, double *Xhydr, double tzero, double Tsurf, double Tinit, double fulltime, double dtoutput,
 		int *crack_input, int *crack_species) {
@@ -216,9 +218,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double Ra = 0.0;    // Rayleigh number
 	double dT = 0.0;    // Temperature difference across convective region (K)
 	double alf1 = 0.0;  // Thermal expansion coefficient of H2O ice (K-1)
-	double nu1 = 0.0;   // Water ice viscosity (cgs)
+	double mu1 = 0.0;   // Water ice viscosity (cgs)
 	double cp1 = 0.0;   // Heat capacity of H2O ice (erg g-1 K-1)
-	double kdiff1 = 0.0;// Thermal diffusivity for calculation of Ra in water ice (cgs)
 	double g1 = 0.0;    // Gravitational acceleration for calculation of Ra in ice (cgs)
 
 	double *Nu = (double*) malloc((NR)*sizeof(double));      // Nusselt number
@@ -237,8 +238,11 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double rhoAdhsth = 0.985;           // Density of ammonia dihydrate, just for this thermal routine (g/cm3)
 	double rhoIce = 0.0;                // Density of the bulk ice (g/cm3)
 
-	double *Mrock_init = (double*) malloc((NR)*sizeof(double));      // Nusselt number
+	double *Mrock_init = (double*) malloc((NR)*sizeof(double));      // Initial rock mass
 	if (Mrock_init == NULL) printf("Thermal: Not enough memory to create Mrock_init[NR]\n");
+
+	double *time_hydr = (double*) malloc((NR)*sizeof(double));       // Time since last hydration/dehydration
+	if (time_hydr == NULL) printf("Thermal: Not enough memory to create time_hydr[NR]\n");
 
 	double Mliq = 0.0;                   // Mass of liquid in the planet in g
 	double Mcracked_rock = 0.0;          // Mass of cracked rock in the planet in g
@@ -302,7 +306,6 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	int seafloor_link = 0;
 	double Vcracked = 0.0;                                       // Volume of cracked rock
 	double Vliq = 0.0;                                           // Volume of liquid
-	double Tcelsius = 0.0;
 
 	// Zero all the arrays
     for (ir=0;ir<NR;ir++) {
@@ -335,6 +338,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	Crack_size_old[ir] = 0.0;
     	Nu[ir] = 1.0;
     	Mrock_init[ir] = 0.0;
+    	time_hydr[ir] = 0.0;
     	for (i=0;i<n_species_crack;i++) {
 			Act[ir][i] = 0.0;
 			Act_old[ir][i] = 0.0;
@@ -416,7 +420,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
     // Determine the core vs. ice shell content from bulk density.
 	  // Densities of liquid water and ammonia are chosen to conserve mass and volume,
-    // actual densities are 1.00 g/cm-3 and about 0.74 g/cm-3
+      // actual densities are 1.00 g/cm-3 and about 0.74 g/cm-3
     rhoH2olth = rhoH2osth;
     rhoNh3lth = (1.0/rhoH2olth) + (1.0/rhoAdhsth - 1.0/rhoH2osth) / Xc;  // Slush mass balance
     rhoNh3lth = 1.0/rhoNh3lth;
@@ -478,6 +482,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	Mnh3l[ir] = dM[ir]*fnh3l;
     }
 
+    for (ir=0;ir<NR;ir++) dM_old[ir] = dM[ir];
+
 	//-------------------------------------------------------------------
 	//                       Initialize time loop
 	//-------------------------------------------------------------------
@@ -509,6 +515,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
     	time = time + dtime;
 
+    	for (ir=0;ir<NR;ir++) time_hydr[ir] = time_hydr[ir] + dtime;
+
 //    	// DEBUG of crack routine
 //    	for (ir=0;ir<NR;ir++) {
 //    		r[ir+1] = thoutput[ir][itime].radius*km2cm;
@@ -530,12 +538,12 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	i = 0;
     	for (ir=0;ir<NR;ir++) {
     		Xhydr_old[ir] = Xhydr[ir];
-    		dM_old[ir] = dM[ir];
     		dont_dehydrate[ir] = 0;
 			if (fabs(dM[ir] - dM_old[ir])/dM_old[ir] > 0.05) {
 				i = 1;
 				break;
 			}
+			dM_old[ir] = dM[ir];
     	}
     	if (i == 1) {
     		Pressure = calculate_pressure(Pressure, NR, dM, Mrock, Mh2os, Madhs, Mh2ol, Mnh3l, r);     // Pressure
@@ -576,13 +584,15 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			}
 		}
     	for (ir=ircrack;ir<ircore;ir++) {
-    		if (T[ir] < Tdehydr_max && Mrock[ir] == dM[ir] && Xhydr[ir] <= 0.99) {
+    		if (T[ir] < Tdehydr_max && Mrock[ir] == dM[ir] && Xhydr[ir] <= 0.99 && time_hydr[ir] > dr/hydration_rate*Gyr2sec) {
+    			time_hydr[ir] = 0.0;
     			Xhydr_temp = Xhydr[ir];
 				hydrate(T[ir], &dM, dVol, &Mrock, Mh2os, Madhs, &Mh2ol, Mnh3l, &Vrock, &Vh2ol,
 					rhoRockth, rhoHydrth, rhoH2olth, &Xhydr, ir, ircore, irice, NR);
 				if (Xhydr[ir] >= Xhydr_temp) dont_dehydrate[ir] = 1;
     		}
-    		if (T[ir] > Tdehydr_min && Xhydr[ir] >= 0.01 && dont_dehydrate[ir] == 0) {
+    		if (T[ir] > Tdehydr_min && Xhydr[ir] >= 0.01 && dont_dehydrate[ir] == 0 && time_hydr[ir] > dr/hydration_rate*Gyr2sec) {
+    			time_hydr[ir] = 0.0;
     			dehydrate(T[ir], dM[ir], dVol[ir], &Mrock[ir], &Mh2ol[ir], &Vrock[ir], &Vh2ol[ir],
     					rhoRockth, rhoHydrth, rhoH2olth, &Xhydr[ir]);
     		}
@@ -625,9 +635,10 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     				 &Vrock, &Vh2os, &Vadhs, &Vh2ol, &Vnh3l, &Erock, &Eh2os, &Eslush, rhoH2olth, rhoNh3lth);
     	}
 
-    	// Update Xhydr
+    	// Update Xhydr. Xhydr is defined only in layers full of rock.
+    	// But setting Xhydr to 0 elsewhere craches the code, because it upsets separate().
     	for (ir=0;ir<ircore;ir++) {
-    		if (Mrock[ir] > Mrock_init[ir]) {
+    		if (Mrock[ir] > Mrock_init[ir]) { // ircore is the first layer not full of rock, we stop one layer before that
 				Xhydr[ir] = (Mrock[ir]/Vrock[ir] - rhoRockth) / (rhoHydrth - rhoRockth);
 				if (Xhydr[ir] < 1.0e-10) Xhydr[ir] = 0.0;   // Avoid numerical residuals
 				if (Xhydr[ir] > 1.0-1.0e-10) Xhydr[ir] = 1.0;
@@ -698,6 +709,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 				Qth[ir] = Qth[ir] + (Xhydr[ir] - Xhydr_old[ir])*Mrock[ir]*Hhydr/dtime;
 			}
 		}
+		// Compare the different energy sources
 		// ir = 150;
 		// printf("%d %g %g %g\n",itime, Mrock[ir]*S, (Phi-Phiold)/dtime * (dVol[ir]/Volume1), (Xhydr[ir] - Xhydr_old[ir])*Mrock[ir]*Hhydr/dtime);
 
@@ -731,25 +743,32 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		Vcracked = 0.0;
 		Vliq = 0.0;
 
-		if (ircrack > 0 && ircrack < ircore) {
-			for (ir=ircrack;ir<ircore;ir++) {
-				Vcracked = Vcracked + dVol[ir];
-			}
-			for (ir=ircore;ir<irice;ir++) { // Check if there is enough liquid to circulate
-				Vliq = Vliq + Vh2ol[ir];
-			}
+		if (ircrack > 0 && ircrack < ircore && Mh2ol[ircore] > 0.0) {
+			// Calculate Rayleigh number
+			mu1 = 10.0*viscosity(T[ircore],Mh2ol[ircore],Mnh3l[ircore]);
+			kap1 = rhoH2olth*ch2ol/porosity*permeability/cm/cm/mu1*(Pressure[ircrack]-Pressure[ircore]);
+			alf1 = 1.0e-3;
+			cp1 = ch2ol;                   // cgs
+			dT = T[ircrack] - T[ircore];
+			dr = r[ircore+1] - r[ircrack+1];
+			jr = floor(((double)ircrack + (double)ircore)/2.0);
+			g1 = Gcgs*M[jr]/(r[jr+1]*r[jr+1]);
+			Ra = alf1*g1*dT*dr*dr*dr*cp1*rhoH2olth*rhoH2olth / (kap1*mu1);
 
-			if (Vliq >= porosity*Vcracked) {
+			if (Ra > Ra_cr) {
+				// Calculate volumes of liquid water and fractured rock
+				for (ir=ircrack;ir<ircore;ir++) {
+					Vcracked = Vcracked + dVol[ir];
+				}
+				for (ir=ircore;ir<irice;ir++) { // Check if there is enough liquid to circulate
+					Vliq = Vliq + Vh2ol[ir];
+				}
 
-				jr = floor(((double)ircrack + (double)ircore)/2.0);
-				Tcelsius = T[jr] - Kelvin;
-				nu1 = 1.0e-3 * 10.0 * pow(10,(20.0-Tcelsius)/(Tcelsius+96.0) *
-						(1.2378 - 1.303e-3*(20.0-Tcelsius) + 3.06e-6*(20.0-Tcelsius)*(20.0-Tcelsius) + 2.55e-8*(20.0-Tcelsius)*(20.0-Tcelsius)*(20.0-Tcelsius)));
-				kap1 = rhoH2olth*ch2ol/porosity*permeability/cm/cm/nu1*(Pressure[ircrack]-Pressure[ircore]);
-
-				for (ir=ircrack;ir<=ircore;ir++) {  // Capped at 500 W/m/K for numerical stability
-					if (kap1 < kap_hydro) kappa[ir] = kap1;
-					else kappa[ir] = kap_hydro;
+				if (Vliq >= porosity*Vcracked) {
+					for (ir=ircrack;ir<=ircore;ir++) {  // Capped at kap_hydro for numerical stability
+						if (kap1 < kap_hydro) kappa[ir] = kap1;
+						else kappa[ir] = kap_hydro;
+					}
 				}
 			}
 		}
@@ -767,13 +786,12 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			alf1 = alf1 * 1.0e-5;
 			cp1 = 7.73e4*T[jr];                   // cgs
 			kap1 = 5.67e7/T[jr];                  // cgs
-			kdiff1 = kap1 / (rhoH2osth*cp1);
-			nu1 = (1.0e15)*exp(25.0*(273.0/T[jr]-1.0)); // 1.0e14 in SI
+			mu1 = (1.0e15)*exp(25.0*(273.0/T[jr]-1.0)); // 1.0e14 in SI
 			dT = T[irice] - T[irdiff];
 			dr = r[irdiff+1] - r[irice+1];
 			jr = (int) (irice+irdiff)/2;
 			g1 = Gcgs*M[jr]/(r[jr+1]*r[jr+1]);
-			Ra = alf1*g1*dT*dr*dr*dr / (kdiff1*nu1);
+			Ra = alf1*g1*dT*dr*dr*dr*cp1*rhoH2osth*rhoH2osth / (kap1*mu1);
 			Nu0 = pow((Ra/1100.0),0.25);
 
 			if (Nu0 > 1.0) {
@@ -966,6 +984,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	free (Nu);
 	free (dont_dehydrate);
 	free (Mrock_init);
+	free (time_hydr);
 	free (aTP);             // Thermal mismatch-specific
 	free (integral);
 	free (alpha);           // Pore water expansion-specific
@@ -1815,6 +1834,37 @@ int hydrate(double T, double **dM, double *dVol, double **Mrock, double *Mh2os, 
 	if (fabs((*Xhydr)[ircore]) > 1.0-1.0e-10) (*Xhydr)[ircore] = 1.0;
 
 	return 0;
+}
+
+/*--------------------------------------------------------------------
+ *
+ * Subroutine viscosity
+ *
+ * Calculates the viscosity of a water-ammonia liquid depending on
+ * temperature and ammonia mass fraction (Kargel et al. 1991)
+ *
+ *--------------------------------------------------------------------*/
+
+double viscosity(double T, double Mh2ol, double Mnh3l) {
+	double visc = 0.0;
+	double A = 0.0;
+	double B = 0.0;
+	double X = 0.0;
+
+	X = Mnh3l/Mh2ol;
+
+	if (T<240.0) {
+		A = -10.8143 + 0.711062*X - 22.4943*X*X + 41.8343*X*X*X - 18.5149*X*X*X*X;
+		B = 1819.86 + 250.822*X + 6505.25*X*X - 14923.4*X*X*X + 7141.46*X*X*X*X;
+	}
+	else {
+		A = -13.8628 - 68.7617*X + 230.083*X*X - 249.897*X*X*X;
+		B = 2701.73 + 14973.3*X - 46174.5*X*X + 45967.6*X*X*X;
+	}
+
+	visc = exp(A+B/T);
+
+	return visc;
 }
 
 #endif /* THERMAL_H_ */
