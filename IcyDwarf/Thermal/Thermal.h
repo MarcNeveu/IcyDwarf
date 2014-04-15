@@ -543,8 +543,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 				i = 1;
 				break;
 			}
-			dM_old[ir] = dM[ir];
     	}
+    	for (ir=0;ir<NR;ir++) dM_old[ir] = dM[ir];
     	if (i == 1) {
     		Pressure = calculate_pressure(Pressure, NR, dM, Mrock, Mh2os, Madhs, Mh2ol, Mnh3l, r);     // Pressure
     	}
