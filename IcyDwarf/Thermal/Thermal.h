@@ -38,7 +38,7 @@ double heatRock (double T);
 
 int heatIce (double T, double X, double *E, double *gh2os, double *gadhs, double *gh2ol, double *gnh3l);
 
-int kapcond(double T, double frock, double fh2os, double fadhs, double fh2ol, double dnh3l, double *kap, double Xhydr);
+double kapcond(double T, double frock, double fh2os, double fadhs, double fh2ol, double dnh3l, double Xhydr);
 
 int decay(double *t, double *tzero, double *S);
 
@@ -77,6 +77,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	int i = 0;
 
 	int irdiff = 0;   // Radius of differentiation
+	int irdiffold = 0;
 	int irice = 0;    // Radius of the top of the slush
 	int ircore = 0;   // Radius of the core
 	int ircrack = 0;  // Inner radius of the continuously cracked rock layer in contact with the ocean
@@ -208,7 +209,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double S = 0.0;     // Radiogenic power, specific (erg/s/g)
 	double Tdiff = 0.0; // Temperature at which differentiation proceeds (K)
 	double kap1 = 0.0;  // Temporary thermal conductivity (erg/s/cm/K)
-	double dr = 0.0;    // Physical thickness of a shell (cm)
+	double dr = 0.0;    // Physical thickness of ice convection zone (cm)
+	double dr_grid = 0.0; // Physical thickness of a shell (cm)
 
 	double Phi = 0.0;   // Gravitational potential energy (erg)
 	double Phiold = 0.0;
@@ -227,6 +229,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
 	int *dont_dehydrate = (int*) malloc((NR)*sizeof(int));      // Don't dehydrate a layer that just got hydrated
 	if (dont_dehydrate == NULL) printf("Thermal: Not enough memory to create dont_dehydrate[NR]\n");
+
+	int structure_changed = 0;  // To see if we need to call separate()
 
 	double Nu0 = 0.0;   // Critical Nusselt number = Ra_c^0.25
 
@@ -427,10 +431,10 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     rhoIce = 1.0 / ((Xp/Xc)/rhoAdhsth + (1.0-Xp/Xc)/rhoH2osth);          // Bulk ice density
     frockp = (1.0-rhoIce/rho_p) / (1.0-rhoIce/(Xhydr[0]*rhoHydrth+(1.0-Xhydr[0])*rhoRockth));
 
-    dr = r_p/((double) NR);
+    dr_grid = r_p/((double) NR);
 
     for (ir=0;ir<NR;ir++) {
-    	r[ir+1] = r[ir] + dr;
+    	r[ir+1] = r[ir] + dr_grid;
     	dVol[ir] = 4.0/3.0*PI_greek*(r[ir+1]*r[ir+1]*r[ir+1] - r[ir]*r[ir]*r[ir]);
     	dM[ir] = dVol[ir]*rho_p;
     	Mrock[ir] = dM[ir]*frockp;
@@ -451,6 +455,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	Vadhs[ir] = Madhs[ir] / rhoAdhsth;
     	T[ir] = Tinit;
     	Nu[ir] = 1.0;
+    	time_hydr[ir] = dr_grid/hydration_rate*Gyr2sec; // Ready to hydrate/dehydrate
     }
 
     // Gravitational potential energy
@@ -553,6 +558,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	//               Rock hydration & dehydration, cracking
     	//-------------------------------------------------------------------
 
+    	structure_changed = 0;
+
     	// DEBUG of crack routine for (ir=0;ir<NR;ir++) {
     	for (ir=0;ir<ircore;ir++) {
     		Crack_old[ir] = Crack[ir];
@@ -584,17 +591,19 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			}
 		}
     	for (ir=ircrack;ir<ircore;ir++) {
-    		if (T[ir] < Tdehydr_max && Mrock[ir] == dM[ir] && Xhydr[ir] <= 0.99 && time_hydr[ir] > dr/hydration_rate*Gyr2sec) {
+    		if (T[ir] < Tdehydr_max && Mrock[ir] == dM[ir] && Xhydr[ir] <= 0.99 && time_hydr[ir] > dr_grid/hydration_rate*Gyr2sec) {
     			time_hydr[ir] = 0.0;
     			Xhydr_temp = Xhydr[ir];
 				hydrate(T[ir], &dM, dVol, &Mrock, Mh2os, Madhs, &Mh2ol, Mnh3l, &Vrock, &Vh2ol,
 					rhoRockth, rhoHydrth, rhoH2olth, &Xhydr, ir, ircore, irice, NR);
+				structure_changed = 1;
 				if (Xhydr[ir] >= Xhydr_temp) dont_dehydrate[ir] = 1;
     		}
-    		if (T[ir] > Tdehydr_min && Xhydr[ir] >= 0.01 && dont_dehydrate[ir] == 0 && time_hydr[ir] > dr/hydration_rate*Gyr2sec) {
+    		if (T[ir] > Tdehydr_min && Xhydr[ir] >= 0.01 && dont_dehydrate[ir] == 0 && time_hydr[ir] > dr_grid/hydration_rate*Gyr2sec) {
     			time_hydr[ir] = 0.0;
     			dehydrate(T[ir], dM[ir], dVol[ir], &Mrock[ir], &Mh2ol[ir], &Vrock[ir], &Vh2ol[ir],
     					rhoRockth, rhoHydrth, rhoH2olth, &Xhydr[ir]);
+    			structure_changed = 1;
     		}
     	}
 
@@ -624,13 +633,15 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
     	Tdiff = 140.0;
 
+    	irdiffold = irdiff;
     	for (ir=0;ir<NR-1;ir++) {
     		if (ir > irdiff && T[ir] > Tdiff) {
     			irdiff = ir;
     		}
     	}
 
-    	if (irdiff > 0) {
+    	if (irdiff > 0 && (irdiff != irdiffold || structure_changed == 1)) {
+    		printf("%d Separating, %d, %d, %d, %g %g\n",itime,irdiff,irdiffold,structure_changed,T[0],Xhydr[0]);
     		separate(NR, &irdiff, &ircore, &irice, dVol, &dM, &dE, &Mrock, &Mh2os, &Madhs, &Mh2ol, &Mnh3l,
     				 &Vrock, &Vh2os, &Vadhs, &Vh2ol, &Vnh3l, &Erock, &Eh2os, &Eslush, rhoH2olth, rhoNh3lth);
     	}
@@ -726,9 +737,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			fadhs = fabs(Vadhs[ir] / dVol[ir]);
 			fh2ol = fabs(Vh2ol[ir] / dVol[ir]);
 			fnh3l = fabs(Vnh3l[ir] / dVol[ir]);
-			kap1 = S / (4.0*PI_greek*Gcgs);
 
-			kapcond(T[ir], frock, fh2os, fadhs, fh2ol, fnh3l, &kap1, Xhydr[ir]);
+			kap1 = kapcond(T[ir], frock, fh2os, fadhs, fh2ol, fnh3l, Xhydr[ir]);
 
 			if (fh2ol + fnh3l >= 0.02)
 				kappa[ir] = 400.0*1.0e5;  // cgs
@@ -1352,7 +1362,7 @@ int heatIce (double T, double X, double *E, double *gh2os, double *gadhs, double
  *
  *--------------------------------------------------------------------*/
 
-int kapcond(double T, double frock, double fh2os, double fadhs, double fh2ol, double fnh3l, double *kap, double Xhydr) {
+double kapcond(double T, double frock, double fh2os, double fadhs, double fh2ol, double fnh3l, double Xhydr) {
 
     double kaph2os = 5.67e7/T;  // Thermal conductivity of water ice (cgs) (Klinger 1980)
 
@@ -1360,9 +1370,11 @@ int kapcond(double T, double frock, double fh2os, double fadhs, double fh2ol, do
 	double b1 = 0.0;            // Coefs of the quadratic equation of Sirono and Yamamoto (1997) to combine
 	double c1 = 0.0;            // rock and ice conductivities
 
+	double kap = 0.0;
+
 	// Combined conductivities (equations (7) and (8) of D09)
-	if (frock == 1.0)
-		(*kap) = Xhydr*kaphydr + (1-Xhydr)*kaprock;
+	if (frock >= 1.0 - 1.0e-5) // frock can be different from 1 in rock at 1.0e-16 precision if separate() is not called.
+		kap = Xhydr*kaphydr + (1-Xhydr)*kaprock;
 	else {
 		// Geometric mean for ice phases (equation 7)
 		kapice = fh2os*log(kaph2os) + fadhs*log(kapadhs) + fh2ol*log(kaph2ol) + fnh3l*log(kapnh3l);
@@ -1371,10 +1383,10 @@ int kapcond(double T, double frock, double fh2os, double fadhs, double fh2ol, do
 		// Using the formulation of Sirono and Yamamoto 1997 for rock-ice phases (eq. 8)
 		b1 = -kaprock*(3.0*frock - 1.0) - kapice*(2.0 - 3.0*frock);
 		c1 = -kaprock*kapice;
-		(*kap) = (-b1 + sqrt(b1*b1 - 8.0*c1)) / 4.0;
+		kap = (-b1 + sqrt(b1*b1 - 8.0*c1)) / 4.0;
 	}
 
-	return 0;
+	return kap;
 }
 
 /*--------------------------------------------------------------------
