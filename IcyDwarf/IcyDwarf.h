@@ -18,7 +18,7 @@
 //-------------------------------------------------------------------
 
 #define release 0                                          // 0 for Debug, 1 for Release
-#define cmdline 1										   // If execution from terminal as "./IcyDwarf",
+#define cmdline 0										   // If execution from terminal as "./IcyDwarf",
                                                            // overwritten by release.
 //-------------------------------------------------------------------
 // PHYSICAL AND MATHEMATICAL CONSTANTS
@@ -93,24 +93,28 @@
 // CRACKING PARAMETERS
 //-------------------------------------------------------------------
 
-#define E_Young 200.0e9                                    // Young's modulus (Pa) for partially hydrated rock (Christensen 1966)
-						                                     // Serpentinite = 35 GPa, olivine = 200 GPa, Vance et al. had 197 GPa
-#define nu_Poisson 0.30                                    // Poisson's ratio
+#define E_Young_oliv 200.0e9                               // Young's modulus (Pa) for olivine (Christensen 1966)
+#define E_Young_serp 35.0e9                                // Young's modulus (Pa) for serpentinite (Christensen 1966)
+#define nu_Poisson_oliv 0.25                               // Poisson's ratio for olivine (Christensen 1966)
+#define nu_Poisson_serp 0.35                               // Poisson's ratio for serpentinite (Christensen 1966)
 #define smallest_crack_size 1.0e-2                         // Smallest 1-D or 2-D crack size in m
 
 // Brittle/ductile transition
-#define mu_Escartin 0.3                                    // Friction coefficient of Escartin et al. 1997 (default 0.3 to 0.5, Byerlee 0.85)
+#define mu_f_serp 0.4                                      // Friction coefficient for serpentine rock brittle strength (Escartin et al. 1997, mu_f = 0.3 to 0.5)
+#define mu_f_Byerlee_loP 0.85                              // Friction coefficient for rock brittle strength below 200 MPa (Byerlee 1978)
+#define mu_f_Byerlee_hiP 0.6                               // Friction coefficient for rock brittle strength between 200 MPa and 1700 MPa (Byerlee 1978)
+#define C_f_Byerlee_hiP 50.0e6                             // Frictional cohesive strength for rock between 200 MPa and 1700 MPa (Byerlee 1978)
 #define A_flow_law 4.17e-1                                 // A of the antigorite flow law of Rutter and Brodie (1988), default 4.17e-1 for sigma in Pa, Hilairet et al. 2007 1.0e-37
 #define Ea_flow_law 240.0e3                                // Activation energy of the antigorite flow law of Rutter and Brodie (1988), default 240e3 J, Hilairet et al. 2007 8900 J
 #define V_flow_law 0.0                                     // Activation volume of Rutter and Brodie (1988), default 0 m3, Hilairet et al. 2007 3.2e-6 m3
 #define n_flow_law 1.0                                     // Stress in Pa exponent of Rutter and Brodie (1988), default 1.0 (diffusion creep), Hilairet et al. 2007 3.8 dislocation creep
 #define p_flow_law 3.0                                     // Grain size in microns exponent of Rutter and Brodie (1988), default -3
 #define d_flow_law 500.0                                   // Grain size in microns
-#define strain_rate 1.0e-15                                // Flow law strain rate in s-1
 
 // Thermal expansion/contraction mismatch (Vance et al. 2007)
-#define K_IC 0.1e6                                         // Critical stress intensity (Pa m^0.5) (default 0.6e6)
-#define Delta_alpha 3.1e-6                                 // Thermal expansion anisotropy in K-1^in eq (3) (default 3.1e-6)
+#define K_IC_oliv 1.5e6                                    // Critical stress intensity for olivine in Pa m^0.5 (DeMartin et al. 2004; Balme et al. 2004)
+#define K_IC_serp 0.4e6                                    // Critical stress intensity for serpentinite in Pa m^0.5 (Tromans and Meech 2002; Funatsu et al. 2004; Backers 2005; Wang et al. 2007)
+#define Delta_alpha 3.1e-6                                 // Thermal expansion anisotropy in K-1 in eq (3) (default 3.1e-6)
 #define Q 3.75e5                                           // Activation enthalpy for grain boundary (J/mol) (default 3.75e5)
 #define Omega 1.23e-29                                     // Atomic volume (m^3) (default 1.23e-29)
 #define D0_deltab 0.2377                                   // Grain boundary diffusion coefficient (1.5 m^2/s) x width
@@ -181,6 +185,7 @@ int append_output (int L, double *Output, char path[1024], char filename[1024]);
 //-------------------------------------------------------------------
 //                        Calculate pressure
 //  This routine is in SI, unlike the thermal code which is in cgs
+//                The pressure is returned in Pa
 //-------------------------------------------------------------------
 
 double *calculate_pressure (double *Pressure, int NR, double *dM, double *Mrock, double *Mh2os, double *Madhs, double *Mh2ol, double *Mnh3l, double *r) {

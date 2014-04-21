@@ -124,8 +124,9 @@ int aTP(char path[1024], int warnings, int msgout) {
 			for (j=0;j<int_size-1;j++) {
 				a_var = (double) (a_var_max/int_size*(j+1));
 				K_I[j][0] = a_var;
-				K_I[j][1] = sqrt(2.0/(PI_greek*a_var))*integral[j][1]*E_Young*Delta_alpha/
-						(2.0*PI_greek*(1.0-nu_Poisson*nu_Poisson))*deltaT - P_Pa*sqrt(PI_greek*a_var);
+				// Take the average E_Young and nu_Poisson
+				K_I[j][1] = sqrt(2.0/(PI_greek*a_var))*integral[j][1]*0.5*(E_Young_oliv+E_Young_serp)*Delta_alpha/
+						(2.0*PI_greek*(1.0-(0.5*(nu_Poisson_oliv+nu_Poisson_serp)*0.5*(nu_Poisson_oliv+nu_Poisson_serp))))*deltaT - P_Pa*sqrt(PI_greek*a_var);
 			}
 
 			// Find a_var for which K_I is max

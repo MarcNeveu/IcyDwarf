@@ -59,13 +59,13 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 		double *Crack, double Crack_old, double *Crack_size, double Crack_size_old,
 		double Xhydr, double Xhydr_old, double dtime, double Mrock, double Mrock_init, double **Act, double **Act_old,
 		int warnings, int msgout, int *crack_input, int *crack_species, float **aTP, float **integral, float **alpha, float **beta,
-		float **silica, float **chrysotile, float **magnesite);
+		float **silica, float **chrysotile, float **magnesite, int circ);
 
 int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_old, double Pressure,
 		double *Crack, double Crack_old, double *Crack_size, double Crack_size_old,
 		double Xhydr, double Xhydr_old, double dtime, double Mrock, double Mrock_init, double **Act, double **Act_old,
 		int warnings, int msgout, int *crack_input, int *crack_species, float **aTP, float **integral, float **alpha, float **beta,
-		float **silica, float **chrysotile, float **magnesite) {
+		float **silica, float **chrysotile, float **magnesite, int circ) {
 
 	//-------------------------------------------------------------------
 	//                 Declarations and initializations
@@ -84,7 +84,10 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 	float Rock_strength = 0.0;									 // Rock strength in Pa
 	float dTdt = 0.0;                  							 // Heating/cooling rate in K/Gyr
 
-	double strain_rate = 0.0;
+	double strain_rate = 0.0;                                    // Strain rate in s-1
+	double E_Young = 0.0;                                        // Young's modulus in Pa
+	double nu_Poisson = 0.0;                                     // Poisson's ratio
+	double K_IC = 0.0;                                           // Critical stress intensity in Pa m^0.5
 
 	// Thermal mismatch-specific variables
 	int deltaT_int = 0;                                          // deltaT index in the aTP table
@@ -127,7 +130,7 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 	thermal_mismatch = crack_input[0];
 	pore_water_expansion = crack_input[1];
 	hydration_dehydration = crack_input[2];
-	dissolution_precipitation = crack_input[3];
+	dissolution_precipitation = crack_input[3]*circ;              // Only where there is hydrothermal circulation
 
 	if (dissolution_precipitation == 1) {
 		// Silica: Equations (55) of Rimstidt and Barnes 1980 or (7-8) of Bolton et al. 1997 (porosity not included)
@@ -153,6 +156,9 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 	}
 
 	strain_rate = 1.0/dtime; // 6.3e-10 s if dtime = 50 years
+	E_Young = Xhydr*E_Young_serp + (1.0-Xhydr)*E_Young_oliv;
+	nu_Poisson = Xhydr*nu_Poisson_serp + (1.0-Xhydr)*nu_Poisson_oliv;
+	K_IC = Xhydr*K_IC_serp + (1.0-Xhydr)*K_IC_oliv;
 
 	//-------------------------------------------------------------------
 	//                 Calculate heating/cooling rate in K/Gyr
@@ -241,13 +247,13 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 
 			// Initialize crack size
 			(*Crack_size) = smallest_crack_size;  // I guess because smallest_crack_size is a #define, the code adds a residual 4.74e-11.
-											   // No changes bigger than that residual will trigger a change in the cracking.
+											      // No changes bigger than that residual will trigger a change in the cracking.
 			if (Crack_old > 0.0 && Crack_size_old > 0.0) {
 				(*Crack_size) = Crack_size_old;
 			}
 			d_crack_size = 0.0;
 			if (T < Tdehydr_max) { // Hydration
-				d_crack_size = - 2.0*(pow((rhoRock/rhoHydr),0.333) - 1.0) * hydration_rate * dtime / Gyr2sec;
+				d_crack_size = - 2.0*(pow(((Xhydr_old*rhoHydr+(1.0-Xhydr_old)*rhoRock)/(Xhydr*rhoHydr+(1.0-Xhydr)*rhoRock)),0.333) - 1.0) * hydration_rate * dtime / Gyr2sec;
 				if ((*Crack_size) + d_crack_size < 0.0) {
 					P_hydr = E_Young*(-d_crack_size-(*Crack_size))/(hydration_rate*dtime/Gyr2sec); // Residual rock swell builds up stresses
 					(*Crack_size) = 0.0;          // Crack closes completely
@@ -256,8 +262,6 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 					P_hydr = 0.0;
 					(*Crack_size) = (*Crack_size) + d_crack_size;
 				}
-				// Debug printf("t=%d, r=%d, Old crack size=%g, Crack_size=%g, d_crack_size=%g, P_hydr=%g\n",
-				// t,r,Crack_size_hydr_old,Crack_size,d_crack_size,P_hydr);
 			}
 			Crack_size_mem = (*Crack_size);
 		}
@@ -302,12 +306,11 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 	 */
 
 	if (dissolution_precipitation == 1) {
-		// timestep = timestep/1.0e6; // Debug
 		// Calculate dissolution/precipitation only where there are cracks
 		if (Crack_old > 0.0 && Xhydr > 0.0) {
 
 			// Initialize crack size
-			(*Crack_size) = smallest_crack_size;       // I guess because smallest_crack_size is a #define, the code adds a residual 4.74e-11.
+			(*Crack_size) = smallest_crack_size;    // I guess because smallest_crack_size is a #define, the code adds a residual 4.74e-11.
 													// No changes bigger than that residual will trigger a change in the cracking.
 			if (hydration_dehydration == 1) {
 				if (Crack_size_mem > 0.0) {         // Check crack size after hydration cracking calculations

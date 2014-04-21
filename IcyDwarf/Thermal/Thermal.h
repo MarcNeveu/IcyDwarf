@@ -230,8 +230,11 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double *Nu = (double*) malloc((NR)*sizeof(double));      // Nusselt number
 	if (Nu == NULL) printf("Thermal: Not enough memory to create Nu[NR]\n");
 
-	int *dont_dehydrate = (int*) malloc((NR)*sizeof(int));      // Don't dehydrate a layer that just got hydrated
+	int *dont_dehydrate = (int*) malloc((NR)*sizeof(int));   // Don't dehydrate a layer that just got hydrated
 	if (dont_dehydrate == NULL) printf("Thermal: Not enough memory to create dont_dehydrate[NR]\n");
+
+	int *circ = (int*) malloc((NR)*sizeof(int));             // 0=no hydrothermal circulation, 1=hydrothermal circulation
+	if (circ == NULL) printf("Thermal: Not enough memory to create circ[NR]\n");
 
 	int structure_changed = 0;  // To see if we need to call separate()
 
@@ -348,6 +351,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	Crack_size[ir] = 0.0;
     	Crack_size_old[ir] = 0.0;
     	Nu[ir] = 1.0;
+    	dont_dehydrate[ir] = 0;
+    	circ[ir] = 0;
     	Mrock_init[ir] = 0.0;
     	time_hydr[ir] = 0.0;
     	for (i=0;i<n_species_crack;i++) {
@@ -577,7 +582,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     		if (T[ir]<Tdehydr_max) {
     			crack(argc, argv, path, ir, T[ir], T_old[ir], Pressure[ir], &Crack[ir], Crack_old[ir], &Crack_size[ir], Crack_size_old[ir],
 						Xhydr[ir], Xhydr_old[ir], dtime, Mrock[ir], Mrock_init[ir], &Act[ir], &Act_old[ir],
-						warnings, msgout, crack_input, crack_species, aTP, integral, alpha, beta, silica, chrysotile, magnesite);
+						warnings, msgout, crack_input, crack_species, aTP, integral, alpha, beta, silica, chrysotile, magnesite, circ[ir]);
     		}
     	}
 		// Find the depth of the continuous cracked layer in contact with the ocean
@@ -732,10 +737,6 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			}
 		}
 
-
-		// ir = 150;
-		// printf("%d %g %g %g\n",itime, Mrock[ir]*S, (Phi-Phiold)/dtime * (dVol[ir]/Volume1), (Xhydr[ir] - Xhydr_old[ir])*Mrock[ir]*Hhydr/dtime);
-
 		//-------------------------------------------------------------------
 		// Calculate fluxes.
 		// Fluxes are assumed to be conductive everywhere except where the
@@ -764,6 +765,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
 		Vcracked = 0.0;
 		Vliq = 0.0;
+		for (ir=0;ir<NR;ir++) circ[ir] = 0;
 
 		if (ircrack > 0 && ircrack < ircore && Mh2ol[ircore] > 0.0) {
 			// Calculate Rayleigh number
@@ -790,6 +792,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 					for (ir=ircrack;ir<=ircore;ir++) {  // Capped at kap_hydro for numerical stability
 						if (kap1 < kap_hydro) kappa[ir] = kap1;
 						else kappa[ir] = kap_hydro;
+						circ[ir] = 1;
 					}
 				}
 			}
@@ -1011,6 +1014,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	free (Crack_size_old);
 	free (Nu);
 	free (dont_dehydrate);
+	free (circ);
 	free (Mrock_init);
 	free (time_hydr);
 	free (aTP);             // Thermal mismatch-specific
