@@ -125,8 +125,8 @@ int main(int argc, char *argv[]){
 
 	char *IcyDwarfIcon_icns = (char*)malloc(1024);           // Don't forget to free!
 	IcyDwarfIcon_icns[0] = '\0';
-	if (release == 1) strncat(IcyDwarfIcon_icns,path,strlen(path)-24);
-	else if (cmdline == 1) strncat(IcyDwarfIcon_icns,path,strlen(path)-26);
+	if (release == 1) strncat(IcyDwarfIcon_icns,path,strlen(path)-20);
+	else if (cmdline == 1) strncat(IcyDwarfIcon_icns,path,strlen(path)-22);
 	strcat(IcyDwarfIcon_icns,"Graphics/CeresDanWiersemaAtIconbug.icns");
 	SDL_Surface* IcyDwarfIcon = IMG_Load(IcyDwarfIcon_icns);
 	if (IcyDwarfIcon == NULL) printf("IcyDwarf: Plot: Window icon not loaded.\n");

@@ -920,7 +920,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 				Thermal[4] = Madhs[ir];
 				Thermal[5] = Mh2ol[ir];
 				Thermal[6] = Mnh3l[ir];
-				Thermal[7] = Nu[ir];
+				Thermal[7] = kappa[ir]/1.0e5;
 				Thermal[8] = Xhydr[ir];
 				append_output(9, Thermal, path, "Outputs/Thermal.txt");
 			}
