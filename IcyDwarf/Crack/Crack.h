@@ -58,14 +58,14 @@
 int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_old, double Pressure,
 		double *Crack, double Crack_old, double *Crack_size, double Crack_size_old,
 		double Xhydr, double Xhydr_old, double dtime, double Mrock, double Mrock_init, double **Act, double **Act_old,
-		int warnings, int msgout, int *crack_input, int *crack_species, float **aTP, float **integral, float **alpha, float **beta,
-		float **silica, float **chrysotile, float **magnesite, int circ);
+		int warnings, int msgout, int *crack_input, int *crack_species, double **aTP, double **integral, double **alpha, double **beta,
+		double **silica, double **chrysotile, double **magnesite, int circ);
 
 int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_old, double Pressure,
 		double *Crack, double Crack_old, double *Crack_size, double Crack_size_old,
 		double Xhydr, double Xhydr_old, double dtime, double Mrock, double Mrock_init, double **Act, double **Act_old,
-		int warnings, int msgout, int *crack_input, int *crack_species, float **aTP, float **integral, float **alpha, float **beta,
-		float **silica, float **chrysotile, float **magnesite, int circ) {
+		int warnings, int msgout, int *crack_input, int *crack_species, double **aTP, double **integral, double **alpha, double **beta,
+		double **silica, double **chrysotile, double **magnesite, int circ) {
 
 	//-------------------------------------------------------------------
 	//                 Declarations and initializations
@@ -78,11 +78,11 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 
 	int i = 0;
 
-	float Crack_size_mem = 0.0;                                  // Memorize crack size in m between phenomena
+	double Crack_size_mem = 0.0;                                  // Memorize crack size in m between phenomena
 	double Brittle_strength = 0.0;                               // Brittle rock strength in Pa
 	double Ductile_strength = 0.0;                               // Ductile rock strength in Pa
-	float Rock_strength = 0.0;									 // Rock strength in Pa
-	float dTdt = 0.0;                  							 // Heating/cooling rate in K/Gyr
+	double Rock_strength = 0.0;									 // Rock strength in Pa
+	double dTdt = 0.0;                  							 // Heating/cooling rate in K/Gyr
 
 	double strain_rate = 0.0;                                    // Strain rate in s-1
 	double E_Young = 0.0;                                        // Young's modulus in Pa
@@ -92,15 +92,15 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 	// Thermal mismatch-specific variables
 	int deltaT_int = 0;                                          // deltaT index in the aTP table
 	int P_int = 0;                                               // P index in the aTP table
-	float Tprime = 0.0;                                          // Temperature at zero stress from thermal mismatch in K
-	float K_I = 0.0;                                             // Stress intensity from thermal mismatch in Pa m1/2
+	double Tprime = 0.0;                                         // Temperature at zero stress from thermal mismatch in K
+	double K_I = 0.0;                                            // Stress intensity from thermal mismatch in Pa m1/2
 
 	// Pore fluid heating-specific variables
 	int tempk_int = 0;                                           // T index in the alpha and beta tables (P index is P_int)
-	float P_fluid = 0.0;                                         // Effective pore fluid pressure in Pa
+	double P_fluid = 0.0;                                        // Effective pore fluid pressure in Pa
 
 	// Rock hydration/dehydration-specific variables
-	float P_hydr = 0.0;                                          // Compressive stress from hydration in Pa
+	double P_hydr = 0.0;                                         // Compressive stress from hydration in Pa
 
 	// index  species
 	// -----  ------------------------
@@ -109,16 +109,16 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 	//   2    carbonate (magnesite)
 	// -----  ------------------------
 	// No mallocs here, because we keep n_species small
-	float R_diss[n_species_crack];                               // Dissolution/precipitation rate in mol m-3 s-1
-	float nu_prod[n_species_crack];                              // Stoichiometric coefficient of the dissolution product(s)
-	float mu_Xu[n_species_crack];                                // Exponent of Q/K in kinetic rate law (Xu and Pruess 2001)
+	double R_diss[n_species_crack];                              // Dissolution/precipitation rate in mol m-3 s-1
+	double nu_prod[n_species_crack];                             // Stoichiometric coefficient of the dissolution product(s)
+	double mu_Xu[n_species_crack];                               // Exponent of Q/K in kinetic rate law (Xu and Pruess 2001)
 	double K_eq[n_species_crack];                                // Equilibrium constant, dimensionless
-	float Ea_diss[n_species_crack];                              // Activation energy of dissolution/precipitation in J mol-1
-	float Molar_volume[n_species_crack];                         // Molar volume in m3 mol-1
+	double Ea_diss[n_species_crack];                             // Activation energy of dissolution/precipitation in J mol-1
+	double Molar_volume[n_species_crack];                        // Molar volume in m3 mol-1
 
-	float surface_volume_ratio = 0.0;                            // Ratio of water-rock surface to fluid volume in m-1
-	float d_crack_size = 0.0;                                    // Net change in crack size in m
-	float Crack_size_diss_old = 0.0;                             // Crack size before this step in m
+	double surface_volume_ratio = 0.0;                           // Ratio of water-rock surface to fluid volume in m-1
+	double d_crack_size = 0.0;                                   // Net change in crack size in m
+	double Crack_size_diss_old = 0.0;                            // Crack size before this step in m
 
 	for (i=0;i<n_species_crack;i++) {
 		R_diss[i] = 0.0;
@@ -161,11 +161,11 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 	K_IC = Xhydr*K_IC_serp + (1.0-Xhydr)*K_IC_oliv;
 
 	//-------------------------------------------------------------------
-	//                 Calculate heating/cooling rate in K/Gyr
+	//                 Calculate heating/cooling rate in K/s
 	//-------------------------------------------------------------------
 
 	dTdt = (T - T_old)/dtime;
-	// dTdt = -1.0e9;                                               // Arbitrary cooling rate of Vance et al. (2007)
+	// dTdt = -1.0e9/Gyr2sec;         // Arbitrary cooling rate of Vance et al. (2007)
 
 	//-------------------------------------------------------------------
 	//                    Calculate rock strength in Pa
@@ -201,15 +201,14 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 		// Calculate T' in each layer over time, eq (2) of Vance et al. (2007)
 		// T' is the temperature at zero stress from thermal mismatch
 
-		if (dTdt == 0.0) dTdt = 1.0e-6; // To ensure continuity of T', otherwise T'=0
+		if (dTdt == 0.0) dTdt = 0.1/dtime; // To ensure continuity of T', otherwise T'=0
 		Tprime = Q/R_G/log(12.0*Omega*D0_deltab*E_Young/
-						(sqrt(3.0)*n_fit*k_B*L_size*L_size*L_size*fabs(dTdt)/Gyr2sec));
+						(sqrt(3.0)*n_fit*k_B*L_size*L_size*L_size*fabs(dTdt)));
 
 		// Calculate the stress intensity K_I in each layer over time,
 		// eq (4) of Vance et al. (2007)
 		K_I = 0.0;
 		if (Tprime != 0) {
-
 			// Look up the right value of a(T,P) to use in eq(4)
 			deltaT_int = look_up (fabs(Tprime - T), 0.0, deltaT_step, sizeaTP, warnings);
 			P_int = look_up (Pressure, 0.0, P_step, sizeaTP, warnings);
@@ -243,7 +242,7 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 
 		P_hydr = 0.0;
 		// Only where there are cracks, where hydration has increased, and where it's not fully hydrated
-		if (Crack_old > 0.0 && Xhydr > Xhydr_old && Xhydr < 1.0 && T < Tdehydr_max) {
+		if (Crack_old > 0.0 && Xhydr > Xhydr_old && T < Tdehydr_max) {
 
 			// Initialize crack size
 			(*Crack_size) = smallest_crack_size;  // I guess because smallest_crack_size is a #define, the code adds a residual 4.74e-11.
@@ -254,6 +253,7 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 			d_crack_size = 0.0;
 			if (T < Tdehydr_max) { // Hydration
 				d_crack_size = - 2.0*(pow(((Xhydr_old*rhoHydr+(1.0-Xhydr_old)*rhoRock)/(Xhydr*rhoHydr+(1.0-Xhydr)*rhoRock)),0.333) - 1.0) * hydration_rate * dtime / Gyr2sec;
+				// if dtime=50 years and Xhydr goes from 0.05 to 0.15, d_crack_size = -1 mm
 				if ((*Crack_size) + d_crack_size < 0.0) {
 					P_hydr = E_Young*(-d_crack_size-(*Crack_size))/(hydration_rate*dtime/Gyr2sec); // Residual rock swell builds up stresses
 					(*Crack_size) = 0.0;          // Crack closes completely
@@ -284,16 +284,16 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 		if (Xhydr >= 0.1 && T < Tdehydr_max && Mrock > Mrock_init && T > T_old) {
 
 			// Look up the right value of alpha and beta, given P and T
-			tempk_int = look_up (T, (float) tempk_min, delta_tempk, sizeaTP, warnings);
-			P_int = look_up (Pressure/bar, (float) P_bar_min, delta_P_bar, sizeaTP, warnings);
+			tempk_int = look_up (T, (double) tempk_min, delta_tempk, sizeaTP, warnings);
+			P_int = look_up (Pressure/bar, (double) P_bar_min, delta_P_bar, sizeaTP, warnings);
 
 			// Calculate fluid pressure, including geometric effects (Le Ravalec & GuŽguen 1994)
 			P_fluid = Pressure + alpha[tempk_int][P_int] * (T-T_old)
 							/ (beta[tempk_int][P_int]/bar + aspect_ratio*3.0*(1.0-2.0*nu_Poisson)/E_Young)
-							* (1+2*aspect_ratio);
+							* (1.0+2.0*aspect_ratio);
 			// Version of Norton (1984) without elastic relaxation
-			// P_fluid = Pressure + alpha[tempk_int][P_int] * (thoutput[r][t].tempk-thoutput[r][t-1].tempk)
-			//				/ (beta[tempk_int][P_int]/bar) * (1+2*aspect_ratio);
+			// P_fluid = Pressure + alpha[tempk_int][P_int] * (T-T_old)
+			//				/ (beta[tempk_int][P_int]/bar) * (1.0+2.0*aspect_ratio);
 		}
 	}
 
@@ -307,7 +307,7 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 
 	if (dissolution_precipitation == 1) {
 		// Calculate dissolution/precipitation only where there are cracks
-		if (Crack_old > 0.0 && Xhydr > 0.0) {
+		if (Crack_old > 0.0) {
 
 			// Initialize crack size
 			(*Crack_size) = smallest_crack_size;    // I guess because smallest_crack_size is a #define, the code adds a residual 4.74e-11.
@@ -327,8 +327,8 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 			surface_volume_ratio = 2.0/(*Crack_size);  // Rimstidt and Barnes (1980) Fig. 6 for a cylinder/fracture
 
 			// Use CHNOSZ to get reaction constants at given T and P
-			tempk_int = look_up (T, (float) tempk_min_species, delta_tempk_species, sizeaTP, warnings);
-			P_int = look_up (Pressure/bar, (float) P_bar_min, delta_P_bar, sizeaTP, warnings);
+			tempk_int = look_up (T, (double) tempk_min_species, delta_tempk_species, sizeaTP, warnings);
+			P_int = look_up (Pressure/bar, (double) P_bar_min, delta_P_bar, sizeaTP, warnings);
 
 			// subcrt(c("SiO2","SiO2"),c(-1,1),c("cr","aq"))
 			K_eq[0] = pow(10.0,silica[tempk_int][P_int]);
@@ -336,8 +336,6 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 			K_eq[1] = pow(10.0,chrysotile[tempk_int][P_int]);
 			// subcrt(c("MgCO3","Mg+2","CO3-2"),c(-1,1,1),c("cr","aq","aq"))
 			K_eq[2] = pow(10.0,magnesite[tempk_int][P_int]);
-
-			// if (r == 130 && t < 100) printf("t=%d, r=%d\n",t,r); // Debug
 
 			for (i=0;i<n_species_crack;i++) {                                    // Include whichever species are needed
 				if (crack_species[i] > 0) {

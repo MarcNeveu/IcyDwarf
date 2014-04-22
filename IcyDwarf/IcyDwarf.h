@@ -157,27 +157,27 @@
 #define delta_tempk_species 7.0                            // K
 
 typedef struct {
-    float radius; // Radius in km
-    float tempk;  // Temperature in K
-    float mrock;  // Mass of rock in g
-    float mh2os;  // Mass of H2O ice in g
-    float madhs;  // Mass of solid ammonia dihydrate in g
-    float mh2ol;  // Mass of liquid H2O in g
-    float mnh3l;  // Mass of liquid ammonia in g
-    float nu;     // Nusselt number for parameterized convection (dimensionless) (not used here)
-    float famor;  // Fraction of ice that is amorphous (not used here)
+    double radius; // Radius in km
+    double tempk;  // Temperature in K
+    double mrock;  // Mass of rock in g
+    double mh2os;  // Mass of H2O ice in g
+    double madhs;  // Mass of solid ammonia dihydrate in g
+    double mh2ol;  // Mass of liquid H2O in g
+    double mnh3l;  // Mass of liquid ammonia in g
+    double nu;     // Nusselt number for parameterized convection (dimensionless) (not used here)
+    double famor;  // Fraction of ice that is amorphous (not used here)
 } thermalout;
 
 #include <stdio.h>
 #include <stdlib.h>
 
 double *calculate_pressure (double *Pressure, int NR, double *dM, double *Mrock, double *Mh2os, double *Madhs, double *Mh2ol, double *Mnh3l, double *r);
-float calculate_mass_liquid (int NR, int NT, int t, thermalout **thoutput);
+double calculate_mass_liquid (int NR, int NT, int t, thermalout **thoutput);
 int calculate_seafloor (thermalout **thoutput, int NR, int NT, int t);
-int look_up (float x, float x_var, float x_step, int size, int warnings);
+int look_up (double x, double x_var, double x_step, int size, int warnings);
 double *icy_dwarf_input (double *input, char path[1024]);
 thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char path[1024]);
-float **read_input (int H, int L, float **Input, char path[1024], char filename[1024]);
+double **read_input (int H, int L, double **Input, char path[1024], char filename[1024]);
 int create_output (char path[1024], char filename[1024]);
 int write_output (int H, int L, double **Output, char path[1024], char filename[1024]);
 int append_output (int L, double *Output, char path[1024], char filename[1024]);
@@ -193,19 +193,19 @@ double *calculate_pressure (double *Pressure, int NR, double *dM, double *Mrock,
 	int ir = 0;
 
 	// Calculate the mass fractions of material in each layer over time
-	float *frock = (float*) malloc(NR*sizeof(float));            // Fraction of rock in a shell
+	double *frock = (double*) malloc(NR*sizeof(double));            // Fraction of rock in a shell
 	if (frock == NULL) printf("IcyDwarf: Not enough memory to create frock[NR]\n");
 
-	float *fh2os = (float*) malloc(NR*sizeof(float));            // Fraction of H2O ice in a shell
+	double *fh2os = (double*) malloc(NR*sizeof(double));            // Fraction of H2O ice in a shell
 	if (fh2os == NULL) printf("IcyDwarf: Not enough memory to create fh2os[NR]\n");
 
-	float *fh2ol = (float*) malloc(NR*sizeof(float));            // Fraction of liquid H2O in a shell
+	double *fh2ol = (double*) malloc(NR*sizeof(double));            // Fraction of liquid H2O in a shell
 	if (fh2ol == NULL) printf("IcyDwarf: Not enough memory to create fh2ol[NR]\n");
 
-	float *fadhs = (float*) malloc(NR*sizeof(float));            // Fraction of solid ammonia dihydrate in a shell
+	double *fadhs = (double*) malloc(NR*sizeof(double));            // Fraction of solid ammonia dihydrate in a shell
 	if (fadhs == NULL) printf("IcyDwarf: Not enough memory to create fadhs[NR]\n");
 
-	float *fnh3l = (float*) malloc(NR*sizeof(float));            // Fraction of liquid ammonia in a shell
+	double *fnh3l = (double*) malloc(NR*sizeof(double));            // Fraction of liquid ammonia in a shell
 	if (fnh3l == NULL) printf("IcyDwarf: Not enough memory to create fnh3l[NR]\n");
 
 	for (ir=0;ir<NR;ir++) {
@@ -224,10 +224,10 @@ double *calculate_pressure (double *Pressure, int NR, double *dM, double *Mrock,
 
 	int j = 0;
 	int u = 0;
-	float Minf = 0.0;              // Mass under a certain radius
-	float dInt = 0.0;
-	float dIntPrec = 0.0;
-	float Pintegral = 0.0;
+	double Minf = 0.0;              // Mass under a certain radius
+	double dInt = 0.0;
+	double dIntPrec = 0.0;
+	double Pintegral = 0.0;
 
 	for (ir=0;ir<NR;ir++) {
 		for (j=ir;j<NR-1;j++) { // Integral using trapezoidal method
@@ -263,10 +263,10 @@ double *calculate_pressure (double *Pressure, int NR, double *dM, double *Mrock,
 //             Calculate the mass of liquid over time
 //-------------------------------------------------------------------
 
-float calculate_mass_liquid (int NR, int NT, int t, thermalout **thoutput) {
+double calculate_mass_liquid (int NR, int NT, int t, thermalout **thoutput) {
 
 	int r = 0;
-	float Mliq = 0.0;
+	double Mliq = 0.0;
 
 	for (r=0;r<NR;r++) {
 		// Mliq = Mliq + thoutput[r][t].mh2ol*gram + thoutput[r][t].mnh3l*gram;
@@ -300,15 +300,15 @@ return r_seafloor;
 //        Return correct index to look up a value in a table
 //-------------------------------------------------------------------
 
-int look_up (float x, float x_var, float x_step, int size, int warnings) {
+int look_up (double x, double x_var, double x_step, int size, int warnings) {
 
 	int x_int = 0;
 	int j = 0;
 
 	if (x <= x_step) x_int = 0;
-	else if (x > x_var + x_step*((float) (size-1.0))) {
+	else if (x > x_var + x_step*((double) (size-1.0))) {
 		x_int = size-1;
-		if (warnings == 1) printf("IcyDwarf look_up: x=%g above range, assuming x=%g\n", x, x_step*((float) (size-1.0)));
+		if (warnings == 1) printf("IcyDwarf look_up: x=%g above range, assuming x=%g\n", x, x_step*((double) (size-1.0)));
 	}
 	else {
 		for (j=0;j<size;j++) {
@@ -533,7 +533,7 @@ thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char pa
 	else {
 		for (t=0;t<NT;t++) {
 			for (r=0;r<NR;r++) {
-				int scan = fscanf(fid, "%e %e %e %e %e %e %e %e %e", &thoutput[r][t].radius,
+				int scan = fscanf(fid, "%lg %lg %lg %lg %lg %lg %lg %lg %lg", &thoutput[r][t].radius,
 							&thoutput[r][t].tempk, &thoutput[r][t].mrock, &thoutput[r][t].mh2os,
 							&thoutput[r][t].madhs, &thoutput[r][t].mh2ol, &thoutput[r][t].mnh3l,
 							&thoutput[r][t].nu, &thoutput[r][t].famor);
@@ -555,7 +555,7 @@ thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char pa
 //                            Read input
 //-------------------------------------------------------------------
 
-float **read_input (int H, int L, float **Input, char path[1024], char filename[1024]) {
+double **read_input (int H, int L, double **Input, char path[1024], char filename[1024]) {
 
 	FILE *fin;
 	int l = 0;
@@ -578,7 +578,7 @@ float **read_input (int H, int L, float **Input, char path[1024], char filename[
 	else {
 		for (l=0;l<L;l++) {
 			for (h=0;h<H;h++) {
-				int scan = fscanf(fin,"%g",&Input[l][h]);
+				int scan = fscanf(fin,"%lg",&Input[l][h]);
 				if (scan != 1)
 					printf("IcyDwarf: Error scanning %s file at l=%d, h=%d.\n",title,l,h);
 			}

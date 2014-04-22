@@ -33,17 +33,17 @@ int main(int argc, char *argv[]){
 	int msgout = 0;                    // Display messages
 
 	// Planet inputs
-    float rho_p = 0.0;                 // Planetary density
-    float r_p = 0.0;                   // Planetary radius
-    float nh3 = 0.0;                   // Ammonia w.r.t. water
-    float Tsurf = 0.0;				   // Surface temperature
-    float Tinit = 0.0;                 // Initial temperature
-    float tzero = 0.0;                 // Time zero of the sim (Myr)
+    double rho_p = 0.0;                 // Planetary density
+    double r_p = 0.0;                   // Planetary rdouble
+    double nh3 = 0.0;                   // Ammonia w.r.t. water
+    double Tsurf = 0.0;				   // Surface temperature
+    double Tinit = 0.0;                 // Initial temperature
+    double tzero = 0.0;                 // Time zero of the sim (Myr)
 
     // Grid inputs
 	int NR = 0;                        // Number of grid zones
-	int total_time = 0;                // Total time of sim
-	int output_every = 0;              // Output frequency
+	double total_time = 0;                // Total time of sim
+	double output_every = 0;              // Output frequency
     int NT_output = 0;                 // Time step for writing output
 
     // Call specific subroutines

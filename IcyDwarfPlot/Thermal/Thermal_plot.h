@@ -21,6 +21,7 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, float 
 	int irad = 0;
 	int xoffset = 0;
 	int yoffset = 0;
+	int ircore = 0;
 
 	int grid = 0;
 	int structure = 0;
@@ -527,6 +528,10 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, float 
 						}
 
 						if (plot_switch == 1) { // Hydration-time plot
+							for (r=0;r<NR-1;r++) {
+								if (thoutput[r][t].mrock > 0.0 && thoutput[r+1][t].mrock == 0.0) ircore = r;
+							}
+
 							// y-axis numbers
 							scanNumber(&nb, 10);          // Right-justified
 							ynumber1_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
@@ -571,7 +576,7 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, float 
 							}
 
 							for (T=0;T<=100;T++) {
-								for (r=0;r<NR;r++) {
+								for (r=0;r<ircore;r++) {
 									// Hydration profile yellower when more recent, redder when more ancient
 									if (T >= (int) thoutput[r][t].famor*100 - 1 && T <= (int) thoutput[r][t].famor*100 + 1) {
 										xoffset = floor((double)r/(double)NR*hydr_time->w);
@@ -934,6 +939,10 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, float 
 							}
 
 							if (plot_switch == 1) { // Hydration-time plot
+								for (r=0;r<NR-1;r++) {
+									if (thoutput[r][t].mrock > 0.0 && thoutput[r+1][t].mrock == 0.0) ircore = r;
+								}
+
 								// y-axis numbers
 								scanNumber(&nb, 10);          // Right-justified
 								ynumber1_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
@@ -978,7 +987,7 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, float 
 								}
 
 								for (T=0;T<=100;T++) {
-									for (r=0;r<NR;r++) {
+									for (r=0;r<ircore;r++) {
 										// Hydration profile yellower when more recent, redder when more ancient
 										if (T >= (int) thoutput[r][t].famor*100 - 1 && T <= (int) thoutput[r][t].famor*100 + 1) {
 											xoffset = floor((double)r/(double)NR*hydr_time->w);
@@ -1364,6 +1373,10 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, float 
 		}
 
 		if (plot_switch == 1) { // Hydration-time plot
+			for (r=0;r<NR-1;r++) {
+				if (thoutput[r][t].mrock > 0.0 && thoutput[r+1][t].mrock == 0.0) ircore = r;
+			}
+
 			// y-axis numbers
 			scanNumber(&nb, 10);          // Right-justified
 			ynumber1_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
@@ -1408,7 +1421,7 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, float 
 			}
 
 			for (T=0;T<=100;T++) {
-				for (r=0;r<NR;r++) {
+				for (r=0;r<ircore;r++) {
 					// Hydration profile yellower when more recent, redder when more ancient
 					if (T >= (int) thoutput[r][t].famor*100 - 1 && T <= (int) thoutput[r][t].famor*100 + 1) {
 						xoffset = floor((double)r/(double)NR*hydr_time->w);

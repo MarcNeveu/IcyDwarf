@@ -53,11 +53,11 @@ int aTP(char path[1024], int warnings, int msgout) {
 
 	int i = 0;
 	int j = 0;
-	float x = 0.0;                      // Flaw size (m)
-	float a_var = 0.0;
-	float sigma_yy = 0.0;               // Normal stress on a grain boundary in eq (3) of Vance et al. (2007)
-	float dInt = 0.0;
-	float dIntPrec = 0.0;
+	double x = 0.0;                      // Flaw size (m)
+	double a_var = 0.0;
+	double sigma_yy = 0.0;               // Normal stress on a grain boundary in eq (3) of Vance et al. (2007)
+	double dInt = 0.0;
+	double dIntPrec = 0.0;
 
 	double **integral = (double**) malloc(int_size*sizeof(double*)); // Initialize integral[int_size][2]
 	if (integral == NULL) printf("aTP: Not enough memory to create integral[int_size][2]\n");
@@ -98,10 +98,10 @@ int aTP(char path[1024], int warnings, int msgout) {
 
 	int t = 0;
 	int p = 0;
-	float deltaT = 0.0;            // T'-T where T' is the temp at zero stress
-	float P_Pa = 0.0;              // Pressure in Pa
-	float K_I_max = 0.0;
-	float K_I_max_a = 0.0;
+	double deltaT = 0.0;            // T'-T where T' is the temp at zero stress
+	double P_Pa = 0.0;              // Pressure in Pa
+	double K_I_max = 0.0;
+	double K_I_max_a = 0.0;
 
 	double **K_I = (double**) malloc(int_size*sizeof(double*)); // K_I[int_size][2], stress intensity in eq (4) of Vance et al. (2007) (Pa m^0.5)
 	if (K_I == NULL) printf("Crack_grain_aTP: Not enough memory to create K_I[int_size][2]\n");
@@ -191,8 +191,8 @@ int Crack_water_CHNOSZ(int argc, char *argv[], char path[1024], int warnings, in
     int t = 0;
     int p = 0;
 
-    float tempk = tempk_min;
-    float P_bar = P_bar_min;
+    double tempk = tempk_min;
+    double P_bar = P_bar_min;
 
 	double **alpha = (double**) malloc(sizeaTP*sizeof(double*));  // K-1
 	if (alpha == NULL) printf("Crack_water_CHNOSZ: Not enough memory to create alpha[sizeaTP][sizeaTP]\n");
@@ -259,8 +259,8 @@ int Crack_species_CHNOSZ(int argc, char *argv[], char path[1024], int warnings, 
 	int t = 0;
 	int p = 0;
 
-	float tempk = tempk_min_species;
-	float P_bar = P_bar_min;
+	double tempk = tempk_min_species;
+	double P_bar = P_bar_min;
 
 	double **silica = (double**) malloc(sizeaTP*sizeof(double*));       // log K of silica dissolution
 	if (silica == NULL) printf("Crack_species_CHNOSZ: Not enough memory to create silica[sizeaTP][sizeaTP]\n");
@@ -284,7 +284,7 @@ int Crack_species_CHNOSZ(int argc, char *argv[], char path[1024], int warnings, 
 	}
 
 	for (t=0;t<sizeaTP;t++) {
-		printf("Crack_species_CHNOSZ: %g percent done\n",(float) t/sizeaTP*100.0);
+		printf("Crack_species_CHNOSZ: %g percent done\n",(double) t/sizeaTP*100.0);
 		for (p=0;p<sizeaTP;p++) {
 			silica[t][p] = 0.0;                                                  // Default value in case of error
 			chrysotile[t][p] = 0.0;

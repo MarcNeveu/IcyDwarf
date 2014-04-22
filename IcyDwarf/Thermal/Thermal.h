@@ -264,52 +264,52 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	int dissolution_precipitation = 0;                           // Rock dissolution/precipitation effects
 
 	// Crack data tables
-	float **aTP = (float**) malloc((sizeaTP)*sizeof(float*));    // a[sizeaTP][sizeaTP], table of flaw sizes a that maximize the stress K_I
+	double **aTP = (double**) malloc((sizeaTP)*sizeof(double*));    // a[sizeaTP][sizeaTP], table of flaw sizes a that maximize the stress K_I
 	if (aTP == NULL) printf("aTP: Not enough memory to create a[sizeaTP][sizeaTP]\n");
 	for (i=0;i<sizeaTP;i++) {
-		aTP[i] = (float*) malloc((sizeaTP)*sizeof(float));
+		aTP[i] = (double*) malloc((sizeaTP)*sizeof(double));
 		if (aTP[i] == NULL) printf("Crack: Not enough memory to create a[sizeaTP][sizeaTP]\n");
 	}
 
-	float **integral = (float**) malloc(int_size*sizeof(float*)); // integral[int_size][2], used for K_I calculation
+	double **integral = (double**) malloc(int_size*sizeof(double*)); // integral[int_size][2], used for K_I calculation
 	if (integral == NULL) printf("Crack: Not enough memory to create integral[int_size][2]\n");
 	for (i=0;i<int_size;i++) {
-		integral[i] = (float*) malloc(2*sizeof(float));
+		integral[i] = (double*) malloc(2*sizeof(double));
 		if (integral[i] == NULL) printf("Crack: Not enough memory to create integral[int_size][2]\n");
 	}
 
-	float **alpha = (float**) malloc(sizeaTP*sizeof(float*));    // Thermal expansivity of water (T,P) in K-1
+	double **alpha = (double**) malloc(sizeaTP*sizeof(double*));    // Thermal expansivity of water (T,P) in K-1
 	if (alpha == NULL) printf("Crack: Not enough memory to create alpha[sizeaTP][sizeaTP]\n");
 	for (i=0;i<sizeaTP;i++) {
-		alpha[i] = (float*) malloc(sizeaTP*sizeof(float));
+		alpha[i] = (double*) malloc(sizeaTP*sizeof(double));
 		if (alpha[i] == NULL) printf("Crack: Not enough memory to create alpha[sizeaTP][sizeaTP]\n");
 	}
 
-	float **beta = (float**) malloc(sizeaTP*sizeof(float*));     // Compressibility of water (T,P) in bar-1
+	double **beta = (double**) malloc(sizeaTP*sizeof(double*));     // Compressibility of water (T,P) in bar-1
 	if (beta == NULL) printf("Crack: Not enough memory to create beta[sizeaTP][sizeaTP]\n");
 	for (i=0;i<sizeaTP;i++) {
-		beta[i] = (float*) malloc(sizeaTP*sizeof(float));
+		beta[i] = (double*) malloc(sizeaTP*sizeof(double));
 		if (beta[i] == NULL) printf("Crack: Not enough memory to create beta[sizeaTP][sizeaTP]\n");
 	}
 
-	float **silica = (float**) malloc(sizeaTP*sizeof(float*));   // log K of silica dissolution
+	double **silica = (double**) malloc(sizeaTP*sizeof(double*));   // log K of silica dissolution
 	if (silica == NULL) printf("Crack: Not enough memory to create silica[sizeaTP][sizeaTP]\n");
 	for (i=0;i<sizeaTP;i++) {
-		silica[i] = (float*) malloc(sizeaTP*sizeof(float));
+		silica[i] = (double*) malloc(sizeaTP*sizeof(double));
 		if (silica[i] == NULL) printf("Crack: Not enough memory to create silica[sizeaTP][sizeaTP]\n");
 	}
 
-	float **chrysotile = (float**) malloc(sizeaTP*sizeof(float*)); // log K of chrysotile dissolution
+	double **chrysotile = (double**) malloc(sizeaTP*sizeof(double*)); // log K of chrysotile dissolution
 	if (chrysotile == NULL) printf("Crack: Not enough memory to create chrysotile[sizeaTP][sizeaTP]\n");
 	for (i=0;i<sizeaTP;i++) {
-		chrysotile[i] = (float*) malloc(sizeaTP*sizeof(float));
+		chrysotile[i] = (double*) malloc(sizeaTP*sizeof(double));
 		if (chrysotile[i] == NULL) printf("Crack: Not enough memory to create chrysotile[sizeaTP][sizeaTP]\n");
 	}
 
-	float **magnesite = (float**) malloc(sizeaTP*sizeof(float*)); // log K of magnesite dissolution
+	double **magnesite = (double**) malloc(sizeaTP*sizeof(double*)); // log K of magnesite dissolution
 	if (magnesite == NULL) printf("Crack: Not enough memory to create magnesite[sizeaTP][sizeaTP]\n");
 	for (i=0;i<sizeaTP;i++) {
-		magnesite[i] = (float*) malloc(sizeaTP*sizeof(float));
+		magnesite[i] = (double*) malloc(sizeaTP*sizeof(double));
 		if (magnesite[i] == NULL) printf("Crack: Not enough memory to create magnesite[sizeaTP][sizeaTP]\n");
 	}
 
@@ -468,7 +468,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	Vadhs[ir] = Madhs[ir] / rhoAdhsth;
     	T[ir] = Tinit;
     	Nu[ir] = 1.0;
-    	time_hydr[ir] = (1.0-Xhydr[ir])*dr_grid/hydration_rate*Gyr2sec; // Ready to hydrate/dehydrate
+    	time_hydr[ir] = (1.0-Xhydr[ir])*(dr_grid*cm)/hydration_rate*Gyr2sec; // Ready to hydrate/dehydrate
     }
 
     // Gravitational potential energy
@@ -586,7 +586,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     		}
     	}
 		// Find the depth of the continuous cracked layer in contact with the ocean
-    	ircrack = 0;
+    	ircrack = NR;
     	seafloor_link = 0;
 		for (ir=0;ir<ircore;ir++) {
 			if (Crack[ir] > 0.0) {
@@ -604,11 +604,12 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			}
 		}
     	for (ir=ircore-1;ir>=ircrack;ir--) { // From the ocean downwards
-    		if (T[ir] < Tdehydr_max && Xhydr[ir] <= 0.99 && time_hydr[ir] > dr_grid/hydration_rate*Gyr2sec) {
+    		//if (T[ir] < Tdehydr_max && Xhydr[ir] <= 0.99 && time_hydr[ir] > (dr_grid*cm)/hydration_rate*Gyr2sec) {
+    		if (T[ir] < Tdehydr_max && Xhydr[ir] <= 0.99) {
     			Xhydr_temp = Xhydr[ir];
 				hydrate(T[ir], &dM, dVol, &Mrock, Mh2os, Madhs, &Mh2ol, Mnh3l, &Vrock, &Vh2ol,
 					rhoRockth, rhoHydrth, rhoH2olth, &Xhydr, ir, ircore, irice, NR);
-				for (jr=0;jr<NR;jr++) time_hydr[jr] = (1.0-Xhydr[ir])*dr_grid/hydration_rate*Gyr2sec;
+				//for (jr=0;jr<NR;jr++) time_hydr[jr] = (1.0-Xhydr[ir])*(dr_grid*cm)/hydration_rate*Gyr2sec;
 				structure_changed = 1;
 				if (Xhydr[ir] >= Xhydr_temp) dont_dehydrate[ir] = 1;
     		}
