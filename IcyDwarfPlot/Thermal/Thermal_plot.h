@@ -10,23 +10,61 @@
 
 #include "../Graphics/Plot.h"
 
-int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, float r_p, thermalout **thoutput, int warnings, int msgout, SDL_Window* window, SDL_Renderer* renderer, int* view, int* quit);
+int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double r_p, thermalout **thoutput,
+		int warnings, int msgout, SDL_Renderer* renderer, int* view, int* quit);
 
-int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, float r_p, thermalout **thoutput, int warnings, int msgout, SDL_Window* window, SDL_Renderer* renderer, int* view, int* quit) {
+int StructurePlot (SDL_Renderer* renderer, thermalout **thoutput, int t, int NR,
+		SDL_Texture* DryRock_tex, SDL_Texture* Liquid_tex, SDL_Texture* Ice_tex, SDL_Texture* Crust_tex,
+		SDL_Rect temp_time_dilation);
+
+int TwoAxisPlot (SDL_Renderer* renderer, char *FontFile, double **Values, int grid, int hold_tracks, int t, int NR, int irmax,
+		int itempk_step, int itempk_max, double itempk_fold_min, double itempk_fold_max, double itempk_fold_step, int thickness,
+		double Tmax, SDL_Surface* temp_time, SDL_Rect temp_time_clip, SDL_Rect* temp_time_dilation,
+		SDL_Color axisTextColor, Uint32 alpha);
+
+int UpdateDisplays (SDL_Renderer* renderer, SDL_Texture* background_tex, char* FontFile, thermalout **thoutput,
+		double **TempK, double **Hydr, double **Kappa, int structure, int grid, int hold_tracks, int plot_switch,
+		int t, int NR, int NT_output, int ircore, double Tmax, double kappamax, SDL_Surface* value_time,
+		SDL_Color axisTextColor, Uint32 alpha,
+		SDL_Texture* DryRock_tex, SDL_Texture* Liquid_tex, SDL_Texture* Ice_tex, SDL_Texture* Crust_tex,
+		SDL_Surface* numbers, SDL_Texture* progress_bar_tex, int irad,
+		SDL_Texture* xnumber0_tex, SDL_Texture* xnumber1_tex, SDL_Texture* xnumber2_tex, SDL_Texture* xnumber3_tex,
+		SDL_Texture* xnumber4_tex, SDL_Texture* xnumber5_tex, SDL_Texture* xnumber6_tex, SDL_Texture* xnumber7_tex,
+		SDL_Texture* xnumber8_tex, SDL_Texture* xnumber9_tex, SDL_Texture* ynumber0_tex);
+
+int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double r_p, thermalout **thoutput,
+		int warnings, int msgout, SDL_Renderer* renderer, int* view, int* quit) {
 
 	int r = 0;
 	int t = 0;
-	int T = 0;
-	int itempk = 0;
 	int irad = 0;
-	int xoffset = 0;
-	int yoffset = 0;
 	int ircore = 0;
 
 	int grid = 0;
 	int structure = 0;
 	int hold_tracks = 0;
 	int plot_switch = 0;
+
+	double **TempK = (double**) malloc(NT_output*sizeof(double*));    // Temperature
+	if (TempK == NULL) printf("Thermal_plot: Not enough memory to create TempK[NT_output]\n");
+	for (r=0;r<NR;r++) {
+		TempK[r] = (double*) malloc(NR*sizeof(double));
+		if (TempK[r] == NULL) printf("Thermal_plot: Not enough memory to create TempK[NT_output][NR]\n");
+	}
+
+	double **Hydr = (double**) malloc(NT_output*sizeof(double*));     // Degree of hydration
+	if (Hydr == NULL) printf("Thermal_plot: Not enough memory to create Hydr[NT_output]\n");
+	for (r=0;r<NR;r++) {
+		Hydr[r] = (double*) malloc(NR*sizeof(double));
+		if (Hydr[r] == NULL) printf("Thermal_plot: Not enough memory to create Hydr[NT_output][NR]\n");
+	}
+
+	double **Kappa = (double**) malloc(NT_output*sizeof(double*));    // Thermal conductivity
+	if (Kappa == NULL) printf("Thermal_plot: Not enough memory to create Kappa[NT_output]\n");
+	for (r=0;r<NR;r++) {
+		Kappa[r] = (double*) malloc(NR*sizeof(double));
+		if (Kappa[r] == NULL) printf("Thermal_plot: Not enough memory to create Kappa[NT_output][NR]\n");
+	}
 
 //-------------------------------------------------------------------
 //                     Initialize display elements
@@ -35,32 +73,12 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, float 
 	SDL_Texture* background_tex = NULL;
 	SDL_Texture* progress_bar_tex = NULL;                   // Progress bar
 	SDL_Surface* progress_bar = NULL;
-	SDL_Texture* elapsed_digit_1 = NULL;                    // Time elapsed
-	SDL_Texture* elapsed_digit_2 = NULL;
-	SDL_Texture* elapsed_digit_3 = NULL;
-	SDL_Texture* elapsed_percent_1 = NULL;                  // % history elapsed
-	SDL_Texture* elapsed_percent_2 = NULL;
-	SDL_Texture* elapsed_percent_3 = NULL;
+
 	SDL_Surface* numbers = NULL;                            // Numbers template image
-	SDL_Texture* temp_time_tex = NULL;                      // Temperature vs. time plot
-	SDL_Surface* temp_time = NULL;
-	SDL_Texture* hydr_time_tex = NULL;                      // Hydration vs. time plot
-	SDL_Surface* hydr_time = NULL;
-	SDL_Texture* kappa_time_tex = NULL;                     // Thermal conductivity vs. time plot
-	SDL_Surface* kappa_time = NULL;
+	// Value vs. time plot
+	SDL_Surface* value_time = NULL;
 
 	SDL_Texture* ynumber0_tex = NULL;                       // Axis numbers
-	SDL_Texture* ynumber1_tex = NULL;
-	SDL_Texture* ynumber2_tex = NULL;
-	SDL_Texture* ynumber3_tex = NULL;
-	SDL_Texture* ynumber4_tex = NULL;
-	SDL_Texture* ynumber5_tex = NULL;
-	SDL_Texture* ynumber6_tex = NULL;
-	SDL_Texture* ynumber7_tex = NULL;
-	SDL_Texture* ynumber8_tex = NULL;
-	SDL_Texture* ynumber9_tex = NULL;
-	SDL_Texture* ynumber10_tex = NULL;
-	SDL_Texture* ynumber11_tex = NULL;
 
 	SDL_Texture* xnumber0_tex = NULL;                       // Axis numbers
 	SDL_Texture* xnumber1_tex = NULL;
@@ -101,12 +119,8 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, float 
 	if (release == 1) strncat(Transparent520_png,path,strlen(path)-20);
 	else if (cmdline == 1) strncat(Transparent520_png,path,strlen(path)-22);
 	strcat(Transparent520_png,"Graphics/Transparent520.png");
-	temp_time = IMG_Load(Transparent520_png);
-	if (temp_time == NULL) printf("IcyDwarf: Plot: temp_time layer not loaded.\n");
-	hydr_time = IMG_Load(Transparent520_png);
-	if (hydr_time == NULL) printf("IcyDwarf: Plot: hydr_time layer not loaded.\n");
-	kappa_time = IMG_Load(Transparent520_png);
-	if (kappa_time == NULL) printf("IcyDwarf: Plot: kappa_time layer not loaded.\n");
+	value_time = IMG_Load(Transparent520_png);
+	if (value_time == NULL) printf("IcyDwarf: Plot: temp_time layer not loaded.\n");
 	free(Transparent520_png);
 
 	char *DryRock_png = (char*)malloc(1024); // Don't forget to free!
@@ -156,6 +170,14 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, float 
 
 	// Don't forget to destroy all window, renderers, and textures at the end.
 
+	for (t=0;t<NT_output;t++) {
+		for (r=0;r<NR;r++) {
+			TempK[t][r] = thoutput[r][t].tempk;
+			Hydr[t][r] = thoutput[r][t].famor*100.0;
+			Kappa[t][r] = thoutput[r][t].nu;
+		}
+	}
+
 //-------------------------------------------------------------------
 //                Set static elements using crack output
 //-------------------------------------------------------------------
@@ -166,13 +188,11 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, float 
 
 	Uint32 white;
 	Uint32 alpha;
-	white = SDL_MapRGBA(temp_time->format, 255, 255, 255, 255);
-	alpha = SDL_MapRGBA(temp_time->format, 255, 255, 255, 0);   // r,g,b,alpha 0 to 255. Alpha of 0 is transparent
+	white = SDL_MapRGBA(value_time->format, 255, 255, 255, 255);
+	alpha = SDL_MapRGBA(value_time->format, 255, 255, 255, 0);   // r,g,b,alpha 0 to 255. Alpha of 0 is transparent
 
 	double Tmax = 0.0; // Max temperature ever encountered in any layer
-	int Tmax_int = 0;
 	double kappamax = 0.0; // Max thermal conductivity ever encountered in any layer
-	int kappamax_int = 0;
 
 	if (Tmax_input == 0) {
 		for (t=0;t<NT_output;t++) {
@@ -182,14 +202,12 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, float 
 		}
 	}
 	else Tmax = Tmax_input;
-	Tmax_int = (int) Tmax + 1;
 
 	for (t=0;t<NT_output;t++) {
 		for (r=0;r<NR;r++) {
 			if (thoutput[r][t].nu > kappamax) kappamax = thoutput[r][t].nu;
 		}
 	}
-	kappamax_int = (int) kappamax + 1;
 
 	// Axis numbers (x-axis only; y-axis is dynamic)
 	SDL_Color axisTextColor;
@@ -231,10 +249,6 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, float 
 
 	// PROGRESS BAR
 
-	int percent;                  // % of history, 4.56 Gyr = 100%
-	int percent_10;               // 2nd digit
-	int percent_100;              // 3rd digit
-
 	for (t=21;t<780;t++) {
 		for (r=551;r<566;r++) {
 			pixmem32 = (Uint32*) progress_bar->pixels + r*progress_bar->w + t;
@@ -242,60 +256,11 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, float 
 		}
 	}
 	progress_bar_tex = SDL_CreateTextureFromSurface(renderer, progress_bar);
+	SDL_FreeSurface(progress_bar);
 
 //-------------------------------------------------------------------
 //                      Interactive display
 //-------------------------------------------------------------------
-
-	SDL_Rect progress_bar_clip;        // Section of the image to clip
-	SDL_Rect progress_bar_dilation;    // Resized and repositioned clip
-
-	SDL_Rect temp_time_clip;
-	SDL_Rect temp_time_dilation;
-
-	SDL_Rect hydr_time_clip;
-	SDL_Rect hydr_time_dilation;
-
-	SDL_Rect kappa_time_clip;
-	SDL_Rect kappa_time_dilation;
-
-	SDL_Rect elapsed_digit_clip_1;
-	SDL_Rect elapsed_digit_dest_1;
-
-	SDL_Rect elapsed_digit_clip_2;
-	SDL_Rect elapsed_digit_dest_2;
-
-	SDL_Rect elapsed_digit_clip_3;
-	SDL_Rect elapsed_digit_dest_3;
-
-	SDL_Rect elapsed_percent_clip_1;
-	SDL_Rect elapsed_percent_dest_1;
-
-	SDL_Rect elapsed_percent_clip_2;
-	SDL_Rect elapsed_percent_dest_2;
-
-	SDL_Rect elapsed_percent_clip_3;
-	SDL_Rect elapsed_percent_dest_3;
-
-	SDL_Rect DryRock_clip;
-	SDL_Rect DryRock_dest;
-	int DryRock_x = 0;
-	int DryRock_w = 0;
-
-	SDL_Rect Liquid_clip;
-	SDL_Rect Liquid_dest;
-	int Liquid_x = 0;
-	int Liquid_w = 0;
-
-	SDL_Rect Ice_clip;
-	SDL_Rect Ice_dest;
-	int Ice_x = 0;
-	int Ice_w = 0;
-
-	SDL_Rect Crust_clip;
-	SDL_Rect Crust_dest;
-	int Crust_x = 0;
-	int Crust_w = 0;
 
 	SDL_Event e;
 	t = NT_output-1;          // Initialize at the end of the simulation
@@ -337,7 +302,7 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, float 
 							}
 							// If click on the bar
 							else if (e.button.x >= 20 && e.button.x <= 780 && e.button.y >= 550 && e.button.y <= 567) {
-								t = floor(((float) e.button.x - 20.0)/(780.0-20.0)*500.0);
+								t = floor(((double) e.button.x - 20.0)/(780.0-20.0)*500.0);
 							}
 							// If switch view
 							else if (e.button.x >= 70 && e.button.x <= 119 && e.button.y >= 575 && e.button.y <= 599) {
@@ -361,394 +326,14 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, float 
 							}
 						}
 
-						SDL_RenderClear(renderer);
-						ApplySurface(0, 0, background_tex, renderer, NULL);
-
-						// Structure plot
-						if (structure == 1) {
-							// Dry rock
-							for (r=0;r<NR-2;r++) {
-								if (thoutput[r][t].mrock <= 0.0 && thoutput[r+1][t].mrock > 0.0 && thoutput[r+2][t].mh2os <= 0.0
-										&& thoutput[r+2][t].madhs <= 0.0 && thoutput[r+2][t].mh2ol <= 0.0 && thoutput[r+2][t].mnh3l <= 0.0) {
-									DryRock_x = r;
-									break;
-								}
-							}
-							for (r=0;r<NR-2;r++) {
-								if (thoutput[r][t].mrock > 0.0 && thoutput[r+2][t].mrock <= 0.0 && thoutput[r][t].mh2os <= 0.0
-										&& thoutput[r][t].madhs <= 0.0 && thoutput[r][t].mh2ol <= 0.0 && thoutput[r][t].mnh3l <= 0.0) {
-									DryRock_w = r - DryRock_x;
-									break;
-								}
-							}
-							SDL_QueryTexture(DryRock_tex, NULL, NULL, &DryRock_clip.w, &DryRock_clip.h);
-							DryRock_clip.x = 0, DryRock_clip.y = 0;
-							DryRock_dest.x = temp_time_dilation.x + floor((double) DryRock_x/(double) NR*(double) temp_time_dilation.w), DryRock_dest.y = temp_time_dilation.y;
-							DryRock_dest.w = floor((double) DryRock_w/(double) NR*(double) temp_time_dilation.w), DryRock_dest.h = temp_time_dilation.h;
-							SDL_RenderCopy(renderer, DryRock_tex, &DryRock_clip, &DryRock_dest);
-
-							// Liquid
-							for (r=0;r<NR-1;r++) {
-								if (thoutput[r][t].mh2ol <= 0.0 && thoutput[r+1][t].mh2ol > 0.0) {
-									Liquid_x = r;
-									break;
-								}
-							}
-							for (r=0;r<NR-1;r++) {
-								if (thoutput[r][t].mh2ol > 0.0 && thoutput[r+1][t].mh2ol <= 0.0) {
-									Liquid_w = r - Liquid_x;
-									break;
-								}
-							}
-							SDL_QueryTexture(Liquid_tex, NULL, NULL, &Liquid_clip.w, &Liquid_clip.h);
-							Liquid_clip.x = 0, Liquid_clip.y = 0;
-							Liquid_dest.x = temp_time_dilation.x + floor((double) Liquid_x/(double) NR*(double) temp_time_dilation.w), Liquid_dest.y = temp_time_dilation.y;
-							Liquid_dest.w = floor((double) Liquid_w/(double) NR*(double) temp_time_dilation.w), Liquid_dest.h = temp_time_dilation.h;
-							SDL_RenderCopy(renderer, Liquid_tex, &Liquid_clip, &Liquid_dest);
-
-							// Ice
-							for (r=0;r<NR-2;r++) {
-								if (thoutput[r][t].mh2os <= 0.0 && thoutput[r+1][t].mh2os > 0.0 && thoutput[r+2][t].mrock <= 0.0
-										&& thoutput[r+2][t].madhs <= 0.0 && thoutput[r+2][t].mh2ol <= 0.0 && thoutput[r+2][t].mnh3l <= 0.0) {
-									Ice_x = r + 1;
-									break;
-								}
-							}
-							for (r=0;r<NR-1;r++) {
-								if (thoutput[r][t].mh2os > 0.0 && thoutput[r+1][t].mh2os <= thoutput[r][t].mh2os) {
-									Ice_w = r - Ice_x + 1;
-									break;
-								}
-							}
-							SDL_QueryTexture(Ice_tex, NULL, NULL, &Ice_clip.w, &Ice_clip.h);
-							Ice_clip.x = 0, Ice_clip.y = 0;
-							Ice_dest.x = temp_time_dilation.x + floor((double) Ice_x/(double) NR*(double) temp_time_dilation.w), Ice_dest.y = temp_time_dilation.y;
-							Ice_dest.w = floor((double) Ice_w/(double) NR*(double) temp_time_dilation.w), Ice_dest.h = temp_time_dilation.h;
-							SDL_RenderCopy(renderer, Ice_tex, &Ice_clip, &Ice_dest);
-
-							// Crust
-							for (r=0;r<NR;r++) {
-								if (thoutput[r][t].mrock > 0.0 && thoutput[r][t].mh2os > 0.0 && thoutput[r][t].madhs > 0.0
-										&& thoutput[r][t].mh2ol <= 0.0 && thoutput[r][t].mnh3l <= 0.0) {
-									Crust_x = r;
-									break;
-								}
-							}
-							Crust_w = NR - r;
-							SDL_QueryTexture(Crust_tex, NULL, NULL, &Crust_clip.w, &Crust_clip.h);
-							Crust_clip.x = 0, Crust_clip.y = 0;
-							Crust_dest.x = temp_time_dilation.x + floor((double) Crust_x/(double) NR*(double) temp_time_dilation.w), Crust_dest.y = temp_time_dilation.y;
-							Crust_dest.w = floor((double) Crust_w/(double) NR*(double) temp_time_dilation.w), Crust_dest.h = temp_time_dilation.h;
-							SDL_RenderCopy(renderer, Crust_tex, &Crust_clip, &Crust_dest);
-						}
-
-						// MAIN PLOT
-						if (plot_switch == 0) { // Temperature-time plot
-							// y-axis numbers
-							for (itempk=50;itempk<1500;itempk=itempk+50) {
-								if (Tmax > (double) itempk*6.0 && Tmax <= (double) itempk*6.0+300.0) {
-									scanNumber(&nb, itempk);          // Right-justified
-									ynumber1_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-									scanNumber(&nb, itempk*2);
-									ynumber2_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-									scanNumber(&nb, itempk*3);
-									ynumber3_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-									scanNumber(&nb, itempk*4);
-									ynumber4_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-									scanNumber(&nb, itempk*5);
-									ynumber5_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-									scanNumber(&nb, itempk*6);
-									ynumber6_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-									scanNumber(&nb, itempk*7);
-									if ((double) itempk*7.0 < Tmax) ynumber7_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-									scanNumber(&nb, itempk*8);
-									if ((double) itempk*8.0 < Tmax) ynumber8_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-									scanNumber(&nb, itempk*9);
-									if ((double) itempk*9.0 < Tmax) ynumber9_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-									scanNumber(&nb, itempk*10);
-									if ((double) itempk*10.0 < Tmax) ynumber10_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-									scanNumber(&nb, itempk*11);
-									if ((double) itempk*11.0 < Tmax) ynumber11_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-									break;
-								}
-							}
-							renderTexture(ynumber1_tex, renderer, 50, -8 + temp_time_dilation.y + floor((double) temp_time_dilation.h-((double) itempk / Tmax*(double) temp_time_dilation.h)));
-							renderTexture(ynumber2_tex, renderer, 50, -8 + temp_time_dilation.y + floor((double) temp_time_dilation.h-((double) itempk*2.0 / Tmax*(double) temp_time_dilation.h)));
-							renderTexture(ynumber3_tex, renderer, 50, -8 + temp_time_dilation.y + floor((double) temp_time_dilation.h-((double) itempk*3.0 / Tmax*(double) temp_time_dilation.h)));
-							renderTexture(ynumber4_tex, renderer, 50, -8 + temp_time_dilation.y + floor((double) temp_time_dilation.h-((double) itempk*4.0 / Tmax*(double) temp_time_dilation.h)));
-							renderTexture(ynumber5_tex, renderer, 50, -8 + temp_time_dilation.y + floor((double) temp_time_dilation.h-((double) itempk*5.0 / Tmax*(double) temp_time_dilation.h)));
-							renderTexture(ynumber6_tex, renderer, 50, -8 + temp_time_dilation.y + floor((double) temp_time_dilation.h-((double) itempk*6.0 / Tmax*(double) temp_time_dilation.h)));
-							if ((double) itempk*7.0 < Tmax)
-								renderTexture(ynumber7_tex, renderer, 50, -8 + temp_time_dilation.y + floor((double) temp_time_dilation.h-((double) itempk*7.0 / Tmax*(double) temp_time_dilation.h)));
-							if ((double) itempk*8.0 < Tmax)
-								renderTexture(ynumber8_tex, renderer, 50, -8 + temp_time_dilation.y + floor((double) temp_time_dilation.h-((double) itempk*8.0 / Tmax*(double) temp_time_dilation.h)));
-							if ((double) itempk*9.0 < Tmax)
-								renderTexture(ynumber9_tex, renderer, 50, -8 + temp_time_dilation.y + floor((double) temp_time_dilation.h-((double) itempk*9.0 / Tmax*(double) temp_time_dilation.h)));
-							if ((double) itempk*10.0 < Tmax)
-								renderTexture(ynumber10_tex, renderer, 50, -8 + temp_time_dilation.y + floor((double) temp_time_dilation.h-((double) itempk*10.0 / Tmax*(double) temp_time_dilation.h)));
-							if ((double) itempk*11.0 < Tmax)
-								renderTexture(ynumber11_tex, renderer, 50, -8 + temp_time_dilation.y + floor((double) temp_time_dilation.h-((double) itempk*11.0 / Tmax*(double) temp_time_dilation.h)));
-
-							// Temperature-time plot
-							if (!hold_tracks) {
-								for (T=0;T<temp_time->h;T++) {
-									for (r=0;r<temp_time->w;r++) {
-										pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - T-1)*temp_time->w + r+1;
-										*pixmem32 = alpha;
-									}
-								}
-							}
-							for (T=0;T<Tmax_int;T++) {
-								for (r=0;r<NR;r++) {
-									// Temperature grid every i/2.0 K
-									if (grid) {
-										if ((double) T/((double) itempk/2.0) - (double) floor((double) T/((double) itempk/2.0)) <= 0.1) {
-											xoffset = floor((double)r/(double)NR*temp_time->w);
-											yoffset = floor((double)T/(double)Tmax_int*temp_time->h);
-											pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - yoffset)*temp_time->w + xoffset;
-											*pixmem32 = SDL_MapRGBA(temp_time->format, 255, 255, 255, 20);
-										}
-									}
-									// Temperature profile yellower when more recent, redder when more ancient
-									if (T >= (int) thoutput[r][t].tempk - 4 && T <= (int) thoutput[r][t].tempk + 4) {
-										xoffset = floor((double)r/(double)NR*temp_time->w);
-										yoffset = floor((double)T/(double)Tmax_int*temp_time->h);
-										pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - yoffset)*temp_time->w + xoffset;
-										*pixmem32 = SDL_MapRGBA(temp_time->format, 255, floor(200*(t-21)/(780-21))+55, 55, 255);
-									}
-								}
-							}
-							temp_time_tex = SDL_CreateTextureFromSurface(renderer, temp_time);
-
-							temp_time_clip.x = 0, temp_time_clip.y = 0;
-							temp_time_clip.w = temp_time->w, temp_time_clip.h = temp_time->h;
-							temp_time_dilation.x = 90, temp_time_dilation.y = 87;
-							temp_time_dilation.w = temp_time->w, temp_time_dilation.h = temp_time->h;
-							SDL_RenderCopy(renderer, temp_time_tex, &temp_time_clip, &temp_time_dilation);
-						}
-
-						if (plot_switch == 1) { // Hydration-time plot
-							for (r=0;r<NR-1;r++) {
-								if (thoutput[r][t].mrock > 0.0 && thoutput[r+1][t].mrock == 0.0) ircore = r;
-							}
-
-							// y-axis numbers
-							scanNumber(&nb, 10);          // Right-justified
-							ynumber1_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-							scanNumber(&nb, 20);
-							ynumber2_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-							scanNumber(&nb, 30);
-							ynumber3_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-							scanNumber(&nb, 40);
-							ynumber4_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-							scanNumber(&nb, 50);
-							ynumber5_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-							scanNumber(&nb, 60);
-							ynumber6_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-							scanNumber(&nb, 70);
-							ynumber7_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-							scanNumber(&nb, 80);
-							ynumber8_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-							scanNumber(&nb, 90);
-							ynumber9_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-							scanNumber(&nb, 100);
-							ynumber10_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-
-							renderTexture(ynumber1_tex, renderer, 50, -8 + hydr_time_dilation.y + floor((double) hydr_time_dilation.h-0.1*(double) hydr_time_dilation.h));
-							renderTexture(ynumber2_tex, renderer, 50, -8 + hydr_time_dilation.y + floor((double) hydr_time_dilation.h-0.2*(double) hydr_time_dilation.h));
-							renderTexture(ynumber3_tex, renderer, 50, -8 + hydr_time_dilation.y + floor((double) hydr_time_dilation.h-0.3*(double) hydr_time_dilation.h));
-							renderTexture(ynumber4_tex, renderer, 50, -8 + hydr_time_dilation.y + floor((double) hydr_time_dilation.h-0.4*(double) hydr_time_dilation.h));
-							renderTexture(ynumber5_tex, renderer, 50, -8 + hydr_time_dilation.y + floor((double) hydr_time_dilation.h-0.5*(double) hydr_time_dilation.h));
-							renderTexture(ynumber6_tex, renderer, 50, -8 + hydr_time_dilation.y + floor((double) hydr_time_dilation.h-0.6*(double) hydr_time_dilation.h));
-							renderTexture(ynumber7_tex, renderer, 50, -8 + hydr_time_dilation.y + floor((double) hydr_time_dilation.h-0.7*(double) hydr_time_dilation.h));
-							renderTexture(ynumber8_tex, renderer, 50, -8 + hydr_time_dilation.y + floor((double) hydr_time_dilation.h-0.8*(double) hydr_time_dilation.h));
-							renderTexture(ynumber9_tex, renderer, 50, -8 + hydr_time_dilation.y + floor((double) hydr_time_dilation.h-0.9*(double) hydr_time_dilation.h));
-							renderTexture(ynumber10_tex, renderer, 50, -8 + hydr_time_dilation.y + floor((double) hydr_time_dilation.h-(double) hydr_time_dilation.h));
-
-							// Hydration-time plot
-							if (!hold_tracks) {
-								for (T=0;T<hydr_time->h;T++) {
-									for (r=0;r<hydr_time->w;r++) {
-										pixmem32 = (Uint32*) hydr_time->pixels + (hydr_time->h - T-1)*hydr_time->w + r+1;
-										*pixmem32 = alpha;
-									}
-								}
-							}
-
-							for (T=0;T<=100;T++) {
-								for (r=0;r<ircore;r++) {
-									// Hydration profile yellower when more recent, redder when more ancient
-									if (T >= (int) thoutput[r][t].famor*100 - 1 && T <= (int) thoutput[r][t].famor*100 + 1) {
-										xoffset = floor((double)r/(double)NR*hydr_time->w);
-										yoffset = floor((double)T/(double)100*hydr_time->h);
-										if (yoffset == 0) yoffset = 1;
-										pixmem32 = (Uint32*) hydr_time->pixels + (hydr_time->h - yoffset)*hydr_time->w + xoffset;
-										*pixmem32 = SDL_MapRGBA(hydr_time->format, 255, floor(200*(t-21)/(780-21))+55, 55, 255);
-									}
-								}
-							}
-							hydr_time_tex = SDL_CreateTextureFromSurface(renderer, hydr_time);
-
-							hydr_time_clip.x = 0, hydr_time_clip.y = 0;
-							hydr_time_clip.w = hydr_time->w, hydr_time_clip.h = hydr_time->h;
-							hydr_time_dilation.x = 90, hydr_time_dilation.y = 87;
-							hydr_time_dilation.w = hydr_time->w, hydr_time_dilation.h = hydr_time->h;
-							SDL_RenderCopy(renderer, hydr_time_tex, &hydr_time_clip, &hydr_time_dilation);
-						}
-
-						if (plot_switch == 2) { // Kappa-time plot
-							// y-axis numbers
-							for (itempk=1;itempk<100;itempk=itempk+1) {
-								if (kappamax >= (double) itempk && kappamax < (double) itempk*6.0+6.0) {
-									scanNumber(&nb, itempk);          // Right-justified
-									ynumber1_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-									scanNumber(&nb, itempk*2);
-									ynumber2_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-									scanNumber(&nb, itempk*3);
-									ynumber3_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-									scanNumber(&nb, itempk*4);
-									ynumber4_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-									scanNumber(&nb, itempk*5);
-									ynumber5_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-									scanNumber(&nb, itempk*6);
-									ynumber6_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-									scanNumber(&nb, itempk*7);
-									if ((double) itempk*7.0 < kappamax) ynumber7_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-									scanNumber(&nb, itempk*8);
-									if ((double) itempk*8.0 < kappamax) ynumber8_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-									scanNumber(&nb, itempk*9);
-									if ((double) itempk*9.0 < kappamax) ynumber9_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-									scanNumber(&nb, itempk*10);
-									if ((double) itempk*10.0 < kappamax) ynumber10_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-									scanNumber(&nb, itempk*11);
-									if ((double) itempk*11.0 < kappamax) ynumber11_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-									break;
-								}
-							}
-							renderTexture(ynumber1_tex, renderer, 50, -8 + kappa_time_dilation.y + floor((double) kappa_time_dilation.h-((double) itempk / kappamax*(double) kappa_time_dilation.h)));
-							renderTexture(ynumber2_tex, renderer, 50, -8 + kappa_time_dilation.y + floor((double) kappa_time_dilation.h-((double) itempk*2.0 / kappamax*(double) kappa_time_dilation.h)));
-							renderTexture(ynumber3_tex, renderer, 50, -8 + kappa_time_dilation.y + floor((double) kappa_time_dilation.h-((double) itempk*3.0 / kappamax*(double) kappa_time_dilation.h)));
-							renderTexture(ynumber4_tex, renderer, 50, -8 + kappa_time_dilation.y + floor((double) kappa_time_dilation.h-((double) itempk*4.0 / kappamax*(double) kappa_time_dilation.h)));
-							renderTexture(ynumber5_tex, renderer, 50, -8 + kappa_time_dilation.y + floor((double) kappa_time_dilation.h-((double) itempk*5.0 / kappamax*(double) kappa_time_dilation.h)));
-							renderTexture(ynumber6_tex, renderer, 50, -8 + kappa_time_dilation.y + floor((double) kappa_time_dilation.h-((double) itempk*6.0 / kappamax*(double) kappa_time_dilation.h)));
-							if ((double) itempk*7.0 < kappamax)
-								renderTexture(ynumber7_tex, renderer, 50, -8 + kappa_time_dilation.y + floor((double) kappa_time_dilation.h-((double) itempk*7.0 / kappamax*(double) kappa_time_dilation.h)));
-							if ((double) itempk*8.0 < kappamax)
-								renderTexture(ynumber8_tex, renderer, 50, -8 + kappa_time_dilation.y + floor((double) kappa_time_dilation.h-((double) itempk*8.0 / kappamax*(double) kappa_time_dilation.h)));
-							if ((double) itempk*9.0 < kappamax)
-								renderTexture(ynumber9_tex, renderer, 50, -8 + kappa_time_dilation.y + floor((double) kappa_time_dilation.h-((double) itempk*9.0 / kappamax*(double) kappa_time_dilation.h)));
-							if ((double) itempk*10.0 < kappamax)
-								renderTexture(ynumber10_tex, renderer, 50, -8 + kappa_time_dilation.y + floor((double) kappa_time_dilation.h-((double) itempk*10.0 / kappamax*(double) kappa_time_dilation.h)));
-							if ((double) itempk*11.0 < kappamax)
-								renderTexture(ynumber11_tex, renderer, 50, -8 + kappa_time_dilation.y + floor((double) kappa_time_dilation.h-((double) itempk*11.0 / kappamax*(double) kappa_time_dilation.h)));
-
-							// Kappa-time plot
-							if (!hold_tracks) {
-								for (T=0;T<kappa_time->h;T++) {
-									for (r=0;r<kappa_time->w;r++) {
-										pixmem32 = (Uint32*) kappa_time->pixels + (kappa_time->h - T-1)*kappa_time->w + r+1;
-										*pixmem32 = alpha;
-									}
-								}
-							}
-							for (T=0;T<kappamax_int;T++) {
-								for (r=0;r<NR;r++) {
-									// Kappa profile yellower when more recent, redder when more ancient
-									if (T == (int) thoutput[r][t].nu) {
-										xoffset = floor((double)r/(double)NR*kappa_time->w);
-										yoffset = floor((double)T/(double)kappamax_int*kappa_time->h);
-										pixmem32 = (Uint32*) kappa_time->pixels + (kappa_time->h - yoffset)*kappa_time->w + xoffset;
-										*pixmem32 = SDL_MapRGBA(kappa_time->format, 255, floor(200*(t-21)/(780-21))+55, 55, 255);
-									}
-								}
-							}
-							kappa_time_tex = SDL_CreateTextureFromSurface(renderer, kappa_time);
-
-							kappa_time_clip.x = 0, kappa_time_clip.y = 0;
-							kappa_time_clip.w = kappa_time->w, kappa_time_clip.h = kappa_time->h;
-							kappa_time_dilation.x = 90, kappa_time_dilation.y = 87;
-							kappa_time_dilation.w = kappa_time->w, kappa_time_dilation.h = kappa_time->h;
-							SDL_RenderCopy(renderer, kappa_time_tex, &kappa_time_clip, &kappa_time_dilation);
-						}
-						// Unveil the progress bar
-						progress_bar_clip.x = 21, progress_bar_clip.y = 551;
-						progress_bar_clip.w = floor((780.0-21.0)*t/NT_output), progress_bar_clip.h = 15;
-						progress_bar_dilation.x = 21, progress_bar_dilation.y = 551;
-						progress_bar_dilation.w = floor((780.0-21.0)*t/NT_output), progress_bar_dilation.h = 15;
-						SDL_RenderCopy(renderer, progress_bar_tex, &progress_bar_clip, &progress_bar_dilation);
-
-						// Time elapsed
-
-						elapsed_digit_1 = SDL_CreateTextureFromSurface(renderer, numbers);
-						elapsed_digit_clip_1 = ClipNumber(floor(t/100.0),18);
-						elapsed_digit_dest_1.x = 625, elapsed_digit_dest_1.y = 502;
-						elapsed_digit_dest_1.w = 12, elapsed_digit_dest_1.h = 20;
-						SDL_RenderCopy(renderer, elapsed_digit_1, &elapsed_digit_clip_1, &elapsed_digit_dest_1);
-
-						elapsed_digit_2 = SDL_CreateTextureFromSurface(renderer, numbers);
-						int t_10 = floor((t-floor(t/100.0)*100.0)/10.0);
-						elapsed_digit_clip_2 = ClipNumber(t_10,18);
-						elapsed_digit_dest_2.x = 640, elapsed_digit_dest_2.y = elapsed_digit_dest_1.y;
-						elapsed_digit_dest_2.w = 12, elapsed_digit_dest_2.h = 20;
-						SDL_RenderCopy(renderer, elapsed_digit_2, &elapsed_digit_clip_2, &elapsed_digit_dest_2);
-
-						elapsed_digit_3 = SDL_CreateTextureFromSurface(renderer, numbers);
-						int t_100 = floor(t-floor(t/100.0)*100.0-floor(t_10)*10.0);
-						elapsed_digit_clip_3 = ClipNumber(t_100,18);
-						elapsed_digit_dest_3.x = 650, elapsed_digit_dest_3.y = elapsed_digit_dest_1.y;
-						elapsed_digit_dest_3.w = 12, elapsed_digit_dest_3.h = 20;
-						SDL_RenderCopy(renderer, elapsed_digit_3, &elapsed_digit_clip_3, &elapsed_digit_dest_3);
-
-						// % history elapsed
-
-						percent = t/4.56;
-
-						elapsed_percent_1 = SDL_CreateTextureFromSurface(renderer, numbers);
-						elapsed_percent_clip_1 = ClipNumber(floor(percent/100.0),18);
-						elapsed_percent_dest_1.x = 630, elapsed_percent_dest_1.y = 526;
-						elapsed_percent_dest_1.w = 12, elapsed_percent_dest_1.h = 20;
-						if (floor(percent/100.0) > 0.0)                      // Don't display the first number if it is 0
-							SDL_RenderCopy(renderer, elapsed_percent_1, &elapsed_percent_clip_1, &elapsed_percent_dest_1);
-
-						elapsed_percent_2 = SDL_CreateTextureFromSurface(renderer, numbers);
-						percent_10 = floor((percent-floor(percent/100.0)*100.0)/10.0);
-						elapsed_percent_clip_2 = ClipNumber(percent_10,18);
-						elapsed_percent_dest_2.x = 640, elapsed_percent_dest_2.y = elapsed_percent_dest_1.y;
-						elapsed_percent_dest_2.w = 12, elapsed_percent_dest_2.h = 20;
-						if (floor(percent/100.0) > 0.0 || percent_10 > 0.0)    // Don't display the first numbers if they are both 0
-							SDL_RenderCopy(renderer, elapsed_percent_2, &elapsed_percent_clip_2, &elapsed_percent_dest_2);
-
-						elapsed_percent_3 = SDL_CreateTextureFromSurface(renderer, numbers);
-						percent_100 = floor(percent-floor(percent/100.0)*100.0-floor(percent_10)*10.0);
-						elapsed_percent_clip_3 = ClipNumber(percent_100,18);
-						elapsed_percent_dest_3.x = 650, elapsed_percent_dest_3.y = elapsed_percent_dest_1.y;
-						elapsed_percent_dest_3.w = 12, elapsed_percent_dest_3.h = 20;
-						SDL_RenderCopy(renderer, elapsed_percent_3, &elapsed_percent_clip_3, &elapsed_percent_dest_3);
-
-						// Other renderings
-						renderTexture(ynumber0_tex, renderer, 50, -8 + temp_time_dilation.y + temp_time_dilation.h);
-
-						renderTexture(xnumber0_tex, renderer, -5 + temp_time_dilation.x, 445);
-						renderTexture(xnumber1_tex, renderer, -5 + temp_time_dilation.x + floor((double) irad / thoutput[NR-1][0].radius*(double) temp_time_dilation.w), 445);
-						renderTexture(xnumber2_tex, renderer, -5 + temp_time_dilation.x + floor((double) irad*2.0 / thoutput[NR-1][0].radius*(double) temp_time_dilation.w), 445);
-						renderTexture(xnumber3_tex, renderer, -5 + temp_time_dilation.x + floor((double) irad*3.0 / thoutput[NR-1][0].radius*(double) temp_time_dilation.w), 445);
-						renderTexture(xnumber4_tex, renderer, -5 + temp_time_dilation.x + floor((double) irad*4.0 / thoutput[NR-1][0].radius*(double) temp_time_dilation.w), 445);
-						renderTexture(xnumber5_tex, renderer, -5 + temp_time_dilation.x + floor((double) irad*5.0 / thoutput[NR-1][0].radius*(double) temp_time_dilation.w), 445);
-						renderTexture(xnumber6_tex, renderer, -5 + temp_time_dilation.x + floor((double) irad*6.0 / thoutput[NR-1][0].radius*(double) temp_time_dilation.w), 445);
-						renderTexture(xnumber7_tex, renderer, -5 + temp_time_dilation.x + floor((double) irad*7.0 / thoutput[NR-1][0].radius*(double) temp_time_dilation.w), 445);
-						renderTexture(xnumber8_tex, renderer, -5 + temp_time_dilation.x + floor((double) irad*8.0 / thoutput[NR-1][0].radius*(double) temp_time_dilation.w), 445);
-						renderTexture(xnumber9_tex, renderer, -5 + temp_time_dilation.x + floor((double) irad*9.0 / thoutput[NR-1][0].radius*(double) temp_time_dilation.w), 445);
-
-						SDL_RenderPresent(renderer);
-
-						SDL_DestroyTexture(elapsed_digit_1);
-						SDL_DestroyTexture(elapsed_digit_2);
-						SDL_DestroyTexture(elapsed_digit_3);
-						SDL_DestroyTexture(elapsed_percent_1);
-						SDL_DestroyTexture(elapsed_percent_2);
-						SDL_DestroyTexture(elapsed_percent_3);
-
-						SDL_Delay(16);
+						// Update displays
+						UpdateDisplays(renderer, background_tex, FontFile, thoutput, TempK, Hydr, Kappa,
+								structure, grid, hold_tracks, plot_switch, t, NR, NT_output, ircore, Tmax, kappamax,
+								value_time, axisTextColor, alpha,
+								DryRock_tex, Liquid_tex, Ice_tex, Crust_tex, numbers,
+								progress_bar_tex, irad, xnumber0_tex, xnumber1_tex, xnumber2_tex, xnumber3_tex,
+								xnumber4_tex, xnumber5_tex, xnumber6_tex, xnumber7_tex,
+								xnumber8_tex, xnumber9_tex, ynumber0_tex);
 					}
 					if (stop_clicked == 1) t = t_memory;
 					else t = NT_output-1, t_init = 0;
@@ -757,7 +342,7 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, float 
 
 				// Click on % bar to adjust time or scroll
 				if (e.button.x >= 20 && e.button.x <= 780 && e.button.y >= 550 && e.button.y <= 567) {
-					t = floor(((float) e.button.x - 20.0)/(780.0-20.0)*500.0);
+					t = floor(((double) e.button.x - 20.0)/(780.0-20.0)*500.0);
 
 					// While mouse button is down, scroll
 					while (e.type != SDL_MOUSEBUTTONUP) {
@@ -765,402 +350,20 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, float 
 
 						// Do not change t past the x edges of the bar. The y limits are to avoid the program
 						// crashing because we're out of the window.
-						if ((float) e.button.x + e.motion.xrel >= 20 && (float) e.button.x + e.motion.xrel < 780
-								&& (float) e.button.y + e.motion.yrel > 0 && (float) e.button.y + e.motion.yrel < SCREEN_HEIGHT) {
+						if ((double) e.button.x + e.motion.xrel >= 20 && (double) e.button.x + e.motion.xrel < 780
+								&& (double) e.button.y + e.motion.yrel > 0 && (double) e.button.y + e.motion.yrel < SCREEN_HEIGHT) {
 
 							// Adjust displays
-							t = floor(((float) e.button.x + e.motion.xrel - 20.0)/(780.0-20.0)*NT_output);
+							t = floor(((double) e.button.x + e.motion.xrel - 20.0)/(780.0-20.0)*NT_output);
 
 							// Update displays
-							SDL_RenderClear(renderer);
-							ApplySurface(0, 0, background_tex, renderer, NULL);
-
-							// Structure plot
-							if (structure == 1) {
-								// Dry rock
-								for (r=0;r<NR-2;r++) {
-									if (thoutput[r][t].mrock <= 0.0 && thoutput[r+1][t].mrock > 0.0 && thoutput[r+2][t].mh2os <= 0.0
-											&& thoutput[r+2][t].madhs <= 0.0 && thoutput[r+2][t].mh2ol <= 0.0 && thoutput[r+2][t].mnh3l <= 0.0) {
-										DryRock_x = r;
-										break;
-									}
-								}
-								for (r=0;r<NR-2;r++) {
-									if (thoutput[r][t].mrock > 0.0 && thoutput[r+2][t].mrock <= 0.0 && thoutput[r][t].mh2os <= 0.0
-											&& thoutput[r][t].madhs <= 0.0 && thoutput[r][t].mh2ol <= 0.0 && thoutput[r][t].mnh3l <= 0.0) {
-										DryRock_w = r - DryRock_x;
-										break;
-									}
-								}
-								SDL_QueryTexture(DryRock_tex, NULL, NULL, &DryRock_clip.w, &DryRock_clip.h);
-								DryRock_clip.x = 0, DryRock_clip.y = 0;
-								DryRock_dest.x = temp_time_dilation.x + floor((double) DryRock_x/(double) NR*(double) temp_time_dilation.w), DryRock_dest.y = temp_time_dilation.y;
-								DryRock_dest.w = floor((double) DryRock_w/(double) NR*(double) temp_time_dilation.w), DryRock_dest.h = temp_time_dilation.h;
-								SDL_RenderCopy(renderer, DryRock_tex, &DryRock_clip, &DryRock_dest);
-
-								// Liquid
-								for (r=0;r<NR-1;r++) {
-									if (thoutput[r][t].mh2ol <= 0.0 && thoutput[r+1][t].mh2ol > 0.0) {
-										Liquid_x = r;
-										break;
-									}
-								}
-								for (r=0;r<NR-1;r++) {
-									if (thoutput[r][t].mh2ol > 0.0 && thoutput[r+1][t].mh2ol <= 0.0) {
-										Liquid_w = r - Liquid_x;
-										break;
-									}
-								}
-								SDL_QueryTexture(Liquid_tex, NULL, NULL, &Liquid_clip.w, &Liquid_clip.h);
-								Liquid_clip.x = 0, Liquid_clip.y = 0;
-								Liquid_dest.x = temp_time_dilation.x + floor((double) Liquid_x/(double) NR*(double) temp_time_dilation.w), Liquid_dest.y = temp_time_dilation.y;
-								Liquid_dest.w = floor((double) Liquid_w/(double) NR*(double) temp_time_dilation.w), Liquid_dest.h = temp_time_dilation.h;
-								SDL_RenderCopy(renderer, Liquid_tex, &Liquid_clip, &Liquid_dest);
-
-								// Ice
-								for (r=0;r<NR-2;r++) {
-									if (thoutput[r][t].mh2os <= 0.0 && thoutput[r+1][t].mh2os > 0.0 && thoutput[r+2][t].mrock <= 0.0
-											&& thoutput[r+2][t].madhs <= 0.0 && thoutput[r+2][t].mh2ol <= 0.0 && thoutput[r+2][t].mnh3l <= 0.0) {
-										Ice_x = r + 1;
-										break;
-									}
-								}
-								for (r=0;r<NR-1;r++) {
-									if (thoutput[r][t].mh2os > 0.0 && thoutput[r+1][t].mh2os <= thoutput[r][t].mh2os) {
-										Ice_w = r - Ice_x + 1;
-										break;
-									}
-								}
-								SDL_QueryTexture(Ice_tex, NULL, NULL, &Ice_clip.w, &Ice_clip.h);
-								Ice_clip.x = 0, Ice_clip.y = 0;
-								Ice_dest.x = temp_time_dilation.x + floor((double) Ice_x/(double) NR*(double) temp_time_dilation.w), Ice_dest.y = temp_time_dilation.y;
-								Ice_dest.w = floor((double) Ice_w/(double) NR*(double) temp_time_dilation.w), Ice_dest.h = temp_time_dilation.h;
-								SDL_RenderCopy(renderer, Ice_tex, &Ice_clip, &Ice_dest);
-
-								// Crust
-								for (r=0;r<NR;r++) {
-									if (thoutput[r][t].mrock > 0.0 && thoutput[r][t].mh2os > 0.0 && thoutput[r][t].madhs > 0.0
-											&& thoutput[r][t].mh2ol <= 0.0 && thoutput[r][t].mnh3l <= 0.0) {
-										Crust_x = r;
-										break;
-									}
-								}
-								Crust_w = NR - r;
-								SDL_QueryTexture(Crust_tex, NULL, NULL, &Crust_clip.w, &Crust_clip.h);
-								Crust_clip.x = 0, Crust_clip.y = 0;
-								Crust_dest.x = temp_time_dilation.x + floor((double) Crust_x/(double) NR*(double) temp_time_dilation.w), Crust_dest.y = temp_time_dilation.y;
-								Crust_dest.w = floor((double) Crust_w/(double) NR*(double) temp_time_dilation.w), Crust_dest.h = temp_time_dilation.h;
-								SDL_RenderCopy(renderer, Crust_tex, &Crust_clip, &Crust_dest);
-							}
-
-							// MAIN PLOT
-							if (plot_switch == 0) { // Temperature-time plot
-								// y-axis numbers
-								for (itempk=50;itempk<1500;itempk=itempk+50) {
-									if (Tmax > (double) itempk*6.0 && Tmax <= (double) itempk*6.0+300.0) {
-										scanNumber(&nb, itempk);          // Right-justified
-										ynumber1_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-										scanNumber(&nb, itempk*2);
-										ynumber2_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-										scanNumber(&nb, itempk*3);
-										ynumber3_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-										scanNumber(&nb, itempk*4);
-										ynumber4_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-										scanNumber(&nb, itempk*5);
-										ynumber5_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-										scanNumber(&nb, itempk*6);
-										ynumber6_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-										scanNumber(&nb, itempk*7);
-										if ((double) itempk*7.0 < Tmax) ynumber7_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-										scanNumber(&nb, itempk*8);
-										if ((double) itempk*8.0 < Tmax) ynumber8_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-										scanNumber(&nb, itempk*9);
-										if ((double) itempk*9.0 < Tmax) ynumber9_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-										scanNumber(&nb, itempk*10);
-										if ((double) itempk*10.0 < Tmax) ynumber10_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-										scanNumber(&nb, itempk*11);
-										if ((double) itempk*11.0 < Tmax) ynumber11_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-										break;
-									}
-								}
-								renderTexture(ynumber1_tex, renderer, 50, -8 + temp_time_dilation.y + floor((double) temp_time_dilation.h-((double) itempk / Tmax*(double) temp_time_dilation.h)));
-								renderTexture(ynumber2_tex, renderer, 50, -8 + temp_time_dilation.y + floor((double) temp_time_dilation.h-((double) itempk*2.0 / Tmax*(double) temp_time_dilation.h)));
-								renderTexture(ynumber3_tex, renderer, 50, -8 + temp_time_dilation.y + floor((double) temp_time_dilation.h-((double) itempk*3.0 / Tmax*(double) temp_time_dilation.h)));
-								renderTexture(ynumber4_tex, renderer, 50, -8 + temp_time_dilation.y + floor((double) temp_time_dilation.h-((double) itempk*4.0 / Tmax*(double) temp_time_dilation.h)));
-								renderTexture(ynumber5_tex, renderer, 50, -8 + temp_time_dilation.y + floor((double) temp_time_dilation.h-((double) itempk*5.0 / Tmax*(double) temp_time_dilation.h)));
-								renderTexture(ynumber6_tex, renderer, 50, -8 + temp_time_dilation.y + floor((double) temp_time_dilation.h-((double) itempk*6.0 / Tmax*(double) temp_time_dilation.h)));
-								if ((double) itempk*7.0 < Tmax)
-									renderTexture(ynumber7_tex, renderer, 50, -8 + temp_time_dilation.y + floor((double) temp_time_dilation.h-((double) itempk*7.0 / Tmax*(double) temp_time_dilation.h)));
-								if ((double) itempk*8.0 < Tmax)
-									renderTexture(ynumber8_tex, renderer, 50, -8 + temp_time_dilation.y + floor((double) temp_time_dilation.h-((double) itempk*8.0 / Tmax*(double) temp_time_dilation.h)));
-								if ((double) itempk*9.0 < Tmax)
-									renderTexture(ynumber9_tex, renderer, 50, -8 + temp_time_dilation.y + floor((double) temp_time_dilation.h-((double) itempk*9.0 / Tmax*(double) temp_time_dilation.h)));
-								if ((double) itempk*10.0 < Tmax)
-									renderTexture(ynumber10_tex, renderer, 50, -8 + temp_time_dilation.y + floor((double) temp_time_dilation.h-((double) itempk*10.0 / Tmax*(double) temp_time_dilation.h)));
-								if ((double) itempk*11.0 < Tmax)
-									renderTexture(ynumber11_tex, renderer, 50, -8 + temp_time_dilation.y + floor((double) temp_time_dilation.h-((double) itempk*11.0 / Tmax*(double) temp_time_dilation.h)));
-
-								// Temperature-time plot
-								if (!hold_tracks) {
-									for (T=0;T<temp_time->h;T++) {
-										for (r=0;r<temp_time->w;r++) {
-											pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - T-1)*temp_time->w + r+1;
-											*pixmem32 = alpha;
-										}
-									}
-								}
-								for (T=0;T<Tmax_int;T++) {
-									for (r=0;r<NR;r++) {
-										// Temperature grid every i/2.0 K
-										if (grid) {
-											if ((double) T/((double) itempk/2.0) - (double) floor((double) T/((double) itempk/2.0)) <= 0.1) {
-												xoffset = floor((double)r/(double)NR*temp_time->w);
-												yoffset = floor((double)T/(double)Tmax_int*temp_time->h);
-												pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - yoffset)*temp_time->w + xoffset;
-												*pixmem32 = SDL_MapRGBA(temp_time->format, 255, 255, 255, 20);
-											}
-										}
-										// Temperature profile yellower when more recent, redder when more ancient
-										if (T >= (int) thoutput[r][t].tempk - 4 && T <= (int) thoutput[r][t].tempk + 4) {
-											xoffset = floor((double)r/(double)NR*temp_time->w);
-											yoffset = floor((double)T/(double)Tmax_int*temp_time->h);
-											pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - yoffset)*temp_time->w + xoffset;
-											*pixmem32 = SDL_MapRGBA(temp_time->format, 255, floor(200*(t-21)/(780-21))+55, 55, 255);
-										}
-									}
-								}
-								temp_time_tex = SDL_CreateTextureFromSurface(renderer, temp_time);
-
-								temp_time_clip.x = 0, temp_time_clip.y = 0;
-								temp_time_clip.w = temp_time->w, temp_time_clip.h = temp_time->h;
-								temp_time_dilation.x = 90, temp_time_dilation.y = 87;
-								temp_time_dilation.w = temp_time->w, temp_time_dilation.h = temp_time->h;
-								SDL_RenderCopy(renderer, temp_time_tex, &temp_time_clip, &temp_time_dilation);
-							}
-
-							if (plot_switch == 1) { // Hydration-time plot
-								for (r=0;r<NR-1;r++) {
-									if (thoutput[r][t].mrock > 0.0 && thoutput[r+1][t].mrock == 0.0) ircore = r;
-								}
-
-								// y-axis numbers
-								scanNumber(&nb, 10);          // Right-justified
-								ynumber1_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-								scanNumber(&nb, 20);
-								ynumber2_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-								scanNumber(&nb, 30);
-								ynumber3_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-								scanNumber(&nb, 40);
-								ynumber4_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-								scanNumber(&nb, 50);
-								ynumber5_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-								scanNumber(&nb, 60);
-								ynumber6_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-								scanNumber(&nb, 70);
-								ynumber7_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-								scanNumber(&nb, 80);
-								ynumber8_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-								scanNumber(&nb, 90);
-								ynumber9_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-								scanNumber(&nb, 100);
-								ynumber10_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-
-								renderTexture(ynumber1_tex, renderer, 50, -8 + hydr_time_dilation.y + floor((double) hydr_time_dilation.h-0.1*(double) hydr_time_dilation.h));
-								renderTexture(ynumber2_tex, renderer, 50, -8 + hydr_time_dilation.y + floor((double) hydr_time_dilation.h-0.2*(double) hydr_time_dilation.h));
-								renderTexture(ynumber3_tex, renderer, 50, -8 + hydr_time_dilation.y + floor((double) hydr_time_dilation.h-0.3*(double) hydr_time_dilation.h));
-								renderTexture(ynumber4_tex, renderer, 50, -8 + hydr_time_dilation.y + floor((double) hydr_time_dilation.h-0.4*(double) hydr_time_dilation.h));
-								renderTexture(ynumber5_tex, renderer, 50, -8 + hydr_time_dilation.y + floor((double) hydr_time_dilation.h-0.5*(double) hydr_time_dilation.h));
-								renderTexture(ynumber6_tex, renderer, 50, -8 + hydr_time_dilation.y + floor((double) hydr_time_dilation.h-0.6*(double) hydr_time_dilation.h));
-								renderTexture(ynumber7_tex, renderer, 50, -8 + hydr_time_dilation.y + floor((double) hydr_time_dilation.h-0.7*(double) hydr_time_dilation.h));
-								renderTexture(ynumber8_tex, renderer, 50, -8 + hydr_time_dilation.y + floor((double) hydr_time_dilation.h-0.8*(double) hydr_time_dilation.h));
-								renderTexture(ynumber9_tex, renderer, 50, -8 + hydr_time_dilation.y + floor((double) hydr_time_dilation.h-0.9*(double) hydr_time_dilation.h));
-								renderTexture(ynumber10_tex, renderer, 50, -8 + hydr_time_dilation.y + floor((double) hydr_time_dilation.h-(double) hydr_time_dilation.h));
-
-								// Hydration-time plot
-								if (!hold_tracks) {
-									for (T=0;T<hydr_time->h;T++) {
-										for (r=0;r<hydr_time->w;r++) {
-											pixmem32 = (Uint32*) hydr_time->pixels + (hydr_time->h - T-1)*hydr_time->w + r+1;
-											*pixmem32 = alpha;
-										}
-									}
-								}
-
-								for (T=0;T<=100;T++) {
-									for (r=0;r<ircore;r++) {
-										// Hydration profile yellower when more recent, redder when more ancient
-										if (T >= (int) thoutput[r][t].famor*100 - 1 && T <= (int) thoutput[r][t].famor*100 + 1) {
-											xoffset = floor((double)r/(double)NR*hydr_time->w);
-											yoffset = floor((double)T/(double)100*hydr_time->h);
-											if (yoffset == 0) yoffset = 1;
-											pixmem32 = (Uint32*) hydr_time->pixels + (hydr_time->h - yoffset)*hydr_time->w + xoffset;
-											*pixmem32 = SDL_MapRGBA(hydr_time->format, 255, floor(200*(t-21)/(780-21))+55, 55, 255);
-										}
-									}
-								}
-								hydr_time_tex = SDL_CreateTextureFromSurface(renderer, hydr_time);
-
-								hydr_time_clip.x = 0, hydr_time_clip.y = 0;
-								hydr_time_clip.w = hydr_time->w, hydr_time_clip.h = hydr_time->h;
-								hydr_time_dilation.x = 90, hydr_time_dilation.y = 87;
-								hydr_time_dilation.w = hydr_time->w, hydr_time_dilation.h = hydr_time->h;
-								SDL_RenderCopy(renderer, hydr_time_tex, &hydr_time_clip, &hydr_time_dilation);
-							}
-
-							if (plot_switch == 2) { // Kappa-time plot
-								// y-axis numbers
-								for (itempk=1;itempk<100;itempk=itempk+1) {
-									if (kappamax >= (double) itempk && kappamax < (double) itempk*6.0+6.0) {
-										scanNumber(&nb, itempk);          // Right-justified
-										ynumber1_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-										scanNumber(&nb, itempk*2);
-										ynumber2_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-										scanNumber(&nb, itempk*3);
-										ynumber3_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-										scanNumber(&nb, itempk*4);
-										ynumber4_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-										scanNumber(&nb, itempk*5);
-										ynumber5_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-										scanNumber(&nb, itempk*6);
-										ynumber6_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-										scanNumber(&nb, itempk*7);
-										if ((double) itempk*7.0 < kappamax) ynumber7_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-										scanNumber(&nb, itempk*8);
-										if ((double) itempk*8.0 < kappamax) ynumber8_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-										scanNumber(&nb, itempk*9);
-										if ((double) itempk*9.0 < kappamax) ynumber9_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-										scanNumber(&nb, itempk*10);
-										if ((double) itempk*10.0 < kappamax) ynumber10_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-										scanNumber(&nb, itempk*11);
-										if ((double) itempk*11.0 < kappamax) ynumber11_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-										break;
-									}
-								}
-								renderTexture(ynumber1_tex, renderer, 50, -8 + kappa_time_dilation.y + floor((double) kappa_time_dilation.h-((double) itempk / kappamax*(double) kappa_time_dilation.h)));
-								renderTexture(ynumber2_tex, renderer, 50, -8 + kappa_time_dilation.y + floor((double) kappa_time_dilation.h-((double) itempk*2.0 / kappamax*(double) kappa_time_dilation.h)));
-								renderTexture(ynumber3_tex, renderer, 50, -8 + kappa_time_dilation.y + floor((double) kappa_time_dilation.h-((double) itempk*3.0 / kappamax*(double) kappa_time_dilation.h)));
-								renderTexture(ynumber4_tex, renderer, 50, -8 + kappa_time_dilation.y + floor((double) kappa_time_dilation.h-((double) itempk*4.0 / kappamax*(double) kappa_time_dilation.h)));
-								renderTexture(ynumber5_tex, renderer, 50, -8 + kappa_time_dilation.y + floor((double) kappa_time_dilation.h-((double) itempk*5.0 / kappamax*(double) kappa_time_dilation.h)));
-								renderTexture(ynumber6_tex, renderer, 50, -8 + kappa_time_dilation.y + floor((double) kappa_time_dilation.h-((double) itempk*6.0 / kappamax*(double) kappa_time_dilation.h)));
-								if ((double) itempk*7.0 < kappamax)
-									renderTexture(ynumber7_tex, renderer, 50, -8 + kappa_time_dilation.y + floor((double) kappa_time_dilation.h-((double) itempk*7.0 / kappamax*(double) kappa_time_dilation.h)));
-								if ((double) itempk*8.0 < kappamax)
-									renderTexture(ynumber8_tex, renderer, 50, -8 + kappa_time_dilation.y + floor((double) kappa_time_dilation.h-((double) itempk*8.0 / kappamax*(double) kappa_time_dilation.h)));
-								if ((double) itempk*9.0 < kappamax)
-									renderTexture(ynumber9_tex, renderer, 50, -8 + kappa_time_dilation.y + floor((double) kappa_time_dilation.h-((double) itempk*9.0 / kappamax*(double) kappa_time_dilation.h)));
-								if ((double) itempk*10.0 < kappamax)
-									renderTexture(ynumber10_tex, renderer, 50, -8 + kappa_time_dilation.y + floor((double) kappa_time_dilation.h-((double) itempk*10.0 / kappamax*(double) kappa_time_dilation.h)));
-								if ((double) itempk*11.0 < kappamax)
-									renderTexture(ynumber11_tex, renderer, 50, -8 + kappa_time_dilation.y + floor((double) kappa_time_dilation.h-((double) itempk*11.0 / kappamax*(double) kappa_time_dilation.h)));
-
-								// Kappa-time plot
-								if (!hold_tracks) {
-									for (T=0;T<kappa_time->h;T++) {
-										for (r=0;r<kappa_time->w;r++) {
-											pixmem32 = (Uint32*) kappa_time->pixels + (kappa_time->h - T-1)*kappa_time->w + r+1;
-											*pixmem32 = alpha;
-										}
-									}
-								}
-								for (T=0;T<kappamax_int;T++) {
-									for (r=0;r<NR;r++) {
-										// Kappa profile yellower when more recent, redder when more ancient
-										if (T == (int) thoutput[r][t].nu) {
-											xoffset = floor((double)r/(double)NR*kappa_time->w);
-											yoffset = floor((double)T/(double)kappamax_int*kappa_time->h);
-											pixmem32 = (Uint32*) kappa_time->pixels + (kappa_time->h - yoffset)*kappa_time->w + xoffset;
-											*pixmem32 = SDL_MapRGBA(kappa_time->format, 255, floor(200*(t-21)/(780-21))+55, 55, 255);
-										}
-									}
-								}
-								kappa_time_tex = SDL_CreateTextureFromSurface(renderer, kappa_time);
-
-								kappa_time_clip.x = 0, kappa_time_clip.y = 0;
-								kappa_time_clip.w = kappa_time->w, kappa_time_clip.h = kappa_time->h;
-								kappa_time_dilation.x = 90, kappa_time_dilation.y = 87;
-								kappa_time_dilation.w = kappa_time->w, kappa_time_dilation.h = kappa_time->h;
-								SDL_RenderCopy(renderer, kappa_time_tex, &kappa_time_clip, &kappa_time_dilation);
-							}
-
-							// Unveil the progress bar
-							progress_bar_clip.x = 21, progress_bar_clip.y = 551;
-							progress_bar_clip.w = floor((780.0-21.0)*t/NT_output), progress_bar_clip.h = 15;
-							progress_bar_dilation.x = 21, progress_bar_dilation.y = 551;
-							progress_bar_dilation.w = floor((780.0-21.0)*t/NT_output), progress_bar_dilation.h = 15;
-							SDL_RenderCopy(renderer, progress_bar_tex, &progress_bar_clip, &progress_bar_dilation);
-
-							// Time elapsed
-
-							elapsed_digit_1 = SDL_CreateTextureFromSurface(renderer, numbers);
-							elapsed_digit_clip_1 = ClipNumber(floor(t/100.0),18);
-							elapsed_digit_dest_1.x = 625, elapsed_digit_dest_1.y = 502;
-							elapsed_digit_dest_1.w = 12, elapsed_digit_dest_1.h = 20;
-							SDL_RenderCopy(renderer, elapsed_digit_1, &elapsed_digit_clip_1, &elapsed_digit_dest_1);
-
-							elapsed_digit_2 = SDL_CreateTextureFromSurface(renderer, numbers);
-							int t_10 = floor((t-floor(t/100.0)*100.0)/10.0);
-							elapsed_digit_clip_2 = ClipNumber(t_10,18);
-							elapsed_digit_dest_2.x = 640, elapsed_digit_dest_2.y = elapsed_digit_dest_1.y;
-							elapsed_digit_dest_2.w = 12, elapsed_digit_dest_2.h = 20;
-							SDL_RenderCopy(renderer, elapsed_digit_2, &elapsed_digit_clip_2, &elapsed_digit_dest_2);
-
-							elapsed_digit_3 = SDL_CreateTextureFromSurface(renderer, numbers);
-							int t_100 = floor(t-floor(t/100.0)*100.0-floor(t_10)*10.0);
-							elapsed_digit_clip_3 = ClipNumber(t_100,18);
-							elapsed_digit_dest_3.x = 650, elapsed_digit_dest_3.y = elapsed_digit_dest_1.y;
-							elapsed_digit_dest_3.w = 12, elapsed_digit_dest_3.h = 20;
-							SDL_RenderCopy(renderer, elapsed_digit_3, &elapsed_digit_clip_3, &elapsed_digit_dest_3);
-
-							// % history elapsed
-
-							percent = t/4.56;
-
-							elapsed_percent_1 = SDL_CreateTextureFromSurface(renderer, numbers);
-							elapsed_percent_clip_1 = ClipNumber(floor(percent/100.0),18);
-							elapsed_percent_dest_1.x = 630, elapsed_percent_dest_1.y = 526;
-							elapsed_percent_dest_1.w = 12, elapsed_percent_dest_1.h = 20;
-							if (floor(percent/100.0) > 0.0)                      // Don't display the first number if it is 0
-								SDL_RenderCopy(renderer, elapsed_percent_1, &elapsed_percent_clip_1, &elapsed_percent_dest_1);
-
-							elapsed_percent_2 = SDL_CreateTextureFromSurface(renderer, numbers);
-							percent_10 = floor((percent-floor(percent/100.0)*100.0)/10.0);
-							elapsed_percent_clip_2 = ClipNumber(percent_10,18);
-							elapsed_percent_dest_2.x = 640, elapsed_percent_dest_2.y = elapsed_percent_dest_1.y;
-							elapsed_percent_dest_2.w = 12, elapsed_percent_dest_2.h = 20;
-							if (floor(percent/100.0) > 0.0 || percent_10 > 0.0)    // Don't display the first numbers if they are both 0
-								SDL_RenderCopy(renderer, elapsed_percent_2, &elapsed_percent_clip_2, &elapsed_percent_dest_2);
-
-							elapsed_percent_3 = SDL_CreateTextureFromSurface(renderer, numbers);
-							percent_100 = floor(percent-floor(percent/100.0)*100.0-floor(percent_10)*10.0);
-							elapsed_percent_clip_3 = ClipNumber(percent_100,18);
-							elapsed_percent_dest_3.x = 650, elapsed_percent_dest_3.y = elapsed_percent_dest_1.y;
-							elapsed_percent_dest_3.w = 12, elapsed_percent_dest_3.h = 20;
-							SDL_RenderCopy(renderer, elapsed_percent_3, &elapsed_percent_clip_3, &elapsed_percent_dest_3);
-
-							// Other renderings
-							renderTexture(ynumber0_tex, renderer, 50, -8 + temp_time_dilation.y + temp_time_dilation.h);
-
-							renderTexture(xnumber0_tex, renderer, -5 + temp_time_dilation.x, 445);
-							renderTexture(xnumber1_tex, renderer, -5 + temp_time_dilation.x + floor((double) irad / thoutput[NR-1][0].radius*(double) temp_time_dilation.w), 445);
-							renderTexture(xnumber2_tex, renderer, -5 + temp_time_dilation.x + floor((double) irad*2.0 / thoutput[NR-1][0].radius*(double) temp_time_dilation.w), 445);
-							renderTexture(xnumber3_tex, renderer, -5 + temp_time_dilation.x + floor((double) irad*3.0 / thoutput[NR-1][0].radius*(double) temp_time_dilation.w), 445);
-							renderTexture(xnumber4_tex, renderer, -5 + temp_time_dilation.x + floor((double) irad*4.0 / thoutput[NR-1][0].radius*(double) temp_time_dilation.w), 445);
-							renderTexture(xnumber5_tex, renderer, -5 + temp_time_dilation.x + floor((double) irad*5.0 / thoutput[NR-1][0].radius*(double) temp_time_dilation.w), 445);
-							renderTexture(xnumber6_tex, renderer, -5 + temp_time_dilation.x + floor((double) irad*6.0 / thoutput[NR-1][0].radius*(double) temp_time_dilation.w), 445);
-							renderTexture(xnumber7_tex, renderer, -5 + temp_time_dilation.x + floor((double) irad*7.0 / thoutput[NR-1][0].radius*(double) temp_time_dilation.w), 445);
-							renderTexture(xnumber8_tex, renderer, -5 + temp_time_dilation.x + floor((double) irad*8.0 / thoutput[NR-1][0].radius*(double) temp_time_dilation.w), 445);
-							renderTexture(xnumber9_tex, renderer, -5 + temp_time_dilation.x + floor((double) irad*9.0 / thoutput[NR-1][0].radius*(double) temp_time_dilation.w), 445);
-
-							SDL_RenderPresent(renderer);
-
-							SDL_DestroyTexture(elapsed_digit_1);
-							SDL_DestroyTexture(elapsed_digit_2);
-							SDL_DestroyTexture(elapsed_digit_3);
-							SDL_DestroyTexture(elapsed_percent_1);
-							SDL_DestroyTexture(elapsed_percent_2);
-							SDL_DestroyTexture(elapsed_percent_3);
-
-							SDL_Delay(16);
+							UpdateDisplays(renderer, background_tex, FontFile, thoutput, TempK, Hydr, Kappa,
+									structure, grid, hold_tracks, plot_switch, t, NR, NT_output, ircore, Tmax, kappamax,
+									value_time, axisTextColor, alpha,
+									DryRock_tex, Liquid_tex, Ice_tex, Crust_tex, numbers,
+									progress_bar_tex, irad, xnumber0_tex, xnumber1_tex, xnumber2_tex, xnumber3_tex,
+									xnumber4_tex, xnumber5_tex, xnumber6_tex, xnumber7_tex,
+									xnumber8_tex, xnumber9_tex, ynumber0_tex);
 						}
 					}
 					t_init = t;  // To pick up the animation back where we're leaving off
@@ -1206,423 +409,27 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, float 
 				}
 			}
 		}
-		SDL_RenderClear(renderer);
-		ApplySurface(0, 0, background_tex, renderer, NULL);
 
-		// Structure plot
-		if (structure == 1) {
-			// Dry rock
-			for (r=0;r<NR-2;r++) {
-				if (thoutput[r][t].mrock <= 0.0 && thoutput[r+1][t].mrock > 0.0 && thoutput[r+2][t].mh2os <= 0.0
-						&& thoutput[r+2][t].madhs <= 0.0 && thoutput[r+2][t].mh2ol <= 0.0 && thoutput[r+2][t].mnh3l <= 0.0) {
-					DryRock_x = r;
-					break;
-				}
-			}
-			for (r=0;r<NR-2;r++) {
-				if (thoutput[r][t].mrock > 0.0 && thoutput[r+2][t].mrock <= 0.0 && thoutput[r][t].mh2os <= 0.0
-						&& thoutput[r][t].madhs <= 0.0 && thoutput[r][t].mh2ol <= 0.0 && thoutput[r][t].mnh3l <= 0.0) {
-					DryRock_w = r - DryRock_x;
-					break;
-				}
-			}
-			SDL_QueryTexture(DryRock_tex, NULL, NULL, &DryRock_clip.w, &DryRock_clip.h);
-			DryRock_clip.x = 0, DryRock_clip.y = 0;
-			DryRock_dest.x = temp_time_dilation.x + floor((double) DryRock_x/(double) NR*(double) temp_time_dilation.w), DryRock_dest.y = temp_time_dilation.y;
-			DryRock_dest.w = floor((double) DryRock_w/(double) NR*(double) temp_time_dilation.w), DryRock_dest.h = temp_time_dilation.h;
-			SDL_RenderCopy(renderer, DryRock_tex, &DryRock_clip, &DryRock_dest);
-
-			// Liquid
-			for (r=0;r<NR-1;r++) {
-				if (thoutput[r][t].mh2ol <= 0.0 && thoutput[r+1][t].mh2ol > 0.0) {
-					Liquid_x = r;
-					break;
-				}
-			}
-			for (r=0;r<NR-1;r++) {
-				if (thoutput[r][t].mh2ol > 0.0 && thoutput[r+1][t].mh2ol <= 0.0) {
-					Liquid_w = r - Liquid_x;
-					break;
-				}
-			}
-			SDL_QueryTexture(Liquid_tex, NULL, NULL, &Liquid_clip.w, &Liquid_clip.h);
-			Liquid_clip.x = 0, Liquid_clip.y = 0;
-			Liquid_dest.x = temp_time_dilation.x + floor((double) Liquid_x/(double) NR*(double) temp_time_dilation.w), Liquid_dest.y = temp_time_dilation.y;
-			Liquid_dest.w = floor((double) Liquid_w/(double) NR*(double) temp_time_dilation.w), Liquid_dest.h = temp_time_dilation.h;
-			SDL_RenderCopy(renderer, Liquid_tex, &Liquid_clip, &Liquid_dest);
-
-			// Ice
-			for (r=0;r<NR-2;r++) {
-				if (thoutput[r][t].mh2os <= 0.0 && thoutput[r+1][t].mh2os > 0.0 && thoutput[r+2][t].mrock <= 0.0
-						&& thoutput[r+2][t].madhs <= 0.0 && thoutput[r+2][t].mh2ol <= 0.0 && thoutput[r+2][t].mnh3l <= 0.0) {
-					Ice_x = r + 1;
-					break;
-				}
-			}
-			for (r=0;r<NR-1;r++) {
-				if (thoutput[r][t].mh2os > 0.0 && thoutput[r+1][t].mh2os <= thoutput[r][t].mh2os) {
-					Ice_w = r - Ice_x + 1;
-					break;
-				}
-			}
-			SDL_QueryTexture(Ice_tex, NULL, NULL, &Ice_clip.w, &Ice_clip.h);
-			Ice_clip.x = 0, Ice_clip.y = 0;
-			Ice_dest.x = temp_time_dilation.x + floor((double) Ice_x/(double) NR*(double) temp_time_dilation.w), Ice_dest.y = temp_time_dilation.y;
-			Ice_dest.w = floor((double) Ice_w/(double) NR*(double) temp_time_dilation.w), Ice_dest.h = temp_time_dilation.h;
-			SDL_RenderCopy(renderer, Ice_tex, &Ice_clip, &Ice_dest);
-
-			// Crust
-			for (r=0;r<NR;r++) {
-				if (thoutput[r][t].mrock > 0.0 && thoutput[r][t].mh2os > 0.0 && thoutput[r][t].madhs > 0.0
-						&& thoutput[r][t].mh2ol <= 0.0 && thoutput[r][t].mnh3l <= 0.0) {
-					Crust_x = r;
-					break;
-				}
-			}
-			Crust_w = NR - r;
-			SDL_QueryTexture(Crust_tex, NULL, NULL, &Crust_clip.w, &Crust_clip.h);
-			Crust_clip.x = 0, Crust_clip.y = 0;
-			Crust_dest.x = temp_time_dilation.x + floor((double) Crust_x/(double) NR*(double) temp_time_dilation.w), Crust_dest.y = temp_time_dilation.y;
-			Crust_dest.w = floor((double) Crust_w/(double) NR*(double) temp_time_dilation.w), Crust_dest.h = temp_time_dilation.h;
-			SDL_RenderCopy(renderer, Crust_tex, &Crust_clip, &Crust_dest);
-		}
-
-		// MAIN PLOT
-		if (plot_switch == 0) { // Temperature-time plot
-			// y-axis numbers
-			for (itempk=50;itempk<1500;itempk=itempk+50) {
-				if (Tmax > (double) itempk*6.0 && Tmax <= (double) itempk*6.0+300.0) {
-					scanNumber(&nb, itempk);          // Right-justified
-					ynumber1_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-					scanNumber(&nb, itempk*2);
-					ynumber2_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-					scanNumber(&nb, itempk*3);
-					ynumber3_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-					scanNumber(&nb, itempk*4);
-					ynumber4_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-					scanNumber(&nb, itempk*5);
-					ynumber5_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-					scanNumber(&nb, itempk*6);
-					ynumber6_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-					scanNumber(&nb, itempk*7);
-					if ((double) itempk*7.0 < Tmax) ynumber7_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-					scanNumber(&nb, itempk*8);
-					if ((double) itempk*8.0 < Tmax) ynumber8_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-					scanNumber(&nb, itempk*9);
-					if ((double) itempk*9.0 < Tmax) ynumber9_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-					scanNumber(&nb, itempk*10);
-					if ((double) itempk*10.0 < Tmax) ynumber10_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-					scanNumber(&nb, itempk*11);
-					if ((double) itempk*11.0 < Tmax) ynumber11_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-					break;
-				}
-			}
-			renderTexture(ynumber1_tex, renderer, 50, -8 + temp_time_dilation.y + floor((double) temp_time_dilation.h-((double) itempk / Tmax*(double) temp_time_dilation.h)));
-			renderTexture(ynumber2_tex, renderer, 50, -8 + temp_time_dilation.y + floor((double) temp_time_dilation.h-((double) itempk*2.0 / Tmax*(double) temp_time_dilation.h)));
-			renderTexture(ynumber3_tex, renderer, 50, -8 + temp_time_dilation.y + floor((double) temp_time_dilation.h-((double) itempk*3.0 / Tmax*(double) temp_time_dilation.h)));
-			renderTexture(ynumber4_tex, renderer, 50, -8 + temp_time_dilation.y + floor((double) temp_time_dilation.h-((double) itempk*4.0 / Tmax*(double) temp_time_dilation.h)));
-			renderTexture(ynumber5_tex, renderer, 50, -8 + temp_time_dilation.y + floor((double) temp_time_dilation.h-((double) itempk*5.0 / Tmax*(double) temp_time_dilation.h)));
-			renderTexture(ynumber6_tex, renderer, 50, -8 + temp_time_dilation.y + floor((double) temp_time_dilation.h-((double) itempk*6.0 / Tmax*(double) temp_time_dilation.h)));
-			if ((double) itempk*7.0 < Tmax)
-				renderTexture(ynumber7_tex, renderer, 50, -8 + temp_time_dilation.y + floor((double) temp_time_dilation.h-((double) itempk*7.0 / Tmax*(double) temp_time_dilation.h)));
-			if ((double) itempk*8.0 < Tmax)
-				renderTexture(ynumber8_tex, renderer, 50, -8 + temp_time_dilation.y + floor((double) temp_time_dilation.h-((double) itempk*8.0 / Tmax*(double) temp_time_dilation.h)));
-			if ((double) itempk*9.0 < Tmax)
-				renderTexture(ynumber9_tex, renderer, 50, -8 + temp_time_dilation.y + floor((double) temp_time_dilation.h-((double) itempk*9.0 / Tmax*(double) temp_time_dilation.h)));
-			if ((double) itempk*10.0 < Tmax)
-				renderTexture(ynumber10_tex, renderer, 50, -8 + temp_time_dilation.y + floor((double) temp_time_dilation.h-((double) itempk*10.0 / Tmax*(double) temp_time_dilation.h)));
-			if ((double) itempk*11.0 < Tmax)
-				renderTexture(ynumber11_tex, renderer, 50, -8 + temp_time_dilation.y + floor((double) temp_time_dilation.h-((double) itempk*11.0 / Tmax*(double) temp_time_dilation.h)));
-
-			// Temperature-time plot
-			if (!hold_tracks) {
-				for (T=0;T<temp_time->h;T++) {
-					for (r=0;r<temp_time->w;r++) {
-						pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - T-1)*temp_time->w + r+1;
-						*pixmem32 = alpha;
-					}
-				}
-			}
-			for (T=0;T<Tmax_int;T++) {
-				for (r=0;r<NR;r++) {
-					// Temperature grid every i/2.0 K
-					if (grid) {
-						if ((double) T/((double) itempk/2.0) - (double) floor((double) T/((double) itempk/2.0)) <= 0.1) {
-							xoffset = floor((double)r/(double)NR*temp_time->w);
-							yoffset = floor((double)T/(double)Tmax_int*temp_time->h);
-							pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - yoffset)*temp_time->w + xoffset;
-							*pixmem32 = SDL_MapRGBA(temp_time->format, 255, 255, 255, 20);
-						}
-					}
-					// Temperature profile yellower when more recent, redder when more ancient
-					if (T >= (int) thoutput[r][t].tempk - 4 && T <= (int) thoutput[r][t].tempk + 4) {
-						xoffset = floor((double)r/(double)NR*temp_time->w);
-						yoffset = floor((double)T/(double)Tmax_int*temp_time->h);
-						pixmem32 = (Uint32*) temp_time->pixels + (temp_time->h - yoffset)*temp_time->w + xoffset;
-						*pixmem32 = SDL_MapRGBA(temp_time->format, 255, floor(200*(t-21)/(780-21))+55, 55, 255);
-					}
-				}
-			}
-			temp_time_tex = SDL_CreateTextureFromSurface(renderer, temp_time);
-
-			temp_time_clip.x = 0, temp_time_clip.y = 0;
-			temp_time_clip.w = temp_time->w, temp_time_clip.h = temp_time->h;
-			temp_time_dilation.x = 90, temp_time_dilation.y = 87;
-			temp_time_dilation.w = temp_time->w, temp_time_dilation.h = temp_time->h;
-			SDL_RenderCopy(renderer, temp_time_tex, &temp_time_clip, &temp_time_dilation);
-		}
-
-		if (plot_switch == 1) { // Hydration-time plot
-			for (r=0;r<NR-1;r++) {
-				if (thoutput[r][t].mrock > 0.0 && thoutput[r+1][t].mrock == 0.0) ircore = r;
-			}
-
-			// y-axis numbers
-			scanNumber(&nb, 10);          // Right-justified
-			ynumber1_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			scanNumber(&nb, 20);
-			ynumber2_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			scanNumber(&nb, 30);
-			ynumber3_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			scanNumber(&nb, 40);
-			ynumber4_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			scanNumber(&nb, 50);
-			ynumber5_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			scanNumber(&nb, 60);
-			ynumber6_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			scanNumber(&nb, 70);
-			ynumber7_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			scanNumber(&nb, 80);
-			ynumber8_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			scanNumber(&nb, 90);
-			ynumber9_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			scanNumber(&nb, 100);
-			ynumber10_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-
-			renderTexture(ynumber1_tex, renderer, 50, -8 + hydr_time_dilation.y + floor((double) hydr_time_dilation.h-0.1*(double) hydr_time_dilation.h));
-			renderTexture(ynumber2_tex, renderer, 50, -8 + hydr_time_dilation.y + floor((double) hydr_time_dilation.h-0.2*(double) hydr_time_dilation.h));
-			renderTexture(ynumber3_tex, renderer, 50, -8 + hydr_time_dilation.y + floor((double) hydr_time_dilation.h-0.3*(double) hydr_time_dilation.h));
-			renderTexture(ynumber4_tex, renderer, 50, -8 + hydr_time_dilation.y + floor((double) hydr_time_dilation.h-0.4*(double) hydr_time_dilation.h));
-			renderTexture(ynumber5_tex, renderer, 50, -8 + hydr_time_dilation.y + floor((double) hydr_time_dilation.h-0.5*(double) hydr_time_dilation.h));
-			renderTexture(ynumber6_tex, renderer, 50, -8 + hydr_time_dilation.y + floor((double) hydr_time_dilation.h-0.6*(double) hydr_time_dilation.h));
-			renderTexture(ynumber7_tex, renderer, 50, -8 + hydr_time_dilation.y + floor((double) hydr_time_dilation.h-0.7*(double) hydr_time_dilation.h));
-			renderTexture(ynumber8_tex, renderer, 50, -8 + hydr_time_dilation.y + floor((double) hydr_time_dilation.h-0.8*(double) hydr_time_dilation.h));
-			renderTexture(ynumber9_tex, renderer, 50, -8 + hydr_time_dilation.y + floor((double) hydr_time_dilation.h-0.9*(double) hydr_time_dilation.h));
-			renderTexture(ynumber10_tex, renderer, 50, -8 + hydr_time_dilation.y + floor((double) hydr_time_dilation.h-(double) hydr_time_dilation.h));
-
-			// Hydration-time plot
-			if (!hold_tracks) {
-				for (T=0;T<hydr_time->h;T++) {
-					for (r=0;r<hydr_time->w;r++) {
-						pixmem32 = (Uint32*) hydr_time->pixels + (hydr_time->h - T-1)*hydr_time->w + r+1;
-						*pixmem32 = alpha;
-					}
-				}
-			}
-
-			for (T=0;T<=100;T++) {
-				for (r=0;r<ircore;r++) {
-					// Hydration profile yellower when more recent, redder when more ancient
-					if (T >= (int) thoutput[r][t].famor*100 - 1 && T <= (int) thoutput[r][t].famor*100 + 1) {
-						xoffset = floor((double)r/(double)NR*hydr_time->w);
-						yoffset = floor((double)T/(double)100*hydr_time->h);
-						if (yoffset == 0) yoffset = 1;
-						pixmem32 = (Uint32*) hydr_time->pixels + (hydr_time->h - yoffset)*hydr_time->w + xoffset;
-						*pixmem32 = SDL_MapRGBA(hydr_time->format, 255, floor(200*(t-21)/(780-21))+55, 55, 255);
-					}
-				}
-			}
-			hydr_time_tex = SDL_CreateTextureFromSurface(renderer, hydr_time);
-
-			hydr_time_clip.x = 0, hydr_time_clip.y = 0;
-			hydr_time_clip.w = hydr_time->w, hydr_time_clip.h = hydr_time->h;
-			hydr_time_dilation.x = 90, hydr_time_dilation.y = 87;
-			hydr_time_dilation.w = hydr_time->w, hydr_time_dilation.h = hydr_time->h;
-			SDL_RenderCopy(renderer, hydr_time_tex, &hydr_time_clip, &hydr_time_dilation);
-		}
-
-		if (plot_switch == 2) { // Kappa-time plot
-			// y-axis numbers
-			for (itempk=1;itempk<100;itempk=itempk+1) {
-				if (kappamax >= (double) itempk && kappamax < (double) itempk*6.0+6.0) {
-					scanNumber(&nb, itempk);          // Right-justified
-					ynumber1_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-					scanNumber(&nb, itempk*2);
-					ynumber2_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-					scanNumber(&nb, itempk*3);
-					ynumber3_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-					scanNumber(&nb, itempk*4);
-					ynumber4_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-					scanNumber(&nb, itempk*5);
-					ynumber5_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-					scanNumber(&nb, itempk*6);
-					ynumber6_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-					scanNumber(&nb, itempk*7);
-					if ((double) itempk*7.0 < kappamax) ynumber7_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-					scanNumber(&nb, itempk*8);
-					if ((double) itempk*8.0 < kappamax) ynumber8_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-					scanNumber(&nb, itempk*9);
-					if ((double) itempk*9.0 < kappamax) ynumber9_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-					scanNumber(&nb, itempk*10);
-					if ((double) itempk*10.0 < kappamax) ynumber10_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-					scanNumber(&nb, itempk*11);
-					if ((double) itempk*11.0 < kappamax) ynumber11_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-					break;
-				}
-			}
-			renderTexture(ynumber1_tex, renderer, 50, -8 + kappa_time_dilation.y + floor((double) kappa_time_dilation.h-((double) itempk / kappamax*(double) kappa_time_dilation.h)));
-			renderTexture(ynumber2_tex, renderer, 50, -8 + kappa_time_dilation.y + floor((double) kappa_time_dilation.h-((double) itempk*2.0 / kappamax*(double) kappa_time_dilation.h)));
-			renderTexture(ynumber3_tex, renderer, 50, -8 + kappa_time_dilation.y + floor((double) kappa_time_dilation.h-((double) itempk*3.0 / kappamax*(double) kappa_time_dilation.h)));
-			renderTexture(ynumber4_tex, renderer, 50, -8 + kappa_time_dilation.y + floor((double) kappa_time_dilation.h-((double) itempk*4.0 / kappamax*(double) kappa_time_dilation.h)));
-			renderTexture(ynumber5_tex, renderer, 50, -8 + kappa_time_dilation.y + floor((double) kappa_time_dilation.h-((double) itempk*5.0 / kappamax*(double) kappa_time_dilation.h)));
-			renderTexture(ynumber6_tex, renderer, 50, -8 + kappa_time_dilation.y + floor((double) kappa_time_dilation.h-((double) itempk*6.0 / kappamax*(double) kappa_time_dilation.h)));
-			if ((double) itempk*7.0 < kappamax)
-				renderTexture(ynumber7_tex, renderer, 50, -8 + kappa_time_dilation.y + floor((double) kappa_time_dilation.h-((double) itempk*7.0 / kappamax*(double) kappa_time_dilation.h)));
-			if ((double) itempk*8.0 < kappamax)
-				renderTexture(ynumber8_tex, renderer, 50, -8 + kappa_time_dilation.y + floor((double) kappa_time_dilation.h-((double) itempk*8.0 / kappamax*(double) kappa_time_dilation.h)));
-			if ((double) itempk*9.0 < kappamax)
-				renderTexture(ynumber9_tex, renderer, 50, -8 + kappa_time_dilation.y + floor((double) kappa_time_dilation.h-((double) itempk*9.0 / kappamax*(double) kappa_time_dilation.h)));
-			if ((double) itempk*10.0 < kappamax)
-				renderTexture(ynumber10_tex, renderer, 50, -8 + kappa_time_dilation.y + floor((double) kappa_time_dilation.h-((double) itempk*10.0 / kappamax*(double) kappa_time_dilation.h)));
-			if ((double) itempk*11.0 < kappamax)
-				renderTexture(ynumber11_tex, renderer, 50, -8 + kappa_time_dilation.y + floor((double) kappa_time_dilation.h-((double) itempk*11.0 / kappamax*(double) kappa_time_dilation.h)));
-
-			// Kappa-time plot
-			if (!hold_tracks) {
-				for (T=0;T<kappa_time->h;T++) {
-					for (r=0;r<kappa_time->w;r++) {
-						pixmem32 = (Uint32*) kappa_time->pixels + (kappa_time->h - T-1)*kappa_time->w + r+1;
-						*pixmem32 = alpha;
-					}
-				}
-			}
-			for (T=0;T<kappamax_int;T++) {
-				for (r=0;r<NR;r++) {
-					// Kappa profile yellower when more recent, redder when more ancient
-					if (T == (int) thoutput[r][t].nu) {
-						xoffset = floor((double)r/(double)NR*kappa_time->w);
-						yoffset = floor((double)T/(double)kappamax_int*kappa_time->h);
-						pixmem32 = (Uint32*) kappa_time->pixels + (kappa_time->h - yoffset)*kappa_time->w + xoffset;
-						*pixmem32 = SDL_MapRGBA(kappa_time->format, 255, floor(200*(t-21)/(780-21))+55, 55, 255);
-					}
-				}
-			}
-			kappa_time_tex = SDL_CreateTextureFromSurface(renderer, kappa_time);
-
-			kappa_time_clip.x = 0, kappa_time_clip.y = 0;
-			kappa_time_clip.w = kappa_time->w, kappa_time_clip.h = kappa_time->h;
-			kappa_time_dilation.x = 90, kappa_time_dilation.y = 87;
-			kappa_time_dilation.w = kappa_time->w, kappa_time_dilation.h = kappa_time->h;
-			SDL_RenderCopy(renderer, kappa_time_tex, &kappa_time_clip, &kappa_time_dilation);
-		}
-
-		// Unveil the progress bar
-		progress_bar_clip.x = 21, progress_bar_clip.y = 551;
-		progress_bar_clip.w = floor((780.0-21.0)*t/NT_output), progress_bar_clip.h = 15;
-		progress_bar_dilation.x = 21, progress_bar_dilation.y = 551;
-		progress_bar_dilation.w = floor((780.0-21.0)*t/NT_output), progress_bar_dilation.h = 15;
-		SDL_RenderCopy(renderer, progress_bar_tex, &progress_bar_clip, &progress_bar_dilation);
-
-		// Time elapsed
-
-		elapsed_digit_1 = SDL_CreateTextureFromSurface(renderer, numbers);
-		elapsed_digit_clip_1 = ClipNumber(floor(t/100.0),18);
-		elapsed_digit_dest_1.x = 625, elapsed_digit_dest_1.y = 502;
-		elapsed_digit_dest_1.w = 12, elapsed_digit_dest_1.h = 20;
-		SDL_RenderCopy(renderer, elapsed_digit_1, &elapsed_digit_clip_1, &elapsed_digit_dest_1);
-
-		elapsed_digit_2 = SDL_CreateTextureFromSurface(renderer, numbers);
-		int t_10 = floor((t-floor(t/100.0)*100.0)/10.0);
-		elapsed_digit_clip_2 = ClipNumber(t_10,18);
-		elapsed_digit_dest_2.x = 640, elapsed_digit_dest_2.y = elapsed_digit_dest_1.y;
-		elapsed_digit_dest_2.w = 12, elapsed_digit_dest_2.h = 20;
-		SDL_RenderCopy(renderer, elapsed_digit_2, &elapsed_digit_clip_2, &elapsed_digit_dest_2);
-
-		elapsed_digit_3 = SDL_CreateTextureFromSurface(renderer, numbers);
-		int t_100 = floor(t-floor(t/100.0)*100.0-floor(t_10)*10.0);
-		elapsed_digit_clip_3 = ClipNumber(t_100,18);
-		elapsed_digit_dest_3.x = 650, elapsed_digit_dest_3.y = elapsed_digit_dest_1.y;
-		elapsed_digit_dest_3.w = 12, elapsed_digit_dest_3.h = 20;
-		SDL_RenderCopy(renderer, elapsed_digit_3, &elapsed_digit_clip_3, &elapsed_digit_dest_3);
-
-		// % history elapsed
-
-		percent = t/4.56;
-
-		elapsed_percent_1 = SDL_CreateTextureFromSurface(renderer, numbers);
-		elapsed_percent_clip_1 = ClipNumber(floor(percent/100.0),18);
-		elapsed_percent_dest_1.x = 630, elapsed_percent_dest_1.y = 526;
-		elapsed_percent_dest_1.w = 12, elapsed_percent_dest_1.h = 20;
-		if (floor(percent/100.0) > 0.0)                        // Don't display the first number if it is 0
-			SDL_RenderCopy(renderer, elapsed_percent_1, &elapsed_percent_clip_1, &elapsed_percent_dest_1);
-
-		elapsed_percent_2 = SDL_CreateTextureFromSurface(renderer, numbers);
-		percent_10 = floor((percent-floor(percent/100.0)*100.0)/10.0);
-		elapsed_percent_clip_2 = ClipNumber(percent_10,18);
-		elapsed_percent_dest_2.x = 640, elapsed_percent_dest_2.y = elapsed_percent_dest_1.y;
-		elapsed_percent_dest_2.w = 12, elapsed_percent_dest_2.h = 20;
-		if (floor(percent/100.0) > 0.0 || percent_10 > 0.0)    // Don't display the first numbers if they are both 0
-			SDL_RenderCopy(renderer, elapsed_percent_2, &elapsed_percent_clip_2, &elapsed_percent_dest_2);
-
-		elapsed_percent_3 = SDL_CreateTextureFromSurface(renderer, numbers);
-		percent_100 = floor(percent-floor(percent/100.0)*100.0-floor(percent_10)*10.0);
-		elapsed_percent_clip_3 = ClipNumber(percent_100,18);
-		elapsed_percent_dest_3.x = 650, elapsed_percent_dest_3.y = elapsed_percent_dest_1.y;
-		elapsed_percent_dest_3.w = 12, elapsed_percent_dest_3.h = 20;
-		SDL_RenderCopy(renderer, elapsed_percent_3, &elapsed_percent_clip_3, &elapsed_percent_dest_3);
-
-		// Other renderings
-		renderTexture(ynumber0_tex, renderer, 50, -8 + temp_time_dilation.y + temp_time_dilation.h);
-
-		renderTexture(xnumber0_tex, renderer, -5 + temp_time_dilation.x, 445);
-		renderTexture(xnumber1_tex, renderer, -5 + temp_time_dilation.x + floor((double) irad / thoutput[NR-1][0].radius*(double) temp_time_dilation.w), 445);
-		renderTexture(xnumber2_tex, renderer, -5 + temp_time_dilation.x + floor((double) irad*2.0 / thoutput[NR-1][0].radius*(double) temp_time_dilation.w), 445);
-		renderTexture(xnumber3_tex, renderer, -5 + temp_time_dilation.x + floor((double) irad*3.0 / thoutput[NR-1][0].radius*(double) temp_time_dilation.w), 445);
-		renderTexture(xnumber4_tex, renderer, -5 + temp_time_dilation.x + floor((double) irad*4.0 / thoutput[NR-1][0].radius*(double) temp_time_dilation.w), 445);
-		renderTexture(xnumber5_tex, renderer, -5 + temp_time_dilation.x + floor((double) irad*5.0 / thoutput[NR-1][0].radius*(double) temp_time_dilation.w), 445);
-		renderTexture(xnumber6_tex, renderer, -5 + temp_time_dilation.x + floor((double) irad*6.0 / thoutput[NR-1][0].radius*(double) temp_time_dilation.w), 445);
-		renderTexture(xnumber7_tex, renderer, -5 + temp_time_dilation.x + floor((double) irad*7.0 / thoutput[NR-1][0].radius*(double) temp_time_dilation.w), 445);
-		renderTexture(xnumber8_tex, renderer, -5 + temp_time_dilation.x + floor((double) irad*8.0 / thoutput[NR-1][0].radius*(double) temp_time_dilation.w), 445);
-		renderTexture(xnumber9_tex, renderer, -5 + temp_time_dilation.x + floor((double) irad*9.0 / thoutput[NR-1][0].radius*(double) temp_time_dilation.w), 445);
-
-		SDL_RenderPresent(renderer);
-
-		SDL_DestroyTexture(elapsed_digit_1);
-		SDL_DestroyTexture(elapsed_digit_2);
-		SDL_DestroyTexture(elapsed_digit_3);
-		SDL_DestroyTexture(elapsed_percent_1);
-		SDL_DestroyTexture(elapsed_percent_2);
-		SDL_DestroyTexture(elapsed_percent_3);
-
-		SDL_Delay(16);
+		// Update displays
+		UpdateDisplays(renderer, background_tex, FontFile, thoutput, TempK, Hydr, Kappa,
+				structure, grid, hold_tracks, plot_switch, t, NR, NT_output, ircore, Tmax, kappamax,
+				value_time, axisTextColor, alpha,
+				DryRock_tex, Liquid_tex, Ice_tex, Crust_tex, numbers,
+				progress_bar_tex, irad,
+				xnumber0_tex, xnumber1_tex, xnumber2_tex, xnumber3_tex,
+				xnumber4_tex, xnumber5_tex, xnumber6_tex, xnumber7_tex,
+				xnumber8_tex, xnumber9_tex, ynumber0_tex);
 	}
 
-//-------------------------------------------------------------------
-//                      Free remaining mallocs
-//-------------------------------------------------------------------
+	//-------------------------------------------------------------------
+	//                      Free remaining mallocs
+	//-------------------------------------------------------------------
 
 	SDL_DestroyTexture(background_tex);
 	SDL_DestroyTexture(progress_bar_tex);
-	SDL_FreeSurface(progress_bar);
 	SDL_FreeSurface(numbers);
-	SDL_DestroyTexture(temp_time_tex);
-	SDL_FreeSurface(temp_time);
-	SDL_DestroyTexture(hydr_time_tex);
-	SDL_FreeSurface(hydr_time);
-	SDL_DestroyTexture(kappa_time_tex);
-	SDL_FreeSurface(kappa_time);
+	SDL_FreeSurface(value_time);
 	SDL_DestroyTexture(ynumber0_tex);
-	SDL_DestroyTexture(ynumber1_tex);
-	SDL_DestroyTexture(ynumber2_tex);
-	SDL_DestroyTexture(ynumber3_tex);
-	SDL_DestroyTexture(ynumber4_tex);
-	SDL_DestroyTexture(ynumber5_tex);
-	SDL_DestroyTexture(ynumber6_tex);
-	SDL_DestroyTexture(ynumber7_tex);
-	SDL_DestroyTexture(ynumber8_tex);
-	SDL_DestroyTexture(ynumber9_tex);
-	SDL_DestroyTexture(ynumber10_tex);
-	SDL_DestroyTexture(ynumber11_tex);
 	SDL_DestroyTexture(xnumber0_tex);
 	SDL_DestroyTexture(xnumber1_tex);
 	SDL_DestroyTexture(xnumber2_tex);
@@ -1638,6 +445,400 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, float 
 	SDL_DestroyTexture(Liquid_tex);
 	SDL_DestroyTexture(Ice_tex);
 	SDL_DestroyTexture(Crust_tex);
+
+	for (t=0;t<NT_output;t++) {
+		free (TempK[t]);
+		free (Hydr[t]);
+		free (Kappa[t]);
+	}
+	free (TempK);
+	free (Hydr);
+	free(Kappa);
+
+	return 0;
+}
+
+int StructurePlot (SDL_Renderer* renderer, thermalout **thoutput, int t, int NR,
+		SDL_Texture* DryRock_tex, SDL_Texture* Liquid_tex, SDL_Texture* Ice_tex, SDL_Texture* Crust_tex,
+		SDL_Rect temp_time_dilation) {
+	int r = 0;
+
+	SDL_Rect DryRock_clip;
+	SDL_Rect DryRock_dest;
+	int DryRock_x = 0;
+	int DryRock_w = 0;
+
+	SDL_Rect Liquid_clip;
+	SDL_Rect Liquid_dest;
+	int Liquid_x = 0;
+	int Liquid_w = 0;
+
+	SDL_Rect Ice_clip;
+	SDL_Rect Ice_dest;
+	int Ice_x = 0;
+	int Ice_w = 0;
+
+	SDL_Rect Crust_clip;
+	SDL_Rect Crust_dest;
+	int Crust_x = 0;
+	int Crust_w = 0;
+
+	// Dry rock
+	for (r=0;r<NR-2;r++) {
+		if (thoutput[r][t].mrock <= 0.0 && thoutput[r+1][t].mrock > 0.0 && thoutput[r+2][t].mh2os <= 0.0
+				&& thoutput[r+2][t].madhs <= 0.0 && thoutput[r+2][t].mh2ol <= 0.0 && thoutput[r+2][t].mnh3l <= 0.0) {
+			DryRock_x = r;
+			break;
+		}
+	}
+	for (r=0;r<NR-2;r++) {
+		if (thoutput[r][t].mrock > 0.0 && thoutput[r+2][t].mrock <= 0.0 && thoutput[r][t].mh2os <= 0.0
+				&& thoutput[r][t].madhs <= 0.0 && thoutput[r][t].mh2ol <= 0.0 && thoutput[r][t].mnh3l <= 0.0) {
+			DryRock_w = r - DryRock_x;
+			break;
+		}
+	}
+	SDL_QueryTexture(DryRock_tex, NULL, NULL, &DryRock_clip.w, &DryRock_clip.h);
+	DryRock_clip.x = 0, DryRock_clip.y = 0;
+	DryRock_dest.x = temp_time_dilation.x + floor((double) DryRock_x/(double) NR*(double) temp_time_dilation.w), DryRock_dest.y = temp_time_dilation.y;
+	DryRock_dest.w = floor((double) DryRock_w/(double) NR*(double) temp_time_dilation.w), DryRock_dest.h = temp_time_dilation.h;
+	SDL_RenderCopy(renderer, DryRock_tex, &DryRock_clip, &DryRock_dest);
+
+	// Liquid
+	for (r=0;r<NR-1;r++) {
+		if (thoutput[r][t].mh2ol <= 0.0 && thoutput[r+1][t].mh2ol > 0.0) {
+			Liquid_x = r;
+			break;
+		}
+	}
+	for (r=0;r<NR-1;r++) {
+		if (thoutput[r][t].mh2ol > 0.0 && thoutput[r+1][t].mh2ol <= 0.0) {
+			Liquid_w = r - Liquid_x;
+			break;
+		}
+	}
+	SDL_QueryTexture(Liquid_tex, NULL, NULL, &Liquid_clip.w, &Liquid_clip.h);
+	Liquid_clip.x = 0, Liquid_clip.y = 0;
+	Liquid_dest.x = temp_time_dilation.x + floor((double) Liquid_x/(double) NR*(double) temp_time_dilation.w), Liquid_dest.y = temp_time_dilation.y;
+	Liquid_dest.w = floor((double) Liquid_w/(double) NR*(double) temp_time_dilation.w), Liquid_dest.h = temp_time_dilation.h;
+	SDL_RenderCopy(renderer, Liquid_tex, &Liquid_clip, &Liquid_dest);
+
+	// Ice
+	for (r=0;r<NR-2;r++) {
+		if (thoutput[r][t].mh2os <= 0.0 && thoutput[r+1][t].mh2os > 0.0 && thoutput[r+2][t].mrock <= 0.0
+				&& thoutput[r+2][t].madhs <= 0.0 && thoutput[r+2][t].mh2ol <= 0.0 && thoutput[r+2][t].mnh3l <= 0.0) {
+			Ice_x = r + 1;
+			break;
+		}
+	}
+	for (r=0;r<NR-1;r++) {
+		if (thoutput[r][t].mh2os > 0.0 && thoutput[r+1][t].mh2os <= thoutput[r][t].mh2os) {
+			Ice_w = r - Ice_x + 1;
+			break;
+		}
+	}
+	SDL_QueryTexture(Ice_tex, NULL, NULL, &Ice_clip.w, &Ice_clip.h);
+	Ice_clip.x = 0, Ice_clip.y = 0;
+	Ice_dest.x = temp_time_dilation.x + floor((double) Ice_x/(double) NR*(double) temp_time_dilation.w), Ice_dest.y = temp_time_dilation.y;
+	Ice_dest.w = floor((double) Ice_w/(double) NR*(double) temp_time_dilation.w), Ice_dest.h = temp_time_dilation.h;
+	SDL_RenderCopy(renderer, Ice_tex, &Ice_clip, &Ice_dest);
+
+	// Crust
+	for (r=0;r<NR;r++) {
+		if (thoutput[r][t].mrock > 0.0 && thoutput[r][t].mh2os > 0.0 && thoutput[r][t].madhs > 0.0
+				&& thoutput[r][t].mh2ol <= 0.0 && thoutput[r][t].mnh3l <= 0.0) {
+			Crust_x = r;
+			break;
+		}
+	}
+	Crust_w = NR - r;
+	SDL_QueryTexture(Crust_tex, NULL, NULL, &Crust_clip.w, &Crust_clip.h);
+	Crust_clip.x = 0, Crust_clip.y = 0;
+	Crust_dest.x = temp_time_dilation.x + floor((double) Crust_x/(double) NR*(double) temp_time_dilation.w), Crust_dest.y = temp_time_dilation.y;
+	Crust_dest.w = floor((double) Crust_w/(double) NR*(double) temp_time_dilation.w), Crust_dest.h = temp_time_dilation.h;
+	SDL_RenderCopy(renderer, Crust_tex, &Crust_clip, &Crust_dest);
+
+	return 0;
+}
+
+int TwoAxisPlot (SDL_Renderer* renderer, char *FontFile, double **Values, int grid, int hold_tracks, int t, int NR, int irmax,
+		int itempk_step, int itempk_max, double itempk_fold_min, double itempk_fold_max, double itempk_fold_step, int thickness,
+		double Tmax, SDL_Surface* value_time, SDL_Rect value_time_clip, SDL_Rect* value_time_dilation,
+		SDL_Color axisTextColor, Uint32 alpha) {
+
+	SDL_Texture* value_time_tex;
+	SDL_Texture* ynumber1_tex = NULL;
+	SDL_Texture* ynumber2_tex = NULL;
+	SDL_Texture* ynumber3_tex = NULL;
+	SDL_Texture* ynumber4_tex = NULL;
+	SDL_Texture* ynumber5_tex = NULL;
+	SDL_Texture* ynumber6_tex = NULL;
+	SDL_Texture* ynumber7_tex = NULL;
+	SDL_Texture* ynumber8_tex = NULL;
+	SDL_Texture* ynumber9_tex = NULL;
+	SDL_Texture* ynumber10_tex = NULL;
+	SDL_Texture* ynumber11_tex = NULL;
+
+	int T = 0;
+	int r = 0;
+	int itempk = 0;
+	char nb[10];
+	Uint32 *pixmem32;
+	int Tmax_int = 0;
+	int xoffset = 0;
+	int yoffset = 0;
+
+	Tmax_int = (int) Tmax + 1;
+
+	// y-axis numbers
+	for (itempk=itempk_step;itempk<itempk_max;itempk=itempk+itempk_step) {
+		if (Tmax > (double) itempk*itempk_fold_min && Tmax <= (double) itempk*itempk_fold_max+itempk_fold_step) {
+			scanNumber(&nb, itempk);          // Right-justified
+			ynumber1_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
+			scanNumber(&nb, itempk*2);
+			ynumber2_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
+			scanNumber(&nb, itempk*3);
+			ynumber3_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
+			scanNumber(&nb, itempk*4);
+			ynumber4_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
+			scanNumber(&nb, itempk*5);
+			ynumber5_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
+			scanNumber(&nb, itempk*6);
+			ynumber6_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
+			scanNumber(&nb, itempk*7);
+			if ((double) itempk*7.0 < Tmax) ynumber7_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
+			scanNumber(&nb, itempk*8);
+			if ((double) itempk*8.0 < Tmax) ynumber8_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
+			scanNumber(&nb, itempk*9);
+			if ((double) itempk*9.0 < Tmax) ynumber9_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
+			scanNumber(&nb, itempk*10);
+			if ((double) itempk*10.0 < Tmax) ynumber10_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
+			scanNumber(&nb, itempk*11);
+			if ((double) itempk*11.0 < Tmax) ynumber11_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
+			break;
+		}
+	}
+
+	// Temperature-time plot
+	if (!hold_tracks) {
+		for (T=0;T<value_time->h;T++) {
+			for (r=0;r<value_time->w;r++) {
+				pixmem32 = (Uint32*) value_time->pixels + (value_time->h - T-1)*value_time->w + r+1;
+				*pixmem32 = alpha;
+			}
+		}
+	}
+	for (T=0;T<=Tmax_int;T++) {
+		for (r=0;r<irmax;r++) {
+			// Temperature grid every i/2.0 K
+			if (grid) {
+				if ((double) T/((double) itempk/2.0) - (double) floor((double) T/((double) itempk/2.0)) <= 0.1) {
+					xoffset = floor((double)r/(double)NR*value_time->w);
+					yoffset = floor((double)T/(double)Tmax_int*value_time->h);
+					pixmem32 = (Uint32*) value_time->pixels + (value_time->h - yoffset)*value_time->w + xoffset;
+					*pixmem32 = SDL_MapRGBA(value_time->format, 255, 255, 255, 20);
+				}
+			}
+			// Temperature profile yellower when more recent, redder when more ancient
+			if (T >= (int) Values[t][r] - thickness && T <= (int) Values[t][r] + thickness) {
+				xoffset = floor((double)r/(double)NR*value_time->w);
+				yoffset = floor((double)T/(double)Tmax_int*value_time->h);
+				pixmem32 = (Uint32*) value_time->pixels + (value_time->h - yoffset)*value_time->w + xoffset;
+				*pixmem32 = SDL_MapRGBA(value_time->format, 255, floor(200*(t-21)/(780-21))+55, 55, 255);
+			}
+		}
+	}
+	value_time_tex = SDL_CreateTextureFromSurface(renderer, value_time);
+
+	value_time_clip.x = 0, value_time_clip.y = 0;
+	value_time_clip.w = value_time->w, value_time_clip.h = value_time->h;
+	(*value_time_dilation).x = 90, (*value_time_dilation).y = 87;
+	(*value_time_dilation).w = value_time->w, (*value_time_dilation).h = value_time->h;
+	SDL_RenderCopy(renderer, value_time_tex, &value_time_clip, &(*value_time_dilation));
+
+	renderTexture(ynumber1_tex, renderer, 50, -8 + (*value_time_dilation).y + floor((double) (*value_time_dilation).h-((double) itempk / Tmax*(double) (*value_time_dilation).h)));
+	renderTexture(ynumber2_tex, renderer, 50, -8 + (*value_time_dilation).y + floor((double) (*value_time_dilation).h-((double) itempk*2.0 / Tmax*(double) (*value_time_dilation).h)));
+	renderTexture(ynumber3_tex, renderer, 50, -8 + (*value_time_dilation).y + floor((double) (*value_time_dilation).h-((double) itempk*3.0 / Tmax*(double) (*value_time_dilation).h)));
+	renderTexture(ynumber4_tex, renderer, 50, -8 + (*value_time_dilation).y + floor((double) (*value_time_dilation).h-((double) itempk*4.0 / Tmax*(double) (*value_time_dilation).h)));
+	renderTexture(ynumber5_tex, renderer, 50, -8 + (*value_time_dilation).y + floor((double) (*value_time_dilation).h-((double) itempk*5.0 / Tmax*(double) (*value_time_dilation).h)));
+	renderTexture(ynumber6_tex, renderer, 50, -8 + (*value_time_dilation).y + floor((double) (*value_time_dilation).h-((double) itempk*6.0 / Tmax*(double) (*value_time_dilation).h)));
+	if ((double) itempk*7.0 < Tmax)
+		renderTexture(ynumber7_tex, renderer, 50, -8 + (*value_time_dilation).y + floor((double) (*value_time_dilation).h-((double) itempk*7.0 / Tmax*(double) (*value_time_dilation).h)));
+	if ((double) itempk*8.0 < Tmax)
+		renderTexture(ynumber8_tex, renderer, 50, -8 + (*value_time_dilation).y + floor((double) (*value_time_dilation).h-((double) itempk*8.0 / Tmax*(double) (*value_time_dilation).h)));
+	if ((double) itempk*9.0 < Tmax)
+		renderTexture(ynumber9_tex, renderer, 50, -8 + (*value_time_dilation).y + floor((double) (*value_time_dilation).h-((double) itempk*9.0 / Tmax*(double) (*value_time_dilation).h)));
+	if ((double) itempk*10.0 < Tmax)
+		renderTexture(ynumber10_tex, renderer, 50, -8 + (*value_time_dilation).y + floor((double) (*value_time_dilation).h-((double) itempk*10.0 / Tmax*(double) (*value_time_dilation).h)));
+	if ((double) itempk*11.0 < Tmax)
+		renderTexture(ynumber11_tex, renderer, 50, -8 + (*value_time_dilation).y + floor((double) (*value_time_dilation).h-((double) itempk*11.0 / Tmax*(double) (*value_time_dilation).h)));
+
+	SDL_DestroyTexture(value_time_tex);
+
+	SDL_DestroyTexture(ynumber1_tex);
+	SDL_DestroyTexture(ynumber2_tex);
+	SDL_DestroyTexture(ynumber3_tex);
+	SDL_DestroyTexture(ynumber4_tex);
+	SDL_DestroyTexture(ynumber5_tex);
+	SDL_DestroyTexture(ynumber6_tex);
+	SDL_DestroyTexture(ynumber7_tex);
+	SDL_DestroyTexture(ynumber8_tex);
+	SDL_DestroyTexture(ynumber9_tex);
+	SDL_DestroyTexture(ynumber10_tex);
+	SDL_DestroyTexture(ynumber11_tex);
+
+	return 0;
+}
+
+int UpdateDisplays (SDL_Renderer* renderer, SDL_Texture* background_tex, char* FontFile, thermalout **thoutput,
+		double **TempK, double **Hydr, double **Kappa, int structure, int grid, int hold_tracks, int plot_switch,
+		int t, int NR, int NT_output, int ircore, double Tmax, double kappamax, SDL_Surface* value_time,
+		SDL_Color axisTextColor, Uint32 alpha,
+		SDL_Texture* DryRock_tex, SDL_Texture* Liquid_tex, SDL_Texture* Ice_tex, SDL_Texture* Crust_tex,
+		SDL_Surface* numbers, SDL_Texture* progress_bar_tex, int irad,
+		SDL_Texture* xnumber0_tex, SDL_Texture* xnumber1_tex, SDL_Texture* xnumber2_tex, SDL_Texture* xnumber3_tex,
+		SDL_Texture* xnumber4_tex, SDL_Texture* xnumber5_tex, SDL_Texture* xnumber6_tex, SDL_Texture* xnumber7_tex,
+		SDL_Texture* xnumber8_tex, SDL_Texture* xnumber9_tex, SDL_Texture* ynumber0_tex) {
+
+	int r = 0;
+	double percent = 0.0; // % of history, 4.56 Gyr = 100%
+	int percent_10 = 0;   // 2nd digit
+	int percent_100 = 0;  // 3rd digit
+
+	SDL_Texture* elapsed_digit_1 = NULL;                    // Time elapsed
+	SDL_Texture* elapsed_digit_2 = NULL;
+	SDL_Texture* elapsed_digit_3 = NULL;
+	SDL_Texture* elapsed_percent_1 = NULL;                  // % history elapsed
+	SDL_Texture* elapsed_percent_2 = NULL;
+	SDL_Texture* elapsed_percent_3 = NULL;
+
+	SDL_Rect progress_bar_clip;        // Section of the image to clip
+	SDL_Rect progress_bar_dilation;    // Resized and repositioned clip
+	SDL_Rect value_time_clip;
+	SDL_Rect value_time_dilation;
+	SDL_Rect elapsed_digit_clip_1;
+	SDL_Rect elapsed_digit_dest_1;
+	SDL_Rect elapsed_digit_clip_2;
+	SDL_Rect elapsed_digit_dest_2;
+	SDL_Rect elapsed_digit_clip_3;
+	SDL_Rect elapsed_digit_dest_3;
+	SDL_Rect elapsed_percent_clip_1;
+	SDL_Rect elapsed_percent_dest_1;
+	SDL_Rect elapsed_percent_clip_2;
+	SDL_Rect elapsed_percent_dest_2;
+	SDL_Rect elapsed_percent_clip_3;
+	SDL_Rect elapsed_percent_dest_3;
+
+	SDL_RenderClear(renderer);
+	ApplySurface(0, 0, background_tex, renderer, NULL);
+
+	// Main plot
+	switch (plot_switch) {
+	case 1:  // Hydration-time plot
+		for (r=0;r<NR-1;r++) {
+			if (thoutput[r][t].mrock > 0.0 && thoutput[r+1][t].mrock == 0.0) ircore = r;
+		}
+		TwoAxisPlot(renderer, FontFile, Hydr, grid, hold_tracks, t, NR, ircore,
+				10, 11, 9.0, 9.0, 20.0, 1,
+				101, value_time, value_time_clip, &value_time_dilation,
+				axisTextColor, alpha);
+		break;
+	case 2:  // Thermal conductivity-time plot
+		TwoAxisPlot(renderer, FontFile, Kappa, grid, hold_tracks, t, NR, NR,
+				1, 100, 1.0, 6.0, 6.0, 0,
+				kappamax, value_time, value_time_clip, &value_time_dilation,
+				axisTextColor, alpha);
+		break;
+	default: // Temperature-time plot
+		TwoAxisPlot(renderer, FontFile, TempK, grid, hold_tracks, t, NR, NR,
+				50, 1500, 6.0, 6.0, 300.0, 4,
+				Tmax, value_time, value_time_clip, &value_time_dilation,
+				axisTextColor, alpha);
+	}
+
+	// Structure plot
+	if (structure == 1) {
+		StructurePlot(renderer, thoutput, t, NR, DryRock_tex, Liquid_tex, Ice_tex, Crust_tex, value_time_dilation);
+	}
+
+	// Unveil the progress bar
+	progress_bar_clip.x = 21, progress_bar_clip.y = 551;
+	progress_bar_clip.w = floor((780.0-21.0)*t/NT_output), progress_bar_clip.h = 15;
+	progress_bar_dilation.x = 21, progress_bar_dilation.y = 551;
+	progress_bar_dilation.w = floor((780.0-21.0)*t/NT_output), progress_bar_dilation.h = 15;
+	SDL_RenderCopy(renderer, progress_bar_tex, &progress_bar_clip, &progress_bar_dilation);
+
+	// Time elapsed
+	elapsed_digit_1 = SDL_CreateTextureFromSurface(renderer, numbers);
+	elapsed_digit_clip_1 = ClipNumber(floor(t/100.0),18);
+	elapsed_digit_dest_1.x = 625, elapsed_digit_dest_1.y = 502;
+	elapsed_digit_dest_1.w = 12, elapsed_digit_dest_1.h = 20;
+	SDL_RenderCopy(renderer, elapsed_digit_1, &elapsed_digit_clip_1, &elapsed_digit_dest_1);
+
+	elapsed_digit_2 = SDL_CreateTextureFromSurface(renderer, numbers);
+	int t_10 = floor((t-floor(t/100.0)*100.0)/10.0);
+	elapsed_digit_clip_2 = ClipNumber(t_10,18);
+	elapsed_digit_dest_2.x = 640, elapsed_digit_dest_2.y = elapsed_digit_dest_1.y;
+	elapsed_digit_dest_2.w = 12, elapsed_digit_dest_2.h = 20;
+	SDL_RenderCopy(renderer, elapsed_digit_2, &elapsed_digit_clip_2, &elapsed_digit_dest_2);
+
+	elapsed_digit_3 = SDL_CreateTextureFromSurface(renderer, numbers);
+	int t_100 = floor(t-floor(t/100.0)*100.0-floor(t_10)*10.0);
+	elapsed_digit_clip_3 = ClipNumber(t_100,18);
+	elapsed_digit_dest_3.x = 650, elapsed_digit_dest_3.y = elapsed_digit_dest_1.y;
+	elapsed_digit_dest_3.w = 12, elapsed_digit_dest_3.h = 20;
+	SDL_RenderCopy(renderer, elapsed_digit_3, &elapsed_digit_clip_3, &elapsed_digit_dest_3);
+
+	// % history elapsed
+
+	percent = t/4.56;
+
+	elapsed_percent_1 = SDL_CreateTextureFromSurface(renderer, numbers);
+	elapsed_percent_clip_1 = ClipNumber(floor(percent/100.0),18);
+	elapsed_percent_dest_1.x = 630, elapsed_percent_dest_1.y = 526;
+	elapsed_percent_dest_1.w = 12, elapsed_percent_dest_1.h = 20;
+	if (floor(percent/100.0) > 0.0)                        // Don't display the first number if it is 0
+		SDL_RenderCopy(renderer, elapsed_percent_1, &elapsed_percent_clip_1, &elapsed_percent_dest_1);
+
+	elapsed_percent_2 = SDL_CreateTextureFromSurface(renderer, numbers);
+	percent_10 = floor((percent-floor(percent/100.0)*100.0)/10.0);
+	elapsed_percent_clip_2 = ClipNumber(percent_10,18);
+	elapsed_percent_dest_2.x = 640, elapsed_percent_dest_2.y = elapsed_percent_dest_1.y;
+	elapsed_percent_dest_2.w = 12, elapsed_percent_dest_2.h = 20;
+	if (floor(percent/100.0) > 0.0 || percent_10 > 0.0)    // Don't display the first numbers if they are both 0
+		SDL_RenderCopy(renderer, elapsed_percent_2, &elapsed_percent_clip_2, &elapsed_percent_dest_2);
+
+	elapsed_percent_3 = SDL_CreateTextureFromSurface(renderer, numbers);
+	percent_100 = floor(percent-floor(percent/100.0)*100.0-floor(percent_10)*10.0);
+	elapsed_percent_clip_3 = ClipNumber(percent_100,18);
+	elapsed_percent_dest_3.x = 650, elapsed_percent_dest_3.y = elapsed_percent_dest_1.y;
+	elapsed_percent_dest_3.w = 12, elapsed_percent_dest_3.h = 20;
+	SDL_RenderCopy(renderer, elapsed_percent_3, &elapsed_percent_clip_3, &elapsed_percent_dest_3);
+
+	// Other renderings
+	renderTexture(ynumber0_tex, renderer, 50, -8 + value_time_dilation.y + value_time_dilation.h);
+
+	renderTexture(xnumber0_tex, renderer, -5 + value_time_dilation.x, 445);
+	renderTexture(xnumber1_tex, renderer, -5 + value_time_dilation.x + floor((double) irad / thoutput[NR-1][0].radius*(double) value_time_dilation.w), 445);
+	renderTexture(xnumber2_tex, renderer, -5 + value_time_dilation.x + floor((double) irad*2.0 / thoutput[NR-1][0].radius*(double) value_time_dilation.w), 445);
+	renderTexture(xnumber3_tex, renderer, -5 + value_time_dilation.x + floor((double) irad*3.0 / thoutput[NR-1][0].radius*(double) value_time_dilation.w), 445);
+	renderTexture(xnumber4_tex, renderer, -5 + value_time_dilation.x + floor((double) irad*4.0 / thoutput[NR-1][0].radius*(double) value_time_dilation.w), 445);
+	renderTexture(xnumber5_tex, renderer, -5 + value_time_dilation.x + floor((double) irad*5.0 / thoutput[NR-1][0].radius*(double) value_time_dilation.w), 445);
+	renderTexture(xnumber6_tex, renderer, -5 + value_time_dilation.x + floor((double) irad*6.0 / thoutput[NR-1][0].radius*(double) value_time_dilation.w), 445);
+	renderTexture(xnumber7_tex, renderer, -5 + value_time_dilation.x + floor((double) irad*7.0 / thoutput[NR-1][0].radius*(double) value_time_dilation.w), 445);
+	renderTexture(xnumber8_tex, renderer, -5 + value_time_dilation.x + floor((double) irad*8.0 / thoutput[NR-1][0].radius*(double) value_time_dilation.w), 445);
+	renderTexture(xnumber9_tex, renderer, -5 + value_time_dilation.x + floor((double) irad*9.0 / thoutput[NR-1][0].radius*(double) value_time_dilation.w), 445);
+
+	SDL_RenderPresent(renderer);
+
+	SDL_DestroyTexture(elapsed_digit_1);
+	SDL_DestroyTexture(elapsed_digit_2);
+	SDL_DestroyTexture(elapsed_digit_3);
+	SDL_DestroyTexture(elapsed_percent_1);
+	SDL_DestroyTexture(elapsed_percent_2);
+	SDL_DestroyTexture(elapsed_percent_3);
+
+	SDL_Delay(16);
 
 	return 0;
 }

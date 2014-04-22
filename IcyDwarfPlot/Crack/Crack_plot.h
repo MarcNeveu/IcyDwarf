@@ -17,9 +17,11 @@
 
 #include "../Graphics/Plot.h"
 
-int Crack_plot (char path[1024], int NR, int total_time, int NT_output, float r_p, thermalout **thoutput, int warnings, int msgout, SDL_Window* window, SDL_Renderer* renderer, int* view, int* quit);
+int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double r_p, thermalout **thoutput,
+		int warnings, int msgout, SDL_Renderer* renderer, int* view, int* quit);
 
-int Crack_plot (char path[1024], int NR, int total_time, int NT_output, float r_p, thermalout **thoutput, int warnings, int msgout, SDL_Window* window, SDL_Renderer* renderer, int* view, int* quit) {
+int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double r_p, thermalout **thoutput,
+		int warnings, int msgout, SDL_Renderer* renderer, int* view, int* quit) {
 
 	int r = 0;
 	int t = 0;
@@ -29,19 +31,19 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, float r_
 //-------------------------------------------------------------------
 
 	// Read the Crack file
-	float **Crack = (float**) malloc(NT_output*sizeof(float*));       // Crack[NR][NT_output], cracked zone
+	double **Crack = (double**) malloc(NT_output*sizeof(double*));       // Crack[NR][NT_output], cracked zone
 	if (Crack == NULL) printf("Crack: Not enough memory to create Crack[NR][NT_output]\n");
 	for (t=0;t<NT_output;t++) {
-		Crack[t] = (float*) malloc(NR*sizeof(float));
+		Crack[t] = (double*) malloc(NR*sizeof(double));
 		if (Crack[t] == NULL) printf("Crack: Not enough memory to create Crack[NR][NT_output]\n");
 	}
 	Crack = read_input (NR, NT_output, Crack, path, "Outputs/Crack.txt");
 
 	// Read the W/R file
-	float **WRratio = (float**) malloc(NT_output*sizeof(float*));             // WRratio[NT_output][2]
+	double **WRratio = (double**) malloc(NT_output*sizeof(double*));             // WRratio[NT_output][2]
 	if (WRratio == NULL) printf("Crack: Not enough memory to create WRratio[NT_output][2]\n");
 	for (t=0;t<NT_output;t++) {
-		WRratio[t] = (float*) malloc(2*sizeof(float));
+		WRratio[t] = (double*) malloc(2*sizeof(double));
 		if (WRratio[t] == NULL) printf("Crack: Not enough memory to create WRratio[NT_output][2]\n");
 	}
 	WRratio = read_input (2, NT_output, WRratio, path, "Outputs/Crack_WRratio.txt");
@@ -167,11 +169,11 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, float r_
 	int min_depth = 0;
 	int max_depth = NR;
 
-	float **Crack_depth = (float**) malloc(NT_output*sizeof(float*));         // Crack_depth[NT_output][2]
+	double **Crack_depth = (double**) malloc(NT_output*sizeof(double*));         // Crack_depth[NT_output][2]
 	                                                                   // Used for the subseafloor zoom graphics
 	if (Crack_depth == NULL) printf("Crack: Not enough memory to create Crack_depth[NT_output][2]\n");
 	for (t=0;t<NT_output;t++) {
-		Crack_depth[t] = (float*) malloc(2*sizeof(float));
+		Crack_depth[t] = (double*) malloc(2*sizeof(double));
 		if (Crack_depth[t] == NULL) printf("Crack: Not enough memory to create Crack_depth[NT_output][2]\n");
 	}
 
@@ -255,8 +257,8 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, float r_
 	SDL_Rect numbers_clip_2;
 	SDL_Rect numbers_dest_2;
 	numbers_clip_2 = ClipNumber(floor(total_time),14);
-	if (total_time - (float) floor(total_time) != 0)      // Scale final time on x-axis
-		numbers_dest_2.x = (int) (crack_time->w - 240 - 56 + 240*(float) floor(total_time)/total_time);
+	if (total_time - (double) floor(total_time) != 0)      // Scale final time on x-axis
+		numbers_dest_2.x = (int) (crack_time->w - 240 - 56 + 240*(double) floor(total_time)/total_time);
 	else
 		numbers_dest_2.x = crack_time->w - 240 - 56 + 240;
 	numbers_dest_2.y = 63, numbers_dest_2.w = 12, numbers_dest_2.h = 20;
@@ -293,7 +295,7 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, float r_
 	// Plot the water-rock ratio
 	// Memorize the min and max ratio to correctly scale the plot
 
-	float max_ratio = 0.0;
+	double max_ratio = 0.0;
 
 	for (t=0;t<NT_output;t++) {
 		if (WRratio[t][1]>max_ratio) {
@@ -327,8 +329,8 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, float r_
 	SDL_Rect numbers_clip_4;
 	SDL_Rect numbers_dest_4;
 	numbers_clip_4 = ClipNumber(floor(total_time),14);
-	if (total_time - (float) floor(total_time) != 0)      // Scale final time on x-axis
-		numbers_dest_4.x = (int) (crack_time->w - 240 - 56 + 240*(float) floor(total_time)/total_time);
+	if (total_time - (double) floor(total_time) != 0)      // Scale final time on x-axis
+		numbers_dest_4.x = (int) (crack_time->w - 240 - 56 + 240*(double) floor(total_time)/total_time);
 	else
 		numbers_dest_4.x = crack_time->w - 240 - 56 + 240;
 	numbers_dest_4.y = 448, numbers_dest_4.w = 12, numbers_dest_4.h = 20;
@@ -431,7 +433,7 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, float r_
 
 	// Seafloor/core radius: assumes a 3-digit number
 
-	float r_core = 0.0;
+	double r_core = 0.0;
 	r_core = min_depth *r_p/NR;
 
 	int seafloor_100 = floor(r_core/100);                                  // 1st digit
@@ -461,7 +463,7 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, float r_
 
 	// Seafloor/cracked depth: assumes a 3 digit number.
 
-	float r_depth = max_depth*r_p/NR;
+	double r_depth = max_depth*r_p/NR;
 
 	int r_depth_100 = floor(r_depth/100.0);                              // 1st digit
 	int r_depth_10 = floor((r_depth-r_depth_100*100.0)/10.0);            // 2nd digit
@@ -579,7 +581,7 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, float r_
 							}
 							// If click on the bar
 							else if (e.button.x >= 20 && e.button.x <= 780 && e.button.y >= 550 && e.button.y <= 567) {
-								t = floor(((float) e.button.x - 20.0)/(780.0-20.0)*500.0);
+								t = floor(((double) e.button.x - 20.0)/(780.0-20.0)*500.0);
 							}
 							// If switch view
 							else if (e.button.x >= 19 && e.button.x <= 69 && e.button.y >= 575 && e.button.y <= 599) {
@@ -714,7 +716,7 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, float r_
 
 				// Click on % bar to adjust time or scroll
 				if (e.button.x >= 20 && e.button.x <= 780 && e.button.y >= 550 && e.button.y <= 567) {
-					t = floor(((float) e.button.x - 20.0)/(780.0-20.0)*500.0);
+					t = floor(((double) e.button.x - 20.0)/(780.0-20.0)*500.0);
 
 					// While mouse button is down, scroll
 					while (e.type != SDL_MOUSEBUTTONUP) {
@@ -722,11 +724,11 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, float r_
 
 						// Do not change t past the x edges of the bar. The y limits are to avoid the program
 						// crashing because we're out of the window.
-						if ((float) e.button.x + e.motion.xrel >= 20 && (float) e.button.x + e.motion.xrel < 780
-								&& (float) e.button.y + e.motion.yrel > 0 && (float) e.button.y + e.motion.yrel < SCREEN_HEIGHT) {
+						if ((double) e.button.x + e.motion.xrel >= 20 && (double) e.button.x + e.motion.xrel < 780
+								&& (double) e.button.y + e.motion.yrel > 0 && (double) e.button.y + e.motion.yrel < SCREEN_HEIGHT) {
 
 							// Adjust displays
-							t = floor(((float) e.button.x + e.motion.xrel - 20.0)/(780.0-20.0)*NT_output);
+							t = floor(((double) e.button.x + e.motion.xrel - 20.0)/(780.0-20.0)*NT_output);
 
 							// Update displays
 							SDL_RenderClear(renderer);

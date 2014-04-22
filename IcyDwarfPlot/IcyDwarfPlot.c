@@ -30,10 +30,10 @@ int main(int argc, char *argv[]){
 	thermal_file[0] = '\0';
 
 	// Planet inputs
-    float rho_p = 0.0;                 // Planetary density
-    float r_p = 0.0;                   // Planetary radius
-    float nh3 = 0.0;                   // Ammonia w.r.t. water
-    float Tsurf = 0.0;				   // Surface temperature
+    double rho_p = 0.0;                 // Planetary density
+    double r_p = 0.0;                   // Planetary radius
+    double nh3 = 0.0;                   // Ammonia w.r.t. water
+    double Tsurf = 0.0;				   // Surface temperature
 
     // Grid inputs
 	int NR = 0;                        // Number of grid zones
@@ -141,9 +141,9 @@ int main(int argc, char *argv[]){
 
 	while (!quit) {
 		if (view == 1) // Display thermal tab
-			Thermal_plot (path, Tmax, NR, NT_output, r_p, thoutput, warnings, msgout, window, renderer, &view, &quit);
+			Thermal_plot (path, Tmax, NR, NT_output, r_p, thoutput, warnings, msgout, renderer, &view, &quit);
 		if (view == 2) // Display crack tab
-			Crack_plot (path, NR, total_time, NT_output, r_p, thoutput, warnings, msgout, window, renderer, &view, &quit);
+			Crack_plot (path, NR, total_time, NT_output, r_p, thoutput, warnings, msgout, renderer, &view, &quit);
 	}
 
 	//-------------------------------------------------------------------

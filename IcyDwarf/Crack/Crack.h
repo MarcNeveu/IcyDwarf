@@ -201,7 +201,7 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 		// Calculate T' in each layer over time, eq (2) of Vance et al. (2007)
 		// T' is the temperature at zero stress from thermal mismatch
 
-		if (dTdt == 0.0) dTdt = 0.1/dtime; // To ensure continuity of T', otherwise T'=0
+		if (dTdt == 0.0) dTdt = 1.0e-6/dtime; // To ensure continuity of T', otherwise T'=0
 		Tprime = Q/R_G/log(12.0*Omega*D0_deltab*E_Young/
 						(sqrt(3.0)*n_fit*k_B*L_size*L_size*L_size*fabs(dTdt)));
 

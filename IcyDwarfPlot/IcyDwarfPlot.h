@@ -40,15 +40,15 @@
 #define rhoHydr 2.35e3                                     // Density of hydrated rock
 
 typedef struct {
-    float radius; // Radius in km
-    float tempk;  // Temperature in K
-    float mrock;  // Mass of rock in g
-    float mh2os;  // Mass of H2O ice in g
-    float madhs;  // Mass of solid ammonia dihydrate in g
-    float mh2ol;  // Mass of liquid H2O in g
-    float mnh3l;  // Mass of liquid ammonia in g
-    float nu;     // Nusselt number for parameterized convection (dimensionless) (not used here)
-    float famor;  // Fraction of ice that is amorphous (not used here)
+    double radius; // Radius in km
+    double tempk;  // Temperature in K
+    double mrock;  // Mass of rock in g
+    double mh2os;  // Mass of H2O ice in g
+    double madhs;  // Mass of solid ammonia dihydrate in g
+    double mh2ol;  // Mass of liquid H2O in g
+    double mnh3l;  // Mass of liquid ammonia in g
+    double nu;     // Nusselt number for parameterized convection (dimensionless) (not used here)
+    double famor;  // Fraction of ice that is amorphous (not used here)
 } thermalout;
 
 #include <stdio.h>
@@ -57,16 +57,16 @@ typedef struct {
 int calculate_seafloor (thermalout **thoutput, int NR, int NT, int t);
 int icy_dwarf_input (double **input, char (*thermal_file)[1024], char path[1024]);
 thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char path[1024], char thermal_file[1024]);
-float **read_input (int H, int L, float **Input, char path[1024], char filename[1024]);
+double **read_input (int H, int L, double **Input, char path[1024], char filename[1024]);
 
 //-------------------------------------------------------------------
 //             Calculate the mass of liquid over time
 //-------------------------------------------------------------------
 
-float calculate_mass_liquid (int NR, int NT, int t, thermalout **thoutput) {
+double calculate_mass_liquid (int NR, int NT, int t, thermalout **thoutput) {
 
 	int r = 0;
-	float Mliq = 0.0;
+	double Mliq = 0.0;
 
 	for (r=0;r<NR;r++) {
 		// Mliq = Mliq + thoutput[r][t].mh2ol*gram + thoutput[r][t].mnh3l*gram;
@@ -231,7 +231,7 @@ thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char pa
 	else {
 		for (t=0;t<NT;t++) {
 			for (r=0;r<NR;r++) {
-				int scan = fscanf(fid, "%e %e %e %e %e %e %e %e %e", &thoutput[r][t].radius,
+				int scan = fscanf(fid, "%lg %lg %lg %lg %lg %lg %lg %lg %lg", &thoutput[r][t].radius,
 							&thoutput[r][t].tempk, &thoutput[r][t].mrock, &thoutput[r][t].mh2os,
 							&thoutput[r][t].madhs, &thoutput[r][t].mh2ol, &thoutput[r][t].mnh3l,
 							&thoutput[r][t].nu, &thoutput[r][t].famor);
@@ -253,7 +253,7 @@ thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char pa
 //                            Read input
 //-------------------------------------------------------------------
 
-float **read_input (int H, int L, float **Input, char path[1024], char filename[1024]) {
+double **read_input (int H, int L, double **Input, char path[1024], char filename[1024]) {
 
 	FILE *fin;
 	int l = 0;
@@ -276,7 +276,7 @@ float **read_input (int H, int L, float **Input, char path[1024], char filename[
 	else {
 		for (l=0;l<L;l++) {
 			for (h=0;h<H;h++) {
-				int scan = fscanf(fin,"%g",&Input[l][h]);
+				int scan = fscanf(fin,"%lg",&Input[l][h]);
 				if (scan != 1)
 					printf("IcyDwarf: Error scanning %s file at l=%d, h=%d.\n",title,l,h);
 			}
