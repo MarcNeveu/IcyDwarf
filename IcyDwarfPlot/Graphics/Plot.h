@@ -22,12 +22,14 @@ const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 600;
 
 SDL_Texture* LoadImage(char * filename);
-void ApplySurface(int x, int y, SDL_Texture *tex, SDL_Renderer *rend, SDL_Rect *clip);
+int ApplySurface(int x, int y, SDL_Texture *tex, SDL_Renderer *rend, SDL_Rect *clip);
 SDL_Rect ClipNumber(int number,int font);
 Uint32 get_pixel32( SDL_Surface *surface, int x, int y );               // Currently not used
-void put_pixel32( SDL_Surface *surface, int x, int y, Uint32 pixel );   // Currently not used
-void renderTexture(SDL_Texture *tex, SDL_Renderer *ren, int x, int y);
+int put_pixel32( SDL_Surface *surface, int x, int y, Uint32 pixel );   // Currently not used
+int renderTexture(SDL_Texture *tex, SDL_Renderer *ren, int x, int y);
 int scanNumber(char (*nb)[10], int i);
+int File2tex(char* title, SDL_Texture** tex, char* path);
+int File2surf(char* title, SDL_Surface** surf, char* path);
 
 SDL_Window* window;
 SDL_Renderer* renderer;
@@ -49,7 +51,7 @@ SDL_Texture* LoadImage(char * filename) {
 // We'll want it to be able to take an x, y coordinate position along with a texture pointer and a renderer pointer
 // and then draw the texture to that position.
 
-void ApplySurface(int x, int y, SDL_Texture *tex, SDL_Renderer *rend, SDL_Rect *clip) {
+int ApplySurface(int x, int y, SDL_Texture *tex, SDL_Renderer *rend, SDL_Rect *clip) {
     SDL_Rect pos;
     pos.x = x;
     pos.y = y;
@@ -62,6 +64,8 @@ void ApplySurface(int x, int y, SDL_Texture *tex, SDL_Renderer *rend, SDL_Rect *
         SDL_QueryTexture(tex, NULL, NULL, &pos.w, &pos.h);
     }
     SDL_RenderCopy(rend, tex, clip, &pos);
+
+    return 0;
 }
 
 // Get a pixel
@@ -76,12 +80,14 @@ Uint32 get_pixel32( SDL_Surface *surface, int x, int y ) {
 
 // Put a pixel
 
-void put_pixel32( SDL_Surface *surface, int x, int y, Uint32 pixel ) {
+int put_pixel32( SDL_Surface *surface, int x, int y, Uint32 pixel ) {
     //Convert the pixels to 32 bit
     Uint32 *pixels = (Uint32 *)surface->pixels;
 
     //Set the pixel
     pixels[ ( y * surface->w ) + x ] = pixel;
+
+    return 0;
 }
 
 /**
@@ -126,7 +132,7 @@ SDL_Texture* renderText(char* message, char* fontFile, SDL_Color color, int font
 * @param x The x coordinate to draw too
 * @param y The y coordinate to draw too
 */
-void renderTexture(SDL_Texture *tex, SDL_Renderer *ren, int x, int y) {
+int renderTexture(SDL_Texture *tex, SDL_Renderer *ren, int x, int y) {
 	//Setup the destination rectangle to be at the position we want
 	SDL_Rect dst;
 	dst.x = x;
@@ -134,6 +140,8 @@ void renderTexture(SDL_Texture *tex, SDL_Renderer *ren, int x, int y) {
 	//Query the texture to get its width and height to use
 	SDL_QueryTexture(tex, NULL, NULL, &dst.w, &dst.h);
 	SDL_RenderCopy(ren, tex, NULL, &dst);
+
+	return 0;
 }
 
 // Convert number to string, right-aligned
@@ -141,6 +149,34 @@ int scanNumber(char (*nb)[10], int i) {
 	if (i<100) sprintf((*nb), "   %d", i);
 	else if (i<1000) sprintf((*nb), "  %d", i);
 	else sprintf((*nb), "%d", i);
+	return 0;
+}
+
+// Open image file into a texture
+int File2tex(char* title, SDL_Texture** tex, char* path) {
+	char *temp_png = (char*)malloc(1024); // Don't forget to free!
+	temp_png[0] = '\0';
+	if (release == 1) strncat(temp_png,path,strlen(path)-20);
+	else if (cmdline == 1) strncat(temp_png,path,strlen(path)-22);
+	strcat(temp_png,title);
+	(*tex) = LoadImage(temp_png);
+	if ((*tex) == NULL) printf("Plot: Layer %s not loaded:\n",title);
+	free(temp_png);
+
+	return 0;
+}
+
+// Open image file into a surface
+int File2surf(char* title, SDL_Surface** surf, char* path) {
+	char *temp_png = (char*)malloc(1024); // Don't forget to free!
+	temp_png[0] = '\0';
+	if (release == 1) strncat(temp_png,path,strlen(path)-20);
+	else if (cmdline == 1) strncat(temp_png,path,strlen(path)-22);
+	strcat(temp_png,title);
+	(*surf) = IMG_Load(temp_png);
+	if ((*surf) == NULL) printf("Plot: Layer %s not loaded:\n",title);
+	free(temp_png);
+
 	return 0;
 }
 

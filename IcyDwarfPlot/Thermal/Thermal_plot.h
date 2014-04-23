@@ -27,10 +27,16 @@ int UpdateDisplays (SDL_Renderer* renderer, SDL_Texture* background_tex, char* F
 		int t, int NR, int NT_output, int ircore, double Tmax, double kappamax, SDL_Surface* value_time,
 		SDL_Color axisTextColor, Uint32 alpha,
 		SDL_Texture* DryRock_tex, SDL_Texture* Liquid_tex, SDL_Texture* Ice_tex, SDL_Texture* Crust_tex,
-		SDL_Surface* numbers, SDL_Texture* progress_bar_tex, int irad,
+		SDL_Texture* progress_bar_tex, int irad,
 		SDL_Texture* xnumber0_tex, SDL_Texture* xnumber1_tex, SDL_Texture* xnumber2_tex, SDL_Texture* xnumber3_tex,
 		SDL_Texture* xnumber4_tex, SDL_Texture* xnumber5_tex, SDL_Texture* xnumber6_tex, SDL_Texture* xnumber7_tex,
-		SDL_Texture* xnumber8_tex, SDL_Texture* xnumber9_tex, SDL_Texture* ynumber0_tex);
+		SDL_Texture* xnumber8_tex, SDL_Texture* xnumber9_tex, SDL_Texture* ynumber0_tex,
+		SDL_Texture* temp_tex, SDL_Texture* hydr_tex, SDL_Texture* k_tex,
+		SDL_Texture* grid_tex, SDL_Texture* structure_tex, SDL_Texture* hold_tracks_tex,
+		SDL_Texture* hydr_title_tex, SDL_Texture* k_title_tex, SDL_Texture* legend_tex);
+
+int handleClickThermal(SDL_Event e, int *t, int *t_init, int *grid, int *structure, int *hold_tracks, int *plot_switch,
+		int *t_memory, int NT_output);
 
 int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double r_p, thermalout **thoutput,
 		int warnings, int msgout, SDL_Renderer* renderer, int* view, int* quit, char* FontFile, SDL_Color axisTextColor) {
@@ -39,11 +45,16 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 	int t = 0;
 	int irad = 0;
 	int ircore = 0;
-
 	int grid = 0;
 	int structure = 0;
 	int hold_tracks = 0;
 	int plot_switch = 0;
+	double Tmax = 0.0;     // Max temperature ever encountered in any layer
+	double kappamax = 0.0; // Max thermal conductivity ever encountered in any layer
+
+	Uint32 *pixmem32;
+	Uint32 white;
+	Uint32 alpha;
 
 	double **TempK = (double**) malloc(NT_output*sizeof(double*));    // Temperature
 	if (TempK == NULL) printf("Thermal_plot: Not enough memory to create TempK[NT_output]\n");
@@ -74,12 +85,10 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 	SDL_Texture* progress_bar_tex = NULL;                   // Progress bar
 	SDL_Surface* progress_bar = NULL;
 
-	SDL_Surface* numbers = NULL;                            // Numbers template image
 	SDL_Surface* value_time = NULL;                         // Value vs. time plot
 
 	SDL_Texture* ynumber0_tex = NULL;                       // Axis numbers
-
-	SDL_Texture* xnumber0_tex = NULL;                       // Axis numbers
+	SDL_Texture* xnumber0_tex = NULL;
 	SDL_Texture* xnumber1_tex = NULL;
 	SDL_Texture* xnumber2_tex = NULL;
 	SDL_Texture* xnumber3_tex = NULL;
@@ -95,77 +104,36 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 	SDL_Texture* Ice_tex = NULL;
 	SDL_Texture* Crust_tex = NULL;
 
-	char *TextureBackground_png = (char*)malloc(1024);       // Don't forget to free!
-	TextureBackground_png[0] = '\0';
-	if (release == 1) strncat(TextureBackground_png,path,strlen(path)-20);
-	else if (cmdline == 1) strncat(TextureBackground_png,path,strlen(path)-22);
-	strcat(TextureBackground_png,"Graphics/BG/BG.001.png");
-	background_tex = LoadImage(TextureBackground_png);
-	if (background_tex == NULL) printf("IcyDwarf: Plot: Background image not loaded.\n");
-	free(TextureBackground_png);
+	SDL_Texture* temp_tex = NULL;
+	SDL_Texture* hydr_tex = NULL;
+	SDL_Texture* k_tex = NULL;
+	SDL_Texture* grid_tex = NULL;
+	SDL_Texture* structure_tex = NULL;
+	SDL_Texture* hold_tracks_tex = NULL;
+	SDL_Texture* hydr_title_tex = NULL;
+	SDL_Texture* k_title_tex = NULL;
+	SDL_Texture* play_tex = NULL;
+	SDL_Texture* stop_tex = NULL;
+	SDL_Texture* prev_tex = NULL;
+	SDL_Texture* next_tex = NULL;
+	SDL_Texture* legend_tex = NULL;
 
-	char *Transparent_png = (char*)malloc(1024);      // Don't forget to free!
-	Transparent_png[0] = '\0';
-	if (release == 1) strncat(Transparent_png,path,strlen(path)-20);
-	else if (cmdline == 1) strncat(Transparent_png,path,strlen(path)-22);
-	strcat(Transparent_png,"Graphics/Transparent.png");
-	progress_bar = IMG_Load(Transparent_png);
-	if (progress_bar == NULL) printf("IcyDwarf: Plot: Progress bar layer not loaded.\n");
-	free(Transparent_png);
-
-	char *Transparent520_png = (char*)malloc(1024); // Don't forget to free!
-	Transparent520_png[0] = '\0';
-	if (release == 1) strncat(Transparent520_png,path,strlen(path)-20);
-	else if (cmdline == 1) strncat(Transparent520_png,path,strlen(path)-22);
-	strcat(Transparent520_png,"Graphics/Transparent520.png");
-	value_time = IMG_Load(Transparent520_png);
-	if (value_time == NULL) printf("IcyDwarf: Plot: temp_time layer not loaded.\n");
-	free(Transparent520_png);
-
-	char *DryRock_png = (char*)malloc(1024); // Don't forget to free!
-	DryRock_png[0] = '\0';
-	if (release == 1) strncat(DryRock_png,path,strlen(path)-20);
-	else if (cmdline == 1) strncat(DryRock_png,path,strlen(path)-22);
-	strcat(DryRock_png,"Graphics/Thermal/DryRock.png");
-	DryRock_tex = LoadImage(DryRock_png);
-	if (DryRock_tex == NULL) printf("IcyDwarf: Plot: DryRock layer not loaded.\n");
-	free(DryRock_png);
-
-	char *Liquid_png = (char*)malloc(1024); // Don't forget to free!
-	Liquid_png[0] = '\0';
-	if (release == 1) strncat(Liquid_png,path,strlen(path)-20);
-	else if (cmdline == 1) strncat(Liquid_png,path,strlen(path)-22);
-	strcat(Liquid_png,"Graphics/Thermal/Liquid.png");
-	Liquid_tex = LoadImage(Liquid_png);
-	if (Liquid_tex == NULL) printf("IcyDwarf: Plot: Liquid layer not loaded.\n");
-	free(Liquid_png);
-
-	char *Ice_png = (char*)malloc(1024); // Don't forget to free!
-	Ice_png[0] = '\0';
-	if (release == 1) strncat(Ice_png,path,strlen(path)-20);
-	else if (cmdline == 1) strncat(Ice_png,path,strlen(path)-22);
-	strcat(Ice_png,"Graphics/Thermal/Ice.png");
-	Ice_tex = LoadImage(Ice_png);
-	if (Ice_tex == NULL) printf("IcyDwarf: Plot: Ice layer not loaded.\n");
-	free(Ice_png);
-
-	char *Crust_png = (char*)malloc(1024); // Don't forget to free!
-	Crust_png[0] = '\0';
-	if (release == 1) strncat(Crust_png,path,strlen(path)-20);
-	else if (cmdline == 1) strncat(Crust_png,path,strlen(path)-22);
-	strcat(Crust_png,"Graphics/Thermal/Crust.png");
-	Crust_tex = LoadImage(Crust_png);
-	if (Crust_tex == NULL) printf("IcyDwarf: Plot: Crust layer not loaded.\n");
-	free(Crust_png);
-
-	char *Numbers_png = (char*)malloc(1024);          // Don't forget to free!
-	Numbers_png[0] = '\0';
-	if (release == 1) strncat(Numbers_png,path,strlen(path)-20);
-	else if (cmdline == 1) strncat(Numbers_png,path,strlen(path)-22);
-	strcat(Numbers_png,"Graphics/Numbers.png");
-	numbers = IMG_Load(Numbers_png);
-	if (numbers == NULL) printf("IcyDwarf: Plot: numbers layer not loaded.\n");
-	free(Numbers_png);
+	File2tex("Graphics/BG/BG.001.png", &background_tex, path);
+	File2surf("Graphics/Transparent.png", &progress_bar, path);
+	File2surf("Graphics/Transparent520.png", &value_time, path);
+	File2tex("Graphics/Thermal/DryRock.png", &DryRock_tex, path);
+	File2tex("Graphics/Thermal/Liquid.png", &Liquid_tex, path);
+	File2tex("Graphics/Thermal/Ice.png", &Ice_tex, path);
+	File2tex("Graphics/Thermal/Crust.png", &Crust_tex, path);
+	File2tex("Graphics/Thermal/temp.png", &temp_tex, path);
+	File2tex("Graphics/Thermal/hydr.png", &hydr_tex, path);
+	File2tex("Graphics/Thermal/k.png", &k_tex, path);
+	File2tex("Graphics/Thermal/grid.png", &grid_tex, path);
+	File2tex("Graphics/Thermal/structure.png", &structure_tex, path);
+	File2tex("Graphics/Thermal/hold_tracks.png", &hold_tracks_tex, path);
+	File2tex("Graphics/Thermal/hydr_title.png", &hydr_title_tex, path);
+	File2tex("Graphics/Thermal/k_title.png", &k_title_tex, path);
+	File2tex("Graphics/Thermal/legend.png", &legend_tex, path);
 
 	// Don't forget to destroy all window, renderers, and textures at the end.
 
@@ -177,21 +145,12 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 		}
 	}
 
-//-------------------------------------------------------------------
-//                Set static elements using crack output
-//-------------------------------------------------------------------
-
-	Uint32 *pixmem32;
-
-	// MAIN PLOT
-
-	Uint32 white;
-	Uint32 alpha;
 	white = SDL_MapRGBA(value_time->format, 255, 255, 255, 255);
 	alpha = SDL_MapRGBA(value_time->format, 255, 255, 255, 0);   // r,g,b,alpha 0 to 255. Alpha of 0 is transparent
 
-	double Tmax = 0.0; // Max temperature ever encountered in any layer
-	double kappamax = 0.0; // Max thermal conductivity ever encountered in any layer
+//-------------------------------------------------------------------
+//                Set static elements using crack output
+//-------------------------------------------------------------------
 
 	if (Tmax_input == 0) {
 		for (t=0;t<NT_output;t++) {
@@ -237,8 +196,7 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 		}
 	}
 
-	// PROGRESS BAR
-
+	// Progress bar
 	for (t=21;t<780;t++) {
 		for (r=551;r<566;r++) {
 			pixmem32 = (Uint32*) progress_bar->pixels + r*progress_bar->w + t;
@@ -259,22 +217,21 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 	int stop_clicked = 0;
 
 	while (!(*quit) && (*view) == 1){
-
-		//Event polling
 		while (SDL_PollEvent(&e)){
-			//If user closes the window
-			if (e.type == SDL_QUIT) (*quit) = 1;
+
+			if (e.type == SDL_QUIT) (*quit) = 1; // Close window
 			if (e.type == SDL_MOUSEBUTTONDOWN) {
+				// Handle click (except play, switch view, and % bar)
+				handleClickThermal(e, &t, &t_init, &grid, &structure, &hold_tracks, &plot_switch,
+						&t_memory, NT_output);
 
 				// Switch view
-
 				if (e.button.x >= 70 && e.button.x <= 119 && e.button.y >= 575 && e.button.y <= 599) {
 					(*view) = 2;
 					return 1;
 				}
 
 				// Play - Stop
-
 				if (e.button.x >= 20 && e.button.x <= 68 && e.button.y >= 511 && e.button.y <= 539) {
 					for (t=t_init;t<NT_output;t++) {
 
@@ -290,44 +247,29 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 								stop_clicked = 1;
 								break;
 							}
-							// If click on the bar
-							else if (e.button.x >= 20 && e.button.x <= 780 && e.button.y >= 550 && e.button.y <= 567) {
-								t = floor(((double) e.button.x - 20.0)/(780.0-20.0)*500.0);
-							}
 							// If switch view
 							else if (e.button.x >= 70 && e.button.x <= 119 && e.button.y >= 575 && e.button.y <= 599) {
 								(*view) = 2;
 								return 1;
 							}
-							// If switch grid
-							else if (e.button.x >= 648 && e.button.x <= 764 && e.button.y >= 262 && e.button.y <= 327) {
-								if (grid == 1) grid = 0;
-								else grid = 1;
-							}
-							// If switch structure
-							else if (e.button.x >= 648 && e.button.x <= 764 && e.button.y >= 338 && e.button.y <= 400) {
-								if (structure == 1) structure = 0;
-								else structure = 1;
-							}
-							// If switch hold tracks
-							else if (e.button.x >= 648 && e.button.x <= 764 && e.button.y >= 411 && e.button.y <= 458) {
-								if (hold_tracks == 1) hold_tracks = 0;
-								else hold_tracks = 1;
-							}
+							// Otherwise
+							handleClickThermal(e, &t, &t_init, &grid, &structure, &hold_tracks, &plot_switch,
+									&t_memory, NT_output);
 						}
-
 						// Update displays
 						UpdateDisplays(renderer, background_tex, FontFile, thoutput, TempK, Hydr, Kappa,
 								structure, grid, hold_tracks, plot_switch, t, NR, NT_output, ircore, Tmax, kappamax,
 								value_time, axisTextColor, alpha,
-								DryRock_tex, Liquid_tex, Ice_tex, Crust_tex, numbers,
-								progress_bar_tex, irad, xnumber0_tex, xnumber1_tex, xnumber2_tex, xnumber3_tex,
+								DryRock_tex, Liquid_tex, Ice_tex, Crust_tex,
+								progress_bar_tex, irad,
+								xnumber0_tex, xnumber1_tex, xnumber2_tex, xnumber3_tex,
 								xnumber4_tex, xnumber5_tex, xnumber6_tex, xnumber7_tex,
-								xnumber8_tex, xnumber9_tex, ynumber0_tex);
+								xnumber8_tex, xnumber9_tex, ynumber0_tex,
+								temp_tex, hydr_tex, k_tex, grid_tex, structure_tex, hold_tracks_tex,
+								hydr_title_tex, k_title_tex, legend_tex);
 					}
 					if (stop_clicked == 1) t = t_memory;
 					else t = NT_output-1, t_init = 0;
-
 				}
 
 				// Click on % bar to adjust time or scroll
@@ -350,52 +292,16 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 							UpdateDisplays(renderer, background_tex, FontFile, thoutput, TempK, Hydr, Kappa,
 									structure, grid, hold_tracks, plot_switch, t, NR, NT_output, ircore, Tmax, kappamax,
 									value_time, axisTextColor, alpha,
-									DryRock_tex, Liquid_tex, Ice_tex, Crust_tex, numbers,
-									progress_bar_tex, irad, xnumber0_tex, xnumber1_tex, xnumber2_tex, xnumber3_tex,
+									DryRock_tex, Liquid_tex, Ice_tex, Crust_tex,
+									progress_bar_tex, irad,
+									xnumber0_tex, xnumber1_tex, xnumber2_tex, xnumber3_tex,
 									xnumber4_tex, xnumber5_tex, xnumber6_tex, xnumber7_tex,
-									xnumber8_tex, xnumber9_tex, ynumber0_tex);
+									xnumber8_tex, xnumber9_tex, ynumber0_tex,
+									temp_tex, hydr_tex, k_tex, grid_tex, structure_tex, hold_tracks_tex,
+									hydr_title_tex, k_title_tex, legend_tex);
 						}
 					}
 					t_init = t;  // To pick up the animation back where we're leaving off
-				}
-
-				// Advance forward/backward one frame at a time
-				if (e.button.x >= 132 && e.button.x <= 180 && e.button.y >= 511 && e.button.y <= 539 && t>0) {
-					t--;
-					t_init = t;
-				}
-				if (e.button.x >= 188 && e.button.x <= 236 && e.button.y >= 511 && e.button.y <= 539 && t<NT_output-1) {
-					t++;
-					t_init = t;
-				}
-
-				// Make grid appear or disappear
-				if (e.button.x >= 648 && e.button.x <= 764 && e.button.y >= 262 && e.button.y <= 327) {
-					if (grid == 1) grid = 0;
-					else grid = 1;
-				}
-
-				// Make structure appear or disappear
-				if (e.button.x >= 648 && e.button.x <= 764 && e.button.y >= 338 && e.button.y <= 400) {
-					if (structure == 1) structure = 0;
-					else structure = 1;
-				}
-
-				// Hold tracks switch
-				if (e.button.x >= 648 && e.button.x <= 764 && e.button.y >= 411 && e.button.y <= 458) {
-					if (hold_tracks == 1) hold_tracks = 0;
-					else hold_tracks = 1;
-				}
-
-				// Main plot switch
-				if (e.button.x >= 648 && e.button.x <= 679 && e.button.y >= 162 && e.button.y <= 227) {
-					plot_switch = 0; // Temperature
-				}
-				if (e.button.x >= 691 && e.button.x <= 732 && e.button.y >= 162 && e.button.y <= 227) {
-					plot_switch = 1; // Hydration
-				}
-				if (e.button.x >= 738 && e.button.x <= 778 && e.button.y >= 162 && e.button.y <= 227) {
-					plot_switch = 2; // Thermal conductivity
 				}
 			}
 		}
@@ -404,11 +310,13 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 		UpdateDisplays(renderer, background_tex, FontFile, thoutput, TempK, Hydr, Kappa,
 				structure, grid, hold_tracks, plot_switch, t, NR, NT_output, ircore, Tmax, kappamax,
 				value_time, axisTextColor, alpha,
-				DryRock_tex, Liquid_tex, Ice_tex, Crust_tex, numbers,
+				DryRock_tex, Liquid_tex, Ice_tex, Crust_tex,
 				progress_bar_tex, irad,
 				xnumber0_tex, xnumber1_tex, xnumber2_tex, xnumber3_tex,
 				xnumber4_tex, xnumber5_tex, xnumber6_tex, xnumber7_tex,
-				xnumber8_tex, xnumber9_tex, ynumber0_tex);
+				xnumber8_tex, xnumber9_tex, ynumber0_tex,
+				temp_tex, hydr_tex, k_tex, grid_tex, structure_tex, hold_tracks_tex,
+				hydr_title_tex, k_title_tex, legend_tex);
 	}
 
 	//-------------------------------------------------------------------
@@ -417,7 +325,6 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 
 	SDL_DestroyTexture(background_tex);
 	SDL_DestroyTexture(progress_bar_tex);
-	SDL_FreeSurface(numbers);
 	SDL_FreeSurface(value_time);
 	SDL_DestroyTexture(ynumber0_tex);
 	SDL_DestroyTexture(xnumber0_tex);
@@ -434,6 +341,18 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 	SDL_DestroyTexture(Liquid_tex);
 	SDL_DestroyTexture(Ice_tex);
 	SDL_DestroyTexture(Crust_tex);
+	SDL_DestroyTexture(temp_tex);
+	SDL_DestroyTexture(hydr_tex);
+	SDL_DestroyTexture(k_tex);
+	SDL_DestroyTexture(grid_tex);
+	SDL_DestroyTexture(structure_tex);
+	SDL_DestroyTexture(hold_tracks_tex);
+	SDL_DestroyTexture(hydr_title_tex);
+	SDL_DestroyTexture(k_title_tex);
+	SDL_DestroyTexture(play_tex);
+	SDL_DestroyTexture(stop_tex);
+	SDL_DestroyTexture(prev_tex);
+	SDL_DestroyTexture(next_tex);
 
 	for (t=0;t<NT_output;t++) {
 		free (TempK[t]);
@@ -684,10 +603,13 @@ int UpdateDisplays (SDL_Renderer* renderer, SDL_Texture* background_tex, char* F
 		int t, int NR, int NT_output, int ircore, double Tmax, double kappamax, SDL_Surface* value_time,
 		SDL_Color axisTextColor, Uint32 alpha,
 		SDL_Texture* DryRock_tex, SDL_Texture* Liquid_tex, SDL_Texture* Ice_tex, SDL_Texture* Crust_tex,
-		SDL_Surface* numbers, SDL_Texture* progress_bar_tex, int irad,
+		SDL_Texture* progress_bar_tex, int irad,
 		SDL_Texture* xnumber0_tex, SDL_Texture* xnumber1_tex, SDL_Texture* xnumber2_tex, SDL_Texture* xnumber3_tex,
 		SDL_Texture* xnumber4_tex, SDL_Texture* xnumber5_tex, SDL_Texture* xnumber6_tex, SDL_Texture* xnumber7_tex,
-		SDL_Texture* xnumber8_tex, SDL_Texture* xnumber9_tex, SDL_Texture* ynumber0_tex) {
+		SDL_Texture* xnumber8_tex, SDL_Texture* xnumber9_tex, SDL_Texture* ynumber0_tex,
+		SDL_Texture* temp_tex, SDL_Texture* hydr_tex, SDL_Texture* k_tex,
+		SDL_Texture* grid_tex, SDL_Texture* structure_tex, SDL_Texture* hold_tracks_tex,
+		SDL_Texture* hydr_title_tex, SDL_Texture* k_title_tex, SDL_Texture* legend_tex) {
 
 	int r = 0;
 	double percent = 0.0; // % of history, 4.56 Gyr = 100%
@@ -751,6 +673,26 @@ int UpdateDisplays (SDL_Renderer* renderer, SDL_Texture* background_tex, char* F
 	elapsed_percent = renderText(nb,FontFile, axisTextColor, 18, renderer);
 	renderTexture(elapsed_percent, renderer, 641, 527);
 
+	// Transient items
+	switch (plot_switch) {
+	case 1:
+		ApplySurface(691, 162, hydr_tex, renderer, NULL);
+		ApplySurface(22, 150, hydr_title_tex, renderer, NULL);
+		break;
+	case 2:
+		ApplySurface(738, 157, k_tex, renderer, NULL);
+		ApplySurface(22, 135, k_title_tex, renderer, NULL);
+		break;
+	default:
+		ApplySurface(648, 162, temp_tex, renderer, NULL);
+	}
+	if (grid == 1) ApplySurface(648, 262, grid_tex, renderer, NULL);
+	if (structure == 1) {
+		ApplySurface(648, 338, structure_tex, renderer, NULL);
+		ApplySurface(644, 65, legend_tex, renderer, NULL);
+	}
+	if (hold_tracks == 1) ApplySurface(648, 411, hold_tracks_tex, renderer, NULL);
+
 	// Other renderings
 	renderTexture(ynumber0_tex, renderer, 50, -8 + value_time_dilation.y + value_time_dilation.h);
 
@@ -771,6 +713,56 @@ int UpdateDisplays (SDL_Renderer* renderer, SDL_Texture* background_tex, char* F
 	SDL_DestroyTexture(elapsed_percent);
 
 	SDL_Delay(16);
+
+	return 0;
+}
+
+int handleClickThermal(SDL_Event e, int *t, int *t_init, int *grid, int *structure, int *hold_tracks, int *plot_switch,
+		int *t_memory, int NT_output) {
+
+	// Advance forward/backward one frame at a time
+	if (e.button.x >= 132 && e.button.x <= 180 && e.button.y >= 511 && e.button.y <= 539 && (*t)>0) {
+		(*t)--;
+		(*t_init) = (*t);
+	}
+	if (e.button.x >= 188 && e.button.x <= 236 && e.button.y >= 511 && e.button.y <= 539 && (*t)<NT_output-1) {
+		(*t)++;
+		(*t_init) = (*t);
+	}
+
+	// Make grid appear or disappear
+	if (e.button.x >= 648 && e.button.x <= 764 && e.button.y >= 262 && e.button.y <= 327) {
+		if ((*grid) == 1) (*grid) = 0;
+		else (*grid) = 1;
+	}
+
+	// Make structure appear or disappear
+	if (e.button.x >= 648 && e.button.x <= 764 && e.button.y >= 338 && e.button.y <= 400) {
+		if ((*structure) == 1) (*structure) = 0;
+		else (*structure) = 1;
+	}
+
+	// Hold tracks switch
+	if (e.button.x >= 648 && e.button.x <= 764 && e.button.y >= 411 && e.button.y <= 458) {
+		if ((*hold_tracks) == 1) (*hold_tracks) = 0;
+		else (*hold_tracks) = 1;
+	}
+
+	// Main plot switch
+	if (e.button.x >= 648 && e.button.x <= 679 && e.button.y >= 162 && e.button.y <= 227) {
+		(*plot_switch) = 0; // Temperature
+	}
+	if (e.button.x >= 691 && e.button.x <= 732 && e.button.y >= 162 && e.button.y <= 227) {
+		(*plot_switch) = 1; // Hydration
+	}
+	if (e.button.x >= 738 && e.button.x <= 778 && e.button.y >= 162 && e.button.y <= 227) {
+		(*plot_switch) = 2; // Thermal conductivity
+	}
+
+	// If click on the bar
+	else if (e.button.x >= 20 && e.button.x <= 780 && e.button.y >= 550 && e.button.y <= 567) {
+		(*t) = floor(((double) e.button.x - 20.0)/(780.0-20.0)*500.0);
+	}
 
 	return 0;
 }

@@ -101,38 +101,12 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double r
 	//                     Initialize display elements
 	//-------------------------------------------------------------------
 
-	char *TextureBackground_png = (char*)malloc(1024);     // Don't forget to free!
-	TextureBackground_png[0] = '\0';
-	if (release == 1) strncat(TextureBackground_png,path,strlen(path)-20);
-	else if (cmdline == 1) strncat(TextureBackground_png,path,strlen(path)-22);
-	strcat(TextureBackground_png,"Graphics/BG/BG.002.png");
-	background_tex = LoadImage(TextureBackground_png);
-	if (background_tex == NULL) printf("IcyDwarf: Plot: Background image not loaded.\n");
-	free(TextureBackground_png);
-
-	char *Transparent_png = (char*)malloc(1024);           // Don't forget to free!
-	Transparent_png[0] = '\0';
-	if (release == 1) strncat(Transparent_png,path,strlen(path)-20);
-	else if (cmdline == 1) strncat(Transparent_png,path,strlen(path)-22);
-	strcat(Transparent_png,"Graphics/Transparent.png");
-	crack_time = IMG_Load(Transparent_png);
-	if (crack_time == NULL) printf("IcyDwarf: Plot: crack_time layer not loaded.\n");
-	WR = IMG_Load(Transparent_png);
-	if (WR == NULL) printf("IcyDwarf: Plot: WR layer not loaded.\n");
-	WR_bar = IMG_Load(Transparent_png);
-	if (WR_bar == NULL) printf("IcyDwarf: Plot: WR bar layer not loaded.\n");
-	progress_bar = IMG_Load(Transparent_png);
-	if (progress_bar == NULL) printf("IcyDwarf: Plot: Progress bar layer not loaded.\n");
-	free(Transparent_png);
-
-	char *TextureCracked_png = (char*)malloc(1024);           // Don't forget to free!
-	TextureCracked_png[0] = '\0';
-	if (release == 1) strncat(TextureCracked_png,path,strlen(path)-20);
-	else if (cmdline == 1) strncat(TextureCracked_png,path,strlen(path)-22);
-	strcat(TextureCracked_png,"Graphics/Crack/TextureCracked.png");
-	cracked_rock_tex = LoadImage(TextureCracked_png);
-	if (cracked_rock_tex == NULL) printf("IcyDwarf: Plot: Cracked texture not loaded.\n");
-	free(TextureCracked_png);
+	File2tex("Graphics/BG/BG.002.png", &background_tex, path);
+	File2surf("Graphics/Transparent.png", &crack_time, path);
+	File2surf("Graphics/Transparent.png", &WR, path);
+	File2surf("Graphics/Transparent.png", &WR_bar, path);
+	File2surf("Graphics/Transparent.png", &progress_bar, path);
+	File2tex("Graphics/Crack/TextureCracked.png", &cracked_rock_tex, path);
 
 	white_alpha = SDL_MapRGBA(crack_time->format, 255, 255, 255, 200); // r,g,b,alpha 0 to 255. Alpha of 0 is transparent
 	red_alpha = SDL_MapRGBA(crack_time->format, 255, 200, 200, 200);
@@ -352,7 +326,6 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double r
 								return 1;
 							}
 						}
-
 						// Update displays
 						UpdateDisplays2(renderer, background_tex, crack_time, WR, WR_bar_tex, crack_time_tex,
 							WR_tex, progress_bar_tex, cracked_rock_tex, min_depth, max_depth, t, NR, NT_output, r_p, Crack_depth,
@@ -361,7 +334,6 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double r
 					}
 					if (stop_clicked == 1) t = t_memory;
 					else t = NT_output-1, t_init = 0;
-
 				}
 
 				// Click on % bar to adjust time or scroll
@@ -389,7 +361,6 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double r
 					}
 					t_init = t;  // To pick up the animation back where we're leaving off
 				}
-
 				// Advance forward/backward one frame at a time
 				if (e.button.x >= 132 && e.button.x <= 180 && e.button.y >= 511 && e.button.y <= 539 && t>0) {
 					t--;
@@ -399,7 +370,6 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double r
 					t++;
 					t_init = t;
 				}
-
 			}
 		}
 
