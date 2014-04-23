@@ -64,36 +64,6 @@ void ApplySurface(int x, int y, SDL_Texture *tex, SDL_Renderer *rend, SDL_Rect *
     SDL_RenderCopy(rend, tex, clip, &pos);
 }
 
-// Clip numbers from the Numbers.png texture.
-
-SDL_Rect ClipNumber(int number,int font) {
-	SDL_Rect clip;
-	if (font == 12) {
-		clip.h = 20;
-		clip.w = 12;
-		clip.y = 4;
-		clip.x = number*10 + 4;
-	}
-	else if (font == 14) {
-		clip.h = 20;
-		clip.w = 12;
-		clip.y = 22;
-		clip.x = number*10 + 4;
-	}
-	else if (font == 18) {
-		clip.h = 20;
-		if (number == 1) clip.w = 10;
-		else clip.w = 12;
-		clip.y = 46;
-		clip.x = number*10 + 4;
-	}
-	else {
-		printf("Plot: ClipNumber: Font size not supported.\n");
-		clip.x = 0, clip.y = 0, clip.w = 0, clip.h = 0;
-	}
-	return clip;
-}
-
 // Get a pixel
 
 Uint32 get_pixel32( SDL_Surface *surface, int x, int y ) {

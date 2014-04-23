@@ -11,7 +11,7 @@
 #include "../Graphics/Plot.h"
 
 int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double r_p, thermalout **thoutput,
-		int warnings, int msgout, SDL_Renderer* renderer, int* view, int* quit);
+		int warnings, int msgout, SDL_Renderer* renderer, int* view, int* quit, char* FontFile, SDL_Color axisTextColor);
 
 int StructurePlot (SDL_Renderer* renderer, thermalout **thoutput, int t, int NR,
 		SDL_Texture* DryRock_tex, SDL_Texture* Liquid_tex, SDL_Texture* Ice_tex, SDL_Texture* Crust_tex,
@@ -33,7 +33,7 @@ int UpdateDisplays (SDL_Renderer* renderer, SDL_Texture* background_tex, char* F
 		SDL_Texture* xnumber8_tex, SDL_Texture* xnumber9_tex, SDL_Texture* ynumber0_tex);
 
 int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double r_p, thermalout **thoutput,
-		int warnings, int msgout, SDL_Renderer* renderer, int* view, int* quit) {
+		int warnings, int msgout, SDL_Renderer* renderer, int* view, int* quit, char* FontFile, SDL_Color axisTextColor) {
 
 	int r = 0;
 	int t = 0;
@@ -75,8 +75,7 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 	SDL_Surface* progress_bar = NULL;
 
 	SDL_Surface* numbers = NULL;                            // Numbers template image
-	// Value vs. time plot
-	SDL_Surface* value_time = NULL;
+	SDL_Surface* value_time = NULL;                         // Value vs. time plot
 
 	SDL_Texture* ynumber0_tex = NULL;                       // Axis numbers
 
@@ -210,15 +209,6 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 	}
 
 	// Axis numbers (x-axis only; y-axis is dynamic)
-	SDL_Color axisTextColor;
-	axisTextColor.r = 255; axisTextColor.g = 255; axisTextColor.b = 255; // White text
-
-	char *FontFile = (char*)malloc(1024);      // Don't forget to free!
-	FontFile[0] = '\0';
-	if (release == 1) strncat(FontFile,path,strlen(path)-20);
-	else if (cmdline == 1) strncat(FontFile,path,strlen(path)-22);
-	strcat(FontFile,"Graphics/GillSans.ttf");
-
 	ynumber0_tex = renderText("      0",FontFile, axisTextColor, 16, renderer);
 	char nb[10];
 
@@ -440,7 +430,6 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 	SDL_DestroyTexture(xnumber7_tex);
 	SDL_DestroyTexture(xnumber8_tex);
 	SDL_DestroyTexture(xnumber9_tex);
-	free(FontFile);
 	SDL_DestroyTexture(DryRock_tex);
 	SDL_DestroyTexture(Liquid_tex);
 	SDL_DestroyTexture(Ice_tex);
@@ -702,32 +691,15 @@ int UpdateDisplays (SDL_Renderer* renderer, SDL_Texture* background_tex, char* F
 
 	int r = 0;
 	double percent = 0.0; // % of history, 4.56 Gyr = 100%
-	int percent_10 = 0;   // 2nd digit
-	int percent_100 = 0;  // 3rd digit
+	char nb[10];
 
-	SDL_Texture* elapsed_digit_1 = NULL;                    // Time elapsed
-	SDL_Texture* elapsed_digit_2 = NULL;
-	SDL_Texture* elapsed_digit_3 = NULL;
-	SDL_Texture* elapsed_percent_1 = NULL;                  // % history elapsed
-	SDL_Texture* elapsed_percent_2 = NULL;
-	SDL_Texture* elapsed_percent_3 = NULL;
+	SDL_Texture* elapsed_time = NULL;                    // Time elapsed
+	SDL_Texture* elapsed_percent = NULL;                  // % history elapsed
 
 	SDL_Rect progress_bar_clip;        // Section of the image to clip
 	SDL_Rect progress_bar_dilation;    // Resized and repositioned clip
 	SDL_Rect value_time_clip;
 	SDL_Rect value_time_dilation;
-	SDL_Rect elapsed_digit_clip_1;
-	SDL_Rect elapsed_digit_dest_1;
-	SDL_Rect elapsed_digit_clip_2;
-	SDL_Rect elapsed_digit_dest_2;
-	SDL_Rect elapsed_digit_clip_3;
-	SDL_Rect elapsed_digit_dest_3;
-	SDL_Rect elapsed_percent_clip_1;
-	SDL_Rect elapsed_percent_dest_1;
-	SDL_Rect elapsed_percent_clip_2;
-	SDL_Rect elapsed_percent_dest_2;
-	SDL_Rect elapsed_percent_clip_3;
-	SDL_Rect elapsed_percent_dest_3;
 
 	SDL_RenderClear(renderer);
 	ApplySurface(0, 0, background_tex, renderer, NULL);
@@ -769,51 +741,15 @@ int UpdateDisplays (SDL_Renderer* renderer, SDL_Texture* background_tex, char* F
 	SDL_RenderCopy(renderer, progress_bar_tex, &progress_bar_clip, &progress_bar_dilation);
 
 	// Time elapsed
-	elapsed_digit_1 = SDL_CreateTextureFromSurface(renderer, numbers);
-	elapsed_digit_clip_1 = ClipNumber(floor(t/100.0),18);
-	elapsed_digit_dest_1.x = 625, elapsed_digit_dest_1.y = 502;
-	elapsed_digit_dest_1.w = 12, elapsed_digit_dest_1.h = 20;
-	SDL_RenderCopy(renderer, elapsed_digit_1, &elapsed_digit_clip_1, &elapsed_digit_dest_1);
-
-	elapsed_digit_2 = SDL_CreateTextureFromSurface(renderer, numbers);
-	int t_10 = floor((t-floor(t/100.0)*100.0)/10.0);
-	elapsed_digit_clip_2 = ClipNumber(t_10,18);
-	elapsed_digit_dest_2.x = 640, elapsed_digit_dest_2.y = elapsed_digit_dest_1.y;
-	elapsed_digit_dest_2.w = 12, elapsed_digit_dest_2.h = 20;
-	SDL_RenderCopy(renderer, elapsed_digit_2, &elapsed_digit_clip_2, &elapsed_digit_dest_2);
-
-	elapsed_digit_3 = SDL_CreateTextureFromSurface(renderer, numbers);
-	int t_100 = floor(t-floor(t/100.0)*100.0-floor(t_10)*10.0);
-	elapsed_digit_clip_3 = ClipNumber(t_100,18);
-	elapsed_digit_dest_3.x = 650, elapsed_digit_dest_3.y = elapsed_digit_dest_1.y;
-	elapsed_digit_dest_3.w = 12, elapsed_digit_dest_3.h = 20;
-	SDL_RenderCopy(renderer, elapsed_digit_3, &elapsed_digit_clip_3, &elapsed_digit_dest_3);
+	sprintf(nb, "%.2f", t/100.0);
+	elapsed_time = renderText(nb,FontFile, axisTextColor, 18, renderer);
+	renderTexture(elapsed_time, renderer, 629, 502);
 
 	// % history elapsed
-
 	percent = t/4.56;
-
-	elapsed_percent_1 = SDL_CreateTextureFromSurface(renderer, numbers);
-	elapsed_percent_clip_1 = ClipNumber(floor(percent/100.0),18);
-	elapsed_percent_dest_1.x = 630, elapsed_percent_dest_1.y = 526;
-	elapsed_percent_dest_1.w = 12, elapsed_percent_dest_1.h = 20;
-	if (floor(percent/100.0) > 0.0)                        // Don't display the first number if it is 0
-		SDL_RenderCopy(renderer, elapsed_percent_1, &elapsed_percent_clip_1, &elapsed_percent_dest_1);
-
-	elapsed_percent_2 = SDL_CreateTextureFromSurface(renderer, numbers);
-	percent_10 = floor((percent-floor(percent/100.0)*100.0)/10.0);
-	elapsed_percent_clip_2 = ClipNumber(percent_10,18);
-	elapsed_percent_dest_2.x = 640, elapsed_percent_dest_2.y = elapsed_percent_dest_1.y;
-	elapsed_percent_dest_2.w = 12, elapsed_percent_dest_2.h = 20;
-	if (floor(percent/100.0) > 0.0 || percent_10 > 0.0)    // Don't display the first numbers if they are both 0
-		SDL_RenderCopy(renderer, elapsed_percent_2, &elapsed_percent_clip_2, &elapsed_percent_dest_2);
-
-	elapsed_percent_3 = SDL_CreateTextureFromSurface(renderer, numbers);
-	percent_100 = floor(percent-floor(percent/100.0)*100.0-floor(percent_10)*10.0);
-	elapsed_percent_clip_3 = ClipNumber(percent_100,18);
-	elapsed_percent_dest_3.x = 650, elapsed_percent_dest_3.y = elapsed_percent_dest_1.y;
-	elapsed_percent_dest_3.w = 12, elapsed_percent_dest_3.h = 20;
-	SDL_RenderCopy(renderer, elapsed_percent_3, &elapsed_percent_clip_3, &elapsed_percent_dest_3);
+	sprintf(nb, "%.0f", percent);
+	elapsed_percent = renderText(nb,FontFile, axisTextColor, 18, renderer);
+	renderTexture(elapsed_percent, renderer, 641, 527);
 
 	// Other renderings
 	renderTexture(ynumber0_tex, renderer, 50, -8 + value_time_dilation.y + value_time_dilation.h);
@@ -831,12 +767,8 @@ int UpdateDisplays (SDL_Renderer* renderer, SDL_Texture* background_tex, char* F
 
 	SDL_RenderPresent(renderer);
 
-	SDL_DestroyTexture(elapsed_digit_1);
-	SDL_DestroyTexture(elapsed_digit_2);
-	SDL_DestroyTexture(elapsed_digit_3);
-	SDL_DestroyTexture(elapsed_percent_1);
-	SDL_DestroyTexture(elapsed_percent_2);
-	SDL_DestroyTexture(elapsed_percent_3);
+	SDL_DestroyTexture(elapsed_time);
+	SDL_DestroyTexture(elapsed_percent);
 
 	SDL_Delay(16);
 

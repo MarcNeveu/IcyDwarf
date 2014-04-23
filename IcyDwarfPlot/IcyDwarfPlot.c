@@ -134,6 +134,19 @@ int main(int argc, char *argv[]){
 	SDL_SetWindowIcon(window, IcyDwarfIcon);
 
 	//-------------------------------------------------------------------
+	// Display font
+	//-------------------------------------------------------------------
+
+	SDL_Color axisTextColor;
+	axisTextColor.r = 255; axisTextColor.g = 255; axisTextColor.b = 255; // White text
+
+	char *FontFile = (char*)malloc(1024);      // Don't forget to free!
+	FontFile[0] = '\0';
+	if (release == 1) strncat(FontFile,path,strlen(path)-20);
+	else if (cmdline == 1) strncat(FontFile,path,strlen(path)-22);
+	strcat(FontFile,"Graphics/GillSans.ttf");
+
+	//-------------------------------------------------------------------
 	// Display interaction
 	//-------------------------------------------------------------------
 
@@ -141,15 +154,16 @@ int main(int argc, char *argv[]){
 
 	while (!quit) {
 		if (view == 1) // Display thermal tab
-			Thermal_plot (path, Tmax, NR, NT_output, r_p, thoutput, warnings, msgout, renderer, &view, &quit);
+			Thermal_plot (path, Tmax, NR, NT_output, r_p, thoutput, warnings, msgout, renderer, &view, &quit, FontFile, axisTextColor);
 		if (view == 2) // Display crack tab
-			Crack_plot (path, NR, total_time, NT_output, r_p, thoutput, warnings, msgout, renderer, &view, &quit);
+			Crack_plot (path, NR, total_time, NT_output, r_p, thoutput, warnings, msgout, renderer, &view, &quit, FontFile, axisTextColor);
 	}
 
 	//-------------------------------------------------------------------
 	// Exit
 	//-------------------------------------------------------------------
 
+	free(FontFile);
 	SDL_FreeSurface(IcyDwarfIcon);
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
