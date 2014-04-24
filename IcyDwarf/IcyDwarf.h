@@ -62,6 +62,8 @@
 // THERMAL PARAMETERS
 //-------------------------------------------------------------------
 
+#define rhoH2osth 0.935                                    // Density of ice (g/cm3) TODO appropriate for KBOs, but 0.918 for Ceres
+#define rhoAdhsth 0.985                                    // Density of ammonia dihydrate (g/cm3)
 #define Hhydr 5.75e9                                       // Heat of hydration, erg/(g forsterite) (=575e3 kJ/(kg forsterite))
 #define ErockA 1.40e4                                      // =770.0/275.0/2.0*1.0e4, heat capacity of rock (cgs, 1 cgs = 1 erg/g/K = 1e-4 J/kg/K) below 275 K
 #define ErockC 6.885e6                                     // =(607.0+163.0/2.0)*1.0e4 between 275 and 1000 K, term 1
@@ -70,7 +72,7 @@
 
 #define qh2o 7.73e4                                        // =773.0/100.0*1.0e4, heat capacity of water ice (erg/g/K)
 #define qadh 1.12e5                                        // =1120.0/100.0*1.0e4, heat capacity of ADH ice (erg/g/K)
-#define ch2ol 4.1885e7                                     // Heat capacity of liquid water (cgs) TODO Adjust in supercooled regime
+#define ch2ol 4.1885e7                                     // Heat capacity of liquid water (erg g-1 K-1) TODO Adjust in supercooled regime
 	                                                         // where it goes up to 8e7 cgs at 230 K and diverges at 228 K
 #define cnh3l 4.7e7                                        // Heat capacity of liquid ammonia (cgs)
 #define ladh 1.319e9                                       // Latent heat of ADH melting (cgs)
@@ -88,6 +90,7 @@
 #define kaph2ol 6.1e4                                      // Thermal conductivity of liquid water (cgs)
 #define kapnh3l 2.2e3                                      // Thermal conductivity of liquid ammonia (cgs)
 #define Ra_cr 30.0                                         // Critical Rayleigh number for convection of aqueous fluid in a porous medium (Lapwood 1948)
+#define alfh2oavg 1.0e-3                                   // Average expansivity of water at relevant T and P (K-1)
 
 //-------------------------------------------------------------------
 // CRACKING PARAMETERS

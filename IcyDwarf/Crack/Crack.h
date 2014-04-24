@@ -56,16 +56,16 @@
 #include "../IcyDwarf.h"
 
 int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_old, double Pressure,
-		double *Crack, double Crack_old, double *Crack_size, double Crack_size_old,
-		double Xhydr, double Xhydr_old, double dtime, double Mrock, double Mrock_init, double **Act, double **Act_old,
+		double *Crack, double *Crack_size,
+		double Xhydr, double Xhydr_old, double dtime, double Mrock, double Mrock_init, double **Act,
 		int warnings, int msgout, int *crack_input, int *crack_species, double **aTP, double **integral, double **alpha, double **beta,
-		double **silica, double **chrysotile, double **magnesite, int circ);
+		double **silica, double **chrysotile, double **magnesite, int circ, double **Output, double *P_pore);
 
 int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_old, double Pressure,
-		double *Crack, double Crack_old, double *Crack_size, double Crack_size_old,
-		double Xhydr, double Xhydr_old, double dtime, double Mrock, double Mrock_init, double **Act, double **Act_old,
+		double *Crack, double *Crack_size,
+		double Xhydr, double Xhydr_old, double dtime, double Mrock, double Mrock_init, double **Act,
 		int warnings, int msgout, int *crack_input, int *crack_species, double **aTP, double **integral, double **alpha, double **beta,
-		double **silica, double **chrysotile, double **magnesite, int circ) {
+		double **silica, double **chrysotile, double **magnesite, int circ, double **Output, double *P_pore) {
 
 	//-------------------------------------------------------------------
 	//                 Declarations and initializations
@@ -97,7 +97,6 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 
 	// Pore fluid heating-specific variables
 	int tempk_int = 0;                                           // T index in the alpha and beta tables (P index is P_int)
-	double P_fluid = 0.0;                                        // Effective pore fluid pressure in Pa
 
 	// Rock hydration/dehydration-specific variables
 	double P_hydr = 0.0;                                         // Compressive stress from hydration in Pa
@@ -242,14 +241,13 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 
 		P_hydr = 0.0;
 		// Only where there are cracks, where hydration has increased, and where it's not fully hydrated
-		if (Crack_old > 0.0 && Xhydr > Xhydr_old && T < Tdehydr_max) {
+		if ((*Crack) > 0.0 && Xhydr > Xhydr_old && T < Tdehydr_max) {
 
 			// Initialize crack size
-			(*Crack_size) = smallest_crack_size;  // I guess because smallest_crack_size is a #define, the code adds a residual 4.74e-11.
-											      // No changes bigger than that residual will trigger a change in the cracking.
-			if (Crack_old > 0.0 && Crack_size_old > 0.0) {
-				(*Crack_size) = Crack_size_old;
-			}
+			if ((*Crack_size) == 0.0)
+				(*Crack_size) = smallest_crack_size;  // I guess because smallest_crack_size is a #define, the code adds a residual 4.74e-11.
+			                                          // No changes smaller than that residual will trigger a change in the cracking.
+			// else (*Crack_size) is that from the previous time step
 			d_crack_size = 0.0;
 			if (T < Tdehydr_max) { // Hydration
 				d_crack_size = - 2.0*(pow(((Xhydr_old*rhoHydr+(1.0-Xhydr_old)*rhoRock)/(Xhydr*rhoHydr+(1.0-Xhydr)*rhoRock)),0.333) - 1.0) * hydration_rate * dtime / Gyr2sec;
@@ -273,12 +271,11 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 	//-------------------------------------------------------------------
 
 	if (pore_water_expansion == 1) {
-
 		// For now, let's say the pores are at lithostatic pressure (should not be too different from hydrostatic pressure,
 		// as long there are only a few layers of cracks)
 		// Also let pressure evolve with temperature.
 
-		P_fluid = 0.0;
+		if (Rock_strength < Brittle_strength) (*P_pore) = 0.0; // Reset P_pore if rock is ductile
 
 		// Don't do calculations in undifferentiated or water areas, in dehydrated areas, or if no heating
 		if (Xhydr >= 0.1 && T < Tdehydr_max && Mrock > Mrock_init && T > T_old) {
@@ -288,11 +285,10 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 			P_int = look_up (Pressure/bar, (double) P_bar_min, delta_P_bar, sizeaTP, warnings);
 
 			// Calculate fluid pressure, including geometric effects (Le Ravalec & GuŽguen 1994)
-			P_fluid = Pressure + alpha[tempk_int][P_int] * (T-T_old)
-							/ (beta[tempk_int][P_int]/bar + aspect_ratio*3.0*(1.0-2.0*nu_Poisson)/E_Young)
-							* (1.0+2.0*aspect_ratio);
+			(*P_pore) = (*P_pore) + Pressure + (1.0+2.0*aspect_ratio) * alpha[tempk_int][P_int] * (T-T_old)
+								/ (beta[tempk_int][P_int]/bar + aspect_ratio*3.0*(1.0-2.0*nu_Poisson)/E_Young);
 			// Version of Norton (1984) without elastic relaxation
-			// P_fluid = Pressure + alpha[tempk_int][P_int] * (T-T_old)
+			// P_pore = Pressure + alpha[tempk_int][P_int] * (T-T_old)
 			//				/ (beta[tempk_int][P_int]/bar) * (1.0+2.0*aspect_ratio);
 		}
 	}
@@ -307,22 +303,18 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 
 	if (dissolution_precipitation == 1) {
 		// Calculate dissolution/precipitation only where there are cracks
-		if (Crack_old > 0.0) {
+		if ((*Crack) > 0.0) {
 
 			// Initialize crack size
-			(*Crack_size) = smallest_crack_size;    // I guess because smallest_crack_size is a #define, the code adds a residual 4.74e-11.
-													// No changes bigger than that residual will trigger a change in the cracking.
+			if ((*Crack_size) == 0.0)
+				(*Crack_size) = smallest_crack_size;   // I guess because smallest_crack_size is a #define, the code adds a residual 4.74e-11.
+													   // No changes smaller than that residual will trigger a change in the cracking.
 			if (hydration_dehydration == 1) {
-				if (Crack_size_mem > 0.0) {         // Check crack size after hydration cracking calculations
+				if (Crack_size_mem > 0.0) {            // Check crack size after hydration cracking calculations
 					(*Crack_size) = Crack_size_mem;
 				}
 			}
-			else {
-				if (Crack_old > 0.0 && Crack_size_old > 0.0) {
-					(*Crack_size) = Crack_size_old;
-				}
-			}
-			Crack_size_diss_old = (*Crack_size);
+			Crack_size_diss_old = (*Crack_size);       // For output only
 			d_crack_size = 0.0;
 			surface_volume_ratio = 2.0/(*Crack_size);  // Rimstidt and Barnes (1980) Fig. 6 for a cylinder/fracture
 
@@ -339,7 +331,6 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 
 			for (i=0;i<n_species_crack;i++) {                                    // Include whichever species are needed
 				if (crack_species[i] > 0) {
-					(*Act)[i] = (*Act_old)[i];
 					// if (r == 130 && t < 100) printf("\t (*Act)[%d]=%g, Q[%d]=%g, K_eq[%d]=%g\n",i,(*Act)[i]/rhoH2ol,i,pow((*Act)[i]/rhoH2ol,nu_prod[i]),i,K_eq[i]); // Debug
 
 					// (Act_prod in mol L-1 to scale with K, silica equation (i=0) assumes unit A/V).
@@ -370,20 +361,19 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 						// if (r == 130 && t < 100) printf("\t New Act_prod[%d]=%g\n",i,(*Act)[i]/rhoH2ol); // Debug
 
 					}
-					(*Act_old)[i] = (*Act)[i];                          // Memorize the activity of products for the next timestep
 				}
 			}
-			if ((*Crack_size) + d_crack_size > 0.0)                        // Update crack size
+			if ((*Crack_size) + d_crack_size > 0.0)                     // Update crack size
 				(*Crack_size) = (*Crack_size) + d_crack_size;
 			else {
-				(*Crack_size) = 0.0;                                       // Pore clogged
-				for (i=0;i<n_species_crack;i++) (*Act_old)[i] = 0.0;    // Reset old activity quotients
+				(*Crack_size) = 0.0;                                    // Pore clogged
+				for (i=0;i<n_species_crack;i++) (*Act)[i] = 0.0;        // Reset old activity quotients
 			}
 		}
 		else {
 			// If the crack is closed, clear the old activity quotients
 			for (i=0;i<n_species_crack;i++) {
-				(*Act_old)[i] = 0.0;
+				(*Act)[i] = 0.0;
 			}
 		}
 	}
@@ -392,44 +382,54 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 	//                   Determine type of cracking
 	//-------------------------------------------------------------------
 
+	(*Output)[1] = Pressure;
+	(*Output)[2] = Brittle_strength;
+	(*Output)[3] = Ductile_strength;
+	(*Output)[4] = Rock_strength;
+	(*Output)[5] = K_IC;
+	(*Output)[6] = K_I;
+	(*Output)[7] = (*P_pore);
+	(*Output)[8] = P_hydr;
+	(*Output)[9] = Crack_size_diss_old;
+	(*Output)[10] = (*Crack_size);
+
 	// Cases where cracks appear
 	if (thermal_mismatch == 1) {          // Mismatch stresses open cracks
-		if (Mrock > Mrock_init
-				&& (K_I >= K_IC || Crack_old == 1) && dTdt < 0)
+		if ((K_I >= K_IC || floor(*Crack) == 1) && dTdt < 0)
 			(*Crack) = 1.0;               // Cooling cracks
-		if (Mrock > Mrock_init
-				&& (K_I >= K_IC || Crack_old == 2) && dTdt >= 0)
+		if ((K_I >= K_IC || floor(*Crack) == 2) && dTdt >= 0)
 			(*Crack) = 2.0;               // Heating cracks
 	}
 	if (hydration_dehydration == 1) {
-		if (P_hydr > Pressure + Rock_strength)
+		if (P_hydr > Pressure + Rock_strength || floor(*Crack) == 3)
 			(*Crack) = 3.0;               // Compressive hydration cracks
 	}
 	if (pore_water_expansion == 1) {      // Open crack if the fluid pressure is high enough
-		if (P_fluid > Pressure + Rock_strength)
+		if ((*P_pore) > Pressure + Rock_strength || floor(*Crack) == 5) {
 			(*Crack) = 5.0;
+			(*P_pore) = 0.0;
+		}
 	}
 	if (dissolution_precipitation == 1) {
-		if (Crack_old > 0.0 && (*Crack_size) > Crack_size_diss_old)
-			(*Crack) = 6.0;               // Dissolution widened crack
-		if (Crack_old > 0.0 && (*Crack_size) < Crack_size_diss_old)
-			(*Crack) = 7.0;               // Precipitation shrunk crack
+		if ((*Crack) > 0.0 && (*Crack_size) > Crack_size_diss_old)
+			(*Crack) = (*Crack) + 0.1;    // Dissolution widened crack
+		if ((*Crack) > 0.0 && (*Crack_size) < Crack_size_diss_old)
+			(*Crack) = (*Crack) + 0.2;    // Precipitation shrunk crack
 	}
 
 	// Cases where cracks disappear
 	if (Mrock <= Mrock_init)
 		(*Crack) = 0.0;                   // Trivial: not enough rock
-	if (Rock_strength < 0.99*Brittle_strength) // 0.99 to beat machine error
+	if (Rock_strength < Brittle_strength)
 		(*Crack) = 0.0;                   // Ductile zone
 	if (hydration_dehydration == 1) {
 		if (P_hydr > 0.0 && P_hydr <= Pressure + Rock_strength) {
-			(*Crack) = -1.0;              // Crack closed because of hydration
+			(*Crack) = -2.0;              // Crack closed because of hydration
 		}
 	}
 	if (dissolution_precipitation == 1) {
-		if (Crack_old > 0.0 && (*Crack_size) <= 0.0) {
+		if ((*Crack) > 0.0 && (*Crack_size) <= 0.0) {
 			(*Crack) = -1.0;              // Crack closed after precipitation
-			(*Crack_size) = 0.0;
 		}
 	}
 

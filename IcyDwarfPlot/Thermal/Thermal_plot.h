@@ -58,23 +58,23 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 
 	double **TempK = (double**) malloc(NT_output*sizeof(double*));    // Temperature
 	if (TempK == NULL) printf("Thermal_plot: Not enough memory to create TempK[NT_output]\n");
-	for (r=0;r<NR;r++) {
-		TempK[r] = (double*) malloc(NR*sizeof(double));
-		if (TempK[r] == NULL) printf("Thermal_plot: Not enough memory to create TempK[NT_output][NR]\n");
+	for (t=0;t<NT_output;t++) {
+		TempK[t] = (double*) malloc(NR*sizeof(double));
+		if (TempK[t] == NULL) printf("Thermal_plot: Not enough memory to create TempK[NT_output][NR]\n");
 	}
 
 	double **Hydr = (double**) malloc(NT_output*sizeof(double*));     // Degree of hydration
 	if (Hydr == NULL) printf("Thermal_plot: Not enough memory to create Hydr[NT_output]\n");
-	for (r=0;r<NR;r++) {
-		Hydr[r] = (double*) malloc(NR*sizeof(double));
-		if (Hydr[r] == NULL) printf("Thermal_plot: Not enough memory to create Hydr[NT_output][NR]\n");
+	for (t=0;t<NT_output;t++) {
+		Hydr[t] = (double*) malloc(NR*sizeof(double));
+		if (Hydr[t] == NULL) printf("Thermal_plot: Not enough memory to create Hydr[NT_output][NR]\n");
 	}
 
 	double **Kappa = (double**) malloc(NT_output*sizeof(double*));    // Thermal conductivity
 	if (Kappa == NULL) printf("Thermal_plot: Not enough memory to create Kappa[NT_output]\n");
-	for (r=0;r<NR;r++) {
-		Kappa[r] = (double*) malloc(NR*sizeof(double));
-		if (Kappa[r] == NULL) printf("Thermal_plot: Not enough memory to create Kappa[NT_output][NR]\n");
+	for (t=0;t<NT_output;t++) {
+		Kappa[t] = (double*) malloc(NR*sizeof(double));
+		if (Kappa[t] == NULL) printf("Thermal_plot: Not enough memory to create Kappa[NT_output][NR]\n");
 	}
 
 //-------------------------------------------------------------------
@@ -671,7 +671,7 @@ int UpdateDisplays (SDL_Renderer* renderer, SDL_Texture* background_tex, char* F
 	percent = t/4.56;
 	sprintf(nb, "%.0f", percent);
 	elapsed_percent = renderText(nb,FontFile, axisTextColor, 18, renderer);
-	renderTexture(elapsed_percent, renderer, 641, 527);
+	renderTexture(elapsed_percent, renderer, 636, 527);
 
 	// Transient items
 	switch (plot_switch) {

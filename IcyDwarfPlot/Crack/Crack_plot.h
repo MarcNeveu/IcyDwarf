@@ -138,42 +138,37 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double r
 	for (t=0;t<NT_output;t++) {
 		for (r=0;r<NR;r++) {
 			// Cooling cracks in white
-			if (Crack[t][r] == 1.0) {
+			if (floor(Crack[t][r]) == 1) {
 				pixmem32 = (Uint32*) crack_time->pixels + (crack_time->h - r)*crack_time->w + t;
 				*pixmem32 = white_alpha;
 			}
 			// Heating cracks in red
-			if (Crack[t][r] == 2.0) {
+			if (floor(Crack[t][r]) == 2) {
 				pixmem32 = (Uint32*) crack_time->pixels + (crack_time->h - r)*crack_time->w + t;
 				*pixmem32 = red_alpha;
 			}
 			// Hydration cracks in blue
-			if (Crack[t][r] == 3.0) {
+			if (floor(Crack[t][r]) == 3) {
 				pixmem32 = (Uint32*) crack_time->pixels + (crack_time->h - r)*crack_time->w + t;
 				*pixmem32 = blue_alpha;
 			}
-			// Dehydration cracks in yellow
-			if (Crack[t][r] == 4.0) {
-				pixmem32 = (Uint32*) crack_time->pixels + (crack_time->h - r)*crack_time->w + t;
-				*pixmem32 = orange_alpha;
-			}
 			// Pore dilation cracks in purple
-			if (Crack[t][r] == 5.0) {
+			if (floor(Crack[t][r]) == 5) {
 				pixmem32 = (Uint32*) crack_time->pixels + (crack_time->h - r)*crack_time->w + t;
 				*pixmem32 = purple_alpha;
 			}
 			// Cracks widened by dissolution in yellow
-			if (Crack[t][r] == 6.0) {
+			if ((double) floor(Crack[t][r]) + 0.1 == Crack[t][r]) {
 				pixmem32 = (Uint32*) crack_time->pixels + (crack_time->h - r)*crack_time->w + t;
 				*pixmem32 = yellow_alpha;
 			}
 			// Cracks shrunk by precipitation in light green
-			if (Crack[t][r] == 7.0) {
+			if ((double) floor(Crack[t][r]) + 0.2 == Crack[t][r]) {
 				pixmem32 = (Uint32*) crack_time->pixels + (crack_time->h - r)*crack_time->w + t;
 				*pixmem32 = green_alpha;
 			}
-			// Cracks clogged by precipitation in white
-			if (Crack[t][r] == -1.0) {
+			// Cracks clogged by hydration swelling or precipitation in white
+			if (Crack[t][r] <= -1.0) {
 				pixmem32 = (Uint32*) crack_time->pixels + (crack_time->h - r)*crack_time->w + t;
 				*pixmem32 = light_white_alpha;
 			}
@@ -481,7 +476,7 @@ int UpdateDisplays2(SDL_Renderer* renderer, SDL_Texture* background_tex, SDL_Sur
 	percent = t/4.56;
 	sprintf(nb, "%.0f", percent);
 	elapsed_percent = renderText(nb,FontFile, axisTextColor, 18, renderer);
-	renderTexture(elapsed_percent, renderer, 641, 527);
+	renderTexture(elapsed_percent, renderer, 636, 527);
 
 	// Static renderings
 	SDL_RenderCopy(renderer, WR_bar_tex, NULL, NULL);
