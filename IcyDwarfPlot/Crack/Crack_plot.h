@@ -27,7 +27,8 @@ int UpdateDisplays2(SDL_Renderer* renderer, SDL_Texture* background_tex, SDL_Sur
 		char* FontFile, SDL_Color axisTextColor, SDL_Texture* tmin_tex, SDL_Texture* tint1_tex,
 		SDL_Texture* tint2_tex, SDL_Texture* tint3_tex, SDL_Texture* tmax_tex,
 		SDL_Texture* surface_radius, SDL_Texture* seafloor_radius, SDL_Texture* cracked_radius,
-		SDL_Texture* max_ratio_tex, SDL_Texture* max_depth_tex);
+		SDL_Texture* max_ratio_tex, SDL_Texture* max_depth_tex, SDL_Texture* depth1_tex, SDL_Texture* depth2_tex,
+		SDL_Texture* depth3_tex);
 
 int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double r_p, thermalout **thoutput,
 		int warnings, int msgout, SDL_Renderer* renderer, int* view, int* quit, char* FontFile, SDL_Color axisTextColor) {
@@ -73,6 +74,9 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double r
 	SDL_Texture* seafloor_radius = NULL;
 	SDL_Texture* cracked_radius = NULL;
 	SDL_Texture* max_ratio_tex = NULL;
+	SDL_Texture* depth1_tex = NULL;
+	SDL_Texture* depth2_tex = NULL;
+	SDL_Texture* depth3_tex = NULL;
 	SDL_Texture* max_depth_tex = NULL;
 
 	//-------------------------------------------------------------------
@@ -88,8 +92,16 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double r
 	}
 	Crack = read_input (NR, NT_output, Crack, path, "Outputs/Crack.txt");
 
+	double **Crack_depth = (double**) malloc(NT_output*sizeof(double*)); // Crack_depth[NT_output][2]
+	if (Crack_depth == NULL) printf("Crack: Not enough memory to create Crack_depth[NT_output][2]\n");
+	for (t=0;t<NT_output;t++) {
+		Crack_depth[t] = (double*) malloc(2*sizeof(double));
+		if (Crack_depth[t] == NULL) printf("Crack: Not enough memory to create Crack_depth[NT_output][2]\n");
+	}
+	Crack_depth = read_input (2, NT_output, Crack_depth, path, "Outputs/Crack_depth.txt");
+
 	// Read the W/R file
-	double **WRratio = (double**) malloc(NT_output*sizeof(double*));             // WRratio[NT_output][2]
+	double **WRratio = (double**) malloc(NT_output*sizeof(double*));     // WRratio[NT_output][2]
 	if (WRratio == NULL) printf("Crack: Not enough memory to create WRratio[NT_output][2]\n");
 	for (t=0;t<NT_output;t++) {
 		WRratio[t] = (double*) malloc(2*sizeof(double));
@@ -122,18 +134,6 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double r
 	//-------------------------------------------------------------------
 	//                      Cracking vs. time plot
 	//-------------------------------------------------------------------
-
-	double **Crack_depth = (double**) malloc(NT_output*sizeof(double*));         // Crack_depth[NT_output][2]
-	                                                                   // Used for the subseafloor zoom graphics
-	if (Crack_depth == NULL) printf("Crack: Not enough memory to create Crack_depth[NT_output][2]\n");
-	for (t=0;t<NT_output;t++) {
-		Crack_depth[t] = (double*) malloc(2*sizeof(double));
-		if (Crack_depth[t] == NULL) printf("Crack: Not enough memory to create Crack_depth[NT_output][2]\n");
-	}
-
-	for (t=0;t<NT_output;t++) {
-		Crack_depth[t][0] = 0.0, Crack_depth[t][1] = 0.0;
-	}
 
 	for (t=0;t<NT_output;t++) {
 		for (r=0;r<NR;r++) {
@@ -182,13 +182,8 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double r
 			if (Crack[t][r] > 0.0 && r<=max_depth) {
 				max_depth = r;
 			}
-			if (Crack[t][r] > 0.0) {
-				Crack_depth[t][1] = Crack_depth[t][1] + 1.0*r_p/NR;
-			}
 		}
 	}
-	// The cracked depth goes artificially to zero at t=NT_output-1, so let's set it equal to that at t=NT_output-2
-	Crack_depth[NT_output-1][1] = Crack_depth[NT_output-2][1];
 
 	crack_time_tex = SDL_CreateTextureFromSurface(renderer, crack_time);
 
@@ -207,6 +202,12 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double r
 	// y-axis: max depth
 	scanNumber(&nb, max_depth);
 	max_depth_tex = renderText(nb,FontFile, axisTextColor, 14, renderer);
+	scanNumber(&nb, 0.25*max_depth);
+	depth1_tex = renderText(nb,FontFile, axisTextColor, 14, renderer);
+	scanNumber(&nb, 0.5*max_depth);
+	depth2_tex = renderText(nb,FontFile, axisTextColor, 14, renderer);
+	scanNumber(&nb, 0.75*max_depth);
+	depth3_tex = renderText(nb,FontFile, axisTextColor, 14, renderer);
 
 	//-------------------------------------------------------------------
 	//                  Water-rock ratio vs. time plot
@@ -325,7 +326,8 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double r
 						UpdateDisplays2(renderer, background_tex, crack_time, WR, WR_bar_tex, crack_time_tex,
 							WR_tex, progress_bar_tex, cracked_rock_tex, min_depth, max_depth, t, NR, NT_output, r_p, Crack_depth,
 							FontFile, axisTextColor, tmin_tex, tint1_tex, tint2_tex, tint3_tex, tmax_tex,
-							surface_radius, seafloor_radius, cracked_radius, max_ratio_tex, max_depth_tex);
+							surface_radius, seafloor_radius, cracked_radius, max_ratio_tex, max_depth_tex,
+							depth1_tex, depth2_tex, depth3_tex);
 					}
 					if (stop_clicked == 1) t = t_memory;
 					else t = NT_output-1, t_init = 0;
@@ -351,7 +353,8 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double r
 							UpdateDisplays2(renderer, background_tex, crack_time, WR, WR_bar_tex, crack_time_tex,
 								WR_tex, progress_bar_tex, cracked_rock_tex, min_depth, max_depth, t, NR, NT_output, r_p, Crack_depth,
 								FontFile, axisTextColor, tmin_tex, tint1_tex, tint2_tex, tint3_tex, tmax_tex,
-								surface_radius, seafloor_radius, cracked_radius, max_ratio_tex, max_depth_tex);
+								surface_radius, seafloor_radius, cracked_radius, max_ratio_tex, max_depth_tex,
+								depth1_tex, depth2_tex, depth3_tex);
 						}
 					}
 					t_init = t;  // To pick up the animation back where we're leaving off
@@ -372,7 +375,8 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double r
 		UpdateDisplays2(renderer, background_tex, crack_time, WR, WR_bar_tex, crack_time_tex,
 			WR_tex, progress_bar_tex, cracked_rock_tex, min_depth, max_depth, t, NR, NT_output, r_p, Crack_depth,
 			FontFile, axisTextColor, tmin_tex, tint1_tex, tint2_tex, tint3_tex, tmax_tex,
-			surface_radius, seafloor_radius, cracked_radius, max_ratio_tex, max_depth_tex);
+			surface_radius, seafloor_radius, cracked_radius, max_ratio_tex, max_depth_tex,
+			depth1_tex, depth2_tex, depth3_tex);
 	}
 
 //-------------------------------------------------------------------
@@ -399,6 +403,9 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double r
 	SDL_DestroyTexture(cracked_radius);
 	SDL_DestroyTexture(max_ratio_tex);
 	SDL_DestroyTexture(max_depth_tex);
+	SDL_DestroyTexture(depth1_tex);
+	SDL_DestroyTexture(depth2_tex);
+	SDL_DestroyTexture(depth3_tex);
 
 	for (t=0;t<NT_output;t++) {
 		free (Crack[t]);
@@ -419,7 +426,8 @@ int UpdateDisplays2(SDL_Renderer* renderer, SDL_Texture* background_tex, SDL_Sur
 		char* FontFile, SDL_Color axisTextColor, SDL_Texture* tmin_tex, SDL_Texture* tint1_tex,
 		SDL_Texture* tint2_tex, SDL_Texture* tint3_tex, SDL_Texture* tmax_tex,
 		SDL_Texture* surface_radius, SDL_Texture* seafloor_radius, SDL_Texture* cracked_radius,
-		SDL_Texture* max_ratio_tex, SDL_Texture* max_depth_tex) {
+		SDL_Texture* max_ratio_tex, SDL_Texture* max_depth_tex, SDL_Texture* depth1_tex, SDL_Texture* depth2_tex,
+		SDL_Texture* depth3_tex) {
 
 	double percent = 0.0;
 	char nb[10];
@@ -494,7 +502,10 @@ int UpdateDisplays2(SDL_Renderer* renderer, SDL_Texture* background_tex, SDL_Sur
 	renderTexture(seafloor_radius, renderer, 70, 53);
 	renderTexture(cracked_radius, renderer, 70, 178);
 	renderTexture(max_ratio_tex, renderer, 463, 326);
-	renderTexture(max_depth_tex, renderer, 481, 201);
+	renderTexture(max_depth_tex, renderer, 473, 201);
+	renderTexture(depth1_tex, renderer, 473, 101);
+	renderTexture(depth2_tex, renderer, 473, 134);
+	renderTexture(depth3_tex, renderer, 473, 168);
 
 	SDL_RenderPresent(renderer);
 

@@ -49,45 +49,16 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 	int structure = 0;
 	int hold_tracks = 0;
 	int plot_switch = 0;
-	double Tmax = 0.0;     // Max temperature ever encountered in any layer
-	double kappamax = 0.0; // Max thermal conductivity ever encountered in any layer
-
+	double Tmax = 0.0;                           // Max temperature ever encountered in any layer
+	double kappamax = 0.0;                       // Max thermal conductivity ever encountered in any layer
 	Uint32 *pixmem32;
 	Uint32 white;
 	Uint32 alpha;
-
-	double **TempK = (double**) malloc(NT_output*sizeof(double*));    // Temperature
-	if (TempK == NULL) printf("Thermal_plot: Not enough memory to create TempK[NT_output]\n");
-	for (t=0;t<NT_output;t++) {
-		TempK[t] = (double*) malloc(NR*sizeof(double));
-		if (TempK[t] == NULL) printf("Thermal_plot: Not enough memory to create TempK[NT_output][NR]\n");
-	}
-
-	double **Hydr = (double**) malloc(NT_output*sizeof(double*));     // Degree of hydration
-	if (Hydr == NULL) printf("Thermal_plot: Not enough memory to create Hydr[NT_output]\n");
-	for (t=0;t<NT_output;t++) {
-		Hydr[t] = (double*) malloc(NR*sizeof(double));
-		if (Hydr[t] == NULL) printf("Thermal_plot: Not enough memory to create Hydr[NT_output][NR]\n");
-	}
-
-	double **Kappa = (double**) malloc(NT_output*sizeof(double*));    // Thermal conductivity
-	if (Kappa == NULL) printf("Thermal_plot: Not enough memory to create Kappa[NT_output]\n");
-	for (t=0;t<NT_output;t++) {
-		Kappa[t] = (double*) malloc(NR*sizeof(double));
-		if (Kappa[t] == NULL) printf("Thermal_plot: Not enough memory to create Kappa[NT_output][NR]\n");
-	}
-
-//-------------------------------------------------------------------
-//                     Initialize display elements
-//-------------------------------------------------------------------
-
 	SDL_Texture* background_tex = NULL;
-	SDL_Texture* progress_bar_tex = NULL;                   // Progress bar
+	SDL_Texture* progress_bar_tex = NULL;        // Progress bar
 	SDL_Surface* progress_bar = NULL;
-
-	SDL_Surface* value_time = NULL;                         // Value vs. time plot
-
-	SDL_Texture* ynumber0_tex = NULL;                       // Axis numbers
+	SDL_Surface* value_time = NULL;              // Value vs. time plot
+	SDL_Texture* ynumber0_tex = NULL;            // Axis numbers
 	SDL_Texture* xnumber0_tex = NULL;
 	SDL_Texture* xnumber1_tex = NULL;
 	SDL_Texture* xnumber2_tex = NULL;
@@ -98,12 +69,10 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 	SDL_Texture* xnumber7_tex = NULL;
 	SDL_Texture* xnumber8_tex = NULL;
 	SDL_Texture* xnumber9_tex = NULL;
-
 	SDL_Texture* DryRock_tex = NULL;
 	SDL_Texture* Liquid_tex = NULL;
 	SDL_Texture* Ice_tex = NULL;
 	SDL_Texture* Crust_tex = NULL;
-
 	SDL_Texture* temp_tex = NULL;
 	SDL_Texture* hydr_tex = NULL;
 	SDL_Texture* k_tex = NULL;
@@ -117,6 +86,29 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 	SDL_Texture* prev_tex = NULL;
 	SDL_Texture* next_tex = NULL;
 	SDL_Texture* legend_tex = NULL;
+
+	double **TempK = (double**) malloc(NT_output*sizeof(double*));    // Temperature
+	if (TempK == NULL) printf("Thermal_plot: Not enough memory to create TempK[NT_output]\n");
+	for (t=0;t<NT_output;t++) {
+		TempK[t] = (double*) malloc(NR*sizeof(double));
+		if (TempK[t] == NULL) printf("Thermal_plot: Not enough memory to create TempK[NT_output][NR]\n");
+	}
+	double **Hydr = (double**) malloc(NT_output*sizeof(double*));     // Degree of hydration
+	if (Hydr == NULL) printf("Thermal_plot: Not enough memory to create Hydr[NT_output]\n");
+	for (t=0;t<NT_output;t++) {
+		Hydr[t] = (double*) malloc(NR*sizeof(double));
+		if (Hydr[t] == NULL) printf("Thermal_plot: Not enough memory to create Hydr[NT_output][NR]\n");
+	}
+	double **Kappa = (double**) malloc(NT_output*sizeof(double*));    // Thermal conductivity
+	if (Kappa == NULL) printf("Thermal_plot: Not enough memory to create Kappa[NT_output]\n");
+	for (t=0;t<NT_output;t++) {
+		Kappa[t] = (double*) malloc(NR*sizeof(double));
+		if (Kappa[t] == NULL) printf("Thermal_plot: Not enough memory to create Kappa[NT_output][NR]\n");
+	}
+
+//-------------------------------------------------------------------
+//                     Initialize display elements
+//-------------------------------------------------------------------
 
 	File2tex("Graphics/BG/BG.001.png", &background_tex, path);
 	File2surf("Graphics/Transparent.png", &progress_bar, path);
@@ -134,7 +126,6 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 	File2tex("Graphics/Thermal/hydr_title.png", &hydr_title_tex, path);
 	File2tex("Graphics/Thermal/k_title.png", &k_title_tex, path);
 	File2tex("Graphics/Thermal/legend.png", &legend_tex, path);
-
 	// Don't forget to destroy all window, renderers, and textures at the end.
 
 	for (t=0;t<NT_output;t++) {
@@ -639,7 +630,7 @@ int UpdateDisplays (SDL_Renderer* renderer, SDL_Texture* background_tex, char* F
 		break;
 	case 2:  // Thermal conductivity-time plot
 		TwoAxisPlot(renderer, FontFile, Kappa, grid, hold_tracks, t, NR, NR,
-				1, 100, 1.0, 6.0, 6.0, 0,
+				1, 1000, 1.0, 6.0, 6.0, 0,
 				kappamax, value_time, value_time_clip, &value_time_dilation,
 				axisTextColor, alpha);
 		break;

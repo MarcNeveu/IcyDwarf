@@ -55,17 +55,17 @@
 
 #include "../IcyDwarf.h"
 
-int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_old, double Pressure,
-		double *Crack, double *Crack_size,
-		double Xhydr, double Xhydr_old, double dtime, double Mrock, double Mrock_init, double **Act,
-		int warnings, int msgout, int *crack_input, int *crack_species, double **aTP, double **integral, double **alpha, double **beta,
-		double **silica, double **chrysotile, double **magnesite, int circ, double **Output, double *P_pore);
+int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_old, double Pressure, double *Crack,
+		double *Crack_size, double Xhydr, double Xhydr_old, double dtime, double Mrock, double Mrock_init,
+		double **Act, int warnings, int msgout, int *crack_input, int *crack_species, double **aTP,
+		double **integral, double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite,
+		int circ, double **Output, double *P_pore);
 
-int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_old, double Pressure,
-		double *Crack, double *Crack_size,
-		double Xhydr, double Xhydr_old, double dtime, double Mrock, double Mrock_init, double **Act,
-		int warnings, int msgout, int *crack_input, int *crack_species, double **aTP, double **integral, double **alpha, double **beta,
-		double **silica, double **chrysotile, double **magnesite, int circ, double **Output, double *P_pore) {
+int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_old, double Pressure, double *Crack,
+		double *Crack_size, double Xhydr, double Xhydr_old, double dtime, double Mrock, double Mrock_init,
+		double **Act, int warnings, int msgout, int *crack_input, int *crack_species, double **aTP,
+		double **integral, double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite,
+		int circ, double **Output, double *P_pore) {
 
 	//-------------------------------------------------------------------
 	//                 Declarations and initializations
@@ -187,6 +187,7 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 	}
 	Ductile_strength = pow(strain_rate,(1.0/n_flow_law)) * pow(A_flow_law,-1.0/n_flow_law) * pow(d_flow_law,p_flow_law/n_flow_law)
 					 * exp((Ea_flow_law + Pressure*V_flow_law)/(n_flow_law*R_G*T));
+	if (!(Ductile_strength < 1.0e40)) Ductile_strength = 1.0e40;
 	if (Brittle_strength <= Ductile_strength) Rock_strength = Brittle_strength;
 	else Rock_strength = Ductile_strength;
 
@@ -278,7 +279,7 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 		if (Rock_strength < Brittle_strength) (*P_pore) = 0.0; // Reset P_pore if rock is ductile
 
 		// Don't do calculations in undifferentiated or water areas, in dehydrated areas, or if no heating
-		if (Xhydr >= 0.1 && T < Tdehydr_max && Mrock > Mrock_init && T > T_old) {
+		if (Xhydr >= 0.1 && T > T_old) {
 
 			// Look up the right value of alpha and beta, given P and T
 			tempk_int = look_up (T, (double) tempk_min, delta_tempk, sizeaTP, warnings);
@@ -420,7 +421,7 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 	// Cases where cracks disappear
 	if (Mrock <= Mrock_init)
 		(*Crack) = 0.0;                   // Trivial: not enough rock
-	if (Rock_strength < Brittle_strength)
+	if (Rock_strength < 0.99*Brittle_strength) // 0.99 to beat machine error
 		(*Crack) = 0.0;                   // Ductile zone
 	if (hydration_dehydration == 1) {
 		if (P_hydr > 0.0 && P_hydr <= Pressure + Rock_strength) {

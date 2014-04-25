@@ -541,7 +541,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 					rhoRockth, rhoHydrth, rhoH2olth, &Xhydr, ir, ircore, irice, NR);
 				//for (jr=0;jr<NR;jr++) time_hydr[jr] = (1.0-Xhydr[ir])*(dr_grid*cm)/hydration_rate*Gyr2sec;
 				structure_changed = 1;
-				if (Xhydr[ir] >= Xhydr_temp) dont_dehydrate[ir] = 1;
+				if (Xhydr[ir] >= 1.01*Xhydr_temp) dont_dehydrate[ir] = 1; // 1.01 to beat machine error
     		}
     	}
     	for (ir=0;ir<ircore;ir++) {
@@ -685,7 +685,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			kap1 = kapcond(T[ir], frock, fh2os, fadhs, fh2ol, fnh3l, Xhydr[ir]);
 
 			if (fh2ol + fnh3l >= 0.02)
-				kappa[ir] = 400.0*1.0e5;  // cgs
+				kappa[ir] = 400.0e5;  // cgs
 			else
 				kappa[ir] = kap1;
 		}
@@ -757,6 +757,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
 		for (ir=irice;ir<=irdiff;ir++) {
 			kappa[ir] = kappa[ir]*Nu[ir];
+			if (kappa[ir] > kap_hydro) kappa[ir] = kap_hydro;
 		}
 
 		//-------------------------------------------------------------------
