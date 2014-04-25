@@ -177,7 +177,7 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 	We mix up brittle-ductile and brittle-plastic transitions, although we shouldn't (Kohlstedt et al. 1995).
 	The transition is when the brittle strength equals the ductile strength.
 	The brittle strength is given by a friction/low-P Byerlee type law: stress = mu*P.
-	The ductile strength is given by a flow law: epsilon = A*sigma^n*exp[(-Ea+P*V)/RT]. See crack parameters. */
+	The ductile strength is given by a flow law: epsilon = A*sigma^n*d^-p*exp[(-Ea+P*V)/RT]. See crack parameters. */
 	Rock_strength = 0.0;
 	if (Xhydr >= 0.05)
 		Brittle_strength = mu_f_serp*Pressure;
@@ -185,15 +185,18 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 		if (Pressure <= 200.0e6) Brittle_strength = mu_f_Byerlee_loP*Pressure;
 		else Brittle_strength = mu_f_Byerlee_hiP*Pressure + C_f_Byerlee_hiP;
 	}
-	Ductile_strength = pow(strain_rate,(1.0/n_flow_law)) * pow(A_flow_law,-1.0/n_flow_law) * pow(d_flow_law,p_flow_law/n_flow_law)
+	if (T > 140.0)
+		Ductile_strength = pow(strain_rate,(1.0/n_flow_law)) * pow(A_flow_law,-1.0/n_flow_law) * pow(d_flow_law,p_flow_law/n_flow_law)
 					 * exp((Ea_flow_law + Pressure*V_flow_law)/(n_flow_law*R_G*T));
-	if (!(Ductile_strength < 1.0e40)) Ductile_strength = 1.0e40;
+	else // Set T at 140 K to calculate ductile strength so that it doesn't yield numbers too high to handle
+		Ductile_strength = pow(strain_rate,(1.0/n_flow_law)) * pow(A_flow_law,-1.0/n_flow_law) * pow(d_flow_law,p_flow_law/n_flow_law)
+					 * exp((Ea_flow_law + Pressure*V_flow_law)/(n_flow_law*R_G*140.0));
 	if (Brittle_strength <= Ductile_strength) Rock_strength = Brittle_strength;
 	else Rock_strength = Ductile_strength;
 
 	//-------------------------------------------------------------------
 	// Cracks open from thermal expansion / contraction mismatch
-	// (Friedrich and Wong 1986, Vance et al. 2007)
+	// (Fredrich and Wong 1986, Vance et al. 2007)
 	//-------------------------------------------------------------------
 
 	if (thermal_mismatch == 1) {
@@ -285,11 +288,11 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 			tempk_int = look_up (T, (double) tempk_min, delta_tempk, sizeaTP, warnings);
 			P_int = look_up (Pressure/bar, (double) P_bar_min, delta_P_bar, sizeaTP, warnings);
 
-			// Calculate fluid pressure, including geometric effects (Le Ravalec & GuŽguen 1994)
-			(*P_pore) = (*P_pore) + Pressure + (1.0+2.0*aspect_ratio) * alpha[tempk_int][P_int] * (T-T_old)
+			// Calculate fluid overpressure from heating, including geometric effects (Le Ravalec & GuŽguen 1994)
+			(*P_pore) = (*P_pore) + (1.0+2.0*aspect_ratio) * alpha[tempk_int][P_int] * (T-T_old)
 								/ (beta[tempk_int][P_int]/bar + aspect_ratio*3.0*(1.0-2.0*nu_Poisson)/E_Young);
 			// Version of Norton (1984) without elastic relaxation
-			// P_pore = Pressure + alpha[tempk_int][P_int] * (T-T_old)
+			// P_pore = alpha[tempk_int][P_int] * (T-T_old)
 			//				/ (beta[tempk_int][P_int]/bar) * (1.0+2.0*aspect_ratio);
 		}
 	}
@@ -406,7 +409,7 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 			(*Crack) = 3.0;               // Compressive hydration cracks
 	}
 	if (pore_water_expansion == 1) {      // Open crack if the fluid pressure is high enough
-		if ((*P_pore) > Pressure + Rock_strength || floor(*Crack) == 5) {
+		if ((*P_pore) > Rock_strength || floor(*Crack) == 5) {
 			(*Crack) = 5.0;
 			(*P_pore) = 0.0;
 		}

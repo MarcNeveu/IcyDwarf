@@ -10,7 +10,7 @@
 
 #include "../Graphics/Plot.h"
 
-int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double r_p, thermalout **thoutput,
+int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double output_every, double r_p, thermalout **thoutput,
 		int warnings, int msgout, SDL_Renderer* renderer, int* view, int* quit, char* FontFile, SDL_Color axisTextColor);
 
 int StructurePlot (SDL_Renderer* renderer, thermalout **thoutput, int t, int NR,
@@ -24,21 +24,19 @@ int TwoAxisPlot (SDL_Renderer* renderer, char *FontFile, double **Values, int gr
 
 int UpdateDisplays (SDL_Renderer* renderer, SDL_Texture* background_tex, char* FontFile, thermalout **thoutput,
 		double **TempK, double **Hydr, double **Kappa, int structure, int grid, int hold_tracks, int plot_switch,
-		int t, int NR, int NT_output, int ircore, double Tmax, double kappamax, SDL_Surface* value_time,
-		SDL_Color axisTextColor, Uint32 alpha,
-		SDL_Texture* DryRock_tex, SDL_Texture* Liquid_tex, SDL_Texture* Ice_tex, SDL_Texture* Crust_tex,
-		SDL_Texture* progress_bar_tex, int irad,
+		int t, int NR, int NT_output, double output_every, int ircore, double Tmax, double kappamax,
+		SDL_Surface* value_time, SDL_Color axisTextColor, Uint32 alpha, SDL_Texture* DryRock_tex, SDL_Texture* Liquid_tex,
+		SDL_Texture* Ice_tex, SDL_Texture* Crust_tex, SDL_Texture* progress_bar_tex, int irad,
 		SDL_Texture* xnumber0_tex, SDL_Texture* xnumber1_tex, SDL_Texture* xnumber2_tex, SDL_Texture* xnumber3_tex,
 		SDL_Texture* xnumber4_tex, SDL_Texture* xnumber5_tex, SDL_Texture* xnumber6_tex, SDL_Texture* xnumber7_tex,
 		SDL_Texture* xnumber8_tex, SDL_Texture* xnumber9_tex, SDL_Texture* ynumber0_tex,
-		SDL_Texture* temp_tex, SDL_Texture* hydr_tex, SDL_Texture* k_tex,
-		SDL_Texture* grid_tex, SDL_Texture* structure_tex, SDL_Texture* hold_tracks_tex,
-		SDL_Texture* hydr_title_tex, SDL_Texture* k_title_tex, SDL_Texture* legend_tex);
+		SDL_Texture* temp_tex, SDL_Texture* hydr_tex, SDL_Texture* k_tex, SDL_Texture* grid_tex, SDL_Texture* structure_tex,
+		SDL_Texture* hold_tracks_tex, SDL_Texture* hydr_title_tex, SDL_Texture* k_title_tex, SDL_Texture* legend_tex);
 
 int handleClickThermal(SDL_Event e, int *t, int *t_init, int *grid, int *structure, int *hold_tracks, int *plot_switch,
 		int *t_memory, int NT_output);
 
-int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double r_p, thermalout **thoutput,
+int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double output_every, double r_p, thermalout **thoutput,
 		int warnings, int msgout, SDL_Renderer* renderer, int* view, int* quit, char* FontFile, SDL_Color axisTextColor) {
 
 	int r = 0;
@@ -163,8 +161,8 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 	char nb[10];
 
 	xnumber0_tex = renderText("0",FontFile, axisTextColor, 16, renderer);
-	for (irad=50;irad<2000;irad=irad+50) {
-		if (thoutput[NR-1][0].radius > (double) irad*5.0 && thoutput[NR-1][0].radius <= (double) irad*5.0+250.0) {
+	for (irad=10;irad<2000;irad=irad+10) {
+		if (thoutput[NR-1][0].radius > (double) irad*5.0 && thoutput[NR-1][0].radius <= (double) irad*5.0+50.0) {
 			sprintf(nb, "%d", irad);         // No need to right-justify, center-justified by default
 			xnumber1_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
 			sprintf(nb, "%d", irad*2);
@@ -248,15 +246,12 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 									&t_memory, NT_output);
 						}
 						// Update displays
-						UpdateDisplays(renderer, background_tex, FontFile, thoutput, TempK, Hydr, Kappa,
-								structure, grid, hold_tracks, plot_switch, t, NR, NT_output, ircore, Tmax, kappamax,
-								value_time, axisTextColor, alpha,
-								DryRock_tex, Liquid_tex, Ice_tex, Crust_tex,
-								progress_bar_tex, irad,
-								xnumber0_tex, xnumber1_tex, xnumber2_tex, xnumber3_tex,
-								xnumber4_tex, xnumber5_tex, xnumber6_tex, xnumber7_tex,
-								xnumber8_tex, xnumber9_tex, ynumber0_tex,
-								temp_tex, hydr_tex, k_tex, grid_tex, structure_tex, hold_tracks_tex,
+						UpdateDisplays(renderer, background_tex, FontFile, thoutput, TempK, Hydr, Kappa, structure,
+								grid, hold_tracks, plot_switch, t, NR, NT_output, output_every, ircore, Tmax, kappamax,
+								value_time, axisTextColor, alpha, DryRock_tex, Liquid_tex, Ice_tex, Crust_tex,
+								progress_bar_tex, irad, xnumber0_tex, xnumber1_tex, xnumber2_tex, xnumber3_tex,
+								xnumber4_tex, xnumber5_tex, xnumber6_tex, xnumber7_tex, xnumber8_tex, xnumber9_tex,
+								ynumber0_tex, temp_tex, hydr_tex, k_tex, grid_tex, structure_tex, hold_tracks_tex,
 								hydr_title_tex, k_title_tex, legend_tex);
 					}
 					if (stop_clicked == 1) t = t_memory;
@@ -280,15 +275,12 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 							t = floor(((double) e.button.x + e.motion.xrel - 20.0)/(780.0-20.0)*NT_output);
 
 							// Update displays
-							UpdateDisplays(renderer, background_tex, FontFile, thoutput, TempK, Hydr, Kappa,
-									structure, grid, hold_tracks, plot_switch, t, NR, NT_output, ircore, Tmax, kappamax,
-									value_time, axisTextColor, alpha,
-									DryRock_tex, Liquid_tex, Ice_tex, Crust_tex,
-									progress_bar_tex, irad,
-									xnumber0_tex, xnumber1_tex, xnumber2_tex, xnumber3_tex,
-									xnumber4_tex, xnumber5_tex, xnumber6_tex, xnumber7_tex,
-									xnumber8_tex, xnumber9_tex, ynumber0_tex,
-									temp_tex, hydr_tex, k_tex, grid_tex, structure_tex, hold_tracks_tex,
+							UpdateDisplays(renderer, background_tex, FontFile, thoutput, TempK, Hydr, Kappa, structure,
+									grid, hold_tracks, plot_switch, t, NR, NT_output, output_every, ircore, Tmax, kappamax,
+									value_time, axisTextColor, alpha, DryRock_tex, Liquid_tex, Ice_tex, Crust_tex,
+									progress_bar_tex, irad, xnumber0_tex, xnumber1_tex, xnumber2_tex, xnumber3_tex,
+									xnumber4_tex, xnumber5_tex, xnumber6_tex, xnumber7_tex, xnumber8_tex, xnumber9_tex,
+									ynumber0_tex, temp_tex, hydr_tex, k_tex, grid_tex, structure_tex, hold_tracks_tex,
 									hydr_title_tex, k_title_tex, legend_tex);
 						}
 					}
@@ -298,15 +290,12 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 		}
 
 		// Update displays
-		UpdateDisplays(renderer, background_tex, FontFile, thoutput, TempK, Hydr, Kappa,
-				structure, grid, hold_tracks, plot_switch, t, NR, NT_output, ircore, Tmax, kappamax,
-				value_time, axisTextColor, alpha,
-				DryRock_tex, Liquid_tex, Ice_tex, Crust_tex,
-				progress_bar_tex, irad,
-				xnumber0_tex, xnumber1_tex, xnumber2_tex, xnumber3_tex,
-				xnumber4_tex, xnumber5_tex, xnumber6_tex, xnumber7_tex,
-				xnumber8_tex, xnumber9_tex, ynumber0_tex,
-				temp_tex, hydr_tex, k_tex, grid_tex, structure_tex, hold_tracks_tex,
+		UpdateDisplays(renderer, background_tex, FontFile, thoutput, TempK, Hydr, Kappa, structure,
+				grid, hold_tracks, plot_switch, t, NR, NT_output, output_every, ircore, Tmax, kappamax,
+				value_time, axisTextColor, alpha, DryRock_tex, Liquid_tex, Ice_tex, Crust_tex,
+				progress_bar_tex, irad, xnumber0_tex, xnumber1_tex, xnumber2_tex, xnumber3_tex,
+				xnumber4_tex, xnumber5_tex, xnumber6_tex, xnumber7_tex, xnumber8_tex, xnumber9_tex,
+				ynumber0_tex, temp_tex, hydr_tex, k_tex, grid_tex, structure_tex, hold_tracks_tex,
 				hydr_title_tex, k_title_tex, legend_tex);
 	}
 
@@ -591,16 +580,14 @@ int TwoAxisPlot (SDL_Renderer* renderer, char *FontFile, double **Values, int gr
 
 int UpdateDisplays (SDL_Renderer* renderer, SDL_Texture* background_tex, char* FontFile, thermalout **thoutput,
 		double **TempK, double **Hydr, double **Kappa, int structure, int grid, int hold_tracks, int plot_switch,
-		int t, int NR, int NT_output, int ircore, double Tmax, double kappamax, SDL_Surface* value_time,
-		SDL_Color axisTextColor, Uint32 alpha,
-		SDL_Texture* DryRock_tex, SDL_Texture* Liquid_tex, SDL_Texture* Ice_tex, SDL_Texture* Crust_tex,
-		SDL_Texture* progress_bar_tex, int irad,
+		int t, int NR, int NT_output, double output_every, int ircore, double Tmax, double kappamax,
+		SDL_Surface* value_time, SDL_Color axisTextColor, Uint32 alpha, SDL_Texture* DryRock_tex, SDL_Texture* Liquid_tex,
+		SDL_Texture* Ice_tex, SDL_Texture* Crust_tex, SDL_Texture* progress_bar_tex, int irad,
 		SDL_Texture* xnumber0_tex, SDL_Texture* xnumber1_tex, SDL_Texture* xnumber2_tex, SDL_Texture* xnumber3_tex,
 		SDL_Texture* xnumber4_tex, SDL_Texture* xnumber5_tex, SDL_Texture* xnumber6_tex, SDL_Texture* xnumber7_tex,
 		SDL_Texture* xnumber8_tex, SDL_Texture* xnumber9_tex, SDL_Texture* ynumber0_tex,
-		SDL_Texture* temp_tex, SDL_Texture* hydr_tex, SDL_Texture* k_tex,
-		SDL_Texture* grid_tex, SDL_Texture* structure_tex, SDL_Texture* hold_tracks_tex,
-		SDL_Texture* hydr_title_tex, SDL_Texture* k_title_tex, SDL_Texture* legend_tex) {
+		SDL_Texture* temp_tex, SDL_Texture* hydr_tex, SDL_Texture* k_tex, SDL_Texture* grid_tex, SDL_Texture* structure_tex,
+		SDL_Texture* hold_tracks_tex, SDL_Texture* hydr_title_tex, SDL_Texture* k_title_tex, SDL_Texture* legend_tex) {
 
 	int r = 0;
 	double percent = 0.0; // % of history, 4.56 Gyr = 100%
@@ -654,12 +641,12 @@ int UpdateDisplays (SDL_Renderer* renderer, SDL_Texture* background_tex, char* F
 	SDL_RenderCopy(renderer, progress_bar_tex, &progress_bar_clip, &progress_bar_dilation);
 
 	// Time elapsed
-	sprintf(nb, "%.2f", t/100.0);
+	sprintf(nb, "%.2f", t/1000.0*output_every); // Because display is in Gyr and output_every is given in Myr
 	elapsed_time = renderText(nb,FontFile, axisTextColor, 18, renderer);
 	renderTexture(elapsed_time, renderer, 629, 502);
 
 	// % history elapsed
-	percent = t/4.56;
+	percent = t/4.56/1000.0*output_every*100.0;
 	sprintf(nb, "%.0f", percent);
 	elapsed_percent = renderText(nb,FontFile, axisTextColor, 18, renderer);
 	renderTexture(elapsed_percent, renderer, 636, 527);

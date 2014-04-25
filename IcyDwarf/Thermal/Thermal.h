@@ -211,7 +211,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double *Crack_size = (double*) malloc(NR*sizeof(double)); // Crack_size[NR], subgrid crack width in m (width in 1-D, diameter in cylindrical 2-D)
 	if (Crack_size == NULL) printf("Thermal: Not enough memory to create Crack_size[NR]\n");
 
-	double *P_pore = (double*) malloc(NR*sizeof(double));     // Pore pressure in Pa
+	double *P_pore = (double*) malloc(NR*sizeof(double));     // Pore overpressure in Pa
 	if (P_pore == NULL) printf("Thermal: Not enough memory to create P_pore[NR]\n");
 
 	double *Nu = (double*) malloc((NR)*sizeof(double));       // Nusselt number
@@ -662,7 +662,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		}
 
 		for (ir=0;ir<ircore;ir++) {
-			if (fabs(Xhydr_old[ir] - Xhydr[ir]) > 0.01) {
+			if (fabs(Xhydr_old[ir] - Xhydr[ir]) > 1.0e-10) {
 				Qth[ir] = Qth[ir] + (Xhydr[ir] - Xhydr_old[ir])*Mrock[ir]*Hhydr/dtime;
 				if (Xhydr[ir] - Xhydr_old[ir] > 0.0) Heat_serp = Heat_serp + (Xhydr[ir] - Xhydr_old[ir])*Mrock[ir]*Hhydr/dtime;
 			}
@@ -700,8 +700,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
 		if (ircrack > 0 && ircrack < ircore && Mh2ol[ircore] > 0.0) {
 			// Calculate Rayleigh number
-			mu1 = 10.0*viscosity(T[ircore],Mh2ol[ircore],Mnh3l[ircore]);
-			kap1 = rhoH2olth*ch2ol/porosity*permeability/cm/cm/mu1*(Pressure[ircrack]-Pressure[ircore]);
+			mu1 = Pa2ba*viscosity(T[ircore],Mh2ol[ircore],Mnh3l[ircore]);
+			kap1 = rhoH2olth*ch2ol/porosity*permeability/cm/cm/mu1*(Pressure[ircrack]-Pressure[ircore])*Pa2ba;
 			dT = T[ircrack] - T[ircore];
 			dr = r[ircore+1] - r[ircrack+1];
 			jr = floor(((double)ircrack + (double)ircore)/2.0);
@@ -1803,6 +1803,7 @@ int hydrate(double T, double **dM, double *dVol, double **Mrock, double *Mh2os, 
  *
  * Calculates the viscosity of a water-ammonia liquid depending on
  * temperature and ammonia mass fraction (Kargel et al. 1991)
+ * The viscosity is returned in Pa s.
  *
  *--------------------------------------------------------------------*/
 

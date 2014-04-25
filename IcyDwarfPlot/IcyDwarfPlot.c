@@ -154,9 +154,9 @@ int main(int argc, char *argv[]){
 
 	while (!quit) {
 		if (view == 1) // Display thermal tab
-			Thermal_plot (path, Tmax, NR, NT_output, r_p, thoutput, warnings, msgout, renderer, &view, &quit, FontFile, axisTextColor);
+			Thermal_plot (path, Tmax, NR, NT_output, output_every, r_p, thoutput, warnings, msgout, renderer, &view, &quit, FontFile, axisTextColor);
 		if (view == 2) // Display crack tab
-			Crack_plot (path, NR, total_time, NT_output, r_p, thoutput, warnings, msgout, renderer, &view, &quit, FontFile, axisTextColor);
+			Crack_plot (path, NR, total_time, NT_output, output_every, r_p, thoutput, warnings, msgout, renderer, &view, &quit, FontFile, axisTextColor);
 	}
 
 	//-------------------------------------------------------------------

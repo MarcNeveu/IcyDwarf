@@ -44,6 +44,7 @@
 #define Gyr2sec 3.15576e16                                 // =1.0e9*365.25*86400.0 Gyr to seconds
 #define Myr2sec 3.15576e13                                 // =1.0e6*365.25*86400.0 Myr to seconds
 #define MeV2erg 1.602e-6                                   // MeV to erg
+#define Pa2ba 10.0                                         // Pa to ba = barye, the cgs unit
 
 //-------------------------------------------------------------------
 // GENERAL PARAMETERS
@@ -62,9 +63,9 @@
 // THERMAL PARAMETERS
 //-------------------------------------------------------------------
 
-#define rhoH2osth 0.935                                    // Density of ice (g/cm3) TODO appropriate for KBOs, but 0.918 for Ceres
+#define rhoH2osth 0.92                                     // Density of ice (g/cm3). 0.935 at T<100 K, but 0.918 at 273 K (TEOS-10, Feistel and Wagner 2006)
 #define rhoAdhsth 0.985                                    // Density of ammonia dihydrate (g/cm3)
-#define Hhydr 5.75e9                                       // Heat of hydration, erg/(g forsterite) (=575e3 kJ/(kg forsterite))
+#define Hhydr 5.75e9                                       // Heat of hydration, erg/(g forsterite) (=575 kJ/(kg forsterite))
 #define ErockA 1.40e4                                      // =770.0/275.0/2.0*1.0e4, heat capacity of rock (cgs, 1 cgs = 1 erg/g/K = 1e-4 J/kg/K) below 275 K
 #define ErockC 6.885e6                                     // =(607.0+163.0/2.0)*1.0e4 between 275 and 1000 K, term 1
 #define ErockD 2.963636e3                                  // =163.0/275.0/2.0*1.0e4 between 275 and 1000 K, term 2
@@ -81,14 +82,14 @@
 #define permeability 1.0e-15                               // Bulk permeability, m^2
 #define Tdehydr_min 700.0                                  // Temperature at which silicates are fully hydrated, K
 #define Tdehydr_max 850.0                                  // Temperature at which silicates are fully dehydrated, K
-#define kap_hydro 100.0e5                                    // Thermal conductivity of layer undergoing hydrothermal circulation (cgs, 1e5 cgs = 1 W/m/K)
+#define kap_hydro 100.0e5                                  // Thermal conductivity of layer undergoing hydrothermal circulation (cgs, 1e5 cgs = 1 W/m/K)
 #define kaprock 4.2e5                                      // Thermal conductivity of dry silicate rock end member (cgs)
 #define kaphydr 1.0e5                                      // Thermal conductivity of hydrated silicate rock end member (cgs).
                                                               // 0.5 to 2.5 W/m/K (Yomogida and Matsui 1983, Clauser and Huenges 1995, Opeil et al. 2010)
 // Thermal conductivity of water ice depends on temperature, see kapcond() subroutine in Thermal.h
 #define kapadhs 1.2e5                                      // Thermal conductivity of ammonia dihydrate ice (cgs)
-#define kaph2ol 6.1e4                                      // Thermal conductivity of liquid water (cgs)
-#define kapnh3l 2.2e3                                      // Thermal conductivity of liquid ammonia (cgs)
+#define kaph2ol 0.61e5                                     // Thermal conductivity of liquid water (cgs)
+#define kapnh3l 0.022e5                                    // Thermal conductivity of liquid ammonia (cgs)
 #define Ra_cr 30.0                                         // Critical Rayleigh number for convection of aqueous fluid in a porous medium (Lapwood 1948)
 #define alfh2oavg 1.0e-3                                   // Average expansivity of water at relevant T and P (K-1)
 
@@ -103,30 +104,30 @@
 #define smallest_crack_size 1.0e-2                         // Smallest 1-D or 2-D crack size in m
 
 // Brittle/ductile transition
-#define mu_f_serp 0.4                                      // Friction coefficient for serpentine rock brittle strength (Escartin et al. 1997, mu_f = 0.3 to 0.5)
-#define mu_f_Byerlee_loP 0.85                              // Friction coefficient for rock brittle strength below 200 MPa (Byerlee 1978)
-#define mu_f_Byerlee_hiP 0.6                               // Friction coefficient for rock brittle strength between 200 MPa and 1700 MPa (Byerlee 1978)
-#define C_f_Byerlee_hiP 50.0e6                             // Frictional cohesive strength for rock between 200 MPa and 1700 MPa (Byerlee 1978)
-#define A_flow_law 4.17e-1                                 // A of the antigorite flow law of Rutter and Brodie (1988), default 4.17e-1 for sigma in Pa, Hilairet et al. 2007 1.0e-37
+#define mu_f_serp 0.4                                      // Friction coefficient for hydrated serpentine rock brittle strength (Escartin et al. 1997, mu_f = 0.3 to 0.5)
+#define mu_f_Byerlee_loP 0.85                              // Friction coefficient for dry olivine rock brittle strength below 200 MPa (Byerlee 1978)
+#define mu_f_Byerlee_hiP 0.6                               // Friction coefficient for dry olivine rock brittle strength between 200 MPa and 1700 MPa (Byerlee 1978)
+#define C_f_Byerlee_hiP 50.0e6                             // Frictional cohesive strength for dry olivine rock between 200 MPa and 1700 MPa (Byerlee 1978)
+#define A_flow_law 4.17e-1                                 // A of the antigorite flow law of Rutter and Brodie (1988), default 4.17e-1 for sigma in Pa (10^5.62 for sigma in MPa), Hilairet et al. 2007 1.0e-37
 #define Ea_flow_law 240.0e3                                // Activation energy of the antigorite flow law of Rutter and Brodie (1988), default 240e3 J, Hilairet et al. 2007 8900 J
 #define V_flow_law 0.0                                     // Activation volume of Rutter and Brodie (1988), default 0 m3, Hilairet et al. 2007 3.2e-6 m3
 #define n_flow_law 1.0                                     // Stress in Pa exponent of Rutter and Brodie (1988), default 1.0 (diffusion creep), Hilairet et al. 2007 3.8 dislocation creep
-#define p_flow_law 3.0                                     // Grain size in microns exponent of Rutter and Brodie (1988), default -3
+#define p_flow_law 3.0                                     // Grain size in microns exponent of Rutter and Brodie (1988), default 3 (i.e., d^-p = d^-3)
 #define d_flow_law 500.0                                   // Grain size in microns
 
 // Thermal expansion/contraction mismatch (Vance et al. 2007)
 #define K_IC_oliv 1.5e6                                    // Critical stress intensity for olivine in Pa m^0.5 (DeMartin et al. 2004; Balme et al. 2004)
 #define K_IC_serp 0.4e6                                    // Critical stress intensity for serpentinite in Pa m^0.5 (Tromans and Meech 2002; Funatsu et al. 2004; Backers 2005; Wang et al. 2007)
 #define Delta_alpha 3.1e-6                                 // Thermal expansion anisotropy in K-1 in eq (3) (default 3.1e-6)
-#define Q 3.75e5                                           // Activation enthalpy for grain boundary (J/mol) (default 3.75e5)
+#define Q 3.75e5                                           // Activation enthalpy for grain boundary sliding? (J/mol) (default 3.75e5)
 #define Omega 1.23e-29                                     // Atomic volume (m^3) (default 1.23e-29)
 #define D0_deltab 0.2377                                   // Grain boundary diffusion coefficient (1.5 m^2/s) x width
                                                               // (10^-0.8 m). Units: m^3/s (default 0.2377)
 #define n_fit 23.0                                         // Fitting parameter (when solving diff eq (1)) (default 23)
-#define L_size 0.5e-3                                         // 1/2 grain size (m) in Vance et al. (2007). Set to d_flow_law/2*1e-6 for consistency (default 0.5e-3).
+#define L_size 0.5e-3                                      // 1/2 grain size (m) in Vance et al. (2007). Set to d_flow_law/2*1e-6 for consistency (default 0.5e-3).
 #define a_var_max 0.2*L_size                               // Used when looking for the optimal max flaw size
                                                               // No need to go very far in size to find a_max, usually < (2L)/10
-							                                  // May need to change code if deltaT>700 K, though (see Vance et al. 2007 Fig. 1)
+							                                  // May need to change this if deltaT>700 K, though (see Vance et al. 2007 Fig. 1)
 #define a_min 1.0e-7                                       // Minimum flaw size (m) below which flaws are neglected
 
 // Hydration/dehydration stresses
