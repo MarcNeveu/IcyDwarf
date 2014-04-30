@@ -422,7 +422,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	Vadhs[ir] = Madhs[ir] / rhoAdhsth;
     	T[ir] = Tinit;
     	Nu[ir] = 1.0;
-    	time_hydr[ir] = (1.0-Xhydr[ir])*(dr_grid*cm)/hydration_rate*Gyr2sec; // Ready to hydrate/dehydrate
+    	// time_hydr[ir] = (1.0-Xhydr[ir])*(dr_grid*cm)/hydration_rate*Gyr2sec; // Ready to hydrate/dehydrate
+    	time_hydr[ir] = (1.0-Xhydr[ir])*hydr_delay; // Ready to hydrate/dehydrate
     }
 
     // Gravitational potential energy
@@ -534,14 +535,13 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			}
 		}
     	for (ir=ircore-1;ir>=ircrack;ir--) { // From the ocean downwards
-    		//if (T[ir] < Tdehydr_max && Xhydr[ir] <= 0.99 && time_hydr[ir] > (dr_grid*cm)/hydration_rate*Gyr2sec) {
-    		if (T[ir] < Tdehydr_max && Xhydr[ir] <= 0.99) {
+    		if (T[ir] < Tdehydr_max && Xhydr[ir] <= 0.99 && time_hydr[ir] > hydr_delay) {
     			Xhydr_temp = Xhydr[ir];
 				hydrate(T[ir], &dM, dVol, &Mrock, Mh2os, Madhs, &Mh2ol, Mnh3l, &Vrock, &Vh2ol,
 					rhoRockth, rhoHydrth, rhoH2olth, &Xhydr, ir, ircore, irice, NR);
-				//for (jr=0;jr<NR;jr++) time_hydr[jr] = (1.0-Xhydr[ir])*(dr_grid*cm)/hydration_rate*Gyr2sec;
+				for (jr=0;jr<NR;jr++) time_hydr[jr] = (1.0-Xhydr[ir])*hydr_delay;
 				structure_changed = 1;
-				if (Xhydr[ir] >= 1.01*Xhydr_temp) dont_dehydrate[ir] = 1; // 1.01 to beat machine error
+				if (Xhydr[ir] >= (1.0+1.0e-10)*Xhydr_temp) dont_dehydrate[ir] = 1; // 1.01 to beat machine error
     		}
     	}
     	for (ir=0;ir<ircore;ir++) {
@@ -685,7 +685,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			kap1 = kapcond(T[ir], frock, fh2os, fadhs, fh2ol, fnh3l, Xhydr[ir]);
 
 			if (fh2ol + fnh3l >= 0.02)
-				kappa[ir] = 400.0e5;  // cgs
+				kappa[ir] = kap_slush;  // cgs
 			else
 				kappa[ir] = kap1;
 		}
@@ -757,7 +757,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
 		for (ir=irice;ir<=irdiff;ir++) {
 			kappa[ir] = kappa[ir]*Nu[ir];
-			if (kappa[ir] > kap_hydro) kappa[ir] = kap_hydro;
+			if (kappa[ir] > kap_ice_cv) kappa[ir] = kap_ice_cv;
 		}
 
 		//-------------------------------------------------------------------
@@ -1677,10 +1677,15 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 int dehydrate(double T, double dM, double dVol, double *Mrock, double *Mh2ol, double *Vrock,
 		double *Vh2ol, double rhoRockth, double rhoHydrth, double rhoH2olth, double *Xhydr){
 
+	double Xhydr_old = (*Xhydr);
+	double f_mem = 0.6;                                // Memory of old hydration state, ideally 0
+
 	// Set hydration level: 1 at Tdehydr_min, 0 at Tdehydr_max, linear in between
 	if (T<Tdehydr_min) (*Xhydr) = 1.0;
 	else if (T>=Tdehydr_min && T<Tdehydr_max) (*Xhydr) = 1.0 - (T-Tdehydr_min)/(Tdehydr_max-Tdehydr_min);
 	else (*Xhydr) = 0.0;
+
+	(*Xhydr) = f_mem*Xhydr_old + (1.0-f_mem)*(*Xhydr); // Smooth out transition to avoid code crashing
 
 	// Split cell into water and rock
 	(*Vrock) = (*Mrock)/((*Xhydr)*rhoHydrth + (1.0-(*Xhydr))*rhoRockth);
