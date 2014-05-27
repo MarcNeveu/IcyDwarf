@@ -46,8 +46,9 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 int dehydrate(double T, double dM, double dVol, double *Mrock, double *Mh2ol, double *Vrock,
 		double *Vh2ol, double rhoRockth, double rhoHydrth, double rhoH2olth, double *Xhydr);
 
-int hydrate(double T, double **dM, double *dVol, double **Mrock, double *Mh2os, double *Madhs, double **Mh2ol, double *Mnh3l, double **Vrock,
-		double **Vh2ol, double rhoRockth, double rhoHydrth, double rhoH2olth, double **Xhydr, int ir, int ircore, int irice, int NR);
+int hydrate(double T, double **dM, double *dVol, double **Mrock, double **Mh2os, double *Madhs, double **Mh2ol, double **Mnh3l, double **Vrock,
+		double **Vh2os, double **Vh2ol, double **Vnh3l, double rhoRockth, double rhoHydrth, double rhoH2olth, double rhoNh3lth, double **Xhydr,
+		int ir, int ircore, int irice, int NR);
 
 double viscosity(double T, double Mh2ol, double Mnh3l);
 
@@ -220,7 +221,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double *Mrock_init = (double*) malloc((NR)*sizeof(double)); // Initial rock mass
 	if (Mrock_init == NULL) printf("Thermal: Not enough memory to create Mrock_init[NR]\n");
 
-	double *time_hydr = (double*) malloc((NR)*sizeof(double)); // Time since last hydration/dehydration TODO unnecessary?
+	double *time_hydr = (double*) malloc((NR)*sizeof(double)); // Time since last hydration/dehydration
 	if (time_hydr == NULL) printf("Thermal: Not enough memory to create time_hydr[NR]\n");
 
 	double **Stress = (double**) malloc((NR)*sizeof(double*)); // Stress[NR][11], output
@@ -537,8 +538,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	for (ir=ircore-1;ir>=ircrack;ir--) { // From the ocean downwards
     		if (T[ir] < Tdehydr_max && Xhydr[ir] <= 0.99 && time_hydr[ir] > hydr_delay) {
     			Xhydr_temp = Xhydr[ir];
-				hydrate(T[ir], &dM, dVol, &Mrock, Mh2os, Madhs, &Mh2ol, Mnh3l, &Vrock, &Vh2ol,
-					rhoRockth, rhoHydrth, rhoH2olth, &Xhydr, ir, ircore, irice, NR);
+				hydrate(T[ir], &dM, dVol, &Mrock, &Mh2os, Madhs, &Mh2ol, &Mnh3l, &Vrock, &Vh2os, &Vh2ol, &Vnh3l,
+					rhoRockth, rhoHydrth, rhoH2olth, rhoNh3lth, &Xhydr, ir, ircore, irice, NR);
 				for (jr=0;jr<NR;jr++) time_hydr[jr] = (1.0-Xhydr[ir])*hydr_delay;
 				structure_changed = 1;
 				if (Xhydr[ir] >= (1.0+1.0e-10)*Xhydr_temp) dont_dehydrate[ir] = 1; // 1.01 to beat machine error
@@ -1678,7 +1679,7 @@ int dehydrate(double T, double dM, double dVol, double *Mrock, double *Mh2ol, do
 		double *Vh2ol, double rhoRockth, double rhoHydrth, double rhoH2olth, double *Xhydr){
 
 	double Xhydr_old = (*Xhydr);
-	double f_mem = 0.6;                                // Memory of old hydration state, ideally 0
+	double f_mem = 0.6;                                // Memory of old hydration state, ideally 0, 1 = no change
 
 	// Set hydration level: 1 at Tdehydr_min, 0 at Tdehydr_max, linear in between
 	if (T<Tdehydr_min) (*Xhydr) = 1.0;
@@ -1709,14 +1710,12 @@ int dehydrate(double T, double dM, double dVol, double *Mrock, double *Mh2ol, do
  * Merges dry rock and liquid water into hydrated rock in each cell
  * that (1) has a connection with liquid water or hydrated rock and
  * (2) where T < Tdehydr_max.
- * TODO hydrate only where hydrothermal circulation can occur, and
- * take into account a slow migration of the hydration front (1 km/Myr,
- * MacDonald and Fyfe, 1985).
  *
  *--------------------------------------------------------------------*/
 
-int hydrate(double T, double **dM, double *dVol, double **Mrock, double *Mh2os, double *Madhs, double **Mh2ol, double *Mnh3l, double **Vrock,
-		double **Vh2ol, double rhoRockth, double rhoHydrth, double rhoH2olth, double **Xhydr, int ir, int ircore, int irice, int NR){
+int hydrate(double T, double **dM, double *dVol, double **Mrock, double **Mh2os, double *Madhs, double **Mh2ol, double **Mnh3l, double **Vrock,
+		double **Vh2os, double **Vh2ol, double **Vnh3l, double rhoRockth, double rhoHydrth, double rhoH2olth, double rhoNh3lth, double **Xhydr,
+		int ir, int ircore, int irice, int NR){
 
 	int jr = 0;
 	double Vliq = 0.0;
@@ -1748,7 +1747,7 @@ int hydrate(double T, double **dM, double *dVol, double **Mrock, double *Mh2os, 
 
 	if (Vmoved > Vliq) {          // If no, get out
 
-		// Update Xhydr: not 1 to conserve mass and volume in each shell, but has increased
+		// Update Xhydr back to its value before hydrate() was called
 		(*Xhydr)[ir] = ((*Mrock)[ir]/(*Vrock)[ir] - rhoRockth) / (rhoHydrth - rhoRockth);
 		if (fabs((*Xhydr)[ir]) < 1.0e-10) (*Xhydr)[ir] = 0.0;  // Avoid numerical residuals
 		if (fabs((*Xhydr)[ir]) > 1.0-1.0e-10) (*Xhydr)[ir] = 1.0;
@@ -1764,13 +1763,13 @@ int hydrate(double T, double **dM, double *dVol, double **Mrock, double *Mh2os, 
 			(*Mrock)[ircore] = (*Mrock)[ircore] + Vmoved*((*Xhydr)[ir]*rhoHydrth + (1.0-(*Xhydr)[ir])*rhoRockth) + Vmoved*rhoH2olth*0.5;
 			(*Mrock)[ir] = (*Mrock)[ir] - Vmoved*((*Xhydr)[ir]*rhoHydrth + (1.0-(*Xhydr)[ir])*rhoRockth) + Vmoved*rhoH2olth*0.5;
 
-			(*dM)[ir] = (*Mrock)[ir] + Mh2os[ir] + Madhs[ir] + (*Mh2ol)[ir] + Mnh3l[ir];
-			(*dM)[ircore] = (*Mrock)[ircore] + Mh2os[ircore] + Madhs[ircore] + (*Mh2ol)[ircore] + Mnh3l[ircore];
+			(*dM)[ir] = (*Mrock)[ir] + (*Mh2os)[ir] + Madhs[ir] + (*Mh2ol)[ir] + (*Mnh3l)[ir];
+			(*dM)[ircore] = (*Mrock)[ircore] + (*Mh2os)[ircore] + Madhs[ircore] + (*Mh2ol)[ircore] + (*Mnh3l)[ircore];
 		}
 		else {
 			q = (Vmoved - (dVol[ircore] - (*Vrock)[ircore]))/Vmoved; // Fraction of Vmoved that didn't fit
 			(*Vrock)[ircore] = dVol[ircore];
-			(*Vh2ol)[ircore] = 0.0; // What about Vnh3l[ircore]?
+			(*Vh2ol)[ircore] = 0.0;
 			(*Vrock)[ircore+1] = (*Vrock)[ircore+1] + q*Vmoved;
 			(*Vh2ol)[ircore+1] = (*Vh2ol)[ircore+1] - q*Vmoved;
 			(*Mrock)[ircore] = (*Mrock)[ircore] + (1.0-q)*Vmoved*((*Xhydr)[ir]*rhoHydrth + (1.0-(*Xhydr)[ir])*rhoRockth);
@@ -1779,14 +1778,38 @@ int hydrate(double T, double **dM, double *dVol, double **Mrock, double *Mh2os, 
 			(*Mrock)[ircore+1] = (*Mrock)[ircore+1] + q*Vmoved*((*Xhydr)[ir]*rhoHydrth + (1.0-(*Xhydr)[ir])*rhoRockth) + q*Vmoved*rhoH2olth*0.5;
 			(*Mrock)[ir] = (*Mrock)[ir] - Vmoved*((*Xhydr)[ir]*rhoHydrth + (1.0-(*Xhydr)[ir])*rhoRockth) + q*Vmoved*rhoH2olth*0.5;
 
-			(*dM)[ir] = (*Mrock)[ir] + Mh2os[ir] + Madhs[ir] + (*Mh2ol)[ir] + Mnh3l[ir];
-			(*dM)[ircore] = (*Mrock)[ircore] + Mh2os[ircore] + Madhs[ircore] + (*Mh2ol)[ircore] + Mnh3l[ircore];
-			(*dM)[ircore+1] = (*Mrock)[ircore+1] + Mh2os[ircore+1] + Madhs[ircore+1] + (*Mh2ol)[ircore+1] + Mnh3l[ircore+1];
+			(*dM)[ir] = (*Mrock)[ir] + (*Mh2os)[ir] + Madhs[ir] + (*Mh2ol)[ir] + (*Mnh3l)[ir];
+			(*dM)[ircore] = (*Mrock)[ircore] + (*Mh2os)[ircore] + Madhs[ircore] + (*Mh2ol)[ircore] + (*Mnh3l)[ircore];
+			(*dM)[ircore+1] = (*Mrock)[ircore+1] + (*Mh2os)[ircore+1] + Madhs[ircore+1] + (*Mh2ol)[ircore+1] + (*Mnh3l)[ircore+1];
 
 			// Update Xhydr to reflect mass and volume conservation
 			(*Xhydr)[ircore+1] = ((*Mrock)[ircore+1]/(*Vrock)[ircore+1] - rhoRockth) / (rhoHydrth - rhoRockth);
 			if (fabs((*Xhydr)[ircore+1]) < 1.0e-10) (*Xhydr)[ircore+1] = 0.0;  // Avoid numerical residuals
 			if (fabs((*Xhydr)[ircore+1]) > 1.0-1.0e-10) (*Xhydr)[ircore+1] = 1.0;
+		}
+	}
+
+	// Do not allow NH3tot/H2Otot to be higher than Xc, the eutectic composition: this messes up state() and heatIce().
+	for (jr=ircore;jr<irice+1;jr++) {
+		if ((*Mnh3l)[jr] <= Xc*((*Mh2os)[jr] + (*Mh2ol)[jr] + (*Mnh3l)[jr])) break;
+		else {
+			// Swap NH3 in layer jr with H2O from layer jr+1, liquid or solid as appropriate.
+			// Swap volumes (not masses) to conserve volume in each shell.
+			Vmoved = (*dM)[jr]*((*Mnh3l)[jr] - Xc*((*Mh2os)[jr] + (*Mh2ol)[jr] + (*Mnh3l)[jr]))/rhoNh3lth;
+			(*Vnh3l)[jr] = (*Vnh3l)[jr] - Vmoved;
+			(*Mnh3l)[jr] = (*Vnh3l)[jr] * rhoNh3lth;
+			(*Vh2ol)[jr] = (*Vh2ol)[jr] + Vmoved;
+			(*Mh2ol)[jr] = (*Vh2ol)[jr] * rhoH2olth;
+			(*Vnh3l)[jr+1] = (*Vnh3l)[jr+1] + Vmoved;
+			(*Mnh3l)[jr+1] = (*Vnh3l)[jr+1] * rhoNh3lth;
+			if ((*Vh2ol)[jr+1] > Vmoved) {
+				(*Vh2ol)[jr+1] = (*Vh2ol)[jr+1] - Vmoved;
+				(*Mh2ol)[jr+1] = (*Vh2ol)[jr+1] * rhoH2olth;
+			}
+			else {
+				(*Vh2os)[jr+1] = (*Vh2os)[jr+1] - Vmoved;
+				(*Mh2os)[jr+1] = (*Vh2os)[jr+1] * rhoH2osth;
+			}
 		}
 	}
 

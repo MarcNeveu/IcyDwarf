@@ -18,7 +18,7 @@
 //-------------------------------------------------------------------
 
 #define release 0                                          // 0 for Debug, 1 for Release
-#define cmdline 0										   // If execution from terminal as "./IcyDwarf",
+#define cmdline 1										   // If execution from terminal as "./IcyDwarf",
                                                            // overwritten by release.
 //-------------------------------------------------------------------
 // PHYSICAL AND MATHEMATICAL CONSTANTS
@@ -82,7 +82,9 @@
 #define permeability 1.0e-15                               // Bulk permeability, m^2
 #define Tdehydr_min 700.0                                  // Temperature at which silicates are fully hydrated, K
 #define Tdehydr_max 850.0                                  // Temperature at which silicates are fully dehydrated, K
-#define kap_hydro 100.0e5                                  // Thermal conductivity of layer undergoing hydrothermal circulation (cgs, 1e5 cgs = 1 W/m/K)
+#define kap_hydro 100.0e5                                  // Effective thermal conductivity of layer undergoing hydrothermal circulation (cgs, 1e5 cgs = 1 W/m/K)
+#define kap_slush 400.0e5                                  // Effective thermal conductivity of convective slush layer
+#define kap_ice_cv 110.0e5                                 // Effective thermal conductivity of convective ice layer
 #define kaprock 4.2e5                                      // Thermal conductivity of dry silicate rock end member (cgs)
 #define kaphydr 1.0e5                                      // Thermal conductivity of hydrated silicate rock end member (cgs).
                                                               // 0.5 to 2.5 W/m/K (Yomogida and Matsui 1983, Clauser and Huenges 1995, Opeil et al. 2010)
@@ -92,6 +94,7 @@
 #define kapnh3l 0.022e5                                    // Thermal conductivity of liquid ammonia (cgs)
 #define Ra_cr 30.0                                         // Critical Rayleigh number for convection of aqueous fluid in a porous medium (Lapwood 1948)
 #define alfh2oavg 1.0e-3                                   // Average expansivity of water at relevant T and P (K-1)
+#define hydr_delay 0.0                                     // Delay before hydration/dehydration, in timestep units, to represent time needed for hydration front to migrate (MacDonald and Fyfe, 1985)
 
 //-------------------------------------------------------------------
 // CRACKING PARAMETERS
