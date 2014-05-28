@@ -1795,7 +1795,7 @@ int hydrate(double T, double **dM, double *dVol, double **Mrock, double **Mh2os,
 		else {
 			// Swap NH3 in layer jr with H2O from layer jr+1, liquid or solid as appropriate.
 			// Swap volumes (not masses) to conserve volume in each shell.
-			Vmoved = (*dM)[jr]*((*Mnh3l)[jr] - Xc*((*Mh2os)[jr] + (*Mh2ol)[jr] + (*Mnh3l)[jr]))/rhoNh3lth;
+			Vmoved = ((*Mnh3l)[jr] - Xc*((*Mh2os)[jr] + (*Mh2ol)[jr] + (*Mnh3l)[jr]))/rhoNh3lth;
 			(*Vnh3l)[jr] = (*Vnh3l)[jr] - Vmoved;
 			(*Mnh3l)[jr] = (*Vnh3l)[jr] * rhoNh3lth;
 			(*Vh2ol)[jr] = (*Vh2ol)[jr] + Vmoved;
