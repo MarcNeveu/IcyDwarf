@@ -4,14 +4,14 @@ ICY DWARF v14.x INPUT FILE
 -------------------------------
 Housekeeping
 -------------------------------
-Warnings?                     1
-Messages?                     1
+Warnings?                     0
+Messages?                     0
 -------------------------------
 Planet parameters
 -------------------------------
 Density (g cm-3)              2.077
 Radius (km)                   475
-Ammonia w.r.t. water          1.0e-10
+Ammonia w.r.t. water          1.0e-1
 Surface temperature (K)       168
 -------------------------------
 Grid
@@ -23,9 +23,10 @@ Output every (Myr)            10
 Subroutines
 -------------------------------
 Run thermal?                  1
-	Sim starts at (Myr)   1.5
+	Sim starts at (Myr)   3
 	Initial temp (K)      168
-Core cracks?                  0
+	Degree of hydration   0.1
+Core cracks
 	Calculate aTP?        0
 	Water alpha beta?     0
 	CHNOSZ species?       0
@@ -38,7 +39,7 @@ Core crack options
 Thermal mismatch?             1
 Pore water expansion?         1
 Hydration/dehydration?        1
-Dissolution/ppt?              0
+Dissolution/ppt?              1
 	Silica?               1
 	Serpentine?           1
 	Carbonate?            1

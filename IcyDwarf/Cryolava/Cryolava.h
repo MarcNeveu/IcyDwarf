@@ -14,9 +14,8 @@
  *	 	Assumes R and CHNOSZ are already open.
  *
  *	 	Reference:
- *	 	Neveu et al. (2013) Exotic sodas: Can gas exsolution drive explosive cryovolcanism
- *	 	on Pluto and Charon? The Pluto System on the Eve of Exploration by New Horizons -
- *	 	A Scientific Conference, Laurel, MD, July 2013.
+ *	 	Neveu et al. (2014) Prerequisites for cryovolcanism on dwarf planet-class Kuiper belt objects.
+ *	 	Icarus, in press. http://dx.doi.org/10.1016/j.icarus.2014.03.043
  */
 
 #ifndef CRYOLAVA_H_

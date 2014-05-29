@@ -8,9 +8,9 @@
  *      IcyDwarf is a program that simulates the physical and chemical evolution of dwarf planets
  *      (bodies with a rocky core, an icy mantle, possibly an undifferentiated crust and an ocean).
  *      As of March 4, 2014, this 1-D code calculates:
- *      1. The thermal evolution of a dwarf planet
- *      2. The depth of cracking into a rocky core (space for hydrothermal circulation)
- *      3. Gas exsolution in icy shell cracks (gas-driven cryovolcanism)
+ *      1. The thermal evolution of a dwarf planet, including core cracking, hydration, dehydration,
+ *         and hydrothermal circulation
+ *      2. Gas exsolution in icy shell cracks (gas-driven cryovolcanism)
  */
 
 #include <unistd.h>    // To check current working directory
@@ -19,7 +19,6 @@
 #include <string.h>
 #include "modifdyld.h" // Like mach-o/dyld.h but without the boolean DYLD_BOOL typedef
                        // that conflicts with the R_boolean typedef
-
 #include "IcyDwarf.h"
 #include "Crack/Crack.h"
 #include "Crack/Crack_tables.h"
@@ -33,22 +32,22 @@ int main(int argc, char *argv[]){
 	int msgout = 0;                    // Display messages
 
 	// Planet inputs
-    double rho_p = 0.0;                 // Planetary density
-    double r_p = 0.0;                   // Planetary rdouble
-    double nh3 = 0.0;                   // Ammonia w.r.t. water
+    double rho_p = 0.0;                // Planetary density
+    double r_p = 0.0;                  // Planetary rdouble
+    double nh3 = 0.0;                  // Ammonia w.r.t. water
     double Tsurf = 0.0;				   // Surface temperature
-    double Tinit = 0.0;                 // Initial temperature
-    double tzero = 0.0;                 // Time zero of the sim (Myr)
+    double Tinit = 0.0;                // Initial temperature
+    double tzero = 0.0;                // Time zero of the sim (Myr)
+    double Hydr_init = 0.0;            // Initial degree of hydration of the rock (0=fully dry, 1=fully hydrated)
 
     // Grid inputs
 	int NR = 0;                        // Number of grid zones
-	double total_time = 0;                // Total time of sim
-	double output_every = 0;              // Output frequency
+	double total_time = 0;             // Total time of sim
+	double output_every = 0;           // Output frequency
     int NT_output = 0;                 // Time step for writing output
 
     // Call specific subroutines
     int calculate_thermal = 0;         // Run thermal code
-    int calculate_cracking_depth = 0;  // Calculate depth of cracking
     int calculate_aTP = 0;             // Generate a table of flaw size that maximize stress (Vance et al. 2007)
     int calculate_alpha_beta = 0;      // Calculate thermal expansivity and compressibility tables
     int calculate_crack_species = 0;   // Calculate equilibrium constants of species that dissolve or precipitate
@@ -67,6 +66,7 @@ int main(int argc, char *argv[]){
 
 	double *input = (double*) malloc(27*sizeof(double));
 	if (input == NULL) printf("IcyDwarf: Not enough memory to create input[25]\n");
+	for (i=0;i<27;i++) input[i] = 0.0;
 
 	//-------------------------------------------------------------------
 	// Startup
@@ -112,7 +112,7 @@ int main(int argc, char *argv[]){
 	calculate_thermal = (int) input[9];
 	tzero = input[10];     // Myr
 	Tinit = input[11];
-	calculate_cracking_depth = (int) input[12];
+	Hydr_init = input[12];
 	calculate_aTP = (int) input[13];
 	calculate_alpha_beta = (int) input[14];
 	calculate_crack_species = (int) input[15];
@@ -128,7 +128,7 @@ int main(int argc, char *argv[]){
 
     double *Xhydr = (double*) malloc(NR*sizeof(double)); // Degree of hydration, 0=dry, 1=hydrated
     if (Xhydr == NULL) printf("IcyDwarf: Not enough memory to create Xhydr[NR]\n");
-	for (r=0;r<NR;r++) Xhydr[r] = 1.0;
+	for (r=0;r<NR;r++) Xhydr[r] = Hydr_init;
 
 	if (calculate_thermal == 1) {
 		printf("Running thermal evolution code...\n");
@@ -137,7 +137,7 @@ int main(int argc, char *argv[]){
 	}
 
 	//-------------------------------------------------------------------
-	// Read thermal output (currently kbo.dat, need to read Thermal.txt)
+	// Read thermal output
 	//-------------------------------------------------------------------
 
 	thermalout **thoutput = malloc(NR*sizeof(thermalout*));        // Thermal model output
@@ -202,4 +202,3 @@ int main(int argc, char *argv[]){
 	printf("Exiting IcyDwarf...\n");
 	return 0;
 }
-

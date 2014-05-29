@@ -3,6 +3,10 @@
  *
  *  Created on: Mar 6, 2014
  *      Author: Marc Neveu (mneveu@asu.edu)
+ *
+ *      Plotting routine associated with Thermal() in IcyDwarf.
+ *      Animated and interactive plots of temperature, degree of hydration of the rock, thermal conductivity,
+ *      and internal structure.
  */
 
 #ifndef THERMAL_PLOT_H_

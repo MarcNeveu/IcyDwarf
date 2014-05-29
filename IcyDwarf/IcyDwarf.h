@@ -18,7 +18,7 @@
 //-------------------------------------------------------------------
 
 #define release 0                                          // 0 for Debug, 1 for Release
-#define cmdline 1										   // If execution from terminal as "./IcyDwarf",
+#define cmdline 0										   // If execution from terminal as "./IcyDwarf",
                                                            // overwritten by release.
 //-------------------------------------------------------------------
 // PHYSICAL AND MATHEMATICAL CONSTANTS
@@ -339,10 +339,6 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 	int i = 0;
 	int scan = 0;
 
-	for (i=0;i<18;i++) {
-		input[i] = 0.0;
-	}
-
 	char *idi = (char*)malloc(1024);
 	idi[0] = '\0';
 	if (release == 1) strncat(idi,path,strlen(path)-16);
@@ -403,11 +399,11 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,31,SEEK_CUR);   // Core cracks?
+			fseek(f,24,SEEK_CUR);   // Initial degree of hydration
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,24,SEEK_CUR);   // Calculate aTP?
+			fseek(f,36,SEEK_CUR);   // Calculate aTP?
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
@@ -487,7 +483,8 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 		printf("Run thermal? \t \t \t %g\n",input[i]), i++;
 		printf("\t Sim starts at (Myr) \t %g\n",input[i]), i++;
 		printf("\t Initial temp (K) \t %g\n",input[i]), i++;
-		printf("Core cracks? \t \t \t %g\n",input[i]), i++;
+		printf("\t Degree of hydration \t %g\n",input[i]), i++;
+		printf("Core cracks\n");
 		printf("\t Calculate aTP? \t %g\n",input[i]), i++;
 		printf("\t Water alpha beta? \t %g\n",input[i]), i++;
 		printf("\t CHNOSZ species? \t %g\n",input[i]), i++;
@@ -507,7 +504,6 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 		printf("\n");
 
 	free (idi);
-
 	return input;
 }
 

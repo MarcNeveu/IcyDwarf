@@ -11,9 +11,12 @@
  *      Outputs temperature and structure profiles (ice, rock, liquid water, liquid NH3, ADH ice),
  *      as well as thermal conductivities and degrees of hydration in the rock.
  *
- *      Reference:
- *      Desch et al. (2009) Thermal evolution of Kuiper belt objects, with implications for cryovolcanism.
- *      Icarus 202, 694-714.
+ *      References:
+ *    - Desch et al. (2009) Thermal evolution of Kuiper belt objects, with implications for cryovolcanism.
+ *      Icarus 202, 694-714. http://dx.doi.org/10.1016/j.icarus.2009.03.009
+ *    - Rubin et al. (2014) The effect of Rayleigh-Taylor instabilities on the thickness of
+ *      undifferentiated crusts on Kuiper belt objects. Icarus 236, 122-135. http://dx.doi.org/10.1016/j.icarus.
+ *      2014.03.047
  */
 
 #ifndef THERMAL_H_
@@ -48,7 +51,7 @@ int dehydrate(double T, double dM, double dVol, double *Mrock, double *Mh2ol, do
 
 int hydrate(double T, double **dM, double *dVol, double **Mrock, double **Mh2os, double *Madhs, double **Mh2ol, double **Mnh3l, double **Vrock,
 		double **Vh2os, double **Vh2ol, double **Vnh3l, double rhoRockth, double rhoHydrth, double rhoH2olth, double rhoNh3lth, double **Xhydr,
-		int ir, int ircore, int irice, int NR);
+		int ir, int ircore, int irice, int NR, char path[1024], int itime); // TODO: remove path and itime
 
 double viscosity(double T, double Mh2ol, double Mnh3l);
 
@@ -539,10 +542,10 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     		if (T[ir] < Tdehydr_max && Xhydr[ir] <= 0.99 && time_hydr[ir] > hydr_delay) {
     			Xhydr_temp = Xhydr[ir];
 				hydrate(T[ir], &dM, dVol, &Mrock, &Mh2os, Madhs, &Mh2ol, &Mnh3l, &Vrock, &Vh2os, &Vh2ol, &Vnh3l,
-					rhoRockth, rhoHydrth, rhoH2olth, rhoNh3lth, &Xhydr, ir, ircore, irice, NR);
+					rhoRockth, rhoHydrth, rhoH2olth, rhoNh3lth, &Xhydr, ir, ircore, irice, NR, path, itime);
 				for (jr=0;jr<NR;jr++) time_hydr[jr] = (1.0-Xhydr[ir])*hydr_delay;
 				structure_changed = 1;
-				if (Xhydr[ir] >= (1.0+1.0e-10)*Xhydr_temp) dont_dehydrate[ir] = 1; // 1.01 to beat machine error
+				if (Xhydr[ir] >= (1.0+1.0e-10)*Xhydr_temp) dont_dehydrate[ir] = 1; // +epsilon to beat machine error
     		}
     	}
     	for (ir=0;ir<ircore;ir++) {
@@ -862,10 +865,10 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
 			// Crack depth (km)
 			Crack_depth[0] = (double) itime*dtime/Gyr2sec;              // t in Gyr
+
 			for (ir=0;ir<NR;ir++) {
 				if (Crack[ir] > 0.0) break;
 			}
-
 			Crack_depth[1] = (double) (ircore-ir)/(double)NR*r_p/km2cm;
 			if (Crack_depth[1] < 0.0) Crack_depth[1] = 0.0;
 			append_output(2, Crack_depth, path, "Outputs/Crack_depth.txt");
@@ -1715,7 +1718,7 @@ int dehydrate(double T, double dM, double dVol, double *Mrock, double *Mh2ol, do
 
 int hydrate(double T, double **dM, double *dVol, double **Mrock, double **Mh2os, double *Madhs, double **Mh2ol, double **Mnh3l, double **Vrock,
 		double **Vh2os, double **Vh2ol, double **Vnh3l, double rhoRockth, double rhoHydrth, double rhoH2olth, double rhoNh3lth, double **Xhydr,
-		int ir, int ircore, int irice, int NR){
+		int ir, int ircore, int irice, int NR, char path[1024], int itime){ //TODO: remove path and itime
 
 	int jr = 0;
 	double Vliq = 0.0;
@@ -1744,14 +1747,8 @@ int hydrate(double T, double **dM, double *dVol, double **Mrock, double **Mh2os,
 	// 1- Find out what the volume of rock becomes: dVol -> (1+x)*dVol. x*dVol = Vmoved is the volume moved
 	Vmoved = (*Mrock)[ir]/((*Xhydr)[ir]*rhoHydrth + (1.0-(*Xhydr)[ir])*rhoRockth) - dVol[ir];
 	// 2- This is also the volume of water displaced (no compaction). Is there enough water for that?
-
 	if (Vmoved > Vliq) {          // If no, get out
-
-		// Update Xhydr back to its value before hydrate() was called
-		(*Xhydr)[ir] = ((*Mrock)[ir]/(*Vrock)[ir] - rhoRockth) / (rhoHydrth - rhoRockth);
-		if (fabs((*Xhydr)[ir]) < 1.0e-10) (*Xhydr)[ir] = 0.0;  // Avoid numerical residuals
-		if (fabs((*Xhydr)[ir]) > 1.0-1.0e-10) (*Xhydr)[ir] = 1.0;
-
+		(*Xhydr)[ir] = Xhydr_old;
 		return -1;
 	}
 	else {                        // If yes, swap. The mass of water moved is split half and half in rock b/w the swapping layers
@@ -1791,8 +1788,20 @@ int hydrate(double T, double **dM, double *dVol, double **Mrock, double **Mh2os,
 
 	// Do not allow NH3tot/H2Otot to be higher than Xc, the eutectic composition: this messes up state() and heatIce().
 	for (jr=ircore;jr<irice+1;jr++) {
-		if ((*Mnh3l)[jr] <= Xc*((*Mh2os)[jr] + (*Mh2ol)[jr] + (*Mnh3l)[jr])) break;
+		if ((*Mnh3l)[jr] <= Xc*((*Mh2os)[jr] + (*Mh2ol)[jr] + (*Mnh3l)[jr])) break; // Includes case where these masses are all 0
 		else {
+
+	   		FILE *fout; // TODO debug
+			char *title = (char*)malloc(1024*sizeof(char));       // Don't forget to free!
+			title[0] = '\0';
+			if (release == 1) strncat(title,path,strlen(path)-16);
+			else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+			strcat(title,"Outputs/Thermal.txt");
+			fout = fopen(title,"a");
+			fprintf(fout,"%d - Moving NH3 from layer %d to layer %d, Mnh3l=%g, Mh2os=%g, Mh2ol=%g\n",itime,jr,jr+1,(*Mnh3l)[jr],(*Mh2os)[jr],(*Mh2ol)[ir]);
+			fclose (fout);
+			free (title);
+
 			// Swap NH3 in layer jr with H2O from layer jr+1, liquid or solid as appropriate.
 			// Swap volumes (not masses) to conserve volume in each shell.
 			Vmoved = ((*Mnh3l)[jr] - Xc*((*Mh2os)[jr] + (*Mh2ol)[jr] + (*Mnh3l)[jr]))/rhoNh3lth;
@@ -1810,6 +1819,8 @@ int hydrate(double T, double **dM, double *dVol, double **Mrock, double **Mh2os,
 				(*Vh2os)[jr+1] = (*Vh2os)[jr+1] - Vmoved;
 				(*Mh2os)[jr+1] = (*Vh2os)[jr+1] * rhoH2osth;
 			}
+			(*dM)[jr] = (*Mrock)[jr] + (*Mh2os)[jr] + Madhs[jr] + (*Mh2ol)[jr] + (*Mnh3l)[jr];
+			(*dM)[jr+1] = (*Mrock)[jr+1] + (*Mh2os)[jr+1] + Madhs[jr+1] + (*Mh2ol)[jr+1] + (*Mnh3l)[jr+1];
 		}
 	}
 
