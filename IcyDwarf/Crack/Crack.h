@@ -144,7 +144,7 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 		Molar_volume[2] = Molar_volume_magnesite;                  // CHNOSZ - HDN+78
 	}
 
-	strain_rate = 1.0/dtime; // 6.3e-10 s if dtime = 50 years
+	strain_rate = 1.0/dtime; // 6.3e-10 /s if dtime = 50 years
 	E_Young = Xhydr*E_Young_serp + (1.0-Xhydr)*E_Young_oliv;
 	nu_Poisson = Xhydr*nu_Poisson_serp + (1.0-Xhydr)*nu_Poisson_oliv;
 	K_IC = Xhydr*K_IC_serp + (1.0-Xhydr)*K_IC_oliv;

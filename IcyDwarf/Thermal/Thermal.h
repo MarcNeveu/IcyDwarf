@@ -477,11 +477,6 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
     	for (ir=0;ir<NR;ir++) time_hydr[ir] = time_hydr[ir] + dtime;
 
-    	//-------------------------------------------------------------------
-    	//     Calculate pressure everywhere. This takes time, so do that
-    	//          only if the structure has changed significantly
-    	//-------------------------------------------------------------------
-
     	i = 0;
     	for (ir=0;ir<NR;ir++) {
     		Xhydr_old[ir] = Xhydr[ir];
@@ -493,6 +488,13 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			}
     	}
     	for (ir=0;ir<NR;ir++) dM_old[ir] = dM[ir];
+
+    	//-------------------------------------------------------------------
+    	//     Calculate pressure everywhere. This takes time, so do that
+    	//          only if the structure has changed significantly
+    	//      (i.e., the mass of any layer has changed by more than 5%)
+    	//-------------------------------------------------------------------
+
     	if (i == 1) {
     		Pressure = calculate_pressure(Pressure, NR, dM, Mrock, Mh2os, Madhs, Mh2ol, Mnh3l, r);     // Pressure
     	}
@@ -503,22 +505,24 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
     	structure_changed = 0;
 
-    	for (ir=0;ir<ircore;ir++) {
-    		if (T[ir]<Tdehydr_max) {
-    			crack(argc, argv, path, ir, T[ir], T_old[ir], Pressure[ir], &Crack[ir],
-    					&Crack_size[ir], Xhydr[ir], Xhydr_old[ir], dtime, Mrock[ir],
-    					Mrock_init[ir], &Act[ir], warnings, msgout, crack_input, crack_species,
-    					aTP, integral, alpha, beta, silica, chrysotile, magnesite, circ[ir], &Stress[ir], &P_pore[ir]);
-    		}
-    		else { // Reset all the variables modified by crack()
-    			Crack[ir] = 0.0;
-    			Crack_size[ir] = 0.0;
-    			for (i=0;i<n_species_crack;i++) {
-        			Act[ir][i] = 0.0;
-    			}
-    			for (i=0;i<11;i++) Stress[ir][i] = 0.0;
-    			P_pore[ir] = 0.0;
-    		}
+    	if (itime > 1) { // Don't run crack() right away, because temperature changes from the initial temp can be artificially strong
+			for (ir=0;ir<ircore;ir++) {
+				if (T[ir]<Tdehydr_max) {
+					crack(argc, argv, path, ir, T[ir], T_old[ir], Pressure[ir], &Crack[ir],
+							&Crack_size[ir], Xhydr[ir], Xhydr_old[ir], dtime, Mrock[ir],
+							Mrock_init[ir], &Act[ir], warnings, msgout, crack_input, crack_species,
+							aTP, integral, alpha, beta, silica, chrysotile, magnesite, circ[ir], &Stress[ir], &P_pore[ir]);
+				}
+				else { // Reset all the variables modified by crack()
+					Crack[ir] = 0.0;
+					Crack_size[ir] = 0.0;
+					for (i=0;i<n_species_crack;i++) {
+						Act[ir][i] = 0.0;
+					}
+					for (i=0;i<11;i++) Stress[ir][i] = 0.0;
+					P_pore[ir] = 0.0;
+				}
+			}
     	}
 		// Find the depth of the continuous cracked layer in contact with the ocean
     	ircrack = NR;
@@ -1747,9 +1751,26 @@ int hydrate(double T, double **dM, double *dVol, double **Mrock, double **Mh2os,
 	// 1- Find out what the volume of rock becomes: dVol -> (1+x)*dVol. x*dVol = Vmoved is the volume moved
 	Vmoved = (*Mrock)[ir]/((*Xhydr)[ir]*rhoHydrth + (1.0-(*Xhydr)[ir])*rhoRockth) - dVol[ir];
 	// 2- This is also the volume of water displaced (no compaction). Is there enough water for that?
-	if (Vmoved > Vliq) {          // If no, get out
+	if (Vmoved > Vliq) {
 		(*Xhydr)[ir] = Xhydr_old;
-		return -1;
+		return -1;                // If no, get out
+	}
+	//    Also test if removing the water will yield too much NH3 in case slush takes < 1 layer. TODO Debug?
+	if (Vliq == (*Vh2ol)[ircore] && (*Mnh3l)[ircore] > Xc*((*Mh2os)[ircore]+(*Mh2ol)[ircore]-Vmoved*rhoH2olth+(*Mnh3l)[ircore])) {
+		(*Xhydr)[ir] = Xhydr_old;
+
+   		FILE *fout; // TODO debug
+		char *title = (char*)malloc(1024*sizeof(char));       // Don't forget to free!
+		title[0] = '\0';
+		if (release == 1) strncat(title,path,strlen(path)-16);
+		else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+		strcat(title,"Outputs/Thermal.txt");
+		fout = fopen(title,"a");
+		fprintf(fout,"%d - Getting out to avoid too much NH3, Mnh3l=%g, Mh2os=%g, Mh2ol=%g, Mmoved=%g\n",itime,(*Mnh3l)[ircore],(*Mh2os)[ircore],(*Mh2ol)[ircore],Vmoved*rhoH2olth);
+		fclose (fout);
+		free (title);
+
+		return -1;                // If so, get out
 	}
 	else {                        // If yes, swap. The mass of water moved is split half and half in rock b/w the swapping layers
 		(*Vrock)[ir] = dVol[ir];
@@ -1788,7 +1809,21 @@ int hydrate(double T, double **dM, double *dVol, double **Mrock, double **Mh2os,
 
 	// Do not allow NH3tot/H2Otot to be higher than Xc, the eutectic composition: this messes up state() and heatIce().
 	for (jr=ircore;jr<irice+1;jr++) {
-		if ((*Mnh3l)[jr] <= Xc*((*Mh2os)[jr] + (*Mh2ol)[jr] + (*Mnh3l)[jr])) break; // Includes case where these masses are all 0
+		if ((*Mnh3l)[jr] <= Xc*((*Mh2os)[jr] + (*Mh2ol)[jr] + (*Mnh3l)[jr])) {
+
+	   		FILE *fout; // TODO debug
+			char *title = (char*)malloc(1024*sizeof(char));       // Don't forget to free!
+			title[0] = '\0';
+			if (release == 1) strncat(title,path,strlen(path)-16);
+			else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+			strcat(title,"Outputs/Thermal.txt");
+			fout = fopen(title,"a");
+			fprintf(fout,"%d - NH3 OK in layer %d, Mnh3l=%g, Mh2os=%g, Mh2ol=%g\n",itime,jr,(*Mnh3l)[jr],(*Mh2os)[jr],(*Mh2ol)[jr]);
+			fclose (fout);
+			free (title);
+
+			break; // Includes case where these masses are all 0
+		}
 		else {
 
 	   		FILE *fout; // TODO debug
@@ -1798,7 +1833,7 @@ int hydrate(double T, double **dM, double *dVol, double **Mrock, double **Mh2os,
 			else if (cmdline == 1) strncat(title,path,strlen(path)-18);
 			strcat(title,"Outputs/Thermal.txt");
 			fout = fopen(title,"a");
-			fprintf(fout,"%d - Moving NH3 from layer %d to layer %d, Mnh3l=%g, Mh2os=%g, Mh2ol=%g\n",itime,jr,jr+1,(*Mnh3l)[jr],(*Mh2os)[jr],(*Mh2ol)[ir]);
+			fprintf(fout,"%d - Moving NH3 from layer %d to layer %d, Mnh3l=%g, Mh2os=%g, Mh2ol=%g\n",itime,jr,jr+1,(*Mnh3l)[jr],(*Mh2os)[jr],(*Mh2ol)[jr]);
 			fclose (fout);
 			free (title);
 
