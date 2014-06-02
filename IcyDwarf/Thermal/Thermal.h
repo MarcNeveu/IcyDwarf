@@ -51,7 +51,7 @@ int dehydrate(double T, double dM, double dVol, double *Mrock, double *Mh2ol, do
 
 int hydrate(double T, double **dM, double *dVol, double **Mrock, double **Mh2os, double *Madhs, double **Mh2ol, double **Mnh3l, double **Vrock,
 		double **Vh2os, double **Vh2ol, double **Vnh3l, double rhoRockth, double rhoHydrth, double rhoH2olth, double rhoNh3lth, double **Xhydr,
-		int ir, int ircore, int irice, int NR, char path[1024], int itime); // TODO: remove path and itime
+		int ir, int ircore, int irice, int NR);
 
 double viscosity(double T, double Mh2ol, double Mnh3l);
 
@@ -524,7 +524,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 				}
 			}
     	}
-		// Find the depth of the continuous cracked layer in contact with the ocean
+    	// Find the depth of the continuous cracked layer in contact with the ocean
     	ircrack = NR;
     	seafloor_link = 0;
 		for (ir=0;ir<ircore;ir++) {
@@ -546,7 +546,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     		if (T[ir] < Tdehydr_max && Xhydr[ir] <= 0.99 && time_hydr[ir] > hydr_delay) {
     			Xhydr_temp = Xhydr[ir];
 				hydrate(T[ir], &dM, dVol, &Mrock, &Mh2os, Madhs, &Mh2ol, &Mnh3l, &Vrock, &Vh2os, &Vh2ol, &Vnh3l,
-					rhoRockth, rhoHydrth, rhoH2olth, rhoNh3lth, &Xhydr, ir, ircore, irice, NR, path, itime);
+					rhoRockth, rhoHydrth, rhoH2olth, rhoNh3lth, &Xhydr, ir, ircore, irice, NR);
 				for (jr=0;jr<NR;jr++) time_hydr[jr] = (1.0-Xhydr[ir])*hydr_delay;
 				structure_changed = 1;
 				if (Xhydr[ir] >= (1.0+1.0e-10)*Xhydr_temp) dont_dehydrate[ir] = 1; // +epsilon to beat machine error
@@ -1695,6 +1695,11 @@ int dehydrate(double T, double dM, double dVol, double *Mrock, double *Mh2ol, do
 
 	(*Xhydr) = f_mem*Xhydr_old + (1.0-f_mem)*(*Xhydr); // Smooth out transition to avoid code crashing
 
+	if ((*Xhydr) > Xhydr_old) {
+		(*Xhydr) = Xhydr_old;
+		return 1; // Get out
+	}
+
 	// Split cell into water and rock
 	(*Vrock) = (*Mrock)/((*Xhydr)*rhoHydrth + (1.0-(*Xhydr))*rhoRockth);
 	(*Vh2ol) = dVol - (*Vrock);
@@ -1722,7 +1727,7 @@ int dehydrate(double T, double dM, double dVol, double *Mrock, double *Mh2ol, do
 
 int hydrate(double T, double **dM, double *dVol, double **Mrock, double **Mh2os, double *Madhs, double **Mh2ol, double **Mnh3l, double **Vrock,
 		double **Vh2os, double **Vh2ol, double **Vnh3l, double rhoRockth, double rhoHydrth, double rhoH2olth, double rhoNh3lth, double **Xhydr,
-		int ir, int ircore, int irice, int NR, char path[1024], int itime){ //TODO: remove path and itime
+		int ir, int ircore, int irice, int NR){
 
 	int jr = 0;
 	double Vliq = 0.0;
@@ -1754,23 +1759,6 @@ int hydrate(double T, double **dM, double *dVol, double **Mrock, double **Mh2os,
 	if (Vmoved > Vliq) {
 		(*Xhydr)[ir] = Xhydr_old;
 		return -1;                // If no, get out
-	}
-	//    Also test if removing the water will yield too much NH3 in case slush takes < 1 layer. TODO Debug?
-	if (Vliq == (*Vh2ol)[ircore] && (*Mnh3l)[ircore] > Xc*((*Mh2os)[ircore]+(*Mh2ol)[ircore]-Vmoved*rhoH2olth+(*Mnh3l)[ircore])) {
-		(*Xhydr)[ir] = Xhydr_old;
-
-   		FILE *fout; // TODO debug
-		char *title = (char*)malloc(1024*sizeof(char));       // Don't forget to free!
-		title[0] = '\0';
-		if (release == 1) strncat(title,path,strlen(path)-16);
-		else if (cmdline == 1) strncat(title,path,strlen(path)-18);
-		strcat(title,"Outputs/Thermal.txt");
-		fout = fopen(title,"a");
-		fprintf(fout,"%d - Getting out to avoid too much NH3, Mnh3l=%g, Mh2os=%g, Mh2ol=%g, Mmoved=%g\n",itime,(*Mnh3l)[ircore],(*Mh2os)[ircore],(*Mh2ol)[ircore],Vmoved*rhoH2olth);
-		fclose (fout);
-		free (title);
-
-		return -1;                // If so, get out
 	}
 	else {                        // If yes, swap. The mass of water moved is split half and half in rock b/w the swapping layers
 		(*Vrock)[ir] = dVol[ir];
@@ -1809,34 +1797,8 @@ int hydrate(double T, double **dM, double *dVol, double **Mrock, double **Mh2os,
 
 	// Do not allow NH3tot/H2Otot to be higher than Xc, the eutectic composition: this messes up state() and heatIce().
 	for (jr=ircore;jr<irice+1;jr++) {
-		if ((*Mnh3l)[jr] <= Xc*((*Mh2os)[jr] + (*Mh2ol)[jr] + (*Mnh3l)[jr])) {
-
-	   		FILE *fout; // TODO debug
-			char *title = (char*)malloc(1024*sizeof(char));       // Don't forget to free!
-			title[0] = '\0';
-			if (release == 1) strncat(title,path,strlen(path)-16);
-			else if (cmdline == 1) strncat(title,path,strlen(path)-18);
-			strcat(title,"Outputs/Thermal.txt");
-			fout = fopen(title,"a");
-			fprintf(fout,"%d - NH3 OK in layer %d, Mnh3l=%g, Mh2os=%g, Mh2ol=%g\n",itime,jr,(*Mnh3l)[jr],(*Mh2os)[jr],(*Mh2ol)[jr]);
-			fclose (fout);
-			free (title);
-
-			break; // Includes case where these masses are all 0
-		}
+		if ((*Mnh3l)[jr] <= Xc*((*Mh2os)[jr] + (*Mh2ol)[jr] + (*Mnh3l)[jr])) break; // Includes case where these masses are all 0
 		else {
-
-	   		FILE *fout; // TODO debug
-			char *title = (char*)malloc(1024*sizeof(char));       // Don't forget to free!
-			title[0] = '\0';
-			if (release == 1) strncat(title,path,strlen(path)-16);
-			else if (cmdline == 1) strncat(title,path,strlen(path)-18);
-			strcat(title,"Outputs/Thermal.txt");
-			fout = fopen(title,"a");
-			fprintf(fout,"%d - Moving NH3 from layer %d to layer %d, Mnh3l=%g, Mh2os=%g, Mh2ol=%g\n",itime,jr,jr+1,(*Mnh3l)[jr],(*Mh2os)[jr],(*Mh2ol)[jr]);
-			fclose (fout);
-			free (title);
-
 			// Swap NH3 in layer jr with H2O from layer jr+1, liquid or solid as appropriate.
 			// Swap volumes (not masses) to conserve volume in each shell.
 			Vmoved = ((*Mnh3l)[jr] - Xc*((*Mh2os)[jr] + (*Mh2ol)[jr] + (*Mnh3l)[jr]))/rhoNh3lth;

@@ -292,8 +292,7 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 	 */
 
 	if (dissolution_precipitation == 1) {
-		// Calculate dissolution/precipitation only where there are cracks
-		if ((*Crack) > 0.0) {
+		if ((*Crack) > 0.0) { // Calculate dissolution/precipitation only where there are cracks
 
 			// Initialize crack size
 			if ((*Crack_size) == 0.0)
@@ -319,37 +318,24 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 			// subcrt(c("MgCO3","Mg+2","CO3-2"),c(-1,1,1),c("cr","aq","aq"))
 			K_eq[2] = pow(10.0,magnesite[tempk_int][P_int]);
 
-			for (i=0;i<n_species_crack;i++) {                                    // Include whichever species are needed
+			for (i=0;i<n_species_crack;i++) {          // Include whichever species are needed
 				if (crack_species[i] > 0) {
-					// if (r == 130 && t < 100) printf("\t (*Act)[%d]=%g, Q[%d]=%g, K_eq[%d]=%g\n",i,(*Act)[i]/rhoH2ol,i,pow((*Act)[i]/rhoH2ol,nu_prod[i]),i,K_eq[i]); // Debug
 
 					// (Act_prod in mol L-1 to scale with K, silica equation (i=0) assumes unit A/V).
 					// The Arrhenius term is equivalent to a dissociation rate constant kdiss in mol m-2 s-1.
 					R_diss[i] = surface_volume_ratio * exp(-Ea_diss[i]/(R_G*T)) * 1.0 * (1-pow( pow((*Act)[i]/rhoH2ol,nu_prod[i])/K_eq[i], mu_Xu[i]));
-					// if (r == 130 && t < 100) printf("\t R_diss[%d]=%g\n",i,R_diss[i]); // Debug
 
 					// Update crack size (equation 61 of Rimstidt and Barnes 1980, ends up being independent of A/V)
 					// and update Act_prod[i] (mol m-3)
-					if (-R_diss[i]*dtime*Gyr2sec > (*Act)[i]) {  // Everything precipitates
-						// if (r == 130 && t < 100) printf("\t Every bit of species %d precipitates\n",i); // Debug
+					if (-R_diss[i]*dtime > (*Act)[i]) {  // Everything precipitates
 
 						// The change in size is everything that could precipitate (Q^nu), not everything that should have precipitated (Rdiss*timestep)
 						d_crack_size = d_crack_size - (*Act)[i]*Molar_volume[i]/surface_volume_ratio; // Rimstidt and Barnes (1980) Eq 61
-						// if (r == 130 && t < 100) printf("\t d_crack_size=%g\n",d_crack_size); // Debug
-
-						(*Act)[i] = 0.0;                                           // Can't have negative concentrations!
-						// if (r == 130 && t < 100) printf("\t New Act_prod[%d]=%g\n",i,(*Act)[i]/rhoH2ol); // Debug
-
+						(*Act)[i] = 0.0;                                // Can't have negative concentrations!
 					}
 					else {
-						// if (r== 130 && t < 100) printf("\t Some species %d in solution\n",i); // Debug
-
-						d_crack_size = d_crack_size + R_diss[i]*dtime*Gyr2sec*Molar_volume[i]/surface_volume_ratio; // Rimstidt and Barnes (1980) Eq 61
-						// if (r == 130 && t < 100) printf("\t d_crack_size=%g\n",d_crack_size); // Debug
-
-						(*Act)[i] = (*Act)[i] + nu_prod[i]*R_diss[i]*dtime*Gyr2sec;
-						// if (r == 130 && t < 100) printf("\t New Act_prod[%d]=%g\n",i,(*Act)[i]/rhoH2ol); // Debug
-
+						d_crack_size = d_crack_size + R_diss[i]*dtime*Molar_volume[i]/surface_volume_ratio; // Rimstidt and Barnes (1980) Eq 61
+						(*Act)[i] = (*Act)[i] + nu_prod[i]*R_diss[i]*dtime;
 					}
 				}
 			}
@@ -360,11 +346,8 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 				for (i=0;i<n_species_crack;i++) (*Act)[i] = 0.0;        // Reset old activity quotients
 			}
 		}
-		else {
-			// If the crack is closed, clear the old activity quotients
-			for (i=0;i<n_species_crack;i++) {
-				(*Act)[i] = 0.0;
-			}
+		else { // If the crack is closed, clear the old activity quotients
+			for (i=0;i<n_species_crack;i++) (*Act)[i] = 0.0;
 		}
 	}
 
