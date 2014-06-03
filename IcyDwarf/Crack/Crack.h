@@ -49,13 +49,15 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 		double *Crack_size, double Xhydr, double Xhydr_old, double dtime, double Mrock, double Mrock_init,
 		double **Act, int warnings, int msgout, int *crack_input, int *crack_species, double **aTP,
 		double **integral, double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite,
-		int circ, double **Output, double *P_pore);
+		int circ, double **Output, double *P_pore, double Brittle_strength);
+
+int strain (double Pressure, double Xhydr, double T, double *strain_rate, double *Brittle_strength);
 
 int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_old, double Pressure, double *Crack,
 		double *Crack_size, double Xhydr, double Xhydr_old, double dtime, double Mrock, double Mrock_init,
 		double **Act, int warnings, int msgout, int *crack_input, int *crack_species, double **aTP,
 		double **integral, double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite,
-		int circ, double **Output, double *P_pore) {
+		int circ, double **Output, double *P_pore, double Brittle_strength) {
 
 	//-------------------------------------------------------------------
 	//                 Declarations and initializations
@@ -69,9 +71,6 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 	int i = 0;
 
 	double Crack_size_mem = 0.0;                                 // Memorize crack size in m between phenomena
-	double Brittle_strength = 0.0;                               // Brittle rock strength in Pa
-	double Ductile_strength = 0.0;                               // Ductile rock strength in Pa
-	double Rock_strength = 0.0;									 // Rock strength in Pa
 	double dTdt = 0.0;                  					     // Heating/cooling rate in K/s
 
 	double strain_rate = 0.0;                                    // Strain rate in s-1
@@ -148,34 +147,6 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 	E_Young = Xhydr*E_Young_serp + (1.0-Xhydr)*E_Young_oliv;
 	nu_Poisson = Xhydr*nu_Poisson_serp + (1.0-Xhydr)*nu_Poisson_oliv;
 	K_IC = Xhydr*K_IC_serp + (1.0-Xhydr)*K_IC_oliv;
-
-	//-------------------------------------------------------------------
-	//                    Calculate rock strength in Pa
-	//-------------------------------------------------------------------
-
-	/* Find radius of brittle-ductile transition. In principle, the transition between brittle faulting and
-	ductile flow depends on P, T, initial porosity, and rheological parameters such as grain size and strain
-	rate (Wong and Baud 2012), as well as mineralogy (Kohlstedt et al. 1995). 	Here, we consider only P and T.
-
-	We mix up brittle-ductile and brittle-plastic transitions, although we shouldn't (Kohlstedt et al. 1995).
-	The transition is when the brittle strength equals the ductile strength.
-	The brittle strength is given by a friction/low-P Byerlee type law: stress = mu*P.
-	The ductile strength is given by a flow law: epsilon = A*sigma^n*d^-p*exp[(-Ea+P*V)/RT]. See crack parameters. */
-	Rock_strength = 0.0;
-	if (Xhydr >= 0.05)
-		Brittle_strength = mu_f_serp*Pressure;
-	else {
-		if (Pressure <= 200.0e6) Brittle_strength = mu_f_Byerlee_loP*Pressure;
-		else Brittle_strength = mu_f_Byerlee_hiP*Pressure + C_f_Byerlee_hiP;
-	}
-	if (T > 140.0)
-		Ductile_strength = pow(strain_rate,(1.0/n_flow_law)) * pow(A_flow_law,-1.0/n_flow_law) * pow(d_flow_law,p_flow_law/n_flow_law)
-					 * exp((Ea_flow_law + Pressure*V_flow_law)/(n_flow_law*R_G*T));
-	else // Set T at 140 K to calculate ductile strength so that it doesn't yield numbers too high to handle
-		Ductile_strength = pow(strain_rate,(1.0/n_flow_law)) * pow(A_flow_law,-1.0/n_flow_law) * pow(d_flow_law,p_flow_law/n_flow_law)
-					 * exp((Ea_flow_law + Pressure*V_flow_law)/(n_flow_law*R_G*140.0));
-	if (Brittle_strength <= Ductile_strength) Rock_strength = Brittle_strength;
-	else Rock_strength = Ductile_strength;
 
 	//-------------------------------------------------------------------
 	// Cracks open from thermal expansion / contraction mismatch
@@ -264,8 +235,6 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 		// For now, let's say the pores are at lithostatic pressure (should not be too different from hydrostatic pressure,
 		// as long there are only a few layers of cracks)
 		// Also let pressure evolve with temperature.
-
-		if (Rock_strength < Brittle_strength) (*P_pore) = 0.0; // Reset P_pore if rock is ductile
 
 		// Don't do calculations in undifferentiated or water areas, in dehydrated areas, or if no heating
 		if (Xhydr >= 0.1 && T > T_old) {
@@ -357,8 +326,6 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 
 	(*Output)[1] = Pressure;
 	(*Output)[2] = Brittle_strength;
-	(*Output)[3] = Ductile_strength;
-	(*Output)[4] = Rock_strength;
 	(*Output)[5] = K_IC;
 	(*Output)[6] = K_I;
 	(*Output)[7] = (*P_pore);
@@ -374,11 +341,11 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 			(*Crack) = 2.0;               // Heating cracks
 	}
 	if (hydration_dehydration == 1) {
-		if (P_hydr > Pressure + Rock_strength || floor(*Crack) == 3)
+		if (P_hydr > Pressure + Brittle_strength || floor(*Crack) == 3)
 			(*Crack) = 3.0;               // Compressive hydration cracks
 	}
 	if (pore_water_expansion == 1) {      // Open crack if the fluid pressure is high enough
-		if ((*P_pore) > Rock_strength || floor(*Crack) == 5) {
+		if ((*P_pore) > Brittle_strength || floor(*Crack) == 5) {
 			(*Crack) = 5.0;
 			(*P_pore) = 0.0;
 		}
@@ -393,10 +360,8 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 	// Cases where cracks disappear
 	if (Mrock <= Mrock_init)
 		(*Crack) = 0.0;                   // Trivial: not enough rock
-	if (Rock_strength < 0.99*Brittle_strength) // 0.99 to beat machine error
-		(*Crack) = 0.0;                   // Ductile zone
 	if (hydration_dehydration == 1) {
-		if (P_hydr > 0.0 && P_hydr <= Pressure + Rock_strength) {
+		if (P_hydr > 0.0 && P_hydr <= Pressure + Brittle_strength) {
 			(*Crack) = -2.0;              // Crack closed because of hydration
 		}
 	}
@@ -405,6 +370,37 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 			(*Crack) = -1.0;              // Crack closed after precipitation
 		}
 	}
+
+	return 0;
+}
+
+/*--------------------------------------------------------------------
+ *
+ * Subroutine strain_rate
+ *
+ * Calculates the brittle strength in Pa and corresponding ductile
+ * strain rate in s-1 of silicate rock.
+ * We mix up brittle-ductile and brittle-plastic transitions are
+ * mixed up, although they shouldn't (Kohlstedt et al. 1995).
+ * The brittle strength is given by a friction/low-P Byerlee type law:
+ * stress = mu*P.
+ * The ductile strength is given by a flow law:
+ * epsilon = A*sigma^n*d^-p*exp[(-Ea+P*V)/RT].
+ *
+ *--------------------------------------------------------------------*/
+
+int strain (double Pressure, double Xhydr, double T, double *strain_rate, double *Brittle_strength) {
+
+	if (Xhydr >= 0.05)
+		(*Brittle_strength) = mu_f_serp*Pressure;
+	else {
+		if (Pressure <= 200.0e6) (*Brittle_strength) = mu_f_Byerlee_loP*Pressure;
+		else (*Brittle_strength) = mu_f_Byerlee_hiP*Pressure + C_f_Byerlee_hiP;
+	}
+	if (T > 140.0)
+		(*strain_rate) = A_flow_law*pow((*Brittle_strength),n_flow_law)*pow(d_flow_law,-p_flow_law)*exp((-Ea_flow_law + Pressure*V_flow_law)/(n_flow_law*R_G*T));
+	else // Set T at 140 K to calculate ductile strength so that it doesn't yield numbers too high to handle
+		(*strain_rate) = A_flow_law*pow((*Brittle_strength),n_flow_law)*pow(d_flow_law,-p_flow_law)*exp((-Ea_flow_law + Pressure*V_flow_law)/(n_flow_law*R_G*140.0));
 
 	return 0;
 }

@@ -1,0 +1,26 @@
+alpha (bcc) Fe		Seager et al. (2007)
+2	8300.0	0.00349	0.528	0.0	0.0
+gamma (fcc) Fe		Seager et al. (2007)
+2	0.0	0.0	0.0	0.0	0.0
+epsilon (hcp) Fe	Dubrovinsky et al. (2000) Steve Desch’s fit to Fig. 1 of Li & Sasselov (2013)
+2	8280.0	0.0027	0.542	155.6e9	5.81
+liquid Fe		Anderson & Ahrens (1994) Steve Desch’s fit to BM3 data
+1	7019.0	0.0006058	0.6093	109.7e9	4.66
+FeS IV			Fei et al. (1995)
+1	4940.0	0.0	0.0	54.0e9	4.0
+FeS VII			Sata et al. (2010)
+1	5901.0	0.0	0.0	148.0e9	4.53
+FeS VII			Sata et al. (2010) [K0, K’ fixed to FeS VI]
+1	6118.0	0.0	0.0	148.0e9	4.53
+Liquid Fe + 10% S	Balog et al. (2003), Sanloup et al. (2000)
+1	5500.0	0.0	0.0	64.3e9	4.7
+FeSi (B2 phase)		Sata et al. (2010)
+1	6522.0	0.0	0.0	221.7e9	4.167
+Fe0.95O	(oB8 phase)	Sata et al. (2010)
+1	5912.0	0.0	0.0	154.0e9	4.04
+MgSiO3 perovskite	Seager et al. (2007)
+2	4100.0	0.00161	0.541	0.0	0.0
+(Mg,Fe)SiO3		Seager et al. (2007)
+2	4260.0	0.00127	0.549	0.0	0.0
+Ice (high-pressures only)	Seager et al. (2007)
+2	1460.0	0.00311	0.513	0.0	0.0

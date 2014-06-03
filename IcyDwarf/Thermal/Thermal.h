@@ -120,6 +120,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double Mcracked_rock = 0.0;          // Mass of cracked rock in the planet in g
 	double Vliq = 0.0;                   // Volume of liquid
 	double Vcracked = 0.0;               // Volume of cracked rock
+	double Brittle_strength = 0.0;       // Brittle rock strength in Pa
+	double strain_rate = 0.0;            // Strain rate in s-1
 	double Crack_depth[2];				 // Crack_depth[2] in km, output
 	double WRratio[2];					 // WRratio[2], output
 	double Heat[4];                      // Heat[4] in erg, output
@@ -508,10 +510,11 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	if (itime > 1) { // Don't run crack() right away, because temperature changes from the initial temp can be artificially strong
 			for (ir=0;ir<ircore;ir++) {
 				if (T[ir]<Tdehydr_max) {
+					strain(Pressure[ir], Xhydr[ir], T[ir], &strain_rate, &Brittle_strength); // TODO: strain_rate[ir], Brittle_strength[ir], tCrackOpen[ir]
 					crack(argc, argv, path, ir, T[ir], T_old[ir], Pressure[ir], &Crack[ir],
 							&Crack_size[ir], Xhydr[ir], Xhydr_old[ir], dtime, Mrock[ir],
 							Mrock_init[ir], &Act[ir], warnings, msgout, crack_input, crack_species,
-							aTP, integral, alpha, beta, silica, chrysotile, magnesite, circ[ir], &Stress[ir], &P_pore[ir]);
+							aTP, integral, alpha, beta, silica, chrysotile, magnesite, circ[ir], &Stress[ir], &P_pore[ir], Brittle_strength);
 				}
 				else { // Reset all the variables modified by crack()
 					Crack[ir] = 0.0;
@@ -524,6 +527,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 				}
 			}
     	}
+    	if (itime > 46500) printf("%d T \t %g \t circ \t %d \t kap \t %g \t Act[0] \t %g \t Act[1] \t %g \t Act[2] \t %g \t d_size \t %g\n",itime,T[155],circ[155],kappa[155],Act[155][0],Act[155][1],Act[155][2],Crack_size[155]);
+		if (itime > 46700) exit(0); //TODO debug
     	// Find the depth of the continuous cracked layer in contact with the ocean
     	ircrack = NR;
     	seafloor_link = 0;

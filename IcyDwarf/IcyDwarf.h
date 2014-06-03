@@ -18,7 +18,7 @@
 //-------------------------------------------------------------------
 
 #define release 0                                          // 0 for Debug, 1 for Release
-#define cmdline 1										   // If execution from terminal as "./IcyDwarf",
+#define cmdline 0										   // If execution from terminal as "./IcyDwarf",
                                                            // overwritten by release.
 //-------------------------------------------------------------------
 // PHYSICAL AND MATHEMATICAL CONSTANTS
@@ -30,6 +30,9 @@
 #define R_G 8.3145                                         // Universal gas constant (J/(mol K))
 #define k_B 1.3806502e-23                                  // Boltzmann's constant (J/K)
 #define PI_greek 3.14159265358979323846                    // Pi
+#define MEarth 5.9721986e24                                // Mass of the Earth (kg)
+#define REarth 6.3675e6                                    // Radius of the Earth (m)
+#define amu 1.66054e-24                                    // AMU = 1/N_Avogadro
 
 //-------------------------------------------------------------------
 // UNIT CONVERSION FACTORS
@@ -215,6 +218,9 @@ double *calculate_pressure (double *Pressure, int NR, double *dM, double *Mrock,
 	double *fnh3l = (double*) malloc(NR*sizeof(double));            // Fraction of liquid ammonia in a shell
 	if (fnh3l == NULL) printf("IcyDwarf: Not enough memory to create fnh3l[NR]\n");
 
+	double *g = (double*) malloc(NR*sizeof(double));                // Gravitational acceleration
+	if (g == NULL) printf("IcyDwarf: Not enough memory to create g[NR]\n");
+
 	for (ir=0;ir<NR;ir++) {
 		frock[ir] = Mrock[ir] / dM[ir];
 		fh2os[ir] = Mh2os[ir] / dM[ir];
@@ -223,38 +229,16 @@ double *calculate_pressure (double *Pressure, int NR, double *dM, double *Mrock,
 		fnh3l[ir] = Mnh3l[ir] / dM[ir];
 	}
 
-	// Calculate the pressure in each layer over time (in Pa)
-	// Pressure = combined weight of all layers above r divided by 4pi*r_avg^2
-	//          = M_avg*g_avg / 4pi*r_avg^2
-	//          = rho_avg*4*pi*r_avg^2*dr*G*Minf/r_avg^2 / 4pir2 in a shell
-	//          = rho_avg*G*Minf/r^2 dr in a shell
+	// Calculate gravitational acceleration
+	for (ir=0;ir<NR;ir++) g[ir] = G*dM[ir]/r[ir+1]/r[ir+1]/km2cm/km2cm*km*km;
 
-	int j = 0;
-	int u = 0;
-	double Minf = 0.0;              // Mass under a certain radius
-	double dInt = 0.0;
-	double dIntPrec = 0.0;
-	double Pintegral = 0.0;
-
-	for (ir=0;ir<NR;ir++) {
-		for (j=ir;j<NR-1;j++) { // Integral using trapezoidal method
-			Minf = 0.0;        // Calculate total mass (grams) below current layer
-			for (u=0;u<j;u++) {
-				Minf = Minf + dM[u];
-			}
-			dInt = (frock[j]*rhoRock + fh2os[j]*rhoH2os +
-					fh2ol[j]*rhoH2ol + fadhs[j]*rhoAdhs +
-					fnh3l[j]*rhoNh3l) * G/(r[j+1]*r[j+1]/km2cm/km2cm*km*km);
-			Pintegral = Pintegral +
-					(dInt+dIntPrec)/2.0 * Minf*gram*(r[j+2] - r[j+1])/km2cm*km;
-			dIntPrec = dInt;
-		}
-		Pressure[ir] = Pintegral;
-		if (!(Pressure[ir] >= 0.0)) printf("Error calculating pressure at r=%d\n",ir);
-		Pintegral = 0.0;
-		dInt = 0.0;
-		dIntPrec = 0.0;
-	}
+	// Integrate the equation of hydrostatic equilibrium
+	Pressure[NR-1] = 0.0;
+	for (ir=NR-2;ir>=0;ir--)
+		Pressure[ir] = Pressure[ir+1] + 0.5*(g[ir+1]*g[ir])*(r[ir+1]-r[ir])*
+						(frock[ir+1]*rhoRock + fh2os[ir+1]*rhoH2os +
+						 fh2ol[ir+1]*rhoH2ol + fadhs[ir+1]*rhoAdhs +
+						 fnh3l[ir+1]*rhoNh3l);
 
 	// Free mallocs
 	free(frock);
@@ -262,6 +246,7 @@ double *calculate_pressure (double *Pressure, int NR, double *dM, double *Mrock,
 	free(fadhs);
 	free(fh2ol);
 	free(fnh3l);
+	free(g);
 
 	return Pressure;
 }
