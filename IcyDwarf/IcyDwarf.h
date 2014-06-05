@@ -74,9 +74,9 @@
 #define ErockD 2.963636e3                                  // =163.0/275.0/2.0*1.0e4 between 275 and 1000 K, term 2
 #define ErockF 1.20e7                                      // Above 1000 K, in cgs
 
-#define qh2o 7.73e4                                        // =773.0/100.0*1.0e4, heat capacity of water ice (erg/g/K)
+#define qh2o 7.73e4                                        // =773.0/100.0*1.0e4, heat capacity of water ice (erg/g/K) TODO update with Choukroun & Grasset (2010)
 #define qadh 1.12e5                                        // =1120.0/100.0*1.0e4, heat capacity of ADH ice (erg/g/K)
-#define ch2ol 4.1885e7                                     // Heat capacity of liquid water (erg g-1 K-1) TODO Adjust in supercooled regime
+#define ch2ol 4.1885e7                                     // Heat capacity of liquid water (erg g-1 K-1) TODO Adjust in supercooled regime, Choukroun & Grasset (2010)
 	                                                         // where it goes up to 8e7 cgs at 230 K and diverges at 228 K
 #define cnh3l 4.7e7                                        // Heat capacity of liquid ammonia (cgs)
 #define ladh 1.319e9                                       // Latent heat of ADH melting (cgs)
@@ -181,7 +181,8 @@ typedef struct {
 #include <stdio.h>
 #include <stdlib.h>
 
-double *calculate_pressure (double *Pressure, int NR, double *dM, double *Mrock, double *Mh2os, double *Madhs, double *Mh2ol, double *Mnh3l, double *r);
+double *calculate_pressure (double *Pressure, int NR, double *dM, double *Mrock, double *Mh2os, double *Madhs,
+		double *Mh2ol, double *Mnh3l, double *r);
 double calculate_mass_liquid (int NR, int NT, int t, thermalout **thoutput);
 int calculate_seafloor (thermalout **thoutput, int NR, int NT, int t);
 int look_up (double x, double x_var, double x_step, int size, int warnings);
@@ -198,11 +199,15 @@ int append_output (int L, double *Output, char path[1024], char filename[1024]);
 //                The pressure is returned in Pa
 //-------------------------------------------------------------------
 
-double *calculate_pressure (double *Pressure, int NR, double *dM, double *Mrock, double *Mh2os, double *Madhs, double *Mh2ol, double *Mnh3l, double *r) {
+double *calculate_pressure (double *Pressure, int NR, double *dM, double *Mrock, double *Mh2os, double *Madhs,
+		double *Mh2ol, double *Mnh3l, double *r) {
 
 	int ir = 0;
 
 	// Calculate the mass fractions of material in each layer over time
+	double *M = (double*) malloc(NR*sizeof(double));                // Mass in and under the shell
+	if (M == NULL) printf("IcyDwarf: Not enough memory to create M[NR]\n");
+
 	double *frock = (double*) malloc(NR*sizeof(double));            // Fraction of rock in a shell
 	if (frock == NULL) printf("IcyDwarf: Not enough memory to create frock[NR]\n");
 
@@ -221,26 +226,30 @@ double *calculate_pressure (double *Pressure, int NR, double *dM, double *Mrock,
 	double *g = (double*) malloc(NR*sizeof(double));                // Gravitational acceleration
 	if (g == NULL) printf("IcyDwarf: Not enough memory to create g[NR]\n");
 
+	M[0] = dM[0];
+
 	for (ir=0;ir<NR;ir++) {
 		frock[ir] = Mrock[ir] / dM[ir];
 		fh2os[ir] = Mh2os[ir] / dM[ir];
 		fh2ol[ir] = Mh2ol[ir] / dM[ir];
 		fadhs[ir] = Madhs[ir] / dM[ir];
 		fnh3l[ir] = Mnh3l[ir] / dM[ir];
+		if (ir > 0) M[ir] = M[ir-1] + dM[ir];
 	}
 
 	// Calculate gravitational acceleration
-	for (ir=0;ir<NR;ir++) g[ir] = G*dM[ir]/r[ir+1]/r[ir+1]/km2cm/km2cm*km*km;
+	for (ir=0;ir<NR;ir++) g[ir] = G*M[ir]*gram/r[ir+1]/r[ir+1]*km2cm*km2cm/km/km;
 
 	// Integrate the equation of hydrostatic equilibrium
 	Pressure[NR-1] = 0.0;
 	for (ir=NR-2;ir>=0;ir--)
-		Pressure[ir] = Pressure[ir+1] + 0.5*(g[ir+1]*g[ir])*(r[ir+1]-r[ir])*
+		Pressure[ir] = Pressure[ir+1] + 0.5*(g[ir+1]+g[ir])*(r[ir+1]-r[ir])/km2cm*km*
 						(frock[ir+1]*rhoRock + fh2os[ir+1]*rhoH2os +
 						 fh2ol[ir+1]*rhoH2ol + fadhs[ir+1]*rhoAdhs +
 						 fnh3l[ir+1]*rhoNh3l);
 
 	// Free mallocs
+	free(M);
 	free(frock);
 	free(fh2os);
 	free(fadhs);

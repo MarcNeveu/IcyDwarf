@@ -160,10 +160,22 @@ int main(int argc, char *argv[]){
 	}
 
 	//-------------------------------------------------------------------
+	// Read thermal output
+	//-------------------------------------------------------------------
+
+	thermalout **thoutput = malloc(NR*sizeof(thermalout*));        // Thermal model output
+	if (thoutput == NULL) printf("IcyDwarf: Not enough memory to create the thoutput structure\n");
+	for (r=0;r<NR;r++) {
+		thoutput[r] = malloc(NT_output*sizeof(thermalout));
+		if (thoutput[r] == NULL) printf("IcyDwarf: Not enough memory to create the thoutput structure\n");
+	}
+	thoutput = read_thermal_output (thoutput, NR, NT_output, path);
+
+	//-------------------------------------------------------------------
 	// Compaction
 	//-------------------------------------------------------------------
 
-	compaction(NR, path);
+	compaction(NR, NT_output, thoutput, NT_output-1, 202, 304, 403, 0, path);
 
 	//-------------------------------------------------------------------
 	// Cryolava calculations
@@ -171,14 +183,6 @@ int main(int argc, char *argv[]){
 
 	if (calculate_cryolava == 1) {
 		printf("Calculating gas-driven exsolution at t=%d...\n",t_cryolava);
-
-		thermalout **thoutput = malloc(NR*sizeof(thermalout*));        // Thermal model output
-		if (thoutput == NULL) printf("IcyDwarf: Not enough memory to create the thoutput structure\n");
-		for (r=0;r<NR;r++) {
-			thoutput[r] = malloc(NT_output*sizeof(thermalout));
-			if (thoutput[r] == NULL) printf("IcyDwarf: Not enough memory to create the thoutput structure\n");
-		}
-		thoutput = read_thermal_output (thoutput, NR, NT_output, path);
 
 		if (t_cryolava > NT_output) {
 			printf("Icy Dwarf: t_cryolava > total time of sim\n");

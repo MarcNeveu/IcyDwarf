@@ -28,35 +28,29 @@
 
 #include "../IcyDwarf.h"
 
-int compaction(int NR, char path[1024]);
+int compaction(int NR, int NT, thermalout **thoutput, int t, int dbincore, int dboutcore, int dbmantle, int specify,
+		char path[1024]);
 
-int planmat(int ncomp, int **eos, double **rho0, double **c, double **nn, double **Ks0, double **Ksp, char path[1024]);
+int planmat(int ncomp, int **dbindex, int **eos, double **rho0, double **c, double **nn, double **Ks0, double **Ksp,
+		double **V0, double **Tref, double **a0, double **a1, double **b0, double **b1, double **b2, char path[1024]);
 
-int compaction(int NR, char path[1024]) {
+int planmat_index(int mat, int ncomp, int *dbindex);
+
+int compaction(int NR, int NT, thermalout **thoutput, int t, int dbincore, int dboutcore, int dbmantle, int specify,
+		char path[1024]) {
 
 	//-------------------------------------------------------------------
 	// Declarations and initializations
 	//-------------------------------------------------------------------
 
 	// Planetary parameters
-	double Mp = 0.0; // Planetary mass
+	double Mp = 0.0; // Planet mass
 	double Mincore = 0.0; // Inner core mass
 	double Moutcore = 0.0; // Outer core mass
 	double Rp = 0.0; // Planetary radius
 	double Rincore = 0.0; // Inner core radius
 	double Routcore = 0.0; // Outer core radius
 	double Mmantle = 0.0; // Mantle mass
-	double fincore = 0.0; // Fraction of the mass in the inner core
-	double foutcore = 0.0; // Fraction of the mass in the outer core
-	double fcore = 0.0; // Fraction of mass in the core
-	double fmantle = 0.0; // Fraction of the mass in the mantle
-	double fFe = 0.0; // Fraction of the mass as Fe
-	double fS = 0.0; // Fraction of the mass as S
-	double fSi = 0.0; // Fraction of the mass as Si
-	double fO = 0.0; // Fraction of the mass as O
-	double fFeSi = 0.0;	// Fraction of the mass as FeSi
-	double fFeO = 0.0; // Fraction of the mass as FeO
-	double fFeS = 0.0;	// Fraction of the mass as FeS
 	double rhoavg = 0.0; // Average density
 
 	// Grid variables
@@ -84,6 +78,21 @@ int compaction(int NR, char path[1024]) {
 	double *rhonew = (double*) malloc((NR+1)*sizeof(double)); // New density
 	if (rhonew == NULL) printf("Compaction: Not enough memory to create rhonew[NR]\n");
 
+	double *rhoRockComp = (double*) malloc((NR+1)*sizeof(double)); // Dry rock density
+	if (rhoRockComp == NULL) printf("Compaction: Not enough memory to create rhoRockComp[NR]\n");
+
+	double *rhoHydrComp = (double*) malloc((NR+1)*sizeof(double)); // Hydrated rock density
+	if (rhoHydrComp == NULL) printf("Compaction: Not enough memory to create rhoHydrComp[NR]\n");
+
+	double *rhoH2osComp = (double*) malloc((NR+1)*sizeof(double)); // Water ice density
+	if (rhoH2osComp == NULL) printf("Compaction: Not enough memory to create rhoH2osComp[NR]\n");
+
+	double *rhoAdhsComp = (double*) malloc((NR+1)*sizeof(double)); // Ammonia dihydrate ice density
+	if (rhoAdhsComp == NULL) printf("Compaction: Not enough memory to create rhoAdhsComp[NR]\n");
+
+	double *rhoH2olComp = (double*) malloc((NR+1)*sizeof(double)); // Liquid water density
+	if (rhoH2olComp == NULL) printf("Compaction: Not enough memory to create rhoH2olComp[NR]\n");
+
 	double *P = (double*) malloc((NR+1)*sizeof(double)); // Pressure
 	if (P == NULL) printf("Compaction: Not enough memory to create P[NR]\n");
 
@@ -95,6 +104,9 @@ int compaction(int NR, char path[1024]) {
 
 	int *icomp = (int*) malloc((NR+1)*sizeof(int));
 	if (icomp == NULL) printf("Compaction: Not enough memory to create icomp[NR]\n");
+
+	int *dbindex = (int*) malloc(ncomp*sizeof(int)); // Planetary material database index
+	if (dbindex == NULL) printf("Compaction: Not enough memory to create dbindex[ncomp]\n");
 
 	int *eos = (int*) malloc(ncomp*sizeof(int)); // Switch between types of equation of state. 1: 3rd order Birch-Murnaghan EOS, 2: rho0+cP^n
 	if (eos == NULL) printf("Compaction: Not enough memory to create eos[ncomp]\n");
@@ -114,6 +126,27 @@ int compaction(int NR, char path[1024]) {
 	double *Ksp = (double*) malloc(ncomp*sizeof(double)); // Derivative w.r.t. P of the bulk modulus term
 	if (Ks0 == NULL) printf("Compaction: Not enough memory to create Ks0[ncomp]\n");
 
+	double *V0 = (double*) malloc(ncomp*sizeof(double)); // V0 term (m3/kg) in eqs. (6) & (7) of Choukroun & Grasset (2010)
+	if (V0 == NULL) printf("Compaction: Not enough memory to create V0[ncomp]\n");
+
+	double *Tref = (double*) malloc(ncomp*sizeof(double)); // Tref term (K) in eqs. (6) & (7) of Choukroun & Grasset (2010)
+	if (Tref == NULL) printf("Compaction: Not enough memory to create Tref[ncomp]\n");
+
+	double *a0 = (double*) malloc(ncomp*sizeof(double)); // a0 term (no dim) in eqs. (6) & (7) of Choukroun & Grasset (2010)
+	if (a0 == NULL) printf("Compaction: Not enough memory to create a0[ncomp]\n");
+
+	double *a1 = (double*) malloc(ncomp*sizeof(double)); // a1 term (K-1) in eqs. (6) & (7) of Choukroun & Grasset (2010)
+	if (a1 == NULL) printf("Compaction: Not enough memory to create a1[ncomp]\n");
+
+	double *b0 = (double*) malloc(ncomp*sizeof(double)); // b0 term (no dim) in eqs. (6) & (7) of Choukroun & Grasset (2010)
+	if (b0 == NULL) printf("Compaction: Not enough memory to create b0[ncomp]\n");
+
+	double *b1 = (double*) malloc(ncomp*sizeof(double)); // b1 term (no dim) in eqs. (6) & (7) of Choukroun & Grasset (2010)
+	if (b1 == NULL) printf("Compaction: Not enough memory to create b1[ncomp]\n");
+
+	double *b2 = (double*) malloc(ncomp*sizeof(double)); // b2 term (Pa-1) in eqs. (6) & (7) of Choukroun & Grasset (2010)
+	if (b2 == NULL) printf("Compaction: Not enough memory to create b2[ncomp]\n");
+
 	// Iteration control
 	int iter = 0;
 	int itermax = 100;
@@ -126,12 +159,6 @@ int compaction(int NR, char path[1024]) {
 	double x = 0.0; // rho/rho0 or eta
 	double z = 0.0;
 
-	// Units
-	double mO = 15.9994*amu;
-	double mSi = 28.0855*amu;
-	double mS = 32.065*amu;
-	double mFe = 55.845*amu;
-
 	for (ir=0;ir<=NR;ir++) {
 		r[ir] = 0.0;
 		M[ir] = 0.0;
@@ -139,15 +166,29 @@ int compaction(int NR, char path[1024]) {
 		g[ir] = 0.0;
 		rho[ir] = 0.0;
 		rhonew[ir] = 0.0;
+		rhoRockComp[ir] = 0.0;
+		rhoHydrComp[ir] = 0.0;
+		rhoH2osComp[ir] = 0.0;
+		rhoAdhsComp[ir] = 0.0;
+		rhoH2olComp[ir] = 0.0;
 		P[ir] = 0.0;
 	}
 	for (ir=0;ir<ncomp;ir++) {
+		icomp[ir] = 0;
+		dbindex[ir] = 0;
 		eos[ir] = 0;
 		rho0[ir] = 0.0;
 		c[ir] = 0.0;
 		nn[ir] = 0.0;
 		Ks0[ir] = 0.0;
 		Ksp[ir] = 0.0;
+		V0[ir] = 0.0;
+		Tref[ir] = 0.0;
+		a0[ir] = 0.0;
+		a1[ir] = 0.0;
+		b0[ir] = 0.0;
+		b1[ir] = 0.0;
+		b2[ir] = 0.0;
 	}
 
 	//-------------------------------------------------------------------
@@ -155,30 +196,21 @@ int compaction(int NR, char path[1024]) {
 	//-------------------------------------------------------------------
 
 	// Load planetary materials database
-	planmat(ncomp, &eos, &rho0, &c, &nn, &Ks0, &Ksp, path);
+	planmat(ncomp, &dbindex, &eos, &rho0, &c, &nn, &Ks0, &Ksp, &V0, &Tref, &a0, &a1, &b0, &b1, &b2, path);
 
-	// Good guess for Newton-Raphson
-	Mp = 1.0*MEarth;
-	fcore = 0.4;
-	iincore = 2;
-	fincore = 0.3;
-	ioutcore = 9;
-	foutcore = 0.1;
-	imantle = 9;
-	fmantle = 0.6;
-	fSi = 0.06;
-	fO = 0.03;
-	fS = 0.01;
-
-	fFeSi = (mFe/mSi + 1.0)*fSi;
-	fFeO = (0.95*mFe + 1.0*mO)/(1.95*mO)*fO;
-	fFeS = (mFe/mS + 1.0)*fS;
-	fFe = 1.0 - fFeSi - fFeO - fFeS;
+	iincore = planmat_index(dbincore, ncomp, dbindex);
+	ioutcore = planmat_index(dboutcore, ncomp, dbindex);
+	imantle = planmat_index(dbmantle, ncomp, dbindex);
 
 	// Initialize grids
-	Mincore = fincore*Mp;
-	Moutcore = foutcore*Mp;
-	Mmantle = fmantle*Mp;
+	for (ir=0;ir<NR;ir++) {
+		Mp = Mp + (thoutput[ir][t].mrock + thoutput[ir][t].mh2os + thoutput[ir][t].madhs +
+				thoutput[ir][t].mh2ol + thoutput[ir][t].mnh3l)*gram;
+		if (thoutput[ir][t].famor < 0.1) Mincore = Mincore + (thoutput[ir][t].mrock)*gram;
+		else Moutcore = Moutcore + thoutput[ir][t].mrock*gram;
+	}
+	Mmantle = Mp-Mincore-Moutcore;
+
 	Vol = Mincore/rho0[iincore];
 	Rincore = pow(0.75*Vol/PI_greek,1.0/3.0);
 	Vol = Moutcore/rho0[ioutcore];
@@ -228,7 +260,36 @@ int compaction(int NR, char path[1024]) {
 		for (ir=1;ir<=NR;ir++) {
 			Pavg = 0.5*(P[ir]+P[ir-1]);
 
-			if (eos[icomp[ir]] == 1) {
+			if (specify) {
+				switch (eos[icomp[ir]]) {
+					case 1:
+						z = 0.75*(Ksp[icomp[ir]]-4.0);
+						x = 1.0;
+						for (j=0;j<jmax;j++) { // Newton-Raphson
+							dy = 1.5*Ks0[icomp[ir]]*x*x*x*x*x*(z*x*x*x*x + (1.0-2.0*z)*x*x + (z-1.0)) - Pavg;
+							dydx = 1.5*Ks0[icomp[ir]]*x*x*x*x*(9.0*z*x*x*x*x + 7.0*(1.0-2.0*z)*x*x + 5.0*(z-1));
+							x = x - dy/dydx;
+						}
+						rhonew[ir] = rho0[icomp[ir]]*x*x*x;
+						break;
+					case 2:
+						rhonew[ir] = rho0[icomp[ir]] + c[icomp[ir]]*pow(Pavg,nn[icomp[ir]]);
+						break;
+					case 3:
+						rhonew[ir] = V0[icomp[ir]] * (1.0 + a0[icomp[ir]]*tanh(a1[icomp[ir]]*(thoutput[ir-1][t].tempk-Tref[icomp[ir]]))) *
+										(b0[icomp[ir]] + b1[icomp[ir]]*(1.0-tanh(b2[icomp[ir]]*P[ir])));
+						rhonew[ir] = 1.0/rhonew[ir];
+						break;
+					default:
+						printf("Compaction: Error: specify EOS type in database");
+						exit(0);
+				}
+			}
+			else {
+				icomp[ir] = planmat_index(202, ncomp, dbindex);
+				rhoRockComp[ir] = rho0[icomp[ir]] + c[icomp[ir]]*pow(Pavg,nn[icomp[ir]]);
+
+				icomp[ir] = planmat_index(304, ncomp, dbindex);
 				z = 0.75*(Ksp[icomp[ir]]-4.0);
 				x = 1.0;
 				for (j=0;j<jmax;j++) { // Newton-Raphson
@@ -236,15 +297,35 @@ int compaction(int NR, char path[1024]) {
 					dydx = 1.5*Ks0[icomp[ir]]*x*x*x*x*(9.0*z*x*x*x*x + 7.0*(1.0-2.0*z)*x*x + 5.0*(z-1));
 					x = x - dy/dydx;
 				}
-				rhonew[ir] = rho0[icomp[ir]]*x*x*x;
-			}
-			else {
-				rhonew[ir] = rho0[icomp[ir]] + c[icomp[ir]]*pow(Pavg,nn[icomp[ir]]);
+				rhoHydrComp[ir] = rho0[icomp[ir]]*x*x*x;
+
+				icomp[ir] = planmat_index(403, ncomp, dbindex);
+				rhoH2osComp[ir] = V0[icomp[ir]] * (1.0 + a0[icomp[ir]]*tanh(a1[icomp[ir]]*(thoutput[ir-1][t].tempk-Tref[icomp[ir]]))) *
+								(b0[icomp[ir]] + b1[icomp[ir]]*(1.0-tanh(b2[icomp[ir]]*P[ir])));
+				rhoH2osComp[ir] = 1.0/rhoH2osComp[ir];
+
+				icomp[ir] = planmat_index(412, ncomp, dbindex);
+				rhoAdhsComp[ir] = V0[icomp[ir]] * (1.0 + a0[icomp[ir]]*tanh(a1[icomp[ir]]*(thoutput[ir-1][t].tempk-Tref[icomp[ir]]))) *
+								(b0[icomp[ir]] + b1[icomp[ir]]*(1.0-tanh(b2[icomp[ir]]*P[ir])));
+				rhoAdhsComp[ir] = 1.0/rhoAdhsComp[ir];
+
+				icomp[ir] = planmat_index(402, ncomp, dbindex);
+				rhoH2olComp[ir] = V0[icomp[ir]] * (1.0 + a0[icomp[ir]]*tanh(a1[icomp[ir]]*(thoutput[ir-1][t].tempk-Tref[icomp[ir]]))) *
+								(b0[icomp[ir]] + b1[icomp[ir]]*(1.0-tanh(b2[icomp[ir]]*P[ir])));
+				rhoH2olComp[ir] = 1.0/rhoH2olComp[ir];
+
+				rhonew[ir] = thoutput[ir-1][t].mrock*(thoutput[ir-1][t].famor/rhoHydrComp[ir] + (1.0-thoutput[ir-1][t].famor)/rhoRockComp[ir]) +
+						thoutput[ir-1][t].mh2os/rhoH2osComp[ir] +
+						thoutput[ir-1][t].madhs/rhoAdhsComp[ir] +
+						(thoutput[ir-1][t].mh2ol + thoutput[ir-1][t].mnh3l)/rhoH2olComp[ir];
+				rhonew[ir] = 1.0/rhonew[ir] * (thoutput[ir-1][t].mrock + thoutput[ir-1][t].mh2os +
+						thoutput[ir-1][t].madhs + thoutput[ir-1][t].mh2ol + thoutput[ir-1][t].mnh3l);
 			}
 		}
 
 		// Update the density using a mix of old density and predicted new density
 		delta = fabs(rhonew[1]/rho[1]-1.0);
+
 		for (ir=1;ir<=NR;ir++) rho[ir] = rhonew[ir]*mix + rho[ir]*(1.0-mix);
 
 		// Update radial grid so that each shell, with known mass dM, now has updated density rho
@@ -257,28 +338,50 @@ int compaction(int NR, char path[1024]) {
 		// If the central density change from one iteration to the next does not exceed a threshold, then we're done
 		if (delta < 1.0e-9) break;
 	}
+	Rp = r[NR];
+	rhoavg = 0.75*Mp/PI_greek/(Rp*Rp*Rp);
+
+	for (ir=1;ir<=NR;ir++) printf("%g %g %g\n",thoutput[ir-1][t].radius,rho[ir],P[ir]);
+//	double Mrock[NR];
+//	double Mh2os[NR];
+//	double Madhs[NR];
+//	double Mh2ol[NR];
+//	double Mnh3l[NR];
+//	for (ir=0;ir<NR;ir++) {
+//		Mrock[ir] = thoutput[ir][t].mrock;
+//		Mh2os[ir] = thoutput[ir][t].mh2os;
+//		Madhs[ir] = thoutput[ir][t].madhs;
+//		Mh2ol[ir] = thoutput[ir][t].mh2ol;
+//		Mnh3l[ir] = thoutput[ir][t].mnh3l;
+//		dM[ir] = Mrock[ir] + Mh2os[ir] + Madhs[ir] + Mh2ol[ir] + Mnh3l[ir];
+//		r[ir+1] = thoutput[ir][t].radius*km2cm;
+//	}
+//	P = calculate_pressure(P, NR, dM, Mrock, Mh2os, Madhs, Mh2ol, Mnh3l, r);
+//	for (ir=1;ir<NR;ir++) {
+//		rho[ir] = dM[ir]*gram / (4.0/3.0*PI_greek*(thoutput[ir][t].radius*thoutput[ir][t].radius*thoutput[ir][t].radius -
+//				thoutput[ir-1][t].radius*thoutput[ir-1][t].radius*thoutput[ir-1][t].radius)*km*km*km);
+//		printf("%g %g %g\n",thoutput[ir-1][t].radius,rho[ir],P[ir]);
+//	}
 
 	//-------------------------------------------------------------------
 	// Output
 	//-------------------------------------------------------------------
 
-	Rp = r[NR];
-	rhoavg = 0.75*Mp/PI_greek/(Rp*Rp*Rp);
-	printf("After %d iterations \n",iter);
-	printf("Convergence criterion = %g\n",delta);
-	printf("Planet mass = %g MEarth\n",Mp/MEarth);
-	printf("Inner core mass = %g MEarth\n",Mincore/MEarth);
-	printf("Outer core mass = %g MEarth\n",Moutcore/MEarth);
-	printf("Mantle mass = %g MEarth\n",Mmantle/MEarth);
-	printf("Inner core radius = %g REarth\n",Rincore/REarth);
-	printf("Outer core radius = %g REarth\n",Routcore/REarth);
-	printf("Planet radius = %g km = %g REarth\n",Rp/1000.0,Rp/REarth);
-	printf("Surface gravity = %g m/s2\n",g[NR]);
-	printf("Average density = %g kg/m3\n",rhoavg);
-	printf("Central density = %g kg/m3\n",rho[1]);
-	printf("Density near surface = %g kg/m3\n",rho[NR]);
-	printf("Central pressure = %g MPa\n",P[0]*1.0e-6);
-	printf("Pressure at core-mantle boundary = %g MPa\n",P[noc]*1.0e-6);
+	printf("After %d iterations \n", iter);
+	printf("Convergence criterion = %g\n", delta);
+	printf("Planet mass = %g kg = %g MEarth\n", Mp, Mp/MEarth);
+	printf("Inner core mass = %g kg = %g MEarth\n", Mincore, Mincore/MEarth);
+	printf("Outer core mass = %g kg = %g MEarth\n", Moutcore, Moutcore/MEarth);
+	printf("Mantle mass = %g kg = %g MEarth\n", Mmantle, Mmantle/MEarth);
+	printf("Inner core radius = %g km = %g REarth\n", Rincore/km, Rincore/REarth);
+	printf("Outer core radius = %g km = %g REarth\n", Routcore/km, Routcore/REarth);
+	printf("Planet radius = %g km = %g REarth\n", Rp/km, Rp/REarth);
+	printf("Surface gravity = %g m/s2\n", g[NR]);
+	printf("Average density = %g kg/m3\n", rhoavg);
+	printf("Central density = %g kg/m3\n", rho[1]);
+	printf("Density near surface = %g kg/m3\n", rho[NR]);
+	printf("Central pressure = %g MPa\n", P[0]*1.0e-6);
+	printf("Pressure at core-mantle boundary = %g MPa\n", P[noc]*1.0e-6);
 
 	//-------------------------------------------------------------------
 	// Free mallocs and exit
@@ -290,14 +393,27 @@ int compaction(int NR, char path[1024]) {
 	free(g);
 	free(rho);
 	free(rhonew);
+	free(rhoRockComp);
+	free(rhoHydrComp);
+	free(rhoH2osComp);
+	free(rhoAdhsComp);
+	free(rhoH2olComp);
 	free(P);
 	free(icomp);
+	free(dbindex);
 	free(eos);
 	free(rho0);
 	free(c);
 	free(nn);
 	free(Ks0);
 	free(Ksp);
+	free(V0);
+	free(Tref);
+	free(a0);
+	free(a1);
+	free(b0);
+	free(b1);
+	free(b2);
 
 	return 0;
 }
@@ -310,7 +426,8 @@ int compaction(int NR, char path[1024]) {
  *
  *--------------------------------------------------------------------*/
 
-int planmat(int ncomp, int **eos, double **rho0, double **c, double **nn, double **Ks0, double **Ksp, char path[1024]) {
+int planmat(int ncomp, int **dbindex, int **eos, double **rho0, double **c, double **nn, double **Ks0, double **Ksp,
+		double **V0, double **Tref, double **a0, double **a1, double **b0, double **b1, double **b2, char path[1024]) {
 
 	FILE *fid;
 	int i = 0;
@@ -328,10 +445,15 @@ int planmat(int ncomp, int **eos, double **rho0, double **c, double **nn, double
 	}
 	else {
 		printf("Reading planmat database file...\n");
+		if (fgets(str, 1024, fid) != NULL) puts(str);
+		if (fgets(str, 1024, fid) != NULL) puts(str);
+		if (fgets(str, 1024, fid) != NULL) puts(str);
 		for (i=0;i<ncomp;i++) {
 			if (fgets(str, 1024, fid) != NULL) puts(str);
-			int scan = fscanf(fid, "%d %lg %lg %lg %lg %lg", &(*eos)[i], &(*rho0)[i], &(*c)[i], &(*nn)[i], &(*Ks0)[i], &(*Ksp)[i]);
-			if (scan != 6) {                                                         // If scanning error
+			int scan = fscanf(fid, "%d %d %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg", &(*dbindex)[i], &(*eos)[i],
+						&(*rho0)[i], &(*c)[i], &(*nn)[i], &(*Ks0)[i], &(*Ksp)[i], &(*V0)[i], &(*Tref)[i], &(*a0)[i],
+						&(*a1)[i], &(*b0)[i], &(*b1)[i], &(*b2)[i]);
+			if (scan != 14) {                                                         // If scanning error
 				printf("Error scanning planmat database file at i = %d\n",i);
 				break;
 			}
@@ -343,6 +465,23 @@ int planmat(int ncomp, int **eos, double **rho0, double **c, double **nn, double
 	free(planmatdb);
 
 	return 0;
+}
+
+/*--------------------------------------------------------------------
+ *
+ * Subroutine planmat_index
+ *
+ * Returns rank in database corresponding to input index
+ *
+ *--------------------------------------------------------------------*/
+
+int planmat_index(int mat, int ncomp, int *dbindex) {
+	int dbentry = 0;
+	int i = 0;
+
+	for (i=0;i<ncomp;i++) if (dbindex[i] == mat) dbentry = i;
+
+	return dbentry;
 }
 
 #endif /* COMPACTION_H_ */
