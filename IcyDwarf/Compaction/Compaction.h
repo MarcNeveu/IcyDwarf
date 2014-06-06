@@ -286,10 +286,17 @@ int compaction(int NR, int NT, thermalout **thoutput, int t, int dbincore, int d
 				}
 			}
 			else {
-				icomp[ir] = planmat_index(202, ncomp, dbindex);
-				rhoRockComp[ir] = rho0[icomp[ir]] + c[icomp[ir]]*pow(Pavg,nn[icomp[ir]]);
+				icomp[ir] = planmat_index(999, ncomp, dbindex);
+				z = 0.75*(Ksp[icomp[ir]]-4.0);
+				x = 1.0;
+				for (j=0;j<jmax;j++) { // Newton-Raphson
+					dy = 1.5*Ks0[icomp[ir]]*x*x*x*x*x*(z*x*x*x*x + (1.0-2.0*z)*x*x + (z-1.0)) - Pavg;
+					dydx = 1.5*Ks0[icomp[ir]]*x*x*x*x*(9.0*z*x*x*x*x + 7.0*(1.0-2.0*z)*x*x + 5.0*(z-1));
+					x = x - dy/dydx;
+				}
+				rhoRockComp[ir] = rho0[icomp[ir]]*x*x*x;
 
-				icomp[ir] = planmat_index(304, ncomp, dbindex);
+				icomp[ir] = planmat_index(998, ncomp, dbindex);
 				z = 0.75*(Ksp[icomp[ir]]-4.0);
 				x = 1.0;
 				for (j=0;j<jmax;j++) { // Newton-Raphson
@@ -341,47 +348,71 @@ int compaction(int NR, int NT, thermalout **thoutput, int t, int dbincore, int d
 	Rp = r[NR];
 	rhoavg = 0.75*Mp/PI_greek/(Rp*Rp*Rp);
 
-	for (ir=1;ir<=NR;ir++) printf("%g %g %g\n",thoutput[ir-1][t].radius,rho[ir],P[ir]);
-//	double Mrock[NR];
-//	double Mh2os[NR];
-//	double Madhs[NR];
-//	double Mh2ol[NR];
-//	double Mnh3l[NR];
-//	for (ir=0;ir<NR;ir++) {
-//		Mrock[ir] = thoutput[ir][t].mrock;
-//		Mh2os[ir] = thoutput[ir][t].mh2os;
-//		Madhs[ir] = thoutput[ir][t].madhs;
-//		Mh2ol[ir] = thoutput[ir][t].mh2ol;
-//		Mnh3l[ir] = thoutput[ir][t].mnh3l;
-//		dM[ir] = Mrock[ir] + Mh2os[ir] + Madhs[ir] + Mh2ol[ir] + Mnh3l[ir];
-//		r[ir+1] = thoutput[ir][t].radius*km2cm;
-//	}
-//	P = calculate_pressure(P, NR, dM, Mrock, Mh2os, Madhs, Mh2ol, Mnh3l, r);
-//	for (ir=1;ir<NR;ir++) {
-//		rho[ir] = dM[ir]*gram / (4.0/3.0*PI_greek*(thoutput[ir][t].radius*thoutput[ir][t].radius*thoutput[ir][t].radius -
-//				thoutput[ir-1][t].radius*thoutput[ir-1][t].radius*thoutput[ir-1][t].radius)*km*km*km);
-//		printf("%g %g %g\n",thoutput[ir-1][t].radius,rho[ir],P[ir]);
-//	}
-
 	//-------------------------------------------------------------------
 	// Output
 	//-------------------------------------------------------------------
 
-	printf("After %d iterations \n", iter);
-	printf("Convergence criterion = %g\n", delta);
-	printf("Planet mass = %g kg = %g MEarth\n", Mp, Mp/MEarth);
-	printf("Inner core mass = %g kg = %g MEarth\n", Mincore, Mincore/MEarth);
-	printf("Outer core mass = %g kg = %g MEarth\n", Moutcore, Moutcore/MEarth);
-	printf("Mantle mass = %g kg = %g MEarth\n", Mmantle, Mmantle/MEarth);
-	printf("Inner core radius = %g km = %g REarth\n", Rincore/km, Rincore/REarth);
-	printf("Outer core radius = %g km = %g REarth\n", Routcore/km, Routcore/REarth);
-	printf("Planet radius = %g km = %g REarth\n", Rp/km, Rp/REarth);
-	printf("Surface gravity = %g m/s2\n", g[NR]);
-	printf("Average density = %g kg/m3\n", rhoavg);
-	printf("Central density = %g kg/m3\n", rho[1]);
-	printf("Density near surface = %g kg/m3\n", rho[NR]);
-	printf("Central pressure = %g MPa\n", P[0]*1.0e-6);
-	printf("Pressure at core-mantle boundary = %g MPa\n", P[noc]*1.0e-6);
+	FILE *fout;
+
+	// Turn working directory into full file path by moving up two directories
+	// to IcyDwarf (e.g., removing "Release/IcyDwarf" characters) and specifying
+	// the right path end.
+
+	char *title = (char*)malloc(1024*sizeof(char));       // Don't forget to free!
+	title[0] = '\0';
+	if (release == 1) strncat(title,path,strlen(path)-16);
+	else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+	strcat(title,"Outputs/Compaction.txt");
+
+	fout = fopen(title,"a");
+	if (fout == NULL) {
+		printf("IcyDwarf: Error opening %s output file.\n",title);
+	}
+	else {
+		// Density and pressure profiles from this code
+		for (ir=1;ir<=NR;ir++) fprintf(fout, "%g %g %g\n",r[ir]/km,rho[ir],P[ir]/MPa);
+
+		// Density and pressure profiles from the thermal code
+		double Mrock[NR];
+		double Mh2os[NR];
+		double Madhs[NR];
+		double Mh2ol[NR];
+		double Mnh3l[NR];
+		for (ir=0;ir<NR;ir++) {
+			Mrock[ir] = thoutput[ir][t].mrock;
+			Mh2os[ir] = thoutput[ir][t].mh2os;
+			Madhs[ir] = thoutput[ir][t].madhs;
+			Mh2ol[ir] = thoutput[ir][t].mh2ol;
+			Mnh3l[ir] = thoutput[ir][t].mnh3l;
+			dM[ir] = Mrock[ir] + Mh2os[ir] + Madhs[ir] + Mh2ol[ir] + Mnh3l[ir];
+			r[ir+1] = thoutput[ir][t].radius*km2cm;
+		}
+		P = calculate_pressure(P, NR, dM, Mrock, Mh2os, Madhs, Mh2ol, Mnh3l, r);
+		for (ir=1;ir<NR;ir++) {
+			rho[ir] = dM[ir]*gram / (4.0/3.0*PI_greek*(thoutput[ir][t].radius*thoutput[ir][t].radius*thoutput[ir][t].radius -
+					thoutput[ir-1][t].radius*thoutput[ir-1][t].radius*thoutput[ir-1][t].radius)*km*km*km);
+			fprintf(fout, "%g %g %g\n",thoutput[ir-1][t].radius,rho[ir],P[ir]/MPa);
+		}
+
+		// Text output from this code
+		fprintf(fout, "After %d iterations \n", iter);
+		fprintf(fout, "Convergence criterion = %g\n", delta);
+		fprintf(fout, "Planet mass = %g kg = %g MEarth\n", Mp, Mp/MEarth);
+		fprintf(fout, "Inner core mass = %g kg = %g MEarth\n", Mincore, Mincore/MEarth);
+		fprintf(fout, "Outer core mass = %g kg = %g MEarth\n", Moutcore, Moutcore/MEarth);
+		fprintf(fout, "Mantle mass = %g kg = %g MEarth\n", Mmantle, Mmantle/MEarth);
+		fprintf(fout, "Inner core radius = %g km = %g REarth\n", Rincore/km, Rincore/REarth);
+		fprintf(fout, "Outer core radius = %g km = %g REarth\n", Routcore/km, Routcore/REarth);
+		fprintf(fout, "Planet radius = %g km = %g REarth\n", Rp/km, Rp/REarth);
+		fprintf(fout, "Surface gravity = %g m/s2\n", g[NR]);
+		fprintf(fout, "Average density = %g kg/m3\n", rhoavg);
+		fprintf(fout, "Central density = %g kg/m3\n", rho[1]);
+		fprintf(fout, "Density near surface = %g kg/m3\n", rho[NR]);
+		fprintf(fout, "Central pressure = %g MPa\n", P[0]/MPa);
+		fprintf(fout, "Pressure at core-mantle boundary = %g MPa\n", P[noc]/MPa);
+	}
+	fclose (fout);
+	free (title);
 
 	//-------------------------------------------------------------------
 	// Free mallocs and exit

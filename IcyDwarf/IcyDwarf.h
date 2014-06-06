@@ -18,7 +18,7 @@
 //-------------------------------------------------------------------
 
 #define release 0                                          // 0 for Debug, 1 for Release
-#define cmdline 0										   // If execution from terminal as "./IcyDwarf",
+#define cmdline 1										   // If execution from terminal as "./IcyDwarf",
                                                            // overwritten by release.
 //-------------------------------------------------------------------
 // PHYSICAL AND MATHEMATICAL CONSTANTS
@@ -48,26 +48,24 @@
 #define Myr2sec 3.15576e13                                 // =1.0e6*365.25*86400.0 Myr to seconds
 #define MeV2erg 1.602e-6                                   // MeV to erg
 #define Pa2ba 10.0                                         // Pa to ba = barye, the cgs unit
+#define MPa 1.0e6										   // MPa to Pa
 
 //-------------------------------------------------------------------
 // GENERAL PARAMETERS
 //-------------------------------------------------------------------
 
-#define rhoRock 3.25e3                                     // Density of rock
-#define rhoH2os 0.935e3                                    // Density of H2O(s)
-#define rhoH2ol 1.00e3                                     // Density of H2O(l)
-#define rhoAdhs 0.985e3                                    // Density of ADH(s)
-#define rhoNh3l 0.74e3                                     // Density of NH3(l)
-#define rhoHydr 2.35e3                                     // Density of hydrated rock
+#define rhoRock 3800.0                                     // Density of rock
+#define rhoHydr 2600.0                                     // Density of hydrated rock
+#define rhoH2os 920.0                                      // Density of H2O(s) 935 at T<100 K, but 918 at 273 K (TEOS-10, Feistel and Wagner 2006)
+#define rhoH2ol 1000.0                                     // Density of H2O(l)
+#define rhoAdhs 985.0                                      // Density of ADH(s)
+#define rhoNh3l 740.0                                      // Density of NH3(l)
 #define Xc 0.321                                           // Ammonia content of eutectic H2O-NH3 mixture
-#define NRmax 2000                                         // Max number of grid zones tolerated in Desch09 code
 
 //-------------------------------------------------------------------
 // THERMAL PARAMETERS
 //-------------------------------------------------------------------
 
-#define rhoH2osth 0.92                                     // Density of ice (g/cm3). 0.935 at T<100 K, but 0.918 at 273 K (TEOS-10, Feistel and Wagner 2006)
-#define rhoAdhsth 0.985                                    // Density of ammonia dihydrate (g/cm3)
 #define Hhydr 5.75e9                                       // Heat of hydration, erg/(g forsterite) (=575 kJ/(kg forsterite))
 #define ErockA 1.40e4                                      // =770.0/275.0/2.0*1.0e4, heat capacity of rock (cgs, 1 cgs = 1 erg/g/K = 1e-4 J/kg/K) below 275 K
 #define ErockC 6.885e6                                     // =(607.0+163.0/2.0)*1.0e4 between 275 and 1000 K, term 1
@@ -114,7 +112,7 @@
 #define mu_f_Byerlee_loP 0.85                              // Friction coefficient for dry olivine rock brittle strength below 200 MPa (Byerlee 1978)
 #define mu_f_Byerlee_hiP 0.6                               // Friction coefficient for dry olivine rock brittle strength between 200 MPa and 1700 MPa (Byerlee 1978)
 #define C_f_Byerlee_hiP 50.0e6                             // Frictional cohesive strength for dry olivine rock between 200 MPa and 1700 MPa (Byerlee 1978)
-#define A_flow_law 4.17e-1                                 // A of the antigorite flow law of Rutter and Brodie (1988), default 4.17e-1 for sigma in Pa (10^5.62 for sigma in MPa), Hilairet et al. 2007 1.0e-37
+#define A_flow_law 4.17e5                                 // A of the antigorite flow law of Rutter and Brodie (1988), default 10^5.62 = 4.17e5 for sigma in MPa, Hilairet et al. 2007 1.0e-37
 #define Ea_flow_law 240.0e3                                // Activation energy of the antigorite flow law of Rutter and Brodie (1988), default 240e3 J, Hilairet et al. 2007 8900 J
 #define V_flow_law 0.0                                     // Activation volume of Rutter and Brodie (1988), default 0 m3, Hilairet et al. 2007 3.2e-6 m3
 #define n_flow_law 1.0                                     // Stress in Pa exponent of Rutter and Brodie (1988), default 1.0 (diffusion creep), Hilairet et al. 2007 3.8 dislocation creep

@@ -73,7 +73,6 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 	double Crack_size_mem = 0.0;                                 // Memorize crack size in m between phenomena
 	double dTdt = 0.0;                  					     // Heating/cooling rate in K/s
 
-	double strain_rate = 0.0;                                    // Strain rate in s-1
 	double E_Young = 0.0;                                        // Young's modulus in Pa
 	double nu_Poisson = 0.0;                                     // Poisson's ratio
 	double K_IC = 0.0;                                           // Critical stress intensity in Pa m^0.5
@@ -143,7 +142,6 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 		Molar_volume[2] = Molar_volume_magnesite;                  // CHNOSZ - HDN+78
 	}
 
-	strain_rate = 1.0/dtime; // 6.3e-10 /s if dtime = 50 years
 	E_Young = Xhydr*E_Young_serp + (1.0-Xhydr)*E_Young_oliv;
 	nu_Poisson = Xhydr*nu_Poisson_serp + (1.0-Xhydr)*nu_Poisson_oliv;
 	K_IC = Xhydr*K_IC_serp + (1.0-Xhydr)*K_IC_oliv;
@@ -156,7 +154,6 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 	if (thermal_mismatch == 1) {
 
 		dTdt = (T-T_old)/dtime;
-		// dTdt = -1.0e9/Gyr2sec;         // Arbitrary cooling rate of Vance et al. (2007), 1 K/yr
 
 		// Calculate T' in each layer over time, eq (2) of Vance et al. (2007)
 		// T' is the temperature at zero stress from thermal mismatch
@@ -257,8 +254,7 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 	//-------------------------------------------------------------------
 	/* TODO For now, we take the activities of solutes to be like molalities (ideal solutions),
 	 * even though that clearly doesn't work with our concentrated solutions.
-	 * We take the activities of solids (rock and precipitates) and water to be 1.
-	 */
+	 * We take the activities of solids (rock and precipitates) and water to be 1. */
 
 	if (dissolution_precipitation == 1) {
 		if ((*Crack) > 0.0) { // Calculate dissolution/precipitation only where there are cracks
@@ -391,16 +387,18 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 
 int strain (double Pressure, double Xhydr, double T, double *strain_rate, double *Brittle_strength) {
 
-	if (Xhydr >= 0.05)
-		(*Brittle_strength) = mu_f_serp*Pressure;
-	else {
-		if (Pressure <= 200.0e6) (*Brittle_strength) = mu_f_Byerlee_loP*Pressure;
-		else (*Brittle_strength) = mu_f_Byerlee_hiP*Pressure + C_f_Byerlee_hiP;
-	}
+	double Hydr_strength = 0.0;
+	double Dry_strength = 0.0;
+
+	Hydr_strength = mu_f_serp*Pressure;
+	if (Pressure <= 200.0e6) Dry_strength = mu_f_Byerlee_loP*Pressure;
+	else Dry_strength = mu_f_Byerlee_hiP*Pressure + C_f_Byerlee_hiP;
+	(*Brittle_strength) = Xhydr*Hydr_strength + (1.0-Xhydr)*Dry_strength;
+
 	if (T > 140.0)
-		(*strain_rate) = A_flow_law*pow((*Brittle_strength),n_flow_law)*pow(d_flow_law,-p_flow_law)*exp((-Ea_flow_law + Pressure*V_flow_law)/(n_flow_law*R_G*T));
+		(*strain_rate) = A_flow_law*pow((*Brittle_strength)/MPa,n_flow_law)*pow(d_flow_law,-p_flow_law)*exp((-Ea_flow_law + Pressure*V_flow_law)/(n_flow_law*R_G*T));
 	else // Set T at 140 K to calculate ductile strength so that it doesn't yield numbers too high to handle
-		(*strain_rate) = A_flow_law*pow((*Brittle_strength),n_flow_law)*pow(d_flow_law,-p_flow_law)*exp((-Ea_flow_law + Pressure*V_flow_law)/(n_flow_law*R_G*140.0));
+		(*strain_rate) = A_flow_law*pow((*Brittle_strength)/MPa,n_flow_law)*pow(d_flow_law,-p_flow_law)*exp((-Ea_flow_law + Pressure*V_flow_law)/(n_flow_law*R_G*140.0));
 
 	return 0;
 }

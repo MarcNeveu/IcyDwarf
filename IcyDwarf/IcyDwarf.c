@@ -170,6 +170,7 @@ int main(int argc, char *argv[]){
 		if (thoutput[r] == NULL) printf("IcyDwarf: Not enough memory to create the thoutput structure\n");
 	}
 	thoutput = read_thermal_output (thoutput, NR, NT_output, path);
+	printf("%g %g\n",thoutput[0][0].radius,thoutput[0][0].tempk);
 
 	//-------------------------------------------------------------------
 	// Compaction

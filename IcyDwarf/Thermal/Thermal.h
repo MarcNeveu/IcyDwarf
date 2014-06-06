@@ -49,9 +49,10 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 int dehydrate(double T, double dM, double dVol, double *Mrock, double *Mh2ol, double *Vrock,
 		double *Vh2ol, double rhoRockth, double rhoHydrth, double rhoH2olth, double *Xhydr);
 
-int hydrate(double T, double **dM, double *dVol, double **Mrock, double **Mh2os, double *Madhs, double **Mh2ol, double **Mnh3l, double **Vrock,
-		double **Vh2os, double **Vh2ol, double **Vnh3l, double rhoRockth, double rhoHydrth, double rhoH2olth, double rhoNh3lth, double **Xhydr,
-		int ir, int ircore, int irice, int NR);
+int hydrate(double T, double **dM, double *dVol, double **Mrock, double **Mh2os, double *Madhs, double **Mh2ol,
+		double **Mnh3l, double **Vrock, double **Vh2os, double **Vh2ol, double **Vnh3l, double rhoRockth,
+		double rhoHydrth, double rhoH2osth, double rhoH2olth, double rhoNh3lth, double **Xhydr, int ir, int ircore,
+		int irice, int NR);
 
 double viscosity(double T, double Mh2ol, double Mnh3l);
 
@@ -111,8 +112,10 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double cp1 = 0.0;                    // Heat capacity of H2O ice (erg g-1 K-1)
 	double g1 = 0.0;                     // Gravitational acceleration for calculation of Ra in ice (cgs)
 	double Nu0 = 0.0;                    // Critical Nusselt number = Ra_c^0.25
-	double rhoRockth = rhoRock/1000.0;   // Density of dry rock, just for this thermal routine (g/cm3)
-	double rhoHydrth = rhoHydr/1000.0;   // Density of hydrated rock, just for this thermal routine (g/cm3)
+	double rhoRockth = rhoRock*gram;     // Density of dry rock (g/cm3)
+	double rhoHydrth = rhoHydr*gram;     // Density of hydrated rock (g/cm3)
+	double rhoH2osth = rhoH2os*gram;	 // Density of water ice (g/cm3)
+	double rhoAdhsth = rhoAdhs*gram;	 // Density of ammonia dihydrate ice (g/cm3)
 	double rhoH2olth = 0.0;              // Density of liquid water, just for this thermal routine (g/cm3)
 	double rhoNh3lth = 0.0;              // Density of liquid ammonia, just for this thermal routine (g/cm3)
 	double rhoIce = 0.0;                 // Density of the bulk ice (g/cm3)
@@ -120,8 +123,6 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double Mcracked_rock = 0.0;          // Mass of cracked rock in the planet in g
 	double Vliq = 0.0;                   // Volume of liquid
 	double Vcracked = 0.0;               // Volume of cracked rock
-	double Brittle_strength = 0.0;       // Brittle rock strength in Pa
-	double strain_rate = 0.0;            // Strain rate in s-1
 	double Crack_depth[2];				 // Crack_depth[2] in km, output
 	double WRratio[2];					 // WRratio[2], output
 	double Heat[4];                      // Heat[4] in erg, output
@@ -229,6 +230,15 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double *time_hydr = (double*) malloc((NR)*sizeof(double)); // Time since last hydration/dehydration
 	if (time_hydr == NULL) printf("Thermal: Not enough memory to create time_hydr[NR]\n");
 
+	double *Brittle_strength = (double*) malloc((NR)*sizeof(double)); // Brittle rock strength in Pa
+	if (Brittle_strength == NULL) printf("Thermal: Not enough memory to create Brittle_strength[NR]\n");
+
+	double *strain_rate = (double*) malloc((NR)*sizeof(double)); // Strain rate in s-1
+	if (strain_rate == NULL) printf("Thermal: Not enough memory to create strain_rate[NR]\n");
+
+	double *fracOpen = (double*) malloc((NR)*sizeof(double)); // Fraction of crack that hasn't healed
+	if (fracOpen == NULL) printf("Thermal: Not enough memory to create fracOpen[NR]\n");
+
 	double **Stress = (double**) malloc((NR)*sizeof(double*)); // Stress[NR][11], output
 	if (Stress == NULL) printf("Thermal: Not enough memory to create Stress[NR]\n");
 	for (ir=0;ir<NR;ir++) {
@@ -322,6 +332,9 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	circ[ir] = 0;
     	Mrock_init[ir] = 0.0;
     	time_hydr[ir] = 0.0;
+    	Brittle_strength[ir] = 0.0;
+    	strain_rate[ir] = 0.0;
+    	fracOpen[ir] = 0.0;
     	for (i=0;i<n_species_crack;i++) Act[ir][i] = 0.0;
     	for (i=0;i<11;i++) Stress[ir][i] = 0.0;
     }
@@ -406,7 +419,6 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     rhoNh3lth = 1.0/rhoNh3lth;
     rhoIce = 1.0 / ((Xp/Xc)/rhoAdhsth + (1.0-Xp/Xc)/rhoH2osth);          // Bulk ice density
     frockp = (1.0-rhoIce/rho_p) / (1.0-rhoIce/(Xhydr[0]*rhoHydrth+(1.0-Xhydr[0])*rhoRockth));
-
     dr_grid = r_p/((double) NR);
 
     for (ir=0;ir<NR;ir++) {
@@ -442,6 +454,64 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     }
 
 	//-------------------------------------------------------------------
+	//                      Output initial configuration
+	//-------------------------------------------------------------------
+
+	for (ir=0;ir<NR;ir++) {
+		Thermal[0] = r[ir+1]/km2cm;
+		Thermal[1] = T[ir];
+		Thermal[2] = Mrock[ir];
+		Thermal[3] = Mh2os[ir];
+		Thermal[4] = Madhs[ir];
+		Thermal[5] = Mh2ol[ir];
+		Thermal[6] = Mnh3l[ir];
+		Thermal[7] = kappa[ir]/1.0e5;
+		Thermal[8] = Xhydr[ir];
+		append_output(9, Thermal, path, "Outputs/Thermal.txt");
+	}
+	Heat[0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
+	Heat[1] = Heat_radio;
+	Heat[2] = Heat_serp;
+	Heat[3] = Heat_grav;
+	append_output(4, Heat, path, "Outputs/Heats.txt");
+
+	// Crack outputs
+	append_output(NR, Crack, path, "Outputs/Crack.txt");        // Crack type
+
+	// Crack depth (km)
+	Crack_depth[0] = (double) itime*dtime/Gyr2sec;              // t in Gyr
+
+	for (ir=0;ir<NR;ir++) {
+		if (Crack[ir] > 0.0) break;
+	}
+	Crack_depth[1] = (double) (ircore-ir)/(double)NR*r_p/km2cm;
+	if (Crack_depth[1] < 0.0) Crack_depth[1] = 0.0;
+	append_output(2, Crack_depth, path, "Outputs/Crack_depth.txt");
+
+	// Water:rock ratio by mass in cracked layer
+	// Depends entirely on porosity! The W/R by volume is porosity. Here, we say W/R = Mliq/Mcracked_rock.
+	WRratio[0] = (double) itime*dtime/Gyr2sec;                   // t in Gyr
+	Mliq = 0.0;
+	for (ir=0;ir<NR;ir++) {
+		Mliq = Mliq + Mh2ol[ir] + Mnh3l[ir];
+	}
+	Mcracked_rock = 0.0;
+	for (ir=0;ir<NR;ir++) {
+		if (Crack[ir] > 0.0) {
+			Mcracked_rock = Mcracked_rock + Mrock[ir];
+		}
+	}
+	if (Mcracked_rock < 0.000001) WRratio[1] = 0.0;              // If Mcracked_rock is essentially 0, to avoid infinities
+	else WRratio[1] = Mliq/Mcracked_rock;
+	append_output(2, WRratio, path, "Outputs/Crack_WRratio.txt");
+
+	// Crack stresses
+	for (ir=0;ir<NR;ir++) {
+		Stress[ir][0] = r[ir+1]/km2cm;
+		append_output(11, Stress[ir], path, "Outputs/Crack_stresses.txt");
+	}
+
+	//-------------------------------------------------------------------
 	//                  Allow for chemical equilibrium
 	//-------------------------------------------------------------------
 
@@ -471,13 +541,11 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     time = -dtime;
     ntime = (int) (fulltime / dtime + 1.0e-3);
     nsteps = (int) (dtoutput / dtime + 1.0e-3);
-    isteps = nsteps-1;        // Write first output at first time step
+    isteps++;
 
     for (itime=0;itime<=ntime;itime++) {
 
     	time = time + dtime;
-
-    	for (ir=0;ir<NR;ir++) time_hydr[ir] = time_hydr[ir] + dtime;
 
     	i = 0;
     	for (ir=0;ir<NR;ir++) {
@@ -488,6 +556,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 				i = 1;
 				break;
 			}
+			time_hydr[ir] = time_hydr[ir] + dtime;
     	}
     	for (ir=0;ir<NR;ir++) dM_old[ir] = dM[ir];
 
@@ -510,13 +579,29 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	if (itime > 1) { // Don't run crack() right away, because temperature changes from the initial temp can be artificially strong
 			for (ir=0;ir<ircore;ir++) {
 				if (T[ir]<Tdehydr_max) {
-					strain(Pressure[ir], Xhydr[ir], T[ir], &strain_rate, &Brittle_strength); // TODO: strain_rate[ir], Brittle_strength[ir], tCrackOpen[ir]
-					crack(argc, argv, path, ir, T[ir], T_old[ir], Pressure[ir], &Crack[ir],
-							&Crack_size[ir], Xhydr[ir], Xhydr_old[ir], dtime, Mrock[ir],
-							Mrock_init[ir], &Act[ir], warnings, msgout, crack_input, crack_species,
-							aTP, integral, alpha, beta, silica, chrysotile, magnesite, circ[ir], &Stress[ir], &P_pore[ir], Brittle_strength);
+					strain(Pressure[ir], Xhydr[ir], T[ir], &strain_rate[ir], &Brittle_strength[ir]);
+					if (fracOpen[ir] > 0.0) fracOpen[ir] = fracOpen[ir] - dtime*strain_rate[ir];
+					if (1.0/strain_rate[ir] > dtime) {
+						crack(argc, argv, path, ir, T[ir], T_old[ir], Pressure[ir], &Crack[ir], &Crack_size[ir],
+								Xhydr[ir], Xhydr_old[ir], dtime, Mrock[ir], Mrock_init[ir], &Act[ir], warnings,
+								msgout, crack_input, crack_species, aTP, integral, alpha, beta, silica, chrysotile,
+								magnesite, circ[ir], &Stress[ir], &P_pore[ir], Brittle_strength[ir]);
+					}
+					else { // Reset all the variables modified by crack()
+						Crack[ir] = 0.0;
+						Crack_size[ir] = 0.0;
+						for (i=0;i<n_species_crack;i++) {
+							Act[ir][i] = 0.0;
+						}
+						for (i=0;i<11;i++) Stress[ir][i] = 0.0;
+						P_pore[ir] = 0.0;
+					}
+					if (Crack[ir] > 0.0 && fracOpen[ir] == 0.0) fracOpen[ir] = 1.0;
 				}
-				else { // Reset all the variables modified by crack()
+				else { // Reset all the variables modified by crack() and strain()
+					fracOpen[ir] = 0.0;
+					strain_rate[ir] = 0.0;
+					Brittle_strength[ir] = 0.0;
 					Crack[ir] = 0.0;
 					Crack_size[ir] = 0.0;
 					for (i=0;i<n_species_crack;i++) {
@@ -525,10 +610,17 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 					for (i=0;i<11;i++) Stress[ir][i] = 0.0;
 					P_pore[ir] = 0.0;
 				}
+				if (fracOpen[ir] < 0.0 && Crack[ir] <= 0.0) {
+					fracOpen[ir] = 0.0;
+					Crack_size[ir] = 0.0;
+					for (i=0;i<n_species_crack;i++) {
+						Act[ir][i] = 0.0;
+					}
+				}
+				Stress[ir][3] = fracOpen[ir];
 			}
     	}
-    	if (itime > 46500) printf("%d T \t %g \t circ \t %d \t kap \t %g \t Act[0] \t %g \t Act[1] \t %g \t Act[2] \t %g \t d_size \t %g\n",itime,T[155],circ[155],kappa[155],Act[155][0],Act[155][1],Act[155][2],Crack_size[155]);
-		if (itime > 46700) exit(0); //TODO debug
+
     	// Find the depth of the continuous cracked layer in contact with the ocean
     	ircrack = NR;
     	seafloor_link = 0;
@@ -551,7 +643,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     		if (T[ir] < Tdehydr_max && Xhydr[ir] <= 0.99 && time_hydr[ir] > hydr_delay) {
     			Xhydr_temp = Xhydr[ir];
 				hydrate(T[ir], &dM, dVol, &Mrock, &Mh2os, Madhs, &Mh2ol, &Mnh3l, &Vrock, &Vh2os, &Vh2ol, &Vnh3l,
-					rhoRockth, rhoHydrth, rhoH2olth, rhoNh3lth, &Xhydr, ir, ircore, irice, NR);
+					rhoRockth, rhoHydrth, rhoH2osth, rhoH2olth, rhoNh3lth, &Xhydr, ir, ircore, irice, NR);
 				for (jr=0;jr<NR;jr++) time_hydr[jr] = (1.0-Xhydr[ir])*hydr_delay;
 				structure_changed = 1;
 				if (Xhydr[ir] >= (1.0+1.0e-10)*Xhydr_temp) dont_dehydrate[ir] = 1; // +epsilon to beat machine error
@@ -971,6 +1063,9 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	free (chrysotile);
 	free (magnesite);
 	free (Stress);
+	free (Brittle_strength);
+	free (strain_rate);
+	free (fracOpen);
 
 	return 0;
 }
@@ -1730,9 +1825,10 @@ int dehydrate(double T, double dM, double dVol, double *Mrock, double *Mh2ol, do
  *
  *--------------------------------------------------------------------*/
 
-int hydrate(double T, double **dM, double *dVol, double **Mrock, double **Mh2os, double *Madhs, double **Mh2ol, double **Mnh3l, double **Vrock,
-		double **Vh2os, double **Vh2ol, double **Vnh3l, double rhoRockth, double rhoHydrth, double rhoH2olth, double rhoNh3lth, double **Xhydr,
-		int ir, int ircore, int irice, int NR){
+int hydrate(double T, double **dM, double *dVol, double **Mrock, double **Mh2os, double *Madhs, double **Mh2ol,
+		double **Mnh3l, double **Vrock, double **Vh2os, double **Vh2ol, double **Vnh3l, double rhoRockth,
+		double rhoHydrth, double rhoH2osth, double rhoH2olth, double rhoNh3lth, double **Xhydr, int ir, int ircore,
+		int irice, int NR){
 
 	int jr = 0;
 	double Vliq = 0.0;
