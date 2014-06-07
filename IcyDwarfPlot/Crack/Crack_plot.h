@@ -164,7 +164,7 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double o
 				*pixmem32 = green_alpha;
 			}
 			// Cracks clogged by hydration swelling or precipitation in white
-			if (Crack[t][r] <= -1.0) {
+			if (Crack[t][r] < 0.0) {
 				pixmem32 = (Uint32*) crack_time->pixels + (crack_time->h - r)*crack_time->w + t;
 				*pixmem32 = light_white_alpha;
 			}

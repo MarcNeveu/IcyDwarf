@@ -81,10 +81,10 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	int pore_water_expansion = 0;        // Switch for pore water expansion effects
 	int hydration_dehydration = 0;       // Switch for rock hydration/dehydration effects
 	int dissolution_precipitation = 0;   // Switch for rock dissolution/precipitation effects
-	int seafloor_link = 0;               // Switch to determine if a cracked zone is connected to the seafloor
 	double Heat_radio = 0.0;             // Total heats produced (erg), for output file
-	double Heat_serp = 0.0;
 	double Heat_grav = 0.0;
+	double Heat_serp = 0.0;
+	double Heat_dehydr = 0.0;
 	double dtime = 0.0;                  // Time step (s)
 	double time = 0.0;                   // Time elapsed (s)
 	double frockp = 0.0;                 // Fraction of rock in the planet by mass
@@ -125,7 +125,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double Vcracked = 0.0;               // Volume of cracked rock
 	double Crack_depth[2];				 // Crack_depth[2] in km, output
 	double WRratio[2];					 // WRratio[2], output
-	double Heat[4];                      // Heat[4] in erg, output
+	double Heat[5];                      // Heat[4] in erg, output
 	double Thermal[9];					 // Thermal[9], output
 
 	int *dont_dehydrate = (int*) malloc((NR)*sizeof(int));    // Don't dehydrate a layer that just got hydrated
@@ -297,7 +297,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	// Zero all the arrays
 	Crack_depth[0] = 0.0, Crack_depth[1] = 0.0;
 	WRratio[0] = 0.0, WRratio[1] = 0.0;
-	Heat[0] = 0.0, 	Heat[1] = 0.0, 	Heat[2] = 0.0, Heat[3] = 0.0;
+	Heat[0] = 0.0, 	Heat[1] = 0.0, 	Heat[2] = 0.0, Heat[3] = 0.0, Heat[4] = 0.0;
 	for (i=0;i<9;i++) Thermal[i] = 0.0;
     for (ir=0;ir<NR;ir++) {
     	dVol[ir] = 0.0;
@@ -471,9 +471,10 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	}
 	Heat[0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
 	Heat[1] = Heat_radio;
-	Heat[2] = Heat_serp;
-	Heat[3] = Heat_grav;
-	append_output(4, Heat, path, "Outputs/Heats.txt");
+	Heat[2] = Heat_grav;
+	Heat[3] = Heat_serp;
+	Heat[4] = Heat_dehydr;
+	append_output(5, Heat, path, "Outputs/Heats.txt");
 
 	// Crack outputs
 	append_output(NR, Crack, path, "Outputs/Crack.txt");        // Crack type
@@ -541,7 +542,6 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     time = -dtime;
     ntime = (int) (fulltime / dtime + 1.0e-3);
     nsteps = (int) (dtoutput / dtime + 1.0e-3);
-    isteps++;
 
     for (itime=0;itime<=ntime;itime++) {
 
@@ -582,10 +582,10 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 					strain(Pressure[ir], Xhydr[ir], T[ir], &strain_rate[ir], &Brittle_strength[ir]);
 					if (fracOpen[ir] > 0.0) fracOpen[ir] = fracOpen[ir] - dtime*strain_rate[ir];
 					if (1.0/strain_rate[ir] > dtime) {
-						crack(argc, argv, path, ir, T[ir], T_old[ir], Pressure[ir], &Crack[ir], &Crack_size[ir],
-								Xhydr[ir], Xhydr_old[ir], dtime, Mrock[ir], Mrock_init[ir], &Act[ir], warnings,
-								msgout, crack_input, crack_species, aTP, integral, alpha, beta, silica, chrysotile,
-								magnesite, circ[ir], &Stress[ir], &P_pore[ir], Brittle_strength[ir]);
+						crack(T[ir], T_old[ir], Pressure[ir], &Crack[ir], &Crack_size[ir], Xhydr[ir], Xhydr_old[ir],
+								dtime, Mrock[ir], Mrock_init[ir], &Act[ir], warnings, crack_input, crack_species,
+								aTP, integral, alpha, beta, silica, chrysotile, magnesite, circ[ir], &Stress[ir],
+								&P_pore[ir], Brittle_strength[ir], itime, ir, ircrack, ircore);
 					}
 					else { // Reset all the variables modified by crack()
 						Crack[ir] = 0.0;
@@ -617,28 +617,17 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 						Act[ir][i] = 0.0;
 					}
 				}
-				Stress[ir][3] = fracOpen[ir];
+				Stress[ir][9] = fracOpen[ir];
+				Stress[ir][10] = Crack[ir];
 			}
     	}
 
     	// Find the depth of the continuous cracked layer in contact with the ocean
     	ircrack = NR;
-    	seafloor_link = 0;
-		for (ir=0;ir<ircore;ir++) {
-			if (Crack[ir] > 0.0) {
-				seafloor_link = 1;
-				for (jr=ir;jr<ircore;jr++) {
-    				if (Crack[jr] <= 0.0) {                  // No crack or crack shut
-    					seafloor_link = 0;
-    					break;
-    				}
-				}
-				if (seafloor_link == 1) {
-					ircrack = ir;
-					break;
-				}
-			}
-		}
+    	for (ir=ircore-1;ir>=0;ir--) {
+    		if (Crack[ir] > 0.0) ircrack = ir;
+    		else break;
+    	}
     	for (ir=ircore-1;ir>=ircrack;ir--) { // From the ocean downwards
     		if (T[ir] < Tdehydr_max && Xhydr[ir] <= 0.99 && time_hydr[ir] > hydr_delay) {
     			Xhydr_temp = Xhydr[ir];
@@ -770,6 +759,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			if (fabs(Xhydr_old[ir] - Xhydr[ir]) > 1.0e-10) {
 				Qth[ir] = Qth[ir] + (Xhydr[ir] - Xhydr_old[ir])*Mrock[ir]*Hhydr/dtime;
 				if (Xhydr[ir] - Xhydr_old[ir] > 0.0) Heat_serp = Heat_serp + (Xhydr[ir] - Xhydr_old[ir])*Mrock[ir]*Hhydr/dtime;
+				else Heat_dehydr = Heat_dehydr + (Xhydr_old[ir] - Xhydr[ir])*Mrock[ir]*Hhydr/dtime;
 			}
 		}
 
@@ -803,7 +793,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		Vliq = 0.0;
 		for (ir=0;ir<NR;ir++) circ[ir] = 0;
 
-		if (ircrack > 0 && ircrack < ircore && Mh2ol[ircore] > 0.0) {
+		if (ircrack < ircore && Mh2ol[ircore] > 0.0) {
 			// Calculate Rayleigh number
 			mu1 = Pa2ba*viscosity(T[ircore],Mh2ol[ircore],Mnh3l[ircore]);
 			kap1 = rhoH2olth*ch2ol/porosity*permeability/cm/cm/mu1*(Pressure[ircrack]-Pressure[ircore])*Pa2ba;
@@ -957,9 +947,10 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			}
 			Heat[0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
 			Heat[1] = Heat_radio;
-			Heat[2] = Heat_serp;
-			Heat[3] = Heat_grav;
-			append_output(4, Heat, path, "Outputs/Heats.txt");
+			Heat[2] = Heat_grav;
+			Heat[3] = Heat_serp;
+			Heat[4] = Heat_dehydr;
+			append_output(5, Heat, path, "Outputs/Heats.txt");
 
 			// Crack outputs
 			append_output(NR, Crack, path, "Outputs/Crack.txt");        // Crack type
@@ -1786,7 +1777,7 @@ int dehydrate(double T, double dM, double dVol, double *Mrock, double *Mh2ol, do
 		double *Vh2ol, double rhoRockth, double rhoHydrth, double rhoH2olth, double *Xhydr){
 
 	double Xhydr_old = (*Xhydr);
-	double f_mem = 0.6;                                // Memory of old hydration state, ideally 0, 1 = no change
+	double f_mem = 0.75;                                // Memory of old hydration state, ideally 0, 1 = no change
 
 	// Set hydration level: 1 at Tdehydr_min, 0 at Tdehydr_max, linear in between
 	if (T<Tdehydr_min) (*Xhydr) = 1.0;

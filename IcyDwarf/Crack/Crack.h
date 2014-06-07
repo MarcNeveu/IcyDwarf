@@ -45,19 +45,19 @@
 
 #include "../IcyDwarf.h"
 
-int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_old, double Pressure, double *Crack,
+int crack(double T, double T_old, double Pressure, double *Crack,
 		double *Crack_size, double Xhydr, double Xhydr_old, double dtime, double Mrock, double Mrock_init,
-		double **Act, int warnings, int msgout, int *crack_input, int *crack_species, double **aTP,
+		double **Act, int warnings, int *crack_input, int *crack_species, double **aTP,
 		double **integral, double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite,
-		int circ, double **Output, double *P_pore, double Brittle_strength);
+		int circ, double **Output, double *P_pore, double Brittle_strength, int itime, int ir, int ircrack, int ircore); //TODO remove itime,ir,ircrack, ircore
 
 int strain (double Pressure, double Xhydr, double T, double *strain_rate, double *Brittle_strength);
 
-int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_old, double Pressure, double *Crack,
+int crack(double T, double T_old, double Pressure, double *Crack,
 		double *Crack_size, double Xhydr, double Xhydr_old, double dtime, double Mrock, double Mrock_init,
-		double **Act, int warnings, int msgout, int *crack_input, int *crack_species, double **aTP,
+		double **Act, int warnings, int *crack_input, int *crack_species, double **aTP,
 		double **integral, double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite,
-		int circ, double **Output, double *P_pore, double Brittle_strength) {
+		int circ, double **Output, double *P_pore, double Brittle_strength, int itime, int ir, int ircrack, int ircore) {
 
 	//-------------------------------------------------------------------
 	//                 Declarations and initializations
@@ -69,6 +69,7 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 	int dissolution_precipitation = 0;                           // Rock dissolution/precipitation effects
 
 	int i = 0;
+	int iter = 0;
 
 	double Crack_size_mem = 0.0;                                 // Memorize crack size in m between phenomena
 	double dTdt = 0.0;                  					     // Heating/cooling rate in K/s
@@ -96,6 +97,8 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 	//   2    carbonate (magnesite)
 	// -----  ------------------------
 	// No mallocs here, because we keep n_species small
+	int itermax = 100;                                           // Max number of iterations for diss/prec
+	double chem_time = 1.0e6;                                    // Time step factor for dissolution/precipitation
 	double R_diss[n_species_crack];                              // Dissolution/precipitation rate in mol m-3 s-1
 	double nu_prod[n_species_crack];                             // Stoichiometric coefficient of the dissolution product(s)
 	double mu_Xu[n_species_crack];                               // Exponent of Q/K in kinetic rate law (Xu and Pruess 2001)
@@ -258,7 +261,6 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 
 	if (dissolution_precipitation == 1) {
 		if ((*Crack) > 0.0) { // Calculate dissolution/precipitation only where there are cracks
-
 			// Initialize crack size
 			if ((*Crack_size) == 0.0)
 				(*Crack_size) = smallest_crack_size;   // I guess because smallest_crack_size is a #define, the code adds a residual 4.74e-11.
@@ -283,24 +285,36 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 			// subcrt(c("MgCO3","Mg+2","CO3-2"),c(-1,1,1),c("cr","aq","aq"))
 			K_eq[2] = pow(10.0,magnesite[tempk_int][P_int]);
 
+			dtime = dtime / chem_time;
 			for (i=0;i<n_species_crack;i++) {          // Include whichever species are needed
 				if (crack_species[i] > 0) {
 
-					// (Act_prod in mol L-1 to scale with K, silica equation (i=0) assumes unit A/V).
-					// The Arrhenius term is equivalent to a dissociation rate constant kdiss in mol m-2 s-1.
-					R_diss[i] = surface_volume_ratio * exp(-Ea_diss[i]/(R_G*T)) * 1.0 * (1-pow( pow((*Act)[i]/rhoH2ol,nu_prod[i])/K_eq[i], mu_Xu[i]));
+					iter = 0;
+					while (iter<itermax) {
+						iter++;
 
-					// Update crack size (equation 61 of Rimstidt and Barnes 1980, ends up being independent of A/V)
-					// and update Act_prod[i] (mol m-3)
-					if (-R_diss[i]*dtime > (*Act)[i]) {  // Everything precipitates
+						// (Act_prod in mol L-1 to scale with K, silica equation (i=0) assumes unit A/V).
+						// The Arrhenius term is equivalent to a dissociation rate constant kdiss in mol m-2 s-1.
+						R_diss[i] = surface_volume_ratio * exp(-Ea_diss[i]/(R_G*T)) * 1.0 * (1-pow( pow((*Act)[i]/rhoH2ol,nu_prod[i])/K_eq[i], mu_Xu[i]));
 
-						// The change in size is everything that could precipitate (Q^nu), not everything that should have precipitated (Rdiss*timestep)
-						d_crack_size = d_crack_size - (*Act)[i]*Molar_volume[i]/surface_volume_ratio; // Rimstidt and Barnes (1980) Eq 61
-						(*Act)[i] = 0.0;                                // Can't have negative concentrations!
-					}
-					else {
-						d_crack_size = d_crack_size + R_diss[i]*dtime*Molar_volume[i]/surface_volume_ratio; // Rimstidt and Barnes (1980) Eq 61
-						(*Act)[i] = (*Act)[i] + nu_prod[i]*R_diss[i]*dtime;
+						// Update crack size (equation 61 of Rimstidt and Barnes 1980, ends up being independent of A/V)
+						// and update Act[i] (mol m-3)
+						if (-nu_prod[i]*R_diss[i]*dtime > (*Act)[i]) {  // Everything precipitates
+							// The change in size is everything that could precipitate (Q^nu), not everything that should have precipitated (Rdiss*dtime)
+							// Volume precipitated should be avg(Molar_volume[solute]) but that's about Molar_volume[i]/nu_prod[i]
+							d_crack_size = d_crack_size - (*Act)[i]/nu_prod[i]*Molar_volume[i]/surface_volume_ratio; // Rimstidt and Barnes (1980) Eq 61
+							(*Act)[i] = 0.0;                                // Can't have negative concentrations!
+							break;
+						}
+						else {
+							if (nu_prod[i]*R_diss[i]*dtime < 0.1*(*Act)[i]) {
+								d_crack_size = d_crack_size + R_diss[i]*dtime*chem_time/(double)iter*Molar_volume[i]/surface_volume_ratio; // Rimstidt and Barnes (1980) Eq 61
+								(*Act)[i] = (*Act)[i] + nu_prod[i]*R_diss[i]*dtime*chem_time/(double)iter;
+								break;
+							}
+							d_crack_size = d_crack_size + R_diss[i]*dtime*Molar_volume[i]/surface_volume_ratio; // Rimstidt and Barnes (1980) Eq 61
+							(*Act)[i] = (*Act)[i] + nu_prod[i]*R_diss[i]*dtime; // We neglect the change in crack volume to calculate Act[i].
+						}
 					}
 				}
 			}
@@ -320,37 +334,38 @@ int crack(int argc, char *argv[], char path[1024], int ir, double T, double T_ol
 	//                   Determine type of cracking
 	//-------------------------------------------------------------------
 
-	(*Output)[1] = Pressure;
-	(*Output)[2] = Brittle_strength;
-	(*Output)[5] = K_IC;
-	(*Output)[6] = K_I;
-	(*Output)[7] = (*P_pore);
-	(*Output)[8] = P_hydr;
-	(*Output)[9] = Crack_size_diss_old;
-	(*Output)[10] = (*Crack_size);
+	(*Output)[1] = Pressure/MPa;
+	(*Output)[2] = Brittle_strength/MPa;
+	(*Output)[3] = K_IC;
+	(*Output)[4] = K_I;
+	(*Output)[5] = (*P_pore)/MPa;
+	(*Output)[6] = P_hydr;
+	(*Output)[7] = Crack_size_diss_old;
+	(*Output)[8] = (*Crack_size);
 
 	// Cases where cracks appear
 	if (thermal_mismatch == 1) {          // Mismatch stresses open cracks
-		if ((K_I >= K_IC || floor(*Crack) == 1) && dTdt < 0)
+		if (K_I >= K_IC && dTdt < 0)
 			(*Crack) = 1.0;               // Cooling cracks
-		if ((K_I >= K_IC || floor(*Crack) == 2) && dTdt >= 0)
+		if (K_I >= K_IC && dTdt >= 0)
 			(*Crack) = 2.0;               // Heating cracks
 	}
 	if (hydration_dehydration == 1) {
-		if (P_hydr > Pressure + Brittle_strength || floor(*Crack) == 3)
+		if (P_hydr > Pressure + Brittle_strength)
 			(*Crack) = 3.0;               // Compressive hydration cracks
 	}
 	if (pore_water_expansion == 1) {      // Open crack if the fluid pressure is high enough
-		if ((*P_pore) > Brittle_strength || floor(*Crack) == 5) {
+		if ((*P_pore) > Brittle_strength) {
 			(*Crack) = 5.0;
 			(*P_pore) = 0.0;
 		}
+		if (floor(*Crack) == 5.0) (*P_pore) = 0.0;
 	}
 	if (dissolution_precipitation == 1) {
-		if ((*Crack) > 0.0 && (*Crack_size) > Crack_size_diss_old)
-			(*Crack) = (*Crack) + 0.1;    // Dissolution widened crack
-		if ((*Crack) > 0.0 && (*Crack_size) < Crack_size_diss_old)
-			(*Crack) = (*Crack) + 0.2;    // Precipitation shrunk crack
+		if ((*Crack) > 0.0 && (*Crack_size) > Crack_size_diss_old && ((*Crack) == floor(*Crack) || (*Crack) == floor(*Crack)+0.2))
+			(*Crack) = floor(*Crack) + 0.1;    // Dissolution widened crack
+		if ((*Crack) > 0.0 && (*Crack_size) < Crack_size_diss_old && ((*Crack) == floor(*Crack) || (*Crack) == floor(*Crack)+0.1))
+			(*Crack) = floor(*Crack) + 0.2;    // Precipitation shrunk crack
 	}
 
 	// Cases where cracks disappear

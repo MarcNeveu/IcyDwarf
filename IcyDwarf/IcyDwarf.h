@@ -85,7 +85,7 @@
 #define Tdehydr_max 850.0                                  // Temperature at which silicates are fully dehydrated, K
 #define kap_hydro 100.0e5                                  // Effective thermal conductivity of layer undergoing hydrothermal circulation (cgs, 1e5 cgs = 1 W/m/K)
 #define kap_slush 400.0e5                                  // Effective thermal conductivity of convective slush layer
-#define kap_ice_cv 110.0e5                                 // Effective thermal conductivity of convective ice layer
+#define kap_ice_cv 150.0e5                                 // Effective thermal conductivity of convective ice layer
 #define kaprock 4.2e5                                      // Thermal conductivity of dry silicate rock end member (cgs)
 #define kaphydr 1.0e5                                      // Thermal conductivity of hydrated silicate rock end member (cgs).
                                                               // 0.5 to 2.5 W/m/K (Yomogida and Matsui 1983, Clauser and Huenges 1995, Opeil et al. 2010)
