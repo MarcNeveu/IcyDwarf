@@ -364,13 +364,13 @@ int compaction(int NR, int NT, thermalout **thoutput, int t, int dbincore, int d
 	else if (cmdline == 1) strncat(title,path,strlen(path)-18);
 	strcat(title,"Outputs/Compaction.txt");
 
-	fout = fopen(title,"a");
+	fout = fopen(title,"w");
 	if (fout == NULL) {
 		printf("IcyDwarf: Error opening %s output file.\n",title);
 	}
 	else {
 		// Density and pressure profiles from this code
-		for (ir=1;ir<=NR;ir++) fprintf(fout, "%g %g %g\n",r[ir]/km,rho[ir],P[ir]/MPa);
+		for (ir=1;ir<=NR;ir++) fprintf(fout, "%g \t %g \t %g\n",r[ir]/km,rho[ir],P[ir]/MPa);
 
 		// Density and pressure profiles from the thermal code
 		double Mrock[NR];
@@ -391,7 +391,7 @@ int compaction(int NR, int NT, thermalout **thoutput, int t, int dbincore, int d
 		for (ir=1;ir<NR;ir++) {
 			rho[ir] = dM[ir]*gram / (4.0/3.0*PI_greek*(thoutput[ir][t].radius*thoutput[ir][t].radius*thoutput[ir][t].radius -
 					thoutput[ir-1][t].radius*thoutput[ir-1][t].radius*thoutput[ir-1][t].radius)*km*km*km);
-			fprintf(fout, "%g %g %g\n",thoutput[ir-1][t].radius,rho[ir],P[ir]/MPa);
+			fprintf(fout, "%g \t %g \t %g\n",thoutput[ir-1][t].radius,rho[ir],P[ir]/MPa);
 		}
 
 		// Text output from this code

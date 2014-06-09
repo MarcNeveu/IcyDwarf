@@ -221,6 +221,9 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double *P_pore = (double*) malloc(NR*sizeof(double));     // Pore overpressure in Pa
 	if (P_pore == NULL) printf("Thermal: Not enough memory to create P_pore[NR]\n");
 
+	double *P_hydr = (double*) malloc(NR*sizeof(double));     // Pore hydration stress in Pa
+	if (P_hydr == NULL) printf("Thermal: Not enough memory to create P_hydr[NR]\n");
+
 	double *Nu = (double*) malloc((NR)*sizeof(double));       // Nusselt number
 	if (Nu == NULL) printf("Thermal: Not enough memory to create Nu[NR]\n");
 
@@ -239,11 +242,11 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double *fracOpen = (double*) malloc((NR)*sizeof(double)); // Fraction of crack that hasn't healed
 	if (fracOpen == NULL) printf("Thermal: Not enough memory to create fracOpen[NR]\n");
 
-	double **Stress = (double**) malloc((NR)*sizeof(double*)); // Stress[NR][11], output
+	double **Stress = (double**) malloc((NR)*sizeof(double*)); // Stress[NR][12], output
 	if (Stress == NULL) printf("Thermal: Not enough memory to create Stress[NR]\n");
 	for (ir=0;ir<NR;ir++) {
-		Stress[ir] = (double*) malloc(11*sizeof(double));
-		if (Stress[ir] == NULL) printf("Thermal: Not enough memory to create Stress[NR][11]\n");
+		Stress[ir] = (double*) malloc(12*sizeof(double));
+		if (Stress[ir] == NULL) printf("Thermal: Not enough memory to create Stress[NR][12]\n");
 	}
 	double **Act = (double**) malloc(NR*sizeof(double*));      // Activity of chemical products in cracks, dimensionless or (mol m-3) if << salinity
 	if (Act == NULL) printf("Thermal: Not enough memory to create Act[NR][n_species_crack]\n");
@@ -327,6 +330,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	Crack[ir] = 0.0;
     	Crack_size[ir] = 0.0;
     	P_pore[ir] = 0.0;
+    	P_hydr[ir] = 0.0;
     	Nu[ir] = 1.0;
     	dont_dehydrate[ir] = 0;
     	circ[ir] = 0;
@@ -336,7 +340,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	strain_rate[ir] = 0.0;
     	fracOpen[ir] = 0.0;
     	for (i=0;i<n_species_crack;i++) Act[ir][i] = 0.0;
-    	for (i=0;i<11;i++) Stress[ir][i] = 0.0;
+    	for (i=0;i<12;i++) Stress[ir][i] = 0.0;
     }
     for (ir=0;ir<NR+1;ir++) {
     	r[ir] = 0.0;
@@ -509,7 +513,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	// Crack stresses
 	for (ir=0;ir<NR;ir++) {
 		Stress[ir][0] = r[ir+1]/km2cm;
-		append_output(11, Stress[ir], path, "Outputs/Crack_stresses.txt");
+		append_output(12, Stress[ir], path, "Outputs/Crack_stresses.txt");
 	}
 
 	//-------------------------------------------------------------------
@@ -549,9 +553,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
     	i = 0;
     	for (ir=0;ir<NR;ir++) {
-    		Xhydr_old[ir] = Xhydr[ir];
     		dont_dehydrate[ir] = 0;
-    		for (jr=0;jr<11;jr++) Stress[ir][jr] = 0.0;
+    		for (jr=0;jr<12;jr++) Stress[ir][jr] = 0.0;
 			if (fabs(dM[ir] - dM_old[ir])/dM_old[ir] > 0.05) {
 				i = 1;
 				break;
@@ -585,7 +588,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 						crack(T[ir], T_old[ir], Pressure[ir], &Crack[ir], &Crack_size[ir], Xhydr[ir], Xhydr_old[ir],
 								dtime, Mrock[ir], Mrock_init[ir], &Act[ir], warnings, crack_input, crack_species,
 								aTP, integral, alpha, beta, silica, chrysotile, magnesite, circ[ir], &Stress[ir],
-								&P_pore[ir], Brittle_strength[ir], itime, ir, ircrack, ircore);
+								&P_pore[ir], &P_hydr[ir], Brittle_strength[ir]);
 					}
 					else { // Reset all the variables modified by crack()
 						Crack[ir] = 0.0;
@@ -593,8 +596,9 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 						for (i=0;i<n_species_crack;i++) {
 							Act[ir][i] = 0.0;
 						}
-						for (i=0;i<11;i++) Stress[ir][i] = 0.0;
+						for (i=0;i<12;i++) Stress[ir][i] = 0.0;
 						P_pore[ir] = 0.0;
+						P_hydr[ir] = 0.0;
 					}
 					if (Crack[ir] > 0.0 && fracOpen[ir] == 0.0) fracOpen[ir] = 1.0;
 				}
@@ -607,8 +611,9 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 					for (i=0;i<n_species_crack;i++) {
 						Act[ir][i] = 0.0;
 					}
-					for (i=0;i<11;i++) Stress[ir][i] = 0.0;
+					for (i=0;i<12;i++) Stress[ir][i] = 0.0;
 					P_pore[ir] = 0.0;
+					P_hydr[ir] = 0.0;
 				}
 				if (fracOpen[ir] < 0.0 && Crack[ir] <= 0.0) {
 					fracOpen[ir] = 0.0;
@@ -617,8 +622,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 						Act[ir][i] = 0.0;
 					}
 				}
-				Stress[ir][9] = fracOpen[ir];
-				Stress[ir][10] = Crack[ir];
+				Stress[ir][10] = fracOpen[ir];
+				Stress[ir][11] = Crack[ir];
 			}
     	}
 
@@ -628,6 +633,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     		if (Crack[ir] > 0.0) ircrack = ir;
     		else break;
     	}
+    	for (ir=0;ir<NR;ir++) Xhydr_old[ir] = Xhydr[ir];
     	for (ir=ircore-1;ir>=ircrack;ir--) { // From the ocean downwards
     		if (T[ir] < Tdehydr_max && Xhydr[ir] <= 0.99 && time_hydr[ir] > hydr_delay) {
     			Xhydr_temp = Xhydr[ir];
@@ -985,7 +991,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			// Crack stresses
 			for (ir=0;ir<NR;ir++) {
 				Stress[ir][0] = r[ir+1]/km2cm;
-				append_output(11, Stress[ir], path, "Outputs/Crack_stresses.txt");
+				append_output(12, Stress[ir], path, "Outputs/Crack_stresses.txt");
 			}
 		}
     }
@@ -1005,7 +1011,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		free (chrysotile[i]);
 		free (magnesite[i]);
 	}
-	for (i=0;i<11;i++) {
+	for (i=0;i<12;i++) {
 		free (Stress[i]);
 	}
 	for (ir=0;ir<NR;ir++) {
@@ -1041,6 +1047,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	free (Crack_size);
 	free (Act);
 	free (P_pore);
+	free (P_hydr);
 	free (Nu);
 	free (dont_dehydrate);
 	free (circ);

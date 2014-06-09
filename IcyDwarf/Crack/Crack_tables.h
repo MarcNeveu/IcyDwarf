@@ -297,7 +297,7 @@ int Crack_species_CHNOSZ(int argc, char *argv[], char path[1024], int warnings, 
 			else // Above transition temperature for amorphous silica, in the stability domain of beta-quartz
 				silica[t][p] = -	CHNOSZ_logK("quartz", "cr", tempk-Kelvin, P_bar, "SUPCRT92")
 							   +    CHNOSZ_logK("SiO2", "aq", tempk-Kelvin, P_bar, "SUPCRT92");
-			//			// subcrt(c("chrysotile","SiO2","Mg+2","OH-","H2O"),c(-1,2,3,6,-1),c("cr","aq","aq","aq","liq"),T=tempk-Kelvin,P=P_bar)
+			// subcrt(c("chrysotile","SiO2","Mg+2","OH-","H2O"),c(-1,2,3,6,-1),c("cr","aq","aq","aq","liq"),T=tempk-Kelvin,P=P_bar)
 			chrysotile[t][p] = -    CHNOSZ_logK("chrysotile", "cr", tempk-Kelvin, P_bar, "SUPCRT92")
 							   +2.0*CHNOSZ_logK("SiO2", "aq", tempk-Kelvin, P_bar, "SUPCRT92")
 							   +3.0*CHNOSZ_logK("Mg+2", "aq", tempk-Kelvin, P_bar, "SUPCRT92")

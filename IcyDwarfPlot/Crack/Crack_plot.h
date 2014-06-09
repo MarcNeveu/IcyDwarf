@@ -148,6 +148,11 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double o
 				pixmem32 = (Uint32*) crack_time->pixels + (crack_time->h - r)*crack_time->w + t;
 				*pixmem32 = blue_alpha;
 			}
+			// Dehydration cracks in orange
+			if (floor(Crack[t][r]) == 4) {
+				pixmem32 = (Uint32*) crack_time->pixels + (crack_time->h - r)*crack_time->w + t;
+				*pixmem32 = orange_alpha;
+			}
 			// Pore dilation cracks in purple
 			if (floor(Crack[t][r]) == 5) {
 				pixmem32 = (Uint32*) crack_time->pixels + (crack_time->h - r)*crack_time->w + t;

@@ -49,7 +49,7 @@ int crack(double T, double T_old, double Pressure, double *Crack,
 		double *Crack_size, double Xhydr, double Xhydr_old, double dtime, double Mrock, double Mrock_init,
 		double **Act, int warnings, int *crack_input, int *crack_species, double **aTP,
 		double **integral, double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite,
-		int circ, double **Output, double *P_pore, double Brittle_strength, int itime, int ir, int ircrack, int ircore); //TODO remove itime,ir,ircrack, ircore
+		int circ, double **Output, double *P_pore, double *P_hydr, double Brittle_strength);
 
 int strain (double Pressure, double Xhydr, double T, double *strain_rate, double *Brittle_strength);
 
@@ -57,7 +57,7 @@ int crack(double T, double T_old, double Pressure, double *Crack,
 		double *Crack_size, double Xhydr, double Xhydr_old, double dtime, double Mrock, double Mrock_init,
 		double **Act, int warnings, int *crack_input, int *crack_species, double **aTP,
 		double **integral, double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite,
-		int circ, double **Output, double *P_pore, double Brittle_strength, int itime, int ir, int ircrack, int ircore) {
+		int circ, double **Output, double *P_pore, double *P_hydr, double Brittle_strength) {
 
 	//-------------------------------------------------------------------
 	//                 Declarations and initializations
@@ -67,13 +67,10 @@ int crack(double T, double T_old, double Pressure, double *Crack,
 	int pore_water_expansion = 0;                                // Pore water expansion effects
 	int hydration_dehydration = 0;                               // Rock hydration/dehydration effects
 	int dissolution_precipitation = 0;                           // Rock dissolution/precipitation effects
-
 	int i = 0;
 	int iter = 0;
 
-	double Crack_size_mem = 0.0;                                 // Memorize crack size in m between phenomena
 	double dTdt = 0.0;                  					     // Heating/cooling rate in K/s
-
 	double E_Young = 0.0;                                        // Young's modulus in Pa
 	double nu_Poisson = 0.0;                                     // Poisson's ratio
 	double K_IC = 0.0;                                           // Critical stress intensity in Pa m^0.5
@@ -86,9 +83,6 @@ int crack(double T, double T_old, double Pressure, double *Crack,
 
 	// Pore fluid heating-specific variables
 	int tempk_int = 0;                                           // T index in the alpha and beta tables (P index is P_int)
-
-	// Rock hydration/dehydration-specific variables
-	double P_hydr = 0.0;                                         // Compressive stress from hydration in Pa
 
 	// index  species
 	// -----  ------------------------
@@ -108,7 +102,8 @@ int crack(double T, double T_old, double Pressure, double *Crack,
 
 	double surface_volume_ratio = 0.0;                           // Ratio of water-rock surface to fluid volume in m-1
 	double d_crack_size = 0.0;                                   // Net change in crack size in m
-	double Crack_size_diss_old = 0.0;                            // Crack size before this step in m
+	double Crack_size_hydr_old = 0.0;                            // Crack size before hydr step in m
+	double Crack_size_diss_old = 0.0;                            // Crack size before diss/prec step in m
 
 	for (i=0;i<n_species_crack;i++) {
 		R_diss[i] = 0.0;
@@ -123,20 +118,12 @@ int crack(double T, double T_old, double Pressure, double *Crack,
 	dissolution_precipitation = crack_input[3]*circ;              // Only where there is hydrothermal circulation
 
 	if (dissolution_precipitation == 1) {
-		// Silica: Equations (55) of Rimstidt and Barnes 1980 or (7-8) of Bolton et al. 1997 (porosity not included)
-		// mol m-3 s-1 =no dim (scaled to 1 m-1)*mol L-1 s-1*nd*     no dim (=nd)
-		mu_Xu[0] = 1.0;
-
-		// Serpentine: Exponent of Q/K remains 1 even though Q = a_silica^2 * a_Mg+2^3 / a_H+^6 = a_solutes^(5/6)
-		// because many other stoichiometries are possible with serpentine.
-		mu_Xu[1] = 1.0;
-
-		// Carbonate: Pokrovski and Schott 1999 suggest (Q/K)^4, which makes sense because Q = a_Mg+2^2 * a_CO3-2^2
-		mu_Xu[2] = 4.0;
-
-		nu_prod[0] = 1.0;                                          // SiO2 only product
-		nu_prod[1] = 11.0;										   // 2 SiO2, 3 Mg+2, 6 OH-
-		nu_prod[2] = 2.0;										   // 1 Mg+2, 1 CO3-2
+		mu_Xu[0] = mu_Xu_silica;
+		mu_Xu[1] = mu_Xu_chrysotile;
+		mu_Xu[2] = mu_Xu_magnesite;
+		nu_prod[0] = nu_prod_silica;
+		nu_prod[1] = nu_prod_chrysotile;
+		nu_prod[2] = nu_prod_magnesite;
 		Ea_diss[0] = Ea_silica;                                    // Rimstidt and Barnes (1980)
 		Ea_diss[1] = Ea_chrysotile;                                // Thomassin et al. (1977)
 		Ea_diss[2] = Ea_magnesite;                                 // Valid for pH 5.4, but decreases with pH (Pokrovsky et al. 2009)
@@ -185,44 +172,40 @@ int crack(double T, double T_old, double Pressure, double *Crack,
 	//-------------------------------------------------------------------
 	//               Cracks from hydration - dehydration
 	//-------------------------------------------------------------------
-	/* Dehydration would widen cracks. But at the dehydration temperature (800 K-ish for silicates)
-	 we are far into the ductile regime (above 400 K-ish). So there is no point looking at cracks.
+	/* Calculate crack shrinking/widening arising from rock swelling/dehydrating:
+	 * if epsilon is the displacement:
+	 * epsilon = (l_hydr - l_rock) / l_rock = l_hydr/l_rock - 1
+	 * Assuming a cube of rock, V_hydr/V_rock = l_hydr^3 / l_rock^3 = rho_rock/rho_hydr
+     *
+	 * If cracks close completely, then stress can build up as in Hooke's law (if isotropy):
+	 * P_hydr = E_Young*epsilon
+	 * So P_hydr = E_Young*[(rho_rock/rho_hydr)^(1/3) - 1]
+	 * Actually, some pores remain open because of asperities.*/
 
-	 Calculate crack shrinking arising from rock swelling:
-	 if epsilon is the displacement
-	 epsilon = (l_hydr - l_rock) / l_rock = l_hydr/l_rock - 1
-	 Assuming a cube of rock, V_hydr/V_rock = l_hydr^3 / l_rock^3 = rho_rock/rho_hydr
+	if (hydration_dehydration == 1 && Xhydr != Xhydr_old) {
 
-	 If cracks close completely, then stress can build up as in Hooke's law (if isotropy):
-	 P_hydr = E_Young*epsilon
-	 So P_hydr = E_Young*[(rho_rock/rho_hydr)^(1/3) - 1]
-	 Actually, some pores remain open because of asperities.*/
-
-	if (hydration_dehydration == 1) {
-
-		P_hydr = 0.0;
 		// Only where there are cracks, where hydration has increased, and where it's not fully hydrated
-		if ((*Crack) > 0.0 && Xhydr > Xhydr_old && T < Tdehydr_max) {
-
+		if ((*Crack) > 0.0) {
+			(*P_hydr) = 0.0;
 			// Initialize crack size
 			if ((*Crack_size) == 0.0)
 				(*Crack_size) = smallest_crack_size;  // I guess because smallest_crack_size is a #define, the code adds a residual 4.74e-11.
 			                                          // No changes smaller than that residual will trigger a change in the cracking.
 			// else (*Crack_size) is that from the previous time step
-			d_crack_size = 0.0;
-			if (T < Tdehydr_max) { // Hydration
-				d_crack_size = - 2.0*(pow(((Xhydr_old*rhoHydr+(1.0-Xhydr_old)*rhoRock)/(Xhydr*rhoHydr+(1.0-Xhydr)*rhoRock)),0.333) - 1.0) * hydration_rate * dtime / Gyr2sec;
-				// if dtime=50 years and Xhydr goes from 0.05 to 0.15, d_crack_size = -1 mm
-				if ((*Crack_size) + d_crack_size < 0.0) {
-					P_hydr = E_Young*(-d_crack_size-(*Crack_size))/(hydration_rate*dtime/Gyr2sec); // Residual rock swell builds up stresses
-					(*Crack_size) = 0.0;          // Crack closes completely
-				}
-				else {
-					P_hydr = 0.0;
-					(*Crack_size) = (*Crack_size) + d_crack_size;
-				}
+			Crack_size_hydr_old = (*Crack_size);
+			d_crack_size = - 2.0*(pow(((Xhydr_old*rhoHydr+(1.0-Xhydr_old)*rhoRock)/(Xhydr*rhoHydr+(1.0-Xhydr)*rhoRock)),0.333) - 1.0) * hydration_rate * dtime / Gyr2sec;
+			// if dtime=50 years and Xhydr goes from 0.05 to 0.15, d_crack_size = -1 mm
+			if ((*Crack_size) + d_crack_size < 0.0) {
+				(*P_hydr) = E_Young*(-d_crack_size-(*Crack_size))/(hydration_rate*dtime/Gyr2sec); // Residual rock swell builds up stresses
+				(*Crack_size) = 0.0;          // Crack closes completely
 			}
-			Crack_size_mem = (*Crack_size);
+			else {
+				(*P_hydr) = 0.0;
+				(*Crack_size) = (*Crack_size) + d_crack_size;
+			}
+		}
+		else { // Cracks may open if stresses develop as rock shrinks/swells
+			(*P_hydr) = (*P_hydr) + 2.0*E_Young*(pow(((Xhydr_old*rhoHydr+(1.0-Xhydr_old)*rhoRock)/(Xhydr*rhoHydr+(1.0-Xhydr)*rhoRock)),0.333) - 1.0);
 		}
 	}
 
@@ -233,12 +216,9 @@ int crack(double T, double T_old, double Pressure, double *Crack,
 
 	if (pore_water_expansion == 1) {
 		// For now, let's say the pores are at lithostatic pressure (should not be too different from hydrostatic pressure,
-		// as long there are only a few layers of cracks)
-		// Also let pressure evolve with temperature.
+		// as long there are only a few layers of cracks). Also let pressure evolve with temperature.
 
-		// Don't do calculations in undifferentiated or water areas, in dehydrated areas, or if no heating
 		if (Xhydr >= 0.1 && T > T_old) {
-
 			// Look up the right value of alpha and beta, given P and T
 			tempk_int = look_up (T, (double) tempk_min, delta_tempk, sizeaTP, warnings);
 			P_int = look_up (Pressure/bar, (double) P_bar_min, delta_P_bar, sizeaTP, warnings);
@@ -246,9 +226,6 @@ int crack(double T, double T_old, double Pressure, double *Crack,
 			// Calculate fluid overpressure from heating, including geometric effects (Le Ravalec & GuŽguen 1994)
 			(*P_pore) = (*P_pore) + (1.0+2.0*aspect_ratio) * alpha[tempk_int][P_int] * (T-T_old)
 								/ (beta[tempk_int][P_int]/bar + aspect_ratio*3.0*(1.0-2.0*nu_Poisson)/E_Young);
-			// Version of Norton (1984) without elastic relaxation
-			// P_pore = alpha[tempk_int][P_int] * (T-T_old)
-			//				/ (beta[tempk_int][P_int]/bar) * (1.0+2.0*aspect_ratio);
 		}
 	}
 
@@ -265,11 +242,7 @@ int crack(double T, double T_old, double Pressure, double *Crack,
 			if ((*Crack_size) == 0.0)
 				(*Crack_size) = smallest_crack_size;   // I guess because smallest_crack_size is a #define, the code adds a residual 4.74e-11.
 													   // No changes smaller than that residual will trigger a change in the cracking.
-			if (hydration_dehydration == 1) {
-				if (Crack_size_mem > 0.0) {            // Check crack size after hydration cracking calculations
-					(*Crack_size) = Crack_size_mem;
-				}
-			}
+
 			Crack_size_diss_old = (*Crack_size);       // For output only
 			d_crack_size = 0.0;
 			surface_volume_ratio = 2.0/(*Crack_size);  // Rimstidt and Barnes (1980) Fig. 6 for a cylinder/fracture
@@ -339,9 +312,10 @@ int crack(double T, double T_old, double Pressure, double *Crack,
 	(*Output)[3] = K_IC;
 	(*Output)[4] = K_I;
 	(*Output)[5] = (*P_pore)/MPa;
-	(*Output)[6] = P_hydr;
-	(*Output)[7] = Crack_size_diss_old;
-	(*Output)[8] = (*Crack_size);
+	(*Output)[6] = (*P_hydr)/MPa;
+	(*Output)[7] = Crack_size_hydr_old;
+	(*Output)[8] = Crack_size_diss_old;
+	(*Output)[9] = (*Crack_size);
 
 	// Cases where cracks appear
 	if (thermal_mismatch == 1) {          // Mismatch stresses open cracks
@@ -351,8 +325,11 @@ int crack(double T, double T_old, double Pressure, double *Crack,
 			(*Crack) = 2.0;               // Heating cracks
 	}
 	if (hydration_dehydration == 1) {
-		if (P_hydr > Pressure + Brittle_strength)
-			(*Crack) = 3.0;               // Compressive hydration cracks
+		if (fabs(*P_hydr) > Pressure + Brittle_strength) {
+			if ((*P_hydr) > 0.0) (*Crack) = 3.0; // Compressive hydration cracks
+			else (*Crack) = 4.0;          // Dehydration cracks
+			(*P_hydr) = 0.0;
+		}
 	}
 	if (pore_water_expansion == 1) {      // Open crack if the fluid pressure is high enough
 		if ((*P_pore) > Brittle_strength) {
@@ -372,7 +349,7 @@ int crack(double T, double T_old, double Pressure, double *Crack,
 	if (Mrock <= Mrock_init)
 		(*Crack) = 0.0;                   // Trivial: not enough rock
 	if (hydration_dehydration == 1) {
-		if (P_hydr > 0.0 && P_hydr <= Pressure + Brittle_strength) {
+		if ((*P_hydr) > 0.0 && (*P_hydr) <= Pressure + Brittle_strength) {
 			(*Crack) = -2.0;              // Crack closed because of hydration
 		}
 	}

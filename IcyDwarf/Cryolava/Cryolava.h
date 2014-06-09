@@ -275,7 +275,7 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 
 		/* Initialize bounds for X_VAP = x_vap/(rhoH2ol*R_G*T)
 		 *
-		 *	double min_K_rxn = K_rxn[0];   // See next comment
+		 *	double min_K_rxn = K_rxn[0];
          *
 		 *	for (i=0;i<n_species_cryolava;i++) {
 		 *		if (K_rxn[i] < min_K_rxn) min_K_rxn = K_rxn[i];
@@ -292,8 +292,6 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 		f_sup = f(P_gas/bar, Mliq, Abundances, K_rxn, X_SUP);
 
 		if (f_inf*f_sup > 0.0) {                             // f_inf and f_sup have same sign
-			// printf("Cryolava: Choose a different X_INF than %g, f(X_INF)=%g and/or X_SUP than %g, f(X_SUP)=%g for the root finding algorithm\n",X_INF,f_inf,X_SUP,f_sup);
-			// return -1;
 			printf("Cryolava: No physical solution at depth %g km: P_gas=%g bar either negative or too high\n",(float) (NR-(r+r_seafloor))*r_p/NR,P_gas/bar);
 			X_VAP = 0.0;
 			x_vap[r][0] = (NR-r-r_seafloor)*r_p/NR;          // Depth in km, for output file

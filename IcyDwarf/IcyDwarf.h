@@ -72,10 +72,9 @@
 #define ErockD 2.963636e3                                  // =163.0/275.0/2.0*1.0e4 between 275 and 1000 K, term 2
 #define ErockF 1.20e7                                      // Above 1000 K, in cgs
 
-#define qh2o 7.73e4                                        // =773.0/100.0*1.0e4, heat capacity of water ice (erg/g/K) TODO update with Choukroun & Grasset (2010)
+#define qh2o 7.73e4                                        // =773.0/100.0*1.0e4, heat capacity of water ice (erg/g/K) TODO update w/ Choukroun & Grasset (2010)
 #define qadh 1.12e5                                        // =1120.0/100.0*1.0e4, heat capacity of ADH ice (erg/g/K)
-#define ch2ol 4.1885e7                                     // Heat capacity of liquid water (erg g-1 K-1) TODO Adjust in supercooled regime, Choukroun & Grasset (2010)
-	                                                         // where it goes up to 8e7 cgs at 230 K and diverges at 228 K
+#define ch2ol 4.1885e7                                     // Heat capacity of liquid water (erg g-1 K-1) TODO update w/ Choukroun & Grasset (2010)
 #define cnh3l 4.7e7                                        // Heat capacity of liquid ammonia (cgs)
 #define ladh 1.319e9                                       // Latent heat of ADH melting (cgs)
 #define lh2o 3.335e9                                       // Latent heat of H2O melting (cgs)
@@ -143,6 +142,14 @@
 // Dissolution and precipitation of species
 #define n_species_crack 3                                  // Number of species in the chemical model
 #define pH 7.0                                             // pH
+#define nu_prod_silica 1.0                                 // Product stoichiometric coefficient of SiO2(s)=SiO2(aq), SiO2(aq) only product
+#define nu_prod_chrysotile 11.0                            // 2 SiO2, 3 Mg+2, 6 OH-
+#define nu_prod_magnesite 2.0							   // 1 Mg+2, 1 CO3-2
+#define mu_Xu_silica 1.0		                           // Q/K exponent. Eqs. (55) of Rimstidt and Barnes 1980 or (7-8) of Bolton et al. 1997 (porosity not included)
+		                                                      // mol m-3 s-1 =no dim (scaled to 1 m-1)*mol L-1 s-1*nd*     no dim (=nd)
+#define mu_Xu_chrysotile 1.0		                       // Exponent of Q/K remains 1 even though Q = a_silica^2 * a_Mg+2^3 / a_H+^6 = a_solutes^(5/6)
+		                                                      // because many other stoichiometries are possible with serpentine.
+#define mu_Xu_magnesite 4.0		                           // Pokrovski and Schott 1999 suggest (Q/K)^4, which makes sense because Q = a_Mg+2^2 * a_CO3-2^2
 #define Ea_silica 62.9e3                                   // Activation energy for silica reaction in J mol-1 (Rimstidt and Barnes 1980)
 #define Ea_chrysotile 70.0e3                               // Activation energy for serpentine reaction in J mol-1 (Thomassin et al. 1977, confirmed by Bales and Morgan (1985) Fig. 4)
 #define Ea_magnesite 32.1e3                                // Activation energy for carbonate reaction in J mol-1 (Pokrovsky et al. 2009) Table 4, confirmed by Pokrovsky & Schott (1999) Fig. 2
