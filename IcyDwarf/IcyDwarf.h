@@ -80,6 +80,7 @@
 #define lh2o 3.335e9                                       // Latent heat of H2O melting (cgs)
 #define porosity 0.01                                      // Bulk porosity, dimensionless
 #define permeability 1.0e-15                               // Bulk permeability, m^2
+#define Tdiff 140.0                                        // Temperature at which differentiation proceeds (K)
 #define Tdehydr_min 700.0                                  // Temperature at which silicates are fully hydrated, K
 #define Tdehydr_max 850.0                                  // Temperature at which silicates are fully dehydrated, K
 #define kap_hydro 100.0e5                                  // Effective thermal conductivity of layer undergoing hydrothermal circulation (cgs, 1e5 cgs = 1 W/m/K)
@@ -127,7 +128,7 @@
 #define D0_deltab 0.2377                                   // Grain boundary diffusion coefficient (1.5 m^2/s) x width
                                                               // (10^-0.8 m). Units: m^3/s (default 0.2377)
 #define n_fit 23.0                                         // Fitting parameter (when solving diff eq (1)) (default 23)
-#define L_size 0.5e-3                                      // 1/2 grain size (m) in Vance et al. (2007). Set to d_flow_law/2*1e-6 for consistency (default 0.5e-3).
+#define L_size 0.25e-3                                      // 1/2 grain size (m) in Vance et al. (2007). Set to d_flow_law/2*1e-6 for consistency (default 0.5e-3).
 #define a_var_max 0.2*L_size                               // Used when looking for the optimal max flaw size
                                                               // No need to go very far in size to find a_max, usually < (2L)/10
 							                                  // May need to change this if deltaT>700 K, though (see Vance et al. 2007 Fig. 1)

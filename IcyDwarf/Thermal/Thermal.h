@@ -97,7 +97,6 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double temp1 = 0.0;                  // Temporary temperature (K)
 	double Xhydr_temp = 0.0;             // Temporary hydration index
 	double S = 0.0;                      // Radiogenic power, specific (erg/s/g)
-	double Tdiff = 0.0;                  // Temperature at which differentiation proceeds (K)
 	double kap1 = 0.0;                   // Temporary thermal conductivity (erg/s/cm/K)
 	double dr = 0.0;                     // Physical thickness of ice convection zone (cm)
 	double dr_grid = 0.0;                // Physical thickness of a shell (cm)
@@ -112,6 +111,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double cp1 = 0.0;                    // Heat capacity of H2O ice (erg g-1 K-1)
 	double g1 = 0.0;                     // Gravitational acceleration for calculation of Ra in ice (cgs)
 	double Nu0 = 0.0;                    // Critical Nusselt number = Ra_c^0.25
+	double Tliq = 0.0;                   // Melting temperature of an ammonia-water mixture (K)
 	double rhoRockth = rhoRock*gram;     // Density of dry rock (g/cm3)
 	double rhoHydrth = rhoHydr*gram;     // Density of hydrated rock (g/cm3)
 	double rhoH2osth = rhoH2os*gram;	 // Density of water ice (g/cm3)
@@ -676,13 +676,22 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	//           Differentiate the rock, liquids, and H2O ice
     	//-------------------------------------------------------------------
 
-    	Tdiff = 140.0;
-
     	irdiffold = irdiff;
-    	for (ir=0;ir<NR-1;ir++) {
-    		if (ir > irdiff && T[ir] > Tdiff) {
+    	if (Xp < Xc*sqrt(2.0/95.0)) Tliq = 271.0;
+    	else Tliq = 273.0 - 95.0*Xp*Xp/Xc/Xc;
+
+    	for (ir=0;ir<NR-1;ir++) { // Differentiation first by ice melting
+    		if (ir > irdiff && T[ir] > Tliq) {
     			irdiff = ir;
     		}
+    	}
+
+    	if (irdiff > NR/2) {      // Subsequent differentiation by Rayleigh-Taylor instabilities
+			for (ir=0;ir<NR-1;ir++) {
+				if (ir > irdiff && T[ir] > Tdiff) {
+					irdiff = ir;
+				}
+			}
     	}
 
     	if (irdiff > 0 && (irdiff != irdiffold || structure_changed == 1)) {

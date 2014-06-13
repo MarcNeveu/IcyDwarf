@@ -286,7 +286,7 @@ int compaction(int NR, int NT, thermalout **thoutput, int t, int dbincore, int d
 				}
 			}
 			else {
-				icomp[ir] = planmat_index(999, ncomp, dbindex);
+				icomp[ir] = planmat_index(206, ncomp, dbindex);
 				z = 0.75*(Ksp[icomp[ir]]-4.0);
 				x = 1.0;
 				for (j=0;j<jmax;j++) { // Newton-Raphson
@@ -296,7 +296,7 @@ int compaction(int NR, int NT, thermalout **thoutput, int t, int dbincore, int d
 				}
 				rhoRockComp[ir] = rho0[icomp[ir]]*x*x*x;
 
-				icomp[ir] = planmat_index(998, ncomp, dbindex);
+				icomp[ir] = planmat_index(305, ncomp, dbindex);
 				z = 0.75*(Ksp[icomp[ir]]-4.0);
 				x = 1.0;
 				for (j=0;j<jmax;j++) { // Newton-Raphson
