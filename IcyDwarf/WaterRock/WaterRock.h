@@ -19,23 +19,46 @@ int WaterRock(char path[1024]);
 
 int WaterRock(char path[1024]) {
 
-	char *idi = (char*)malloc(1024);
-	idi[0] ='\0';
+	char *bin = (char*)malloc(1024);
+	char *infile = (char*)malloc(1024);
+	char *outfile = (char*)malloc(1024);
+	char *dbase = (char*)malloc(1024);
+
+	bin[0] ='\0';
 	if (release == 1) {
-		idi = path;
-		strncat(idi,path,strlen(path)-38);
+		bin = path;
+		strncat(bin,path,strlen(path)-38);
 	}
 	else if (cmdline == 1) {
-		idi = path;
-		strncat(idi,path,strlen(path)-40);
+		bin = path;
+		strncat(bin,path,strlen(path)-40);
 	}
-	else strncat(idi,path,strlen(path)-38);
-	strcat(idi,"Codes/PHREEQC/phreeqc-2.18.3/bin/phreeqc");
+	else strncat(bin,path,strlen(path)-38);
+	strcat(bin,"Codes/PHREEQC/phreeqc-2.18.3/bin/phreeqc ");
 
-	printf("%s\n",idi);
-	system(idi);
+	infile[0] = '\0';
+	strncat(infile,bin,strlen(bin)-12);
+	strcat(infile,"examples/ex1 ");
 
-	free(idi);
+	outfile[0] = '\0';
+	strncat(outfile,bin,strlen(bin)-12);
+	strcat(outfile,"examples/ex1.out ");
+
+	dbase[0] = '\0';
+	strncat(dbase,bin,strlen(bin)-12);
+	strcat(dbase,"database/phreeqc.dat");
+
+	strcat(bin, infile);
+	strcat(bin, outfile);
+	strcat(bin, dbase);
+
+	system(bin);
+
+	free(bin);
+	free(infile);
+	free(outfile);
+	free(dbase);
+
 	return 0;
 }
 
