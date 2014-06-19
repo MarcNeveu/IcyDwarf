@@ -25,6 +25,7 @@
 #include "Crack/Crack_tables.h"
 #include "Cryolava/Cryolava.h"
 #include "Thermal/Thermal.h"
+#include "WaterRock/WaterRock.h"
 
 int main(int argc, char *argv[]){
 
@@ -169,13 +170,19 @@ int main(int argc, char *argv[]){
 		thoutput[r] = malloc(NT_output*sizeof(thermalout));
 		if (thoutput[r] == NULL) printf("IcyDwarf: Not enough memory to create the thoutput structure\n");
 	}
-	thoutput = read_thermal_output (thoutput, NR, NT_output, path);
+	// thoutput = read_thermal_output (thoutput, NR, NT_output, path);
+
+	//-------------------------------------------------------------------
+	// Water-rock reactions
+	//-------------------------------------------------------------------
+
+	WaterRock(path);
 
 	//-------------------------------------------------------------------
 	// Compaction
 	//-------------------------------------------------------------------
 
-	compaction(NR, NT_output, thoutput, NT_output-1, 202, 304, 403, 0, path);
+	// compaction(NR, NT_output, thoutput, NT_output-1, 202, 304, 403, 0, path);
 
 	//-------------------------------------------------------------------
 	// Cryolava calculations
