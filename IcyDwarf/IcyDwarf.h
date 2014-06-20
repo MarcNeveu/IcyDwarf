@@ -172,6 +172,13 @@
 #define tempk_min_species 261.0                            // K
 #define delta_tempk_species 7.0                            // K
 
+//-------------------------------------------------------------------
+// WATER-ROCK PARAMETERS
+//-------------------------------------------------------------------
+
+#define n_elts 17     								   // Number of solute species (includes T, pe, pH, rho, alkalinity, NOT redox)
+#define n_phases 4                                     // Number of mineral species
+
 typedef struct {
     double radius; // Radius in km
     double tempk;  // Temperature in K
