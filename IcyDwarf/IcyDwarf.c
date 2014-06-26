@@ -176,13 +176,13 @@ int main(int argc, char *argv[]){
 	// Water-rock reactions
 	//-------------------------------------------------------------------
 
-	WaterRock(path);
+	// WaterRock(path);
 
 	//-------------------------------------------------------------------
 	// Compaction
 	//-------------------------------------------------------------------
 
-	// compaction(NR, NT_output, thoutput, NT_output-1, 202, 304, 403, 0, path);
+	compaction(NR, NT_output, thoutput, NT_output-1, 202, 304, 403, 0, path);
 
 	//-------------------------------------------------------------------
 	// Cryolava calculations

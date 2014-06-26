@@ -1800,8 +1800,8 @@ int dehydrate(double T, double dM, double dVol, double *Mrock, double *Mh2ol, do
 	else if (T>=Tdehydr_min && T<Tdehydr_max) (*Xhydr) = 1.0 - (T-Tdehydr_min)/(Tdehydr_max-Tdehydr_min);
 	else (*Xhydr) = 0.0;
 
-	(*Xhydr) = f_mem*Xhydr_old + (1.0-f_mem)*(*Xhydr); // Smooth out transition to avoid code crashing
-
+	(*Xhydr) = f_mem*Xhydr_old + (1.0-f_mem)*(*Xhydr); // Smooth out transition to avoid code crashing.
+                                                       // Needs to be the same as in hydrate()
 	if ((*Xhydr) > Xhydr_old) {
 		(*Xhydr) = Xhydr_old;
 		return 1; // Get out
@@ -1841,14 +1841,15 @@ int hydrate(double T, double **dM, double *dVol, double **Mrock, double **Mh2os,
 	double Vliq = 0.0;
 	double Vmoved = 0.0;
 	double q = 0.0;   // Similar q as in the separate() routine
-	double Xhydr_old = 0.0;
-
-	Xhydr_old = (*Xhydr)[ir];
+	double Xhydr_old = (*Xhydr)[ir];
+	double f_mem = 0.75;                                // Memory of old hydration state, ideally 0, 1 = no change
 
 	// Set hydration level: 1 at Tdehydr_min, 0 at Tdehydr_max, linear in between
 	if (T<Tdehydr_min) (*Xhydr)[ir] = 1.0;
 	else if (T>=Tdehydr_min && T<Tdehydr_max) (*Xhydr)[ir] = 1.0 - (T-Tdehydr_min)/(Tdehydr_max-Tdehydr_min);
 	else (*Xhydr)[ir] = 0.0;
+
+	(*Xhydr)[ir] = f_mem*Xhydr_old + (1.0-f_mem)*(*Xhydr)[ir]; // Smooth out transition. Needs to be the same as in dehydrate()
 
 	if ((*Xhydr)[ir] < Xhydr_old) {
 		(*Xhydr)[ir] = Xhydr_old;
