@@ -74,7 +74,7 @@
 
 #define qh2o 7.73e4                                        // =773.0/100.0*1.0e4, heat capacity of water ice (erg/g/K) TODO update w/ Choukroun & Grasset (2010)
 #define qadh 1.12e5                                        // =1120.0/100.0*1.0e4, heat capacity of ADH ice (erg/g/K)
-#define ch2ol 4.1885e7                                     // Heat capacity of liquid water (erg g-1 K-1) TODO update w/ Choukroun & Grasset (2010)
+#define ch2ol 4.1885e7                                     // Heat capacity of liquid water (erg g-1 K-1) TODO update w/ Choukroun & Grasset (2010), that requires a major overhaul of heatIce()
 #define cnh3l 4.7e7                                        // Heat capacity of liquid ammonia (cgs)
 #define ladh 1.319e9                                       // Latent heat of ADH melting (cgs)
 #define lh2o 3.335e9                                       // Latent heat of H2O melting (cgs)

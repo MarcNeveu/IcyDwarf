@@ -543,6 +543,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
     dtime = 0.00005*Myr2sec;  // Static time step. Make it dynamic, CFL-compliant?
     // dtime = 0.0010*Myr2sec / ((double) NR / 100.0) / ((double) NR / 100.0);
+
     time = -dtime;
     ntime = (int) (fulltime / dtime + 1.0e-3);
     nsteps = (int) (dtoutput / dtime + 1.0e-3);
@@ -1468,29 +1469,30 @@ int decay(double *t, double *tzero, double *S) {
 	double si = 1.0 / (1.0e6 * 1.67e-24 * 151.0); // Grams^-1 / # of Si atoms: 1e6 atoms * nucleon mass in grams * avg. molar mass of rock
 
 	/* The rate of radiogenic heating due to an isotope x with half-life t1/2, per mass of that isotope,
-	 * is (DeltaE)_x (ln 2/t1/2)/m_x , where m_x is the mass of an atom of x, and DeltaE_x the heat energy per decay.
-	 * These DeltaE_x include heating due to emission of alpha and beta particles and gamma rays, but not the emission of neutrinos, which escape planets.
-	 * Because of the loss of neutrino energies, the radiogenic heating rate cannot be determined from the mass deficit between the parent and daughter nuclei alone.
-	 * The uncertainties in the neutrino energy during radioactive decay are often on the order of 10%, and lead to uncertainties almost as large in DeltaE_x.
-	 * The assumed values of t1/2 and DeltaE_x for each radionuclide are:
-	 * Radionuclide  t1/2 (Gyr)  DeltaE (MeV)
-	 * ------------  ----------  ------------
-	 *  40 K         1.265       0.6087
-	 * 235 U         0.704       42.74
-	 * 238 U         4.47        46.07
-	 * 232 Th        14.0        38.96
-	 *  26 Al        0.000716    8.410e4 */
+	 * is (DeltaE)_x (ln 2/t1/2)/m_x, with m_x = mass of an atom of x and DeltaE_x = heat energy per decay.
+	 * DeltaE_x include heating due to emission of alpha and beta particles and gamma rays, but not emission of neutrinos, which escape planets.
+	 * Because of the loss of neutrino energies, the radiogenic heating rate can't be determined from the parent-daughter mass deficit alone.
+	 * Uncertainties in neutrino energy during radioactive decay are about 10%, lead to similar uncertainties in DeltaE_x.
+	 * To simplify, heat energy released in each decay chain = parent-daughter mass deficit minus 1 MeV per emitted neutrino (avg. neutrino energy).
+	 * Assumed values:
+	 * Radionuclide  t1/2 (Gyr)  DeltaE (MeV)	Initial # per 1e6 Si atoms    Reference
+	 * ------------  ----------  ------------   --------------------------    ---------
+	 *  40 K         1.265       0.6087         5.244                         Desch et al. (2009)
+	 * 235 U         0.704       42.74          0.00592                       Desch et al. (2009)
+	 * 238 U         4.47        46.07          0.01871                       Desch et al. (2009)
+	 * 232 Th        14.0        38.96          0.04399                       Desch et al. (2009)
+	 *  26 Al        0.000716    3.117          5e-5*8.41e4 = (26Al/27Al)*Al  Castillo-Rogez et al. (2007, Icarus 190, 179-202); Lodders (2003) */
 
 	// ln 2 = 0.6931
 
-	// Long-lived radionuclides
+	// Long-lived radionuclides (DeltaE for Th and U is given as parent-daughter minus 1 MeV per emitted nucleon)
 	(*S) = 5.244   * 0.6087      / 1.265 * exp(-(*t)*0.6931/(1.265*Gyr2sec))  // 40 K
 	     + 0.00592 * (46.74-4.0) / 0.704 * exp(-(*t)*0.6931/(0.704*Gyr2sec))  // 235 U
 	     + 0.01871 * (52.07-6.0) / 4.47  * exp(-(*t)*0.6931/(4.47 *Gyr2sec))  // 238 U
          + 0.04399 * (42.96-4.0) / 14.0  * exp(-(*t)*0.6931/(14.0 *Gyr2sec)); // 232 Th
 
-	// Short-lived radionuclides. Why one extra term?
-	(*S) = (*S) + 5.0e-5 * 8.410e4 * 3.117 / 0.000716 * exp(-((*t)+(*tzero))*0.6931/(0.000716*Gyr2sec)); // 26 Al
+	// Short-lived radionuclides
+	(*S) = (*S) + (5.0e-5*8.410e4) * 3.117 / 0.000716 * exp(-((*t)+(*tzero))*0.6931/(0.000716*Gyr2sec)); // 26 Al
 
 	(*S) = (*S) * si*MeV2erg/Gyr2sec*0.6931;
 	return 0;
@@ -1960,7 +1962,7 @@ double viscosity(double T, double Mh2ol, double Mnh3l) {
 
 	X = Mnh3l/Mh2ol;
 
-	if (T<240.0) {
+	if (T>240.0) {
 		A = -10.8143 + 0.711062*X - 22.4943*X*X + 41.8343*X*X*X - 18.5149*X*X*X*X;
 		B = 1819.86 + 250.822*X + 6505.25*X*X - 14923.4*X*X*X + 7141.46*X*X*X*X;
 	}

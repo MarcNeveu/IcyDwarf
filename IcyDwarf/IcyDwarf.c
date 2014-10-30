@@ -20,7 +20,7 @@
 #include "modifdyld.h" // Like mach-o/dyld.h but without the boolean DYLD_BOOL typedef
                        // that conflicts with the R_boolean typedef
 #include "IcyDwarf.h"
-#include "Compaction/Compaction.h"
+#include "Compression/Compression.h"
 #include "Crack/Crack.h"
 #include "Crack/Crack_tables.h"
 #include "Cryolava/Cryolava.h"
@@ -176,13 +176,13 @@ int main(int argc, char *argv[]){
 	// Water-rock reactions
 	//-------------------------------------------------------------------
 
-	// WaterRock(path);
+	WaterRock(path);
 
 	//-------------------------------------------------------------------
-	// Compaction
+	// Compression
 	//-------------------------------------------------------------------
 
-	compaction(NR, NT_output, thoutput, NT_output-1, 202, 304, 403, 0, path);
+	// compression(NR, NT_output, thoutput, NT_output-1, 202, 304, 403, 0, path);
 
 	//-------------------------------------------------------------------
 	// Cryolava calculations
