@@ -176,7 +176,7 @@ int main(int argc, char *argv[]){
 	// Water-rock reactions
 	//-------------------------------------------------------------------
 
-	WaterRock(path);
+	// WaterRock(path);
 
 	//-------------------------------------------------------------------
 	// Compression

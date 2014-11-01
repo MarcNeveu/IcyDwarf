@@ -79,7 +79,7 @@
 #define ladh 1.319e9                                       // Latent heat of ADH melting (cgs)
 #define lh2o 3.335e9                                       // Latent heat of H2O melting (cgs)
 #define porosity 0.01                                      // Bulk porosity, dimensionless
-#define permeability 1.0e-15                               // Bulk permeability, m^2
+#define permeability 1.0e-9                                // Bulk permeability for D=1m cracks, scales as D^2, m^2
 #define Tdiff 140.0                                        // Temperature at which differentiation proceeds (K)
 #define Tdehydr_min 700.0                                  // Temperature at which silicates are fully hydrated, K
 #define Tdehydr_max 850.0                                  // Temperature at which silicates are fully dehydrated, K
@@ -133,9 +133,6 @@
                                                               // No need to go very far in size to find a_max, usually < (2L)/10
 							                                  // May need to change this if deltaT>700 K, though (see Vance et al. 2007 Fig. 1)
 #define a_min 1.0e-7                                       // Minimum flaw size (m) below which flaws are neglected
-
-// Hydration/dehydration stresses
-#define hydration_rate 1.0e6                               // Rate of progression of a hydration front in rock in m/Gyr
 
 // Pore water expansion upon heating
 #define aspect_ratio 1.0e4                                 // Aspect ratio (width/length) of 2D water pores

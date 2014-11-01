@@ -49,7 +49,7 @@ int crack(double T, double T_old, double Pressure, double *Crack,
 		double *Crack_size, double Xhydr, double Xhydr_old, double dtime, double Mrock, double Mrock_init,
 		double **Act, int warnings, int *crack_input, int *crack_species, double **aTP,
 		double **integral, double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite,
-		int circ, double **Output, double *P_pore, double *P_hydr, double Brittle_strength);
+		int circ, double **Output, double *P_pore, double *P_hydr, double Brittle_strength, int itime);
 
 int strain (double Pressure, double Xhydr, double T, double *strain_rate, double *Brittle_strength);
 
@@ -57,7 +57,7 @@ int crack(double T, double T_old, double Pressure, double *Crack,
 		double *Crack_size, double Xhydr, double Xhydr_old, double dtime, double Mrock, double Mrock_init,
 		double **Act, int warnings, int *crack_input, int *crack_species, double **aTP,
 		double **integral, double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite,
-		int circ, double **Output, double *P_pore, double *P_hydr, double Brittle_strength) {
+		int circ, double **Output, double *P_pore, double *P_hydr, double Brittle_strength, int itime) {
 
 	//-------------------------------------------------------------------
 	//                 Declarations and initializations
@@ -84,6 +84,10 @@ int crack(double T, double T_old, double Pressure, double *Crack,
 	// Pore fluid heating-specific variables
 	int tempk_int = 0;                                           // T index in the alpha and beta tables (P index is P_int)
 
+	// Hydration/dehydration-specific variables
+	double x_bar = 0.0;                                          // Mean distance of diffusive penetration of the hydration front into serpentinized rock in m
+
+	// Dissolution/precipitation-specific variables
 	// index  species
 	// -----  ------------------------
 	//   0    amorphous silica
@@ -184,7 +188,7 @@ int crack(double T, double T_old, double Pressure, double *Crack,
 
 	if (hydration_dehydration == 1 && Xhydr != Xhydr_old) {
 
-		// Only where there are cracks, where hydration has increased, and where it's not fully hydrated
+		// Shrinking/widening of open cracks
 		if ((*Crack) > 0.0) {
 			(*P_hydr) = 0.0;
 			// Initialize crack size
@@ -193,16 +197,13 @@ int crack(double T, double T_old, double Pressure, double *Crack,
 			                                          // No changes smaller than that residual will trigger a change in the cracking.
 			// else (*Crack_size) is that from the previous time step
 			Crack_size_hydr_old = (*Crack_size);
-			d_crack_size = - 2.0*(pow(((Xhydr_old*rhoHydr+(1.0-Xhydr_old)*rhoRock)/(Xhydr*rhoHydr+(1.0-Xhydr)*rhoRock)),0.333) - 1.0) * hydration_rate * dtime / Gyr2sec;
-			// if dtime=50 years and Xhydr goes from 0.05 to 0.15, d_crack_size = -1 mm
+			x_bar = pow(2.0 * 4.5e-5 * exp(-45.0e3/R_G/T) * dtime,0.5);
+			d_crack_size = - 2.0*(pow(((Xhydr_old*rhoHydr+(1.0-Xhydr_old)*rhoRock)/(Xhydr*rhoHydr+(1.0-Xhydr)*rhoRock)),0.333) - 1.0) * x_bar;
 			if ((*Crack_size) + d_crack_size < 0.0) {
-				(*P_hydr) = E_Young*(-d_crack_size-(*Crack_size))/(hydration_rate*dtime/Gyr2sec); // Residual rock swell builds up stresses
+				(*P_hydr) = E_Young*(-d_crack_size-(*Crack_size))/x_bar; // Residual rock swell builds up stresses
 				(*Crack_size) = 0.0;          // Crack closes completely
 			}
-			else {
-				(*P_hydr) = 0.0;
-				(*Crack_size) = (*Crack_size) + d_crack_size;
-			}
+			else (*Crack_size) = (*Crack_size) + d_crack_size;
 		}
 		else { // Cracks may open if stresses develop as rock shrinks/swells
 			(*P_hydr) = (*P_hydr) + 2.0*E_Young*(pow(((Xhydr_old*rhoHydr+(1.0-Xhydr_old)*rhoRock)/(Xhydr*rhoHydr+(1.0-Xhydr)*rhoRock)),0.333) - 1.0);
@@ -368,10 +369,12 @@ int crack(double T, double T_old, double Pressure, double *Crack,
  *
  * Calculates the brittle strength in Pa and corresponding ductile
  * strain rate in s-1 of silicate rock.
- * We mix up brittle-ductile and brittle-plastic transitions are
+ * Brittle-ductile and brittle-plastic transitions are
  * mixed up, although they shouldn't (Kohlstedt et al. 1995).
  * The brittle strength is given by a friction/low-P Byerlee type law:
- * stress = mu*P.
+ * stress = mu*P, assuming negligible water pressure since in practice
+ * the brittle-ductile transition occurs in dehydrated rock (T>700 K)
+ * even over long time scales.
  * The ductile strength is given by a flow law:
  * epsilon = A*sigma^n*d^-p*exp[(-Ea+P*V)/RT].
  *

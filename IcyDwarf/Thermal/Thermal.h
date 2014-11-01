@@ -111,6 +111,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double cp1 = 0.0;                    // Heat capacity of H2O ice (erg g-1 K-1)
 	double g1 = 0.0;                     // Gravitational acceleration for calculation of Ra in ice (cgs)
 	double Nu0 = 0.0;                    // Critical Nusselt number = Ra_c^0.25
+	double Crack_size_avg = 0.0;         // Average crack size in cracked layer
 	double Tliq = 0.0;                   // Melting temperature of an ammonia-water mixture (K)
 	double rhoRockth = rhoRock*gram;     // Density of dry rock (g/cm3)
 	double rhoHydrth = rhoHydr*gram;     // Density of hydrated rock (g/cm3)
@@ -580,7 +581,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
     	structure_changed = 0;
 
-    	if (itime > 1) { // Don't run crack() right away, because temperature changes from the initial temp can be artificially strong
+    	if (itime > 1) { // Don't run crack() at itime = 1, because temperature changes from the initial temp can be artificially strong
 			for (ir=0;ir<ircore;ir++) {
 				if (T[ir]<Tdehydr_max) {
 					strain(Pressure[ir], Xhydr[ir], T[ir], &strain_rate[ir], &Brittle_strength[ir]);
@@ -589,7 +590,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 						crack(T[ir], T_old[ir], Pressure[ir], &Crack[ir], &Crack_size[ir], Xhydr[ir], Xhydr_old[ir],
 								dtime, Mrock[ir], Mrock_init[ir], &Act[ir], warnings, crack_input, crack_species,
 								aTP, integral, alpha, beta, silica, chrysotile, magnesite, circ[ir], &Stress[ir],
-								&P_pore[ir], &P_hydr[ir], Brittle_strength[ir]);
+								&P_pore[ir], &P_hydr[ir], Brittle_strength[ir], itime);
 					}
 					else { // Reset all the variables modified by crack()
 						Crack[ir] = 0.0;
@@ -809,10 +810,16 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		Vliq = 0.0;
 		for (ir=0;ir<NR;ir++) circ[ir] = 0;
 
+		Crack_size_avg = 0.0;
 		if (ircrack < ircore && Mh2ol[ircore] > 0.0) {
 			// Calculate Rayleigh number
+			for (ir=ircrack;ir<=ircore;ir++) {
+				Crack_size_avg = Crack_size_avg + Crack_size[ir];
+			}
+			Crack_size_avg = Crack_size_avg / (double) (ircore-ircrack);
 			mu1 = Pa2ba*viscosity(T[ircore],Mh2ol[ircore],Mnh3l[ircore]);
-			kap1 = rhoH2olth*ch2ol/porosity*permeability/cm/cm/mu1*(Pressure[ircrack]-Pressure[ircore])*Pa2ba;
+			kap1 = rhoH2olth*ch2ol/porosity*(permeability*Crack_size_avg*Crack_size_avg)/cm/cm/mu1
+					*(Pressure[ircrack]-Pressure[ircore])*Pa2ba;
 			dT = T[ircrack] - T[ircore];
 			dr = r[ircore+1] - r[ircrack+1];
 			jr = floor(((double)ircrack + (double)ircore)/2.0);
