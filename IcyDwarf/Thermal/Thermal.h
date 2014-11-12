@@ -590,7 +590,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 						crack(T[ir], T_old[ir], Pressure[ir], &Crack[ir], &Crack_size[ir], Xhydr[ir], Xhydr_old[ir],
 								dtime, Mrock[ir], Mrock_init[ir], &Act[ir], warnings, crack_input, crack_species,
 								aTP, integral, alpha, beta, silica, chrysotile, magnesite, circ[ir], &Stress[ir],
-								&P_pore[ir], &P_hydr[ir], Brittle_strength[ir], itime);
+								&P_pore[ir], &P_hydr[ir], Brittle_strength[ir]);
 					}
 					else { // Reset all the variables modified by crack()
 						Crack[ir] = 0.0;
@@ -818,13 +818,12 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			}
 			Crack_size_avg = Crack_size_avg / (double) (ircore-ircrack);
 			mu1 = Pa2ba*viscosity(T[ircore],Mh2ol[ircore],Mnh3l[ircore]);
-			kap1 = rhoH2olth*ch2ol/porosity*(permeability*Crack_size_avg*Crack_size_avg)/cm/cm/mu1
-					*(Pressure[ircrack]-Pressure[ircore])*Pa2ba;
+			kap1 = kappa[ircrack+1];
 			dT = T[ircrack] - T[ircore];
 			dr = r[ircore+1] - r[ircrack+1];
 			jr = floor(((double)ircrack + (double)ircore)/2.0);
 			g1 = Gcgs*M[jr]/(r[jr+1]*r[jr+1]);
-			Ra = alfh2oavg*g1*dT*dr*dr*dr*ch2ol*rhoH2olth*rhoH2olth / (kap1*mu1);
+			Ra = alfh2oavg*g1*dT*(permeability*Crack_size_avg*Crack_size_avg/cm/cm)*dr*ch2ol*rhoH2olth*rhoH2olth / (kap1*mu1);
 
 			if (Ra > Ra_cr) {
 				// Calculate volumes of liquid water and fractured rock
@@ -835,7 +834,9 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 					Vliq = Vliq + Vh2ol[ir];
 				}
 
-				if (Vliq >= porosity*Vcracked) {
+				if (Vliq >= porosity*Vcracked) { // Circulation, modeled as enhanced effective thermal conductivity kap1
+					kap1 = rhoH2olth*ch2ol/porosity*(permeability*Crack_size_avg*Crack_size_avg/cm/cm)/mu1
+										*(Pressure[ircrack]-Pressure[ircore])*Pa2ba;
 					for (ir=ircrack;ir<=ircore;ir++) {  // Capped at kap_hydro for numerical stability
 						if (kap1 < kap_hydro) kappa[ir] = kap1;
 						else kappa[ir] = kap_hydro;

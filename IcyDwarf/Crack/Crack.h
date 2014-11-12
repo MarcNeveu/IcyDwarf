@@ -49,7 +49,7 @@ int crack(double T, double T_old, double Pressure, double *Crack,
 		double *Crack_size, double Xhydr, double Xhydr_old, double dtime, double Mrock, double Mrock_init,
 		double **Act, int warnings, int *crack_input, int *crack_species, double **aTP,
 		double **integral, double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite,
-		int circ, double **Output, double *P_pore, double *P_hydr, double Brittle_strength, int itime);
+		int circ, double **Output, double *P_pore, double *P_hydr, double Brittle_strength);
 
 int strain (double Pressure, double Xhydr, double T, double *strain_rate, double *Brittle_strength);
 
@@ -57,7 +57,7 @@ int crack(double T, double T_old, double Pressure, double *Crack,
 		double *Crack_size, double Xhydr, double Xhydr_old, double dtime, double Mrock, double Mrock_init,
 		double **Act, int warnings, int *crack_input, int *crack_species, double **aTP,
 		double **integral, double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite,
-		int circ, double **Output, double *P_pore, double *P_hydr, double Brittle_strength, int itime) {
+		int circ, double **Output, double *P_pore, double *P_hydr, double Brittle_strength) {
 
 	//-------------------------------------------------------------------
 	//                 Declarations and initializations
