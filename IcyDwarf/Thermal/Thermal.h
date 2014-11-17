@@ -679,7 +679,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	//-------------------------------------------------------------------
 
     	irdiffold = irdiff;
-    	if (Xp > 0.0) Tliq = 176.0;
+    	if (Xp > 0.0466) Tliq = 273.0 - 95.0*(Xp/Xc)*(Xp/Xc); // Equation (B3) of Desch et al. (2009)
     	else Tliq = 271.0;
 
     	for (ir=0;ir<NR-1;ir++) { // Differentiation first by ice melting (above solidus, 176 K if there is any NH3)
