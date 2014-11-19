@@ -679,7 +679,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	//-------------------------------------------------------------------
 
     	irdiffold = irdiff;
-    	if (Xp > 0.0466) Tliq = 273.0 - 95.0*(Xp/Xc)*(Xp/Xc); // Equation (B3) of Desch et al. (2009)
+    	if (Xp > 1.0e-5) Tliq = 176.0; // Differentiation occurs at the solidus (first melt)
     	else Tliq = 271.0;
 
     	for (ir=0;ir<NR-1;ir++) { // Differentiation first by ice melting (above solidus, 176 K if there is any NH3)
@@ -823,7 +823,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			dr = r[ircore+1] - r[ircrack+1];
 			jr = floor(((double)ircrack + (double)ircore)/2.0);
 			g1 = Gcgs*M[jr]/(r[jr+1]*r[jr+1]);
-			Ra = alfh2oavg*g1*dT*(permeability*Crack_size_avg*Crack_size_avg/cm/cm)*dr*ch2ol*rhoH2olth*rhoH2olth / (kap1*mu1);
+			Ra = alfh2oavg*g1*dT*(permeability*Crack_size_avg*Crack_size_avg/cm/cm)*dr*ch2ol*rhoH2olth*rhoH2olth / (kap1*mu1); // Phillips (1991)
 
 			if (Ra > Ra_cr) {
 				// Calculate volumes of liquid water and fractured rock
