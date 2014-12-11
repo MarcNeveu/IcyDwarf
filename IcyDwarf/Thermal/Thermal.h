@@ -1503,7 +1503,6 @@ int decay(double *t, double *tzero, double *S) {
 	     + 0.00592 * (46.74-4.0) / 0.704 * exp(-((*t)+(*tzero))*0.6931/(0.704*Gyr2sec))  // 235 U
 	     + 0.01871 * (52.07-6.0) / 4.47  * exp(-((*t)+(*tzero))*0.6931/(4.47 *Gyr2sec))  // 238 U
          + 0.04399 * (42.96-4.0) / 14.0  * exp(-((*t)+(*tzero))*0.6931/(14.0 *Gyr2sec)); // 232 Th
-
 	// Short-lived radionuclides
 	(*S) = (*S) + (5.0e-5*8.410e4) * 3.117 / 0.000716 * exp(-((*t)+(*tzero))*0.6931/(0.000716*Gyr2sec)); // 26 Al
 
