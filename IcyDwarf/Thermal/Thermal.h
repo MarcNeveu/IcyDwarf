@@ -679,8 +679,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	//-------------------------------------------------------------------
 
     	irdiffold = irdiff;
-    	if (Xp > 1.0e-5) Tliq = 176.0; // Differentiation occurs at the solidus (first melt)
-    	else Tliq = 271.0;
+    	if (Xp > 1.0e-2) Tliq = 174.0; // Differentiation occurs at the solidus (first melt). We set 174 K instead of 176 K for consistency with the heatIce() subroutine.
+    	else Tliq = 271.0;             // instead of 273 K for consistency with heatIce().
 
     	for (ir=0;ir<NR-1;ir++) { // Differentiation first by ice melting (above solidus, 176 K if there is any NH3)
     		if (ir > irdiff && T[ir] > Tliq) {
@@ -695,6 +695,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 				}
 			}
     	}
+// !! 12/5/2014
+//irdiff = 0;
 
     	if (irdiff > 0 && (irdiff != irdiffold || structure_changed == 1)) {
     		separate(NR, &irdiff, &ircore, &irice, dVol, &dM, &dE, &Mrock, &Mh2os, &Madhs, &Mh2ol, &Mnh3l,
@@ -773,6 +775,9 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		}
 
 		for (ir=0;ir<ircore;ir++) {
+// !! Added 141205, remove
+//		for (ir=0;ir<NR;ir++) {
+//if (Xhydr[ir]<0.99) Xhydr[ir] = (double) itime * 1.0e-5;
 			if (fabs(Xhydr_old[ir] - Xhydr[ir]) > 1.0e-10) {
 				Qth[ir] = Qth[ir] + (Xhydr[ir] - Xhydr_old[ir])*Mrock[ir]*Hhydr/dtime;
 				if (Xhydr[ir] - Xhydr_old[ir] > 0.0) Heat_serp = Heat_serp + (Xhydr[ir] - Xhydr_old[ir])*Mrock[ir]*Hhydr/dtime;
@@ -1494,10 +1499,10 @@ int decay(double *t, double *tzero, double *S) {
 	// ln 2 = 0.6931
 
 	// Long-lived radionuclides (DeltaE for Th and U is given as parent-daughter minus 1 MeV per emitted nucleon)
-	(*S) = 5.244   * 0.6087      / 1.265 * exp(-(*t)*0.6931/(1.265*Gyr2sec))  // 40 K
-	     + 0.00592 * (46.74-4.0) / 0.704 * exp(-(*t)*0.6931/(0.704*Gyr2sec))  // 235 U
-	     + 0.01871 * (52.07-6.0) / 4.47  * exp(-(*t)*0.6931/(4.47 *Gyr2sec))  // 238 U
-         + 0.04399 * (42.96-4.0) / 14.0  * exp(-(*t)*0.6931/(14.0 *Gyr2sec)); // 232 Th
+	(*S) = 5.244   * 0.6087      / 1.265 * exp(-((*t)+(*tzero))*0.6931/(1.265*Gyr2sec))  // 40 K
+	     + 0.00592 * (46.74-4.0) / 0.704 * exp(-((*t)+(*tzero))*0.6931/(0.704*Gyr2sec))  // 235 U
+	     + 0.01871 * (52.07-6.0) / 4.47  * exp(-((*t)+(*tzero))*0.6931/(4.47 *Gyr2sec))  // 238 U
+         + 0.04399 * (42.96-4.0) / 14.0  * exp(-((*t)+(*tzero))*0.6931/(14.0 *Gyr2sec)); // 232 Th
 
 	// Short-lived radionuclides
 	(*S) = (*S) + (5.0e-5*8.410e4) * 3.117 / 0.000716 * exp(-((*t)+(*tzero))*0.6931/(0.000716*Gyr2sec)); // 26 Al
