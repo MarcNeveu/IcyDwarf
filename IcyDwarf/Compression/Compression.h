@@ -1,5 +1,5 @@
 /*
- * Compaction.h
+ * Compression.h
  *
  *  Created on: Jun 2, 2014
  *      Author: Marc Neveu (mneveu@asu.edu)
@@ -61,40 +61,40 @@ int compression(int NR, int NT, thermalout **thoutput, int t, int dbincore, int 
 	double Pavg = 0.0; // Average pressure
 
 	double *r = (double*) malloc((NR+1)*sizeof(double)); // Radius
-	if (r == NULL) printf("Compaction: Not enough memory to create r[NR]\n");
+	if (r == NULL) printf("Compression: Not enough memory to create r[NR]\n");
 
 	double *M = (double*) malloc((NR+1)*sizeof(double)); // Mass
-	if (M == NULL) printf("Compaction: Not enough memory to create M[NR]\n");
+	if (M == NULL) printf("Compression: Not enough memory to create M[NR]\n");
 
 	double *dM = (double*) malloc((NR+1)*sizeof(double)); // dMass
-	if (dM == NULL) printf("Compaction: Not enough memory to create dM[NR]\n");
+	if (dM == NULL) printf("Compression: Not enough memory to create dM[NR]\n");
 
 	double *g = (double*) malloc((NR+1)*sizeof(double)); // Gravitational acceleration
-	if (g == NULL) printf("Compaction: Not enough memory to create g[NR]\n");
+	if (g == NULL) printf("Compression: Not enough memory to create g[NR]\n");
 
 	double *rho = (double*) malloc((NR+1)*sizeof(double)); // Density
-	if (rho == NULL) printf("Compaction: Not enough memory to create rho[NR]\n");
+	if (rho == NULL) printf("Compression: Not enough memory to create rho[NR]\n");
 
 	double *rhonew = (double*) malloc((NR+1)*sizeof(double)); // New density
-	if (rhonew == NULL) printf("Compaction: Not enough memory to create rhonew[NR]\n");
+	if (rhonew == NULL) printf("Compression: Not enough memory to create rhonew[NR]\n");
 
 	double *rhoRockComp = (double*) malloc((NR+1)*sizeof(double)); // Dry rock density
-	if (rhoRockComp == NULL) printf("Compaction: Not enough memory to create rhoRockComp[NR]\n");
+	if (rhoRockComp == NULL) printf("Compression: Not enough memory to create rhoRockComp[NR]\n");
 
 	double *rhoHydrComp = (double*) malloc((NR+1)*sizeof(double)); // Hydrated rock density
-	if (rhoHydrComp == NULL) printf("Compaction: Not enough memory to create rhoHydrComp[NR]\n");
+	if (rhoHydrComp == NULL) printf("Compression: Not enough memory to create rhoHydrComp[NR]\n");
 
 	double *rhoH2osComp = (double*) malloc((NR+1)*sizeof(double)); // Water ice density
-	if (rhoH2osComp == NULL) printf("Compaction: Not enough memory to create rhoH2osComp[NR]\n");
+	if (rhoH2osComp == NULL) printf("Compression: Not enough memory to create rhoH2osComp[NR]\n");
 
 	double *rhoAdhsComp = (double*) malloc((NR+1)*sizeof(double)); // Ammonia dihydrate ice density
-	if (rhoAdhsComp == NULL) printf("Compaction: Not enough memory to create rhoAdhsComp[NR]\n");
+	if (rhoAdhsComp == NULL) printf("Compression: Not enough memory to create rhoAdhsComp[NR]\n");
 
 	double *rhoH2olComp = (double*) malloc((NR+1)*sizeof(double)); // Liquid water density
-	if (rhoH2olComp == NULL) printf("Compaction: Not enough memory to create rhoH2olComp[NR]\n");
+	if (rhoH2olComp == NULL) printf("Compression: Not enough memory to create rhoH2olComp[NR]\n");
 
 	double *P = (double*) malloc((NR+1)*sizeof(double)); // Pressure
-	if (P == NULL) printf("Compaction: Not enough memory to create P[NR]\n");
+	if (P == NULL) printf("Compression: Not enough memory to create P[NR]\n");
 
 	// Compositional variables
 	int ncomp = 50;
@@ -103,49 +103,49 @@ int compression(int NR, int NT, thermalout **thoutput, int t, int dbincore, int 
 	int imantle = 0;
 
 	int *icomp = (int*) malloc((NR+1)*sizeof(int));
-	if (icomp == NULL) printf("Compaction: Not enough memory to create icomp[NR]\n");
+	if (icomp == NULL) printf("Compression: Not enough memory to create icomp[NR]\n");
 
 	int *dbindex = (int*) malloc(ncomp*sizeof(int)); // Planetary material database index
-	if (dbindex == NULL) printf("Compaction: Not enough memory to create dbindex[ncomp]\n");
+	if (dbindex == NULL) printf("Compression: Not enough memory to create dbindex[ncomp]\n");
 
 	int *eos = (int*) malloc(ncomp*sizeof(int)); // Switch between types of equation of state. 1: 3rd order Birch-Murnaghan EOS, 2: rho0+cP^n
-	if (eos == NULL) printf("Compaction: Not enough memory to create eos[ncomp]\n");
+	if (eos == NULL) printf("Compression: Not enough memory to create eos[ncomp]\n");
 
 	double *rho0 = (double*) malloc(ncomp*sizeof(double)); // Constant density term of rho = rho0 + c*P^nn
-	if (rho0 == NULL) printf("Compaction: Not enough memory to create rho0[ncomp]\n");
+	if (rho0 == NULL) printf("Compression: Not enough memory to create rho0[ncomp]\n");
 
 	double *c = (double*) malloc(ncomp*sizeof(double)); // c of rho = rho0 + c*P^nn
-	if (c == NULL) printf("Compaction: Not enough memory to create c[ncomp]\n");
+	if (c == NULL) printf("Compression: Not enough memory to create c[ncomp]\n");
 
 	double *nn = (double*) malloc(ncomp*sizeof(double)); // Exponent of rho = rho0 + c*P^nn
-	if (nn == NULL) printf("Compaction: Not enough memory to create nn[ncomp]\n");
+	if (nn == NULL) printf("Compression: Not enough memory to create nn[ncomp]\n");
 
 	double *Ks0 = (double*) malloc(ncomp*sizeof(double)); // Constant bulk modulus term
-	if (Ks0 == NULL) printf("Compaction: Not enough memory to create Ks0[ncomp]\n");
+	if (Ks0 == NULL) printf("Compression: Not enough memory to create Ks0[ncomp]\n");
 
 	double *Ksp = (double*) malloc(ncomp*sizeof(double)); // Derivative w.r.t. P of the bulk modulus term
-	if (Ks0 == NULL) printf("Compaction: Not enough memory to create Ks0[ncomp]\n");
+	if (Ks0 == NULL) printf("Compression: Not enough memory to create Ks0[ncomp]\n");
 
 	double *V0 = (double*) malloc(ncomp*sizeof(double)); // V0 term (m3/kg) in eqs. (6) & (7) of Choukroun & Grasset (2010)
-	if (V0 == NULL) printf("Compaction: Not enough memory to create V0[ncomp]\n");
+	if (V0 == NULL) printf("Compression: Not enough memory to create V0[ncomp]\n");
 
 	double *Tref = (double*) malloc(ncomp*sizeof(double)); // Tref term (K) in eqs. (6) & (7) of Choukroun & Grasset (2010)
-	if (Tref == NULL) printf("Compaction: Not enough memory to create Tref[ncomp]\n");
+	if (Tref == NULL) printf("Compression: Not enough memory to create Tref[ncomp]\n");
 
 	double *a0 = (double*) malloc(ncomp*sizeof(double)); // a0 term (no dim) in eqs. (6) & (7) of Choukroun & Grasset (2010)
-	if (a0 == NULL) printf("Compaction: Not enough memory to create a0[ncomp]\n");
+	if (a0 == NULL) printf("Compression: Not enough memory to create a0[ncomp]\n");
 
 	double *a1 = (double*) malloc(ncomp*sizeof(double)); // a1 term (K-1) in eqs. (6) & (7) of Choukroun & Grasset (2010)
-	if (a1 == NULL) printf("Compaction: Not enough memory to create a1[ncomp]\n");
+	if (a1 == NULL) printf("Compression: Not enough memory to create a1[ncomp]\n");
 
 	double *b0 = (double*) malloc(ncomp*sizeof(double)); // b0 term (no dim) in eqs. (6) & (7) of Choukroun & Grasset (2010)
-	if (b0 == NULL) printf("Compaction: Not enough memory to create b0[ncomp]\n");
+	if (b0 == NULL) printf("Compression: Not enough memory to create b0[ncomp]\n");
 
 	double *b1 = (double*) malloc(ncomp*sizeof(double)); // b1 term (no dim) in eqs. (6) & (7) of Choukroun & Grasset (2010)
-	if (b1 == NULL) printf("Compaction: Not enough memory to create b1[ncomp]\n");
+	if (b1 == NULL) printf("Compression: Not enough memory to create b1[ncomp]\n");
 
 	double *b2 = (double*) malloc(ncomp*sizeof(double)); // b2 term (Pa-1) in eqs. (6) & (7) of Choukroun & Grasset (2010)
-	if (b2 == NULL) printf("Compaction: Not enough memory to create b2[ncomp]\n");
+	if (b2 == NULL) printf("Compression: Not enough memory to create b2[ncomp]\n");
 
 	// Iteration control
 	int iter = 0;
@@ -281,7 +281,7 @@ int compression(int NR, int NT, thermalout **thoutput, int t, int dbincore, int 
 						rhonew[ir] = 1.0/rhonew[ir];
 						break;
 					default:
-						printf("Compaction: Error: specify EOS type in database");
+						printf("Compression: Error: specify EOS type in database");
 						exit(0);
 				}
 			}
@@ -362,7 +362,7 @@ int compression(int NR, int NT, thermalout **thoutput, int t, int dbincore, int 
 	title[0] = '\0';
 	if (release == 1) strncat(title,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(title,path,strlen(path)-18);
-	strcat(title,"Outputs/Compaction.txt");
+	strcat(title,"Outputs/Compression.txt");
 
 	fout = fopen(title,"w");
 	if (fout == NULL) {
@@ -468,11 +468,11 @@ int planmat(int ncomp, int **dbindex, int **eos, double **rho0, double **c, doub
 	planmatdb[0] = '\0';
 	if (release == 1) strncat(planmatdb,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(planmatdb,path,strlen(path)-18);
-	strcat(planmatdb,"Data/Compaction_planmat.txt");
+	strcat(planmatdb,"Data/Compression_planmat.txt");
 
 	fid = fopen (planmatdb,"r");
 	if (fid == NULL) {
-		printf("IcyDwarf: Missing Compaction_planmat.txt file.\n");
+		printf("IcyDwarf: Missing Compression_planmat.txt file.\n");
 	}
 	else {
 		printf("Reading planmat database file...\n");

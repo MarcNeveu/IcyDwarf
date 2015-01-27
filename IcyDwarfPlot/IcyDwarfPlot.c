@@ -55,7 +55,7 @@ int main(int argc, char *argv[]){
 
 	printf("\n");
 	printf("-------------------------------------------------------------------\n");
-	printf("IcyDwarfPlot v14.6\n");
+	printf("IcyDwarfPlot v15.1\n");
 	if (release == 1) printf("Release mode\n");
 	else if (cmdline == 1) printf("Command line mode\n");
 	printf("-------------------------------------------------------------------\n");
@@ -139,6 +139,7 @@ int main(int argc, char *argv[]){
 
 	SDL_Color axisTextColor;
 	axisTextColor.r = 255; axisTextColor.g = 255; axisTextColor.b = 255; // White text
+	// axisTextColor.r = 0; axisTextColor.g = 0; axisTextColor.b = 0; // Black text
 
 	char *FontFile = (char*)malloc(1024);      // Don't forget to free!
 	FontFile[0] = '\0';

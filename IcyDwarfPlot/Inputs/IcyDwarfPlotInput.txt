@@ -1,4 +1,4 @@
-ICY DWARF PLOT v14.x INPUT FILE
+ICY DWARF PLOT v15.x INPUT FILE
 
 1 for Yes, 0 for No
 -------------------------------
@@ -9,20 +9,20 @@ Messages?                     1
 -------------------------------
 Planet parameters
 -------------------------------
-Density (g cm-3)              2.077
-Radius (km)                   475
-Ammonia w.r.t. water          1.0e-10
-Surface temperature (K)       168
+Density (g cm-3)              2.00
+Radius (km)                   650
+Ammonia w.r.t. water          1.0e-2
+Surface temperature (K)       40
 -------------------------------
 Grid
 -------------------------------
 Number of grid zones          200
-Total time of sim (Myr)       5000
+Total time of sim (Myr)       1950
 Output every (Myr)            10
 -------------------------------
 Subroutines
 -------------------------------
 Thermal plot
-	IcyDwarf output       Thermal_04.txt
-	Max temp (K; 0=auto)  2800
+	IcyDwarf output       Thermal.txt
+	Max temp (K; 0=auto)  1500
 
