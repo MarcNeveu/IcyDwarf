@@ -117,16 +117,16 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double o
 	File2surf("Graphics/Transparent.png", &progress_bar, path);
 	File2tex("Graphics/Crack/TextureCracked.png", &cracked_rock_tex, path);
 
-	// white_alpha = SDL_MapRGBA(crack_time->format, 255, 255, 255, 200); // r,g,b,alpha 0 to 255. Alpha of 0 is transparent
-	white_alpha = SDL_MapRGBA(crack_time->format, 0, 0, 0, 100);
+    white_alpha = SDL_MapRGBA(crack_time->format, 255, 255, 255, 200); // r,g,b,alpha 0 to 255. Alpha of 0 is transparent
+	// white_alpha = SDL_MapRGBA(crack_time->format, 0, 0, 0, 100);
 	red_alpha = SDL_MapRGBA(crack_time->format, 255, 200, 200, 200);
 	blue_alpha = SDL_MapRGBA(crack_time->format, 20, 100, 255, 200);
 	orange_alpha = SDL_MapRGBA(crack_time->format, 255, 195, 0, 200);
 	purple_alpha = SDL_MapRGBA(crack_time->format, 128, 0, 200, 200);
 	yellow_alpha = SDL_MapRGBA(crack_time->format, 255, 255, 100, 200);
 	green_alpha = SDL_MapRGBA(crack_time->format, 100, 200, 100, 200);
-	// light_white_alpha = SDL_MapRGBA(crack_time->format, 255, 255, 255, 100);
-	light_white_alpha = SDL_MapRGBA(crack_time->format, 0, 0, 0, 200);
+	light_white_alpha = SDL_MapRGBA(crack_time->format, 255, 255, 255, 100);
+	// light_white_alpha = SDL_MapRGBA(crack_time->format, 0, 0, 0, 200);
 
 	// Don't forget to destroy all window, renderers, and textures at the end.
 

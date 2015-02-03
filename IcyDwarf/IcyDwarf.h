@@ -17,9 +17,9 @@
 // FLAGS
 //-------------------------------------------------------------------
 
-#define release 0                                          // 0 for Debug, 1 for Release
+#define v_release 0                                          // 0 for Debug, 1 for Release
 #define cmdline 0										   // If execution from terminal as "./IcyDwarf",
-                                                           // overwritten by release.
+                                                           // overwritten by v_release.
 //-------------------------------------------------------------------
 // PHYSICAL AND MATHEMATICAL CONSTANTS
 //-------------------------------------------------------------------
@@ -139,7 +139,6 @@
 
 // Dissolution and precipitation of species
 #define n_species_crack 3                                  // Number of species in the chemical model
-#define pH 7.0                                             // pH
 #define nu_prod_silica 1.0                                 // Product stoichiometric coefficient of SiO2(s)=SiO2(aq), SiO2(aq) only product
 #define nu_prod_chrysotile 11.0                            // 2 SiO2, 3 Mg+2, 6 OH-
 #define nu_prod_magnesite 2.0							   // 1 Mg+2, 1 CO3-2
@@ -198,10 +197,10 @@ int calculate_seafloor (thermalout **thoutput, int NR, int NT, int t);
 int look_up (double x, double x_var, double x_step, int size, int warnings);
 double *icy_dwarf_input (double *input, char path[1024]);
 thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char path[1024]);
-double **read_input (int H, int L, double **Input, char path[1024], char filename[1024]);
-int create_output (char path[1024], char filename[1024]);
-int write_output (int H, int L, double **Output, char path[1024], char filename[1024]);
-int append_output (int L, double *Output, char path[1024], char filename[1024]);
+double **read_input (int H, int L, double **Input, char path[1024], const char filename[1024]);
+int create_output (char path[1024], const char filename[1024]);
+int write_output (int H, int L, double **Output, char path[1024], const char filename[1024]);
+int append_output (int L, double *Output, char path[1024], const char filename[1024]);
 
 //-------------------------------------------------------------------
 //                        Calculate pressure
@@ -345,7 +344,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 
 	char *idi = (char*)malloc(1024);
 	idi[0] = '\0';
-	if (release == 1) strncat(idi,path,strlen(path)-16);
+	if (v_release == 1) strncat(idi,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(idi,path,strlen(path)-18);
 	strcat(idi,"Inputs/IcyDwarfInput.txt");
 
@@ -529,7 +528,7 @@ thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char pa
 
 	char *kbo_dat = (char*)malloc(1024);       // Don't forget to free!
 	kbo_dat[0] = '\0';
-	if (release == 1) strncat(kbo_dat,path,strlen(path)-16);
+	if (v_release == 1) strncat(kbo_dat,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(kbo_dat,path,strlen(path)-18);
 	strcat(kbo_dat,"Outputs/Thermal.txt");
 
@@ -562,7 +561,7 @@ thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char pa
 //                            Read input
 //-------------------------------------------------------------------
 
-double **read_input (int H, int L, double **Input, char path[1024], char filename[1024]) {
+double **read_input (int H, int L, double **Input, char path[1024], const char filename[1024]) {
 
 	FILE *fin;
 	int l = 0;
@@ -574,7 +573,7 @@ double **read_input (int H, int L, double **Input, char path[1024], char filenam
 
 	char *title = (char*)malloc(1024);       // Don't forget to free!
 	title[0] = '\0';
-	if (release == 1) strncat(title,path,strlen(path)-16);
+	if (v_release == 1) strncat(title,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(title,path,strlen(path)-18);
 	strcat(title,filename);
 
@@ -602,7 +601,7 @@ double **read_input (int H, int L, double **Input, char path[1024], char filenam
 //                           Create output
 //-------------------------------------------------------------------
 
-int create_output (char path[1024], char filename[1024]) {
+int create_output (char path[1024], const char filename[1024]) {
 
 	FILE *fout;
 
@@ -612,7 +611,7 @@ int create_output (char path[1024], char filename[1024]) {
 
 	char *title = (char*)malloc(1024*sizeof(char));       // Don't forget to free!
 	title[0] = '\0';
-	if (release == 1) strncat(title,path,strlen(path)-16);
+	if (v_release == 1) strncat(title,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(title,path,strlen(path)-18);
 	strcat(title,filename);
 
@@ -630,7 +629,7 @@ int create_output (char path[1024], char filename[1024]) {
 //               Write output (no need to create output)
 //-------------------------------------------------------------------
 
-int write_output (int H, int L, double **Output, char path[1024], char filename[1024]) {
+int write_output (int H, int L, double **Output, char path[1024], const char filename[1024]) {
 
 	FILE *fout;
 	int l = 0;
@@ -642,7 +641,7 @@ int write_output (int H, int L, double **Output, char path[1024], char filename[
 
 	char *title = (char*)malloc(1024*sizeof(char));       // Don't forget to free!
 	title[0] = '\0';
-	if (release == 1) strncat(title,path,strlen(path)-16);
+	if (v_release == 1) strncat(title,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(title,path,strlen(path)-18);
 	strcat(title,filename);
 
@@ -668,7 +667,7 @@ int write_output (int H, int L, double **Output, char path[1024], char filename[
 //                           Append output
 //-------------------------------------------------------------------
 
-int append_output (int L, double *Output, char path[1024], char filename[1024]) {
+int append_output (int L, double *Output, char path[1024], const char filename[1024]) {
 
 	FILE *fout;
 	int l = 0;
@@ -679,7 +678,7 @@ int append_output (int L, double *Output, char path[1024], char filename[1024]) 
 
 	char *title = (char*)malloc(1024*sizeof(char));       // Don't forget to free!
 	title[0] = '\0';
-	if (release == 1) strncat(title,path,strlen(path)-16);
+	if (v_release == 1) strncat(title,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(title,path,strlen(path)-18);
 	strcat(title,filename);
 

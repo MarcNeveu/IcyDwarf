@@ -91,7 +91,7 @@ int WaterRock(char path[1024]) {
 	//-------------------------------------------------------------------
 
 	bin[0] ='\0';
-	if (release == 1) {
+	if (v_release == 1) {
 		bin = path;
 		strncat(bin,path,strlen(path)-16);
 	}
@@ -151,7 +151,7 @@ int inSpeciation(char elt_names[n_elts][128], double *elts, char redox[1024], ch
 	char *outfile = (char*)malloc(1024);  // Path to PHREEQC input file
 
 	outfile[0] ='\0';
-	if (release == 1) {
+	if (v_release == 1) {
 		outfile = path;
 		strncat(outfile,path,strlen(path)-16);
 	}
@@ -200,7 +200,7 @@ int inReacPath(char phase_names[n_phases][128], double *si_phases, double *molar
 	char *outfile = (char*)malloc(1024);  // Path to PHREEQC input file
 
 	outfile[0] ='\0';
-	if (release == 1) {
+	if (v_release == 1) {
 		outfile = path;
 		strncat(outfile,path,strlen(path)-16);
 	}

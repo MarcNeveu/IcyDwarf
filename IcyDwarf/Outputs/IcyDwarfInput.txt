@@ -1,0 +1,46 @@
+ICY DWARF v14.x INPUT FILE
+
+1 for Yes, 0 for No
+-------------------------------
+Housekeeping
+-------------------------------
+Warnings?                     0
+Messages?                     0
+-------------------------------
+Planet parameters
+-------------------------------
+Density (g cm-3)              2.58
+Radius (km)                   718
+Ammonia w.r.t. water          1.0e-2
+Surface temperature (K)       40
+-------------------------------
+Grid
+-------------------------------
+Number of grid zones          200
+Total time of sim (Myr)       4000
+Output every (Myr)            10
+-------------------------------
+Subroutines
+-------------------------------
+Run thermal?                  1
+	Sim starts at (Myr)   1000
+	Initial temp (K)      700
+	Degree of hydration   1
+Core cracks
+	Calculate aTP?        0
+	Water alpha beta?     0
+	CHNOSZ species?       0
+Cryovolcanism?                0
+	After how many Myr?   2500
+	Min temperature (K)   273
+-------------------------------
+Core crack options
+-------------------------------
+Thermal mismatch?             1
+Pore water expansion?         1
+Hydration/dehydration?        0
+Dissolution/ppt?              0
+	Silica?               1
+	Serpentine?           1
+	Carbonate?            1
+

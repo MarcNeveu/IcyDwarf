@@ -360,7 +360,7 @@ int compression(int NR, int NT, thermalout **thoutput, int t, int dbincore, int 
 
 	char *title = (char*)malloc(1024*sizeof(char));       // Don't forget to free!
 	title[0] = '\0';
-	if (release == 1) strncat(title,path,strlen(path)-16);
+	if (v_release == 1) strncat(title,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(title,path,strlen(path)-18);
 	strcat(title,"Outputs/Compression.txt");
 
@@ -466,7 +466,7 @@ int planmat(int ncomp, int **dbindex, int **eos, double **rho0, double **c, doub
 
 	char *planmatdb = (char*)malloc(1024);       // Don't forget to free!
 	planmatdb[0] = '\0';
-	if (release == 1) strncat(planmatdb,path,strlen(path)-16);
+	if (v_release == 1) strncat(planmatdb,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(planmatdb,path,strlen(path)-18);
 	strcat(planmatdb,"Data/Compression_planmat.txt");
 

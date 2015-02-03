@@ -79,7 +79,6 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	int structure_changed = 0;           // Switch to see if we need to call separate()
     int thermal_mismatch = 0;            // Switch for grain thermal expansion/contraction mismatch effects
 	int pore_water_expansion = 0;        // Switch for pore water expansion effects
-	int hydration_dehydration = 0;       // Switch for rock hydration/dehydration effects
 	int dissolution_precipitation = 0;   // Switch for rock dissolution/precipitation effects
 	double Heat_radio = 0.0;             // Total heats produced (erg), for output file
 	double Heat_grav = 0.0;
@@ -368,7 +367,6 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
 	thermal_mismatch = crack_input[0];
 	pore_water_expansion = crack_input[1];
-	hydration_dehydration = crack_input[2];
 	dissolution_precipitation = crack_input[3];
 
     //-------------------------------------------------------------------
@@ -1206,7 +1204,7 @@ int state (char path[1024], int itime, int ir, double E, double *frock, double *
 
     		char *title = (char*)malloc(1024*sizeof(char));       // Don't forget to free!
     		title[0] = '\0';
-    		if (release == 1) strncat(title,path,strlen(path)-16);
+    		if (v_release == 1) strncat(title,path,strlen(path)-16);
     		else if (cmdline == 1) strncat(title,path,strlen(path)-18);
     		strcat(title,"Outputs/Thermal.txt");
 

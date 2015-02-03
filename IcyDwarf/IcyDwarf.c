@@ -26,6 +26,7 @@
 #include "Cryolava/Cryolava.h"
 #include "Thermal/Thermal.h"
 #include "WaterRock/WaterRock.h"
+#include "WaterRock/ParamExploration.h"
 
 int main(int argc, char *argv[]){
 
@@ -77,7 +78,7 @@ int main(int argc, char *argv[]){
 	printf("\n");
 	printf("-------------------------------------------------------------------\n");
 	printf("IcyDwarf v15.1\n");
-	if (release == 1) printf("Release mode\n");
+	if (v_release == 1) printf("Release mode\n");
 	else if (cmdline == 1) printf("Command line mode\n");
 	printf("-------------------------------------------------------------------\n");
 
@@ -164,25 +165,26 @@ int main(int argc, char *argv[]){
 	// Read thermal output
 	//-------------------------------------------------------------------
 
-	thermalout **thoutput = malloc(NR*sizeof(thermalout*));        // Thermal model output
+	thermalout **thoutput = (thermalout**) malloc(NR*sizeof(thermalout*));        // Thermal model output
 	if (thoutput == NULL) printf("IcyDwarf: Not enough memory to create the thoutput structure\n");
 	for (r=0;r<NR;r++) {
-		thoutput[r] = malloc(NT_output*sizeof(thermalout));
+		thoutput[r] = (thermalout*) malloc(NT_output*sizeof(thermalout));
 		if (thoutput[r] == NULL) printf("IcyDwarf: Not enough memory to create the thoutput structure\n");
 	}
-	thoutput = read_thermal_output (thoutput, NR, NT_output, path);
+	// thoutput = read_thermal_output (thoutput, NR, NT_output, path);
 
 	//-------------------------------------------------------------------
 	// Water-rock reactions
 	//-------------------------------------------------------------------
 
 	// WaterRock(path);
+	ParamExploration(path);
 
 	//-------------------------------------------------------------------
 	// Compression
 	//-------------------------------------------------------------------
 
-	compression(NR, NT_output, thoutput, NT_output-1, 202, 304, 403, 0, path);
+	// compression(NR, NT_output, thoutput, NT_output-1, 202, 304, 403, 0, path);
 
 	//-------------------------------------------------------------------
 	// Cryolava calculations

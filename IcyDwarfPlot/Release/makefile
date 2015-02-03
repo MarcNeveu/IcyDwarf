@@ -28,7 +28,7 @@ all: IcyDwarfPlot
 IcyDwarfPlot: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: Cross GCC Linker'
-	gcc -L/Users/marc/Documents/Research/"2011 thru 2016 ASU"/"2. Subsurface hydrospheres"/Git/IcyDwarf/IcyDwarfPlot -F/Library/Frameworks -arch x86_64 -framework openGL -framework Cocoa -framework GLUT -framework SDL2 -framework SDL2_image -framework SDL2_ttf -o "IcyDwarfPlot" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc -L/Users/marc/Documents/Research/2011-2016_ASU/2IcyDwarf/Git/IcyDwarf/IcyDwarfPlot -F/Library/Frameworks -arch x86_64 -framework openGL -framework Cocoa -framework GLUT -framework SDL2 -framework SDL2_image -framework SDL2_ttf -o "IcyDwarfPlot" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 

@@ -12,8 +12,8 @@
 #define CHNOSZ_COMMANDS_H_
 
 int CHNOSZ_init(int silent);
-double CHNOSZ_logK (char species[128], char state[32], float T, float P, char H2OEoS[128]);
-double CHNOSZ_water_SUPCRT92 (char property[32], float T, float P);
+double CHNOSZ_logK (const char species[128], const char state[32], float T, float P, const char H2OEoS[128]);
+double CHNOSZ_water_SUPCRT92 (const char property[32], float T, float P);
 SEXP getvar(SEXP name, SEXP rho);
 
 int CHNOSZ_init(int silent) {
@@ -59,7 +59,7 @@ int CHNOSZ_init(int silent) {
     return 0;
 }
 
-double CHNOSZ_logK (char species[128], char state[32], float T, float P, char H2OEoS[128]) {
+double CHNOSZ_logK (const char species[128], const char state[32], float T, float P, const char H2OEoS[128]) {
 
 	// Assumes R is already open
 
@@ -124,7 +124,7 @@ double CHNOSZ_logK (char species[128], char state[32], float T, float P, char H2
 	return logK;
 }
 
-double CHNOSZ_water_SUPCRT92 (char property[32], float T, float P) {
+double CHNOSZ_water_SUPCRT92 (const char property[32], float T, float P) {
 
 	// Assumes R is already open
 
@@ -152,7 +152,7 @@ SEXP getvar(SEXP name, SEXP rho)
 
     if(!isString(name))
         error("name is not a string");
-    if (length(name) != 1)
+    if (Rf_length(name) != 1)
     	error("name length is not 1");
     if(!isEnvironment(rho))
         error("rho should be an environment");
