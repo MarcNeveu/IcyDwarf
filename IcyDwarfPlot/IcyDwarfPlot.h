@@ -130,19 +130,7 @@ int icy_dwarf_input (double **input, char (*thermal_file)[1024], char path[1024]
 			scan = fscanf(f, "%lg", &(*input)[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,111,SEEK_CUR);  // Density (g cm-3)
-			scan = fscanf(f, "%lg", &(*input)[i]), i++;
-			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
-
-			fseek(f,31,SEEK_CUR);   // Radius (km)
-			scan = fscanf(f, "%lg", &(*input)[i]), i++;
-			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
-
-			fseek(f,31,SEEK_CUR);   // Ammonia w.r.t. water
-			scan = fscanf(f, "%lg", &(*input)[i]), i++;
-			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
-
-			fseek(f,31,SEEK_CUR);   // Surface temperature (K)
+			fseek(f,111,SEEK_CUR);  // Radius (km)
 			scan = fscanf(f, "%lg", &(*input)[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
@@ -178,10 +166,7 @@ int icy_dwarf_input (double **input, char (*thermal_file)[1024], char path[1024]
 		printf("-------------------------------\n");
 		printf("Planet parameters\n");
 		printf("-------------------------------\n");
-		printf("Density (g cm-3) \t \t %g\n",(*input)[i]), i++;
 		printf("Radius (km) \t \t \t %g\n",(*input)[i]), i++;
-		printf("Ammonia w.r.t. water \t \t %g\n",(*input)[i]), i++;
-		printf("Surface temperature (K) \t %g\n",(*input)[i]), i++;
 		printf("-------------------------------\n");
 		printf("Grid\n");
 		printf("-------------------------------\n");

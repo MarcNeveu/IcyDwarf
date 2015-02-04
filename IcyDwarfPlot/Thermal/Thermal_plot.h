@@ -54,7 +54,6 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 	double Tmax = 0.0;                           // Max temperature ever encountered in any layer
 	double kappamax = 0.0;                       // Max thermal conductivity ever encountered in any layer
 	Uint32 *pixmem32;
-	Uint32 white;
 	Uint32 alpha;
 	SDL_Texture* background_tex = NULL;
 	SDL_Texture* progress_bar_tex = NULL;        // Progress bar
@@ -138,7 +137,6 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 		}
 	}
 
-	white = SDL_MapRGBA(value_time->format, 255, 255, 255, 255);
 	alpha = SDL_MapRGBA(value_time->format, 255, 255, 255, 0);   // r,g,b,alpha 0 to 255. Alpha of 0 is transparent
 
 //-------------------------------------------------------------------

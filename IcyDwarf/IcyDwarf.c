@@ -77,7 +77,7 @@ int main(int argc, char *argv[]){
 
 	printf("\n");
 	printf("-------------------------------------------------------------------\n");
-	printf("IcyDwarf v15.1\n");
+	printf("IcyDwarf v15.2\n");
 	if (v_release == 1) printf("Release mode\n");
 	else if (cmdline == 1) printf("Command line mode\n");
 	printf("-------------------------------------------------------------------\n");
@@ -178,7 +178,9 @@ int main(int argc, char *argv[]){
 	//-------------------------------------------------------------------
 
 	// WaterRock(path);
+	printf("Running PHREEQC across the specified range of parameters...\n");
 	ParamExploration(path);
+	printf("\n");
 
 	//-------------------------------------------------------------------
 	// Compression

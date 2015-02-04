@@ -30,10 +30,7 @@ int main(int argc, char *argv[]){
 	thermal_file[0] = '\0';
 
 	// Planet inputs
-    double rho_p = 0.0;                 // Planetary density
-    double r_p = 0.0;                   // Planetary radius
-    double nh3 = 0.0;                   // Ammonia w.r.t. water
-    double Tsurf = 0.0;				   // Surface temperature
+    double r_p = 0.0;                  // Planetary radius
 
     // Grid inputs
 	int NR = 0;                        // Number of grid zones
@@ -46,8 +43,8 @@ int main(int argc, char *argv[]){
 
 	int r = 0;
 
-	double *input = (double*) malloc(20*sizeof(double));
-	if (input == NULL) printf("IcyDwarf: Not enough memory to create input[25]\n");
+	double *input = (double*) malloc(8*sizeof(double));
+	if (input == NULL) printf("IcyDwarf: Not enough memory to create input[8]\n");
 
 	//-------------------------------------------------------------------
 	// Startup
@@ -55,7 +52,7 @@ int main(int argc, char *argv[]){
 
 	printf("\n");
 	printf("-------------------------------------------------------------------\n");
-	printf("IcyDwarfPlot v15.1\n");
+	printf("IcyDwarfPlot v15.2\n");
 	if (release == 1) printf("Release mode\n");
 	else if (cmdline == 1) printf("Command line mode\n");
 	printf("-------------------------------------------------------------------\n");
@@ -76,15 +73,12 @@ int main(int argc, char *argv[]){
 
 	warnings = (int) input[0];
 	msgout = (int) input[1];
-	rho_p = input[2];
-	r_p = input[3];
-	nh3 = input[4];
-	Tsurf = input[5];
-	NR = input[6];
-	total_time = input[7];
-	output_every = input[8];
+	r_p = input[2];
+	NR = input[3];
+	total_time = input[4];
+	output_every = input[5];
 	NT_output = floor(total_time/output_every)+1;
-	Tmax = input[9];
+	Tmax = input[6];
 
 	//-------------------------------------------------------------------
 	// Read thermal output (currently kbo.dat, need to read Thermal.txt)
@@ -179,5 +173,3 @@ int main(int argc, char *argv[]){
 	printf("Exiting IcyDwarfPlot...\n");
 	return 0;
 }
-
-
