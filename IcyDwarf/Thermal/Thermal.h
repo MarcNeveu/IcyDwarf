@@ -668,29 +668,27 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     		if (Mh2ol[ir] > 0) irice = ir;
     	}
 
-    	if (Xfines == 0.0) { // TODO: allow hydration/hydration if Xfines != 0.0
-			for (ir=ircore-1;ir>=ircrack;ir--) { // From the ocean downwards
-				if (T[ir] < Tdehydr_max && Xhydr[ir] <= 0.99 && time_hydr[ir] > hydr_delay) {
-			   //!!Added 12/23/2014. Replace above lines with 2 lines below for mudball run
-			   //for (ir=0;ir<NR-1;ir++) {
-				  // if (T[ir] < Tdehydr_max && Xhydr[ir] <= 0.9 && time_hydr[ir] > hydr_delay && Mh2ol[ir] + Mnh3l[ir] >= 0.02*dM[ir]) {
+		for (ir=irice-1;ir>=ircrack;ir--) { // From the ocean downwards
+			if (T[ir] < Tdehydr_max && Xhydr[ir] <= 0.99 && time_hydr[ir] > hydr_delay) {
+		   //!!Added 12/23/2014. Replace above lines with 2 lines below for mudball run
+		   //for (ir=0;ir<NR-1;ir++) {
+			  // if (T[ir] < Tdehydr_max && Xhydr[ir] <= 0.9 && time_hydr[ir] > hydr_delay && Mh2ol[ir] + Mnh3l[ir] >= 0.02*dM[ir]) {
 
-					Xhydr_temp = Xhydr[ir];
-					hydrate(T[ir], &dM, dVol, &Mrock, &Mh2os, Madhs, &Mh2ol, &Mnh3l, &Vrock, &Vh2os, &Vh2ol, &Vnh3l,
-						rhoRockth, rhoHydrth, rhoH2osth, rhoH2olth, rhoNh3lth, &Xhydr, ir, ircore, irice, NR);
-					for (jr=0;jr<NR;jr++) time_hydr[jr] = (1.0-Xhydr[ir])*hydr_delay;
-					structure_changed = 1;
-					if (Xhydr[ir] >= (1.0+1.0e-10)*Xhydr_temp) dont_dehydrate[ir] = 1; // +epsilon to beat machine error
-				}
+				Xhydr_temp = Xhydr[ir];
+				hydrate(T[ir], &dM, dVol, &Mrock, &Mh2os, Madhs, &Mh2ol, &Mnh3l, &Vrock, &Vh2os, &Vh2ol, &Vnh3l,
+					rhoRockth, rhoHydrth, rhoH2osth, rhoH2olth, rhoNh3lth, &Xhydr, ir, ircore, irice, NR);
+				for (jr=0;jr<NR;jr++) time_hydr[jr] = (1.0-Xhydr[ir])*hydr_delay;
+				structure_changed = 1;
+				if (Xhydr[ir] >= (1.0+1.0e-10)*Xhydr_temp) dont_dehydrate[ir] = 1; // +epsilon to beat machine error
 			}
-			for (ir=0;ir<ircore;ir++) {
-				if (T[ir] > Tdehydr_min && Xhydr[ir] >= 0.01 && dont_dehydrate[ir] == 0) {
-					dehydrate(T[ir], dM[ir], dVol[ir], &Mrock[ir], &Mh2ol[ir], &Vrock[ir], &Vh2ol[ir],
-							rhoRockth, rhoHydrth, rhoH2olth, &Xhydr[ir]);
-					structure_changed = 1;
-				}
+		}
+		for (ir=0;ir<irice;ir++) {
+			if (T[ir] > Tdehydr_min && Xhydr[ir] >= 0.01 && dont_dehydrate[ir] == 0) {
+				dehydrate(T[ir], dM[ir], dVol[ir], &Mrock[ir], &Mh2ol[ir], &Vrock[ir], &Vh2ol[ir],
+						rhoRockth, rhoHydrth, rhoH2olth, &Xhydr[ir]);
+				structure_changed = 1;
 			}
-    	}
+		}
 
 		//-------------------------------------------------------------------
 		//               Allow for chemical equilibrium again
@@ -741,7 +739,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
     	// Update Xhydr. Xhydr is defined only in layers full of rock.
     	// But setting Xhydr to 0 elsewhere crashes the code, because it upsets separate().
-    	for (ir=0;ir<ircore;ir++) {
+    	for (ir=0;ir<irice;ir++) {
     		if (Mrock[ir] > Mrock_init[ir]) { // ircore is the first layer not full of rock, we stop one layer before that
 				Xhydr[ir] = (Mrock[ir]/Vrock[ir] - rhoRockth) / (rhoHydrth - rhoRockth);
 				if (Xhydr[ir] < 1.0e-10) Xhydr[ir] = 0.0;   // Avoid numerical residuals
@@ -795,7 +793,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
 		decay(&realtime, &tzero, &S);
 		for (ir=0;ir<NR;ir++) {
-			Qth[ir] = Mrock[ir]*S;
+			Qth[ir] = Mrock[ir]*S; // TODO: Scale for hydration, because hydrated rock has more mass (i.e. mass of -OH) but no extra radionuclides
 			Heat_radio = Heat_radio + Qth[ir];
 		}
 
@@ -810,7 +808,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			}
 		}
 
-		for (ir=0;ir<ircore;ir++) {
+		for (ir=0;ir<irice;ir++) {
 			if (fabs(Xhydr_old[ir] - Xhydr[ir]) > 1.0e-10) {
 				Qth[ir] = Qth[ir] + (Xhydr[ir] - Xhydr_old[ir])*Mrock[ir]*Hhydr/dtime;
 				if (Xhydr[ir] - Xhydr_old[ir] > 0.0) Heat_serp = Heat_serp + (Xhydr[ir] - Xhydr_old[ir])*Mrock[ir]*Hhydr/dtime;
@@ -1920,7 +1918,7 @@ int hydrate(double T, double **dM, double *dVol, double **Mrock, double **Mh2os,
 	double Vmoved = 0.0;
 	double q = 0.0;   // Similar q as in the separate() routine
 	double Xhydr_old = (*Xhydr)[ir];
-	double f_mem = 0.75;                                // Memory of old hydration state, ideally 0, 1 = no change
+	double f_mem = 0.85;                                // Memory of old hydration state, ideally 0, 1 = no change
 
 	// Set hydration level: 1 at Tdehydr_min, 0 at Tdehydr_max, linear in between
 	if (T<Tdehydr_min) (*Xhydr)[ir] = 1.0;
@@ -1934,85 +1932,89 @@ int hydrate(double T, double **dM, double *dVol, double **Mrock, double **Mh2os,
 		return 1; // We'll dehydrate instead
 	}
 
-//!!Added 12/23/2014, appropriate for mudball hydration, otherwise remove and toggle commented lines below all the way to "Update Xhydr" (after last loop of this subroutine)
-//Vmoved = (*Mrock)[ir]/((*Xhydr)[ir]*rhoHydrth + (1.0-(*Xhydr)[ir])*rhoRockth) - (*Mrock)[ir]/(Xhydr_old*rhoHydrth + (1.0-Xhydr_old)*rhoRockth);
-//(*Vrock)[ir] = (*Vrock)[ir] + Vmoved;
-//(*Vh2ol)[ir] = (*Vh2ol)[ir] - Vmoved;
-//(*Mh2ol)[ir] = (*Mh2ol)[ir] - Vmoved*rhoH2olth;
-//(*Mrock)[ir] = (*Mrock)[ir] + Vmoved*rhoH2olth;
-//(*dM)[ir] = (*Mrock)[ir] + (*Mh2os)[ir] + Madhs[ir] + (*Mh2ol)[ir] + (*Mnh3l)[ir];
-
-	// Determine how much liquid there is
-	for (jr=ircore;jr<irice+1;jr++) {
-		Vliq = Vliq + (*Vh2ol)[jr];
+	if (ir >= ircore) { // Easy case, everything stays in the same grid cell
+		//!!Added 12/23/2014, appropriate for mudball hydration, otherwise remove and toggle commented lines below all the way to "Update Xhydr" (after last loop of this subroutine)
+		Vmoved = (*Mrock)[ir]/((*Xhydr)[ir]*rhoHydrth + (1.0-(*Xhydr)[ir])*rhoRockth) - (*Mrock)[ir]/(Xhydr_old*rhoHydrth + (1.0-Xhydr_old)*rhoRockth);
+		(*Vrock)[ir] = (*Vrock)[ir] + Vmoved;
+		(*Vh2ol)[ir] = (*Vh2ol)[ir] - Vmoved;
+		(*Mh2ol)[ir] = (*Mh2ol)[ir] - Vmoved*rhoH2olth;
+		(*Mrock)[ir] = (*Mrock)[ir] + Vmoved*rhoH2olth;
+		(*dM)[ir] = (*Mrock)[ir] + (*Mh2os)[ir] + Madhs[ir] + (*Mh2ol)[ir] + (*Mnh3l)[ir];
 	}
+	else { // Need to move water from the ocean into the core
 
-	// Merge water and rock into the cell: equivalently, swap rock in the core and water in the ocean
-	// 1- Find out what the volume of rock becomes: dVol -> (1+x)*dVol. x*dVol = Vmoved is the volume moved
-	Vmoved = (*Mrock)[ir]/((*Xhydr)[ir]*rhoHydrth + (1.0-(*Xhydr)[ir])*rhoRockth) - dVol[ir];
-	// 2- This is also the volume of water displaced (no compression). Is there enough water for that?
-	if (Vmoved > Vliq) {
-		(*Xhydr)[ir] = Xhydr_old;
-		return -1;                // If no, get out
-	}
-	else {                        // If yes, swap. The mass of water moved is split half and half in rock b/w the swapping layers
-		(*Vrock)[ir] = dVol[ir];
-		if ((*Vrock)[ircore] + Vmoved < dVol[ircore]) {
-			(*Vrock)[ircore] = (*Vrock)[ircore] + Vmoved;
-			(*Vh2ol)[ircore] = (*Vh2ol)[ircore] - Vmoved;
-			(*Mh2ol)[ircore] = (*Mh2ol)[ircore] - Vmoved*rhoH2olth;
-			(*Mrock)[ircore] = (*Mrock)[ircore] + Vmoved*((*Xhydr)[ir]*rhoHydrth + (1.0-(*Xhydr)[ir])*rhoRockth) + Vmoved*rhoH2olth*0.5;
-			(*Mrock)[ir] = (*Mrock)[ir] - Vmoved*((*Xhydr)[ir]*rhoHydrth + (1.0-(*Xhydr)[ir])*rhoRockth) + Vmoved*rhoH2olth*0.5;
-
-			(*dM)[ir] = (*Mrock)[ir] + (*Mh2os)[ir] + Madhs[ir] + (*Mh2ol)[ir] + (*Mnh3l)[ir];
-			(*dM)[ircore] = (*Mrock)[ircore] + (*Mh2os)[ircore] + Madhs[ircore] + (*Mh2ol)[ircore] + (*Mnh3l)[ircore];
+		// Determine how much liquid there is
+		for (jr=ircore;jr<irice+1;jr++) {
+			Vliq = Vliq + (*Vh2ol)[jr];
 		}
-		else {
-			q = (Vmoved - (dVol[ircore] - (*Vrock)[ircore]))/Vmoved; // Fraction of Vmoved that didn't fit
-			(*Vrock)[ircore] = dVol[ircore];
-			(*Vh2ol)[ircore] = 0.0;
-			(*Vrock)[ircore+1] = (*Vrock)[ircore+1] + q*Vmoved;
-			(*Vh2ol)[ircore+1] = (*Vh2ol)[ircore+1] - q*Vmoved;
-			(*Mrock)[ircore] = (*Mrock)[ircore] + (1.0-q)*Vmoved*((*Xhydr)[ir]*rhoHydrth + (1.0-(*Xhydr)[ir])*rhoRockth);
-			(*Mh2ol)[ircore] = 0.0;
-			(*Mh2ol)[ircore+1] = (*Mh2ol)[ircore+1] - q*Vmoved*rhoH2olth;
-			(*Mrock)[ircore+1] = (*Mrock)[ircore+1] + q*Vmoved*((*Xhydr)[ir]*rhoHydrth + (1.0-(*Xhydr)[ir])*rhoRockth) + q*Vmoved*rhoH2olth*0.5;
-			(*Mrock)[ir] = (*Mrock)[ir] - Vmoved*((*Xhydr)[ir]*rhoHydrth + (1.0-(*Xhydr)[ir])*rhoRockth) + q*Vmoved*rhoH2olth*0.5;
 
-			(*dM)[ir] = (*Mrock)[ir] + (*Mh2os)[ir] + Madhs[ir] + (*Mh2ol)[ir] + (*Mnh3l)[ir];
-			(*dM)[ircore] = (*Mrock)[ircore] + (*Mh2os)[ircore] + Madhs[ircore] + (*Mh2ol)[ircore] + (*Mnh3l)[ircore];
-			(*dM)[ircore+1] = (*Mrock)[ircore+1] + (*Mh2os)[ircore+1] + Madhs[ircore+1] + (*Mh2ol)[ircore+1] + (*Mnh3l)[ircore+1];
-
-			// Update Xhydr to reflect mass and volume conservation
-			(*Xhydr)[ircore+1] = ((*Mrock)[ircore+1]/(*Vrock)[ircore+1] - rhoRockth) / (rhoHydrth - rhoRockth);
-			if (fabs((*Xhydr)[ircore+1]) < 1.0e-10) (*Xhydr)[ircore+1] = 0.0;  // Avoid numerical residuals
-			if (fabs((*Xhydr)[ircore+1]) > 1.0-1.0e-10) (*Xhydr)[ircore+1] = 1.0;
+		// Merge water and rock into the cell: equivalently, swap rock in the core and water in the ocean
+		// 1- Find out what the volume of rock becomes: dVol -> (1+x)*dVol. x*dVol = Vmoved is the volume moved
+		Vmoved = (*Mrock)[ir]/((*Xhydr)[ir]*rhoHydrth + (1.0-(*Xhydr)[ir])*rhoRockth) - dVol[ir];
+		// 2- This is also the volume of water displaced (no compression). Is there enough water for that?
+		if (Vmoved > Vliq) {
+			(*Xhydr)[ir] = Xhydr_old;
+			return -1;                // If no, get out
 		}
-	}
+		else {                        // If yes, swap. The mass of water moved is split half and half in rock b/w the swapping layers
+			(*Vrock)[ir] = dVol[ir];
+			if ((*Vrock)[ircore] + Vmoved < dVol[ircore]) {
+				(*Vrock)[ircore] = (*Vrock)[ircore] + Vmoved;
+				(*Vh2ol)[ircore] = (*Vh2ol)[ircore] - Vmoved;
+				(*Mh2ol)[ircore] = (*Mh2ol)[ircore] - Vmoved*rhoH2olth;
+				(*Mrock)[ircore] = (*Mrock)[ircore] + Vmoved*((*Xhydr)[ir]*rhoHydrth + (1.0-(*Xhydr)[ir])*rhoRockth) + Vmoved*rhoH2olth*0.5;
+				(*Mrock)[ir] = (*Mrock)[ir] - Vmoved*((*Xhydr)[ir]*rhoHydrth + (1.0-(*Xhydr)[ir])*rhoRockth) + Vmoved*rhoH2olth*0.5;
 
-	// Do not allow NH3tot/H2Otot to be higher than Xc, the eutectic composition: this messes up state() and heatIce().
-	for (jr=ircore;jr<irice+1;jr++) {
-		if ((*Mnh3l)[jr] <= Xc*((*Mh2os)[jr] + (*Mh2ol)[jr] + (*Mnh3l)[jr])) break; // Includes case where these masses are all 0
-		else {
-			// Swap NH3 in layer jr with H2O from layer jr+1, liquid or solid as appropriate.
-			// Swap volumes (not masses) to conserve volume in each shell.
-			Vmoved = ((*Mnh3l)[jr] - Xc*((*Mh2os)[jr] + (*Mh2ol)[jr] + (*Mnh3l)[jr]))/rhoNh3lth;
-			(*Vnh3l)[jr] = (*Vnh3l)[jr] - Vmoved;
-			(*Mnh3l)[jr] = (*Vnh3l)[jr] * rhoNh3lth;
-			(*Vh2ol)[jr] = (*Vh2ol)[jr] + Vmoved;
-			(*Mh2ol)[jr] = (*Vh2ol)[jr] * rhoH2olth;
-			(*Vnh3l)[jr+1] = (*Vnh3l)[jr+1] + Vmoved;
-			(*Mnh3l)[jr+1] = (*Vnh3l)[jr+1] * rhoNh3lth;
-			if ((*Vh2ol)[jr+1] > Vmoved) {
-				(*Vh2ol)[jr+1] = (*Vh2ol)[jr+1] - Vmoved;
-				(*Mh2ol)[jr+1] = (*Vh2ol)[jr+1] * rhoH2olth;
+				(*dM)[ir] = (*Mrock)[ir] + (*Mh2os)[ir] + Madhs[ir] + (*Mh2ol)[ir] + (*Mnh3l)[ir];
+				(*dM)[ircore] = (*Mrock)[ircore] + (*Mh2os)[ircore] + Madhs[ircore] + (*Mh2ol)[ircore] + (*Mnh3l)[ircore];
 			}
 			else {
-				(*Vh2os)[jr+1] = (*Vh2os)[jr+1] - Vmoved;
-				(*Mh2os)[jr+1] = (*Vh2os)[jr+1] * rhoH2osth;
+				q = (Vmoved - (dVol[ircore] - (*Vrock)[ircore]))/Vmoved; // Fraction of Vmoved that didn't fit
+				(*Vrock)[ircore] = dVol[ircore];
+				(*Vh2ol)[ircore] = 0.0;
+				(*Vrock)[ircore+1] = (*Vrock)[ircore+1] + q*Vmoved;
+				(*Vh2ol)[ircore+1] = (*Vh2ol)[ircore+1] - q*Vmoved;
+				(*Mrock)[ircore] = (*Mrock)[ircore] + (1.0-q)*Vmoved*((*Xhydr)[ir]*rhoHydrth + (1.0-(*Xhydr)[ir])*rhoRockth);
+				(*Mh2ol)[ircore] = 0.0;
+				(*Mh2ol)[ircore+1] = (*Mh2ol)[ircore+1] - q*Vmoved*rhoH2olth;
+				(*Mrock)[ircore+1] = (*Mrock)[ircore+1] + q*Vmoved*((*Xhydr)[ir]*rhoHydrth + (1.0-(*Xhydr)[ir])*rhoRockth) + q*Vmoved*rhoH2olth*0.5;
+				(*Mrock)[ir] = (*Mrock)[ir] - Vmoved*((*Xhydr)[ir]*rhoHydrth + (1.0-(*Xhydr)[ir])*rhoRockth) + q*Vmoved*rhoH2olth*0.5;
+
+				(*dM)[ir] = (*Mrock)[ir] + (*Mh2os)[ir] + Madhs[ir] + (*Mh2ol)[ir] + (*Mnh3l)[ir];
+				(*dM)[ircore] = (*Mrock)[ircore] + (*Mh2os)[ircore] + Madhs[ircore] + (*Mh2ol)[ircore] + (*Mnh3l)[ircore];
+				(*dM)[ircore+1] = (*Mrock)[ircore+1] + (*Mh2os)[ircore+1] + Madhs[ircore+1] + (*Mh2ol)[ircore+1] + (*Mnh3l)[ircore+1];
+
+				// Update Xhydr to reflect mass and volume conservation
+				(*Xhydr)[ircore+1] = ((*Mrock)[ircore+1]/(*Vrock)[ircore+1] - rhoRockth) / (rhoHydrth - rhoRockth);
+				if (fabs((*Xhydr)[ircore+1]) < 1.0e-10) (*Xhydr)[ircore+1] = 0.0;  // Avoid numerical residuals
+				if (fabs((*Xhydr)[ircore+1]) > 1.0-1.0e-10) (*Xhydr)[ircore+1] = 1.0;
 			}
-			(*dM)[jr] = (*Mrock)[jr] + (*Mh2os)[jr] + Madhs[jr] + (*Mh2ol)[jr] + (*Mnh3l)[jr];
-			(*dM)[jr+1] = (*Mrock)[jr+1] + (*Mh2os)[jr+1] + Madhs[jr+1] + (*Mh2ol)[jr+1] + (*Mnh3l)[jr+1];
+		}
+
+		// Do not allow NH3tot/H2Otot to be higher than Xc, the eutectic composition: this messes up state() and heatIce().
+		for (jr=ircore;jr<irice+1;jr++) {
+			if ((*Mnh3l)[jr] <= Xc*((*Mh2os)[jr] + (*Mh2ol)[jr] + (*Mnh3l)[jr])) break; // Includes case where these masses are all 0
+			else {
+				// Swap NH3 in layer jr with H2O from layer jr+1, liquid or solid as appropriate.
+				// Swap volumes (not masses) to conserve volume in each shell.
+				Vmoved = ((*Mnh3l)[jr] - Xc*((*Mh2os)[jr] + (*Mh2ol)[jr] + (*Mnh3l)[jr]))/rhoNh3lth;
+				(*Vnh3l)[jr] = (*Vnh3l)[jr] - Vmoved;
+				(*Mnh3l)[jr] = (*Vnh3l)[jr] * rhoNh3lth;
+				(*Vh2ol)[jr] = (*Vh2ol)[jr] + Vmoved;
+				(*Mh2ol)[jr] = (*Vh2ol)[jr] * rhoH2olth;
+				(*Vnh3l)[jr+1] = (*Vnh3l)[jr+1] + Vmoved;
+				(*Mnh3l)[jr+1] = (*Vnh3l)[jr+1] * rhoNh3lth;
+				if ((*Vh2ol)[jr+1] > Vmoved) {
+					(*Vh2ol)[jr+1] = (*Vh2ol)[jr+1] - Vmoved;
+					(*Mh2ol)[jr+1] = (*Vh2ol)[jr+1] * rhoH2olth;
+				}
+				else {
+					(*Vh2os)[jr+1] = (*Vh2os)[jr+1] - Vmoved;
+					(*Mh2os)[jr+1] = (*Vh2os)[jr+1] * rhoH2osth;
+				}
+				(*dM)[jr] = (*Mrock)[jr] + (*Mh2os)[jr] + Madhs[jr] + (*Mh2ol)[jr] + (*Mnh3l)[jr];
+				(*dM)[jr+1] = (*Mrock)[jr+1] + (*Mh2os)[jr+1] + Madhs[jr+1] + (*Mh2ol)[jr+1] + (*Mnh3l)[jr+1];
+			}
 		}
 	}
 
