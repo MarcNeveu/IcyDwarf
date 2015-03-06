@@ -29,8 +29,8 @@
 #include "../IcyDwarf.h"
 
 int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p,
-		int warnings, int msgout, double Xp, double *Xhydr, double tzero, double Tsurf, double Tinit, double fulltime, double dtoutput,
-		int *crack_input, int *crack_species);
+		int warnings, int msgout, double Xp, double *Xhydr, double Xfines, double tzero, double Tsurf, double Tinit, double fulltime,
+		double dtoutput, int *crack_input, int *crack_species);
 
 int state (char path[1024], int itime, int ir, double E, double *frock, double *fh2os, double *fadhs, double *fh2ol, double *fnh3l, double *T);
 
@@ -57,8 +57,8 @@ int hydrate(double T, double **dM, double *dVol, double **Mrock, double **Mh2os,
 double viscosity(double T, double Mh2ol, double Mnh3l);
 
 int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p,
-		int warnings, int msgout, double Xp, double *Xhydr, double tzero, double Tsurf, double Tinit, double fulltime, double dtoutput,
-		int *crack_input, int *crack_species) {
+		int warnings, int msgout, double Xp, double *Xhydr, double Xfines, double tzero, double Tsurf, double Tinit, double fulltime,
+		double dtoutput, int *crack_input, int *crack_species) {
 
 	//-------------------------------------------------------------------
 	//                 Declarations and initializations
@@ -124,15 +124,10 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double Mcracked_rock = 0.0;          // Mass of cracked rock in the planet (g)
 	double Vliq = 0.0;                   // Volume of liquid (cm3)
 	double Vcracked = 0.0;               // Volume of cracked rock (cm3)
-	double Xfines = 1.0;                 // Volume fraction of rock that is fines that don't differentiate (no dim) = mass fraction if rock and fines have same density
 	double Crack_depth[2];				 // Crack_depth[2] (km), output
 	double WRratio[2];					 // WRratio[2] (by mass, no dim), output
 	double Heat[5];                      // Heat[4] (erg), output
 	double Thermal[9];					 // Thermal[9] (multiple units), output
-
-	double Mtot = 0.0;
-	double Vtot = 0.0;
-	double Etot = 0.0;
 
 	int *dont_dehydrate = (int*) malloc((NR)*sizeof(int));    // Don't dehydrate a layer that just got hydrated
 	if (dont_dehydrate == NULL) printf("Thermal: Not enough memory to create dont_dehydrate[NR]\n");
@@ -740,26 +735,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	}
 
     	if (irdiff > 0 && (irdiff != irdiffold || irice != iriceold || structure_changed == 1)) {
-
-    		Mtot = 0.0, Vtot = 0.0, Etot = 0.0;
-    		for (ir=0;ir<NR;ir++) {
-    			Mtot = Mtot + dM[ir];
-    			Vtot = Vtot + dVol[ir];
-    			Etot = Etot + dE[ir];
-    		}
-    		printf ("%d %.16g %.16g %.16g\n",itime, Mtot, Vtot, Etot);
-
     		separate(NR, &irdiff, &ircore, &irice, dVol, &dM, &dE, &Mrock, &Mh2os, &Madhs, &Mh2ol, &Mnh3l,
     				 &Vrock, &Vh2os, &Vadhs, &Vh2ol, &Vnh3l, &Erock, &Eh2os, &Eslush, rhoH2olth, rhoNh3lth, Xfines);
-
-    		Mtot = 0.0, Vtot = 0.0, Etot = 0.0;
-    		for (ir=0;ir<NR;ir++) {
-    			Mtot = Mtot + dM[ir];
-    			Vtot = Vtot + dVol[ir];
-    			Etot = Etot + dE[ir];
-    		}
-    		// for (ir = 0;ir<NR;ir++) printf("%d %g %d %d\n",ir,dM[ir]/Mtot,ircore,irice);
-    		printf ("%d %.16g %.16g %.16g %g %g %d %d\n",itime, Mtot, Vtot, Etot, dVol[195], Vh2os[195], ircore, irice);
     	}
 
     	// Update Xhydr. Xhydr is defined only in layers full of rock.
@@ -1726,7 +1703,6 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 
 		Volume1 = Vadhsnew[jr] + Vh2olnew[jr] + Vnh3lnew[jr];
 		Volume2 = (*Vadhs)[ir] + (*Vh2ol)[ir] + (*Vnh3l)[ir];
-
 		if (Volume1 >= Volcell[jr] && Volume2 > 0.0) {
 			nextcell = 1;                   // Slush fills more than one layer
 			q = (Volume1-Volcell[jr]) / Volume2; // Numerator = excess volume, Denominator = scaling factor for species moved
@@ -1759,7 +1735,6 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 
 		Volume1 = Vadhsnew[jr] + Vh2olnew[jr] + Vnh3lnew[jr];
 		Volume2 = (*Vadhs)[ir] + (*Vh2ol)[ir] + (*Vnh3l)[ir];
-
 		if (Volume1 >= Volcell[jr] && Volume2 > 0.0) {
 			nextcell = 1;                   // Slush fills more than one layer
 			q = (Volume1-Volcell[jr]) / Volume2; // Numerator = excess volume, Denominator = scaling factor for species moved
@@ -1820,14 +1795,12 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 			Eh2osnew[jr] = q*(*Eh2os)[ir];
 		}
 	}
-
 	Volcell[jr] = Volcell[jr] - Vh2osnew[jr];
 
 	//-------------------------------------------------------------------
 	//                        Homogenize slush layer
 	//-------------------------------------------------------------------
 
-	Vslushtot = 0.0;
 	for (jr=0;jr<=(*irdiff);jr++) {
 		Mammonia = Mammonia + Xc*Madhsnew[jr] + Mnh3lnew[jr];
 		Mwater = Mwater + (1-Xc)*Madhsnew[jr] + Mh2olnew[jr];
@@ -1968,7 +1941,6 @@ int hydrate(double T, double **dM, double *dVol, double **Mrock, double **Mh2os,
 //(*Mh2ol)[ir] = (*Mh2ol)[ir] - Vmoved*rhoH2olth;
 //(*Mrock)[ir] = (*Mrock)[ir] + Vmoved*rhoH2olth;
 //(*dM)[ir] = (*Mrock)[ir] + (*Mh2os)[ir] + Madhs[ir] + (*Mh2ol)[ir] + (*Mnh3l)[ir];
-
 
 	// Determine how much liquid there is
 	for (jr=ircore;jr<irice+1;jr++) {

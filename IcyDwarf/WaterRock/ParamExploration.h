@@ -20,7 +20,8 @@
 #include "/usr/local/lib/gcc/x86_64-apple-darwin14.0.0/5.0.0/include/omp.h"
 #include "../IcyDwarf.h"
 
-int ParamExploration(char path[1024]);
+int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, double Pmin, double Pmax, double Pstep,
+		double pHmin, double pHmax, double pHstep, double pemin, double pemax, double pestep, double WRmin, double WRmax, double WRstep);
 
 int EHandler(int phreeqc);
 
@@ -30,7 +31,8 @@ const char* ConCat(const char *str1, const char *str2);
 
 int WritePHREEQCInput(const char *TemplateFile, double temp, double pressure, double pH, double pe, double WR, char *tempinput[1024]);
 
-int ParamExploration(char path[1024]) {
+int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, double Pmin, double Pmax, double Pstep,
+		double pHmin, double pHmax, double pHstep, double pemin, double pemax, double pestep, double WRmin, double WRmax, double WRstep) {
 
 	int thread_id;
 	int phreeqc = 0;
@@ -55,26 +57,6 @@ int ParamExploration(char path[1024]) {
 	double pH = 0.0;
 	double pe = 0.0;
 	double WR = 0.0;											 // Water:rock ratio by mass
-
-	double Tmax = 100.0;
-	double Tmin = 100.0;
-	double Tstep = 50.0;
-
-	double Pmax = 200.0;
-	double Pmin = 200.0;
-	double Pstep = 200.0;
-
-	double pHmax = 11.0;
-	double pHmin = 11.0;
-	double pHstep = 0.5;
-
-	double pemax = 0.0;
-	double pemin = 0.0;
-	double pestep = 2.0;
-
-	double WRmax = 10.0;										 // Max water:rock ratio by mass
-	double WRmin = 1;										     // Min water:rock ratio by mass
-	double WRstep = 10.0;										 // Step (multiplicative) in water:rock ratio
 
 	char *dbase = (char*)malloc(1024);                           // Path to thermodynamic database
 	char *infile = (char*)malloc(1024);                          // Path to initial input file
