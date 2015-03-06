@@ -15,7 +15,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 #include <IPhreeqc.h>
 
 #include "/usr/local/lib/gcc/x86_64-apple-darwin14.0.0/5.0.0/include/omp.h"
@@ -32,10 +31,6 @@ const char* ConCat(const char *str1, const char *str2);
 int WritePHREEQCInput(const char *TemplateFile, double temp, double pressure, double pH, double pe, double WR, char *tempinput[1024]);
 
 int ParamExploration(char path[1024]) {
-
-	clock_t begin, end;
-	double time_elapsed;
-	begin = clock();
 
 	int thread_id;
 	int phreeqc = 0;
@@ -61,16 +56,16 @@ int ParamExploration(char path[1024]) {
 	double pe = 0.0;
 	double WR = 0.0;											 // Water:rock ratio by mass
 
-	double Tmax = 5.0;
-	double Tmin = 5.0;
+	double Tmax = 100.0;
+	double Tmin = 100.0;
 	double Tstep = 50.0;
 
 	double Pmax = 200.0;
 	double Pmin = 200.0;
 	double Pstep = 200.0;
 
-	double pHmax = 12.5;
-	double pHmin = 9.0;
+	double pHmax = 11.0;
+	double pHmin = 11.0;
 	double pHstep = 0.5;
 
 	double pemax = 0.0;
@@ -78,7 +73,7 @@ int ParamExploration(char path[1024]) {
 	double pestep = 2.0;
 
 	double WRmax = 10.0;										 // Max water:rock ratio by mass
-	double WRmin = 0.1;										     // Min water:rock ratio by mass
+	double WRmin = 1;										     // Min water:rock ratio by mass
 	double WRstep = 10.0;										 // Step (multiplicative) in water:rock ratio
 
 	char *dbase = (char*)malloc(1024);                           // Path to thermodynamic database
@@ -127,7 +122,7 @@ int ParamExploration(char path[1024]) {
 	strncat(infile,dbase,strlen(dbase)-9);
 	strcat(infile,"io/inputIcyDwarf");
 
-	FMQ = -11.18;
+	FMQ = -9.18;
 	nloops = 0;
 
 	// Create output
@@ -196,10 +191,6 @@ int ParamExploration(char path[1024]) {
 	free(simdata);
 	free(infile);
 	free(dbase);
-
-	end = clock();
-	time_elapsed = (double)(end - begin) / CLOCKS_PER_SEC;
-	printf("Time elapsed: %g s\n",time_elapsed);
 
 	return 0;
 }
