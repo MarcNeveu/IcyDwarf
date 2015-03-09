@@ -95,7 +95,7 @@
 #define kapnh3l 0.022e5                                    // Thermal conductivity of liquid ammonia (cgs)
 #define Ra_cr 30.0                                         // Critical Rayleigh number for convection of aqueous fluid in a porous medium (Lapwood 1948)
 #define alfh2oavg 1.0e-3                                   // Average expansivity of water at relevant T and P (K-1)
-#define hydr_delay 0.0                                     // Delay before hydration/dehydration, in timestep units, to represent time needed for hydration front to migrate (MacDonald and Fyfe, 1985)
+#define f_mem 0.75                                          // Memory of old hydration state, ideally 0, 1 = no change
 
 //-------------------------------------------------------------------
 // CRACKING PARAMETERS

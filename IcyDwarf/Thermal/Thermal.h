@@ -44,7 +44,7 @@ int decay(double *t, double *tzero, double *S);
 
 int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double **dM, double **dE, double **Mrock, double **Mh2os, double **Madhs,
 		double **Mh2ol, double **Mnh3l, double **Vrock, double **Vh2os, double **Vadhs, double **Vh2ol, double **Vnh3l, double **Erock,
-		double **Eh2os, double **Eslush, double rhoH2olth, double rhoNh3lth, double Xfines);
+		double **Eh2os, double **Eslush, double rhoAdhsth, double rhoH2olth, double rhoNh3lth, double Xfines);
 
 int dehydrate(double T, double dM, double dVol, double *Mrock, double *Mh2ol, double *Vrock,
 		double *Vh2ol, double rhoRockth, double rhoHydrth, double rhoH2olth, double *Xhydr);
@@ -231,9 +231,6 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double *Mrock_init = (double*) malloc((NR)*sizeof(double)); // Initial rock mass
 	if (Mrock_init == NULL) printf("Thermal: Not enough memory to create Mrock_init[NR]\n");
 
-	double *time_hydr = (double*) malloc((NR)*sizeof(double)); // Time since last hydration/dehydration
-	if (time_hydr == NULL) printf("Thermal: Not enough memory to create time_hydr[NR]\n");
-
 	double *Brittle_strength = (double*) malloc((NR)*sizeof(double)); // Brittle rock strength in Pa
 	if (Brittle_strength == NULL) printf("Thermal: Not enough memory to create Brittle_strength[NR]\n");
 
@@ -336,7 +333,6 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	dont_dehydrate[ir] = 0;
     	circ[ir] = 0;
     	Mrock_init[ir] = 0.0;
-    	time_hydr[ir] = 0.0;
     	Brittle_strength[ir] = 0.0;
     	strain_rate[ir] = 0.0;
     	fracOpen[ir] = 0.0;
@@ -470,8 +466,6 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	Vnh3l[ir] = Mnh3l[ir] / rhoNh3lth;
     	T[ir] = Tinit;
     	Nu[ir] = 1.0;
-    	// time_hydr[ir] = (1.0-Xhydr[ir])*(dr_grid*cm)/hydration_rate*Gyr2sec; // Ready to hydrate/dehydrate
-    	time_hydr[ir] = (1.0-Xhydr[ir])*hydr_delay; // Ready to hydrate/dehydrate
     }
 
     // Gravitational potential energy
@@ -586,7 +580,6 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 				i = 1;
 				break;
 			}
-			time_hydr[ir] = time_hydr[ir] + dtime;
     	}
     	for (ir=0;ir<NR;ir++) dM_old[ir] = dM[ir];
 
@@ -668,27 +661,24 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     		if (Mh2ol[ir] > 0) irice = ir;
     	}
 
-		for (ir=irice-1;ir>=ircrack;ir--) { // From the ocean downwards
-			if (T[ir] < Tdehydr_max && Xhydr[ir] <= 0.99 && time_hydr[ir] > hydr_delay) {
-		   //!!Added 12/23/2014. Replace above lines with 2 lines below for mudball run
-		   //for (ir=0;ir<NR-1;ir++) {
-			  // if (T[ir] < Tdehydr_max && Xhydr[ir] <= 0.9 && time_hydr[ir] > hydr_delay && Mh2ol[ir] + Mnh3l[ir] >= 0.02*dM[ir]) {
-
-				Xhydr_temp = Xhydr[ir];
-				hydrate(T[ir], &dM, dVol, &Mrock, &Mh2os, Madhs, &Mh2ol, &Mnh3l, &Vrock, &Vh2os, &Vh2ol, &Vnh3l,
-					rhoRockth, rhoHydrth, rhoH2osth, rhoH2olth, rhoNh3lth, &Xhydr, ir, ircore, irice, NR);
-				for (jr=0;jr<NR;jr++) time_hydr[jr] = (1.0-Xhydr[ir])*hydr_delay;
-				structure_changed = 1;
-				if (Xhydr[ir] >= (1.0+1.0e-10)*Xhydr_temp) dont_dehydrate[ir] = 1; // +epsilon to beat machine error
+    	if (Xfines == 0.0) {
+			for (ir=ircore-1;ir>=ircrack;ir--) { // From the ocean downwards -- irice-1?
+				if (T[ir] < Tdehydr_max && Xhydr[ir] <= 0.99 && structure_changed == 0) {
+					Xhydr_temp = Xhydr[ir];
+					hydrate(T[ir], &dM, dVol, &Mrock, &Mh2os, Madhs, &Mh2ol, &Mnh3l, &Vrock, &Vh2os, &Vh2ol, &Vnh3l,
+						rhoRockth, rhoHydrth, rhoH2osth, rhoH2olth, rhoNh3lth, &Xhydr, ir, ircore, irice, NR);
+					structure_changed = 1;
+					if (Xhydr[ir] >= (1.0+1.0e-10)*Xhydr_temp) dont_dehydrate[ir] = 1; // +epsilon to beat machine error
+				}
 			}
-		}
-		for (ir=0;ir<irice;ir++) {
-			if (T[ir] > Tdehydr_min && Xhydr[ir] >= 0.01 && dont_dehydrate[ir] == 0) {
-				dehydrate(T[ir], dM[ir], dVol[ir], &Mrock[ir], &Mh2ol[ir], &Vrock[ir], &Vh2ol[ir],
-						rhoRockth, rhoHydrth, rhoH2olth, &Xhydr[ir]);
-				structure_changed = 1;
+			for (ir=0;ir<ircore;ir++) { // irice?
+				if (T[ir] > Tdehydr_min && Xhydr[ir] >= 0.01 && dont_dehydrate[ir] == 0) {
+					dehydrate(T[ir], dM[ir], dVol[ir], &Mrock[ir], &Mh2ol[ir], &Vrock[ir], &Vh2ol[ir], rhoRockth, rhoHydrth, rhoH2olth,
+							&Xhydr[ir]);
+					structure_changed = 1;
+				}
 			}
-		}
+    	}
 
 		//-------------------------------------------------------------------
 		//               Allow for chemical equilibrium again
@@ -734,17 +724,14 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
     	if (irdiff > 0 && (irdiff != irdiffold || irice != iriceold || structure_changed == 1)) {
     		separate(NR, &irdiff, &ircore, &irice, dVol, &dM, &dE, &Mrock, &Mh2os, &Madhs, &Mh2ol, &Mnh3l,
-    				 &Vrock, &Vh2os, &Vadhs, &Vh2ol, &Vnh3l, &Erock, &Eh2os, &Eslush, rhoH2olth, rhoNh3lth, Xfines);
+    				 &Vrock, &Vh2os, &Vadhs, &Vh2ol, &Vnh3l, &Erock, &Eh2os, &Eslush, rhoAdhsth, rhoH2olth, rhoNh3lth, Xfines);
     	}
 
-    	// Update Xhydr. Xhydr is defined only in layers full of rock.
-    	// But setting Xhydr to 0 elsewhere crashes the code, because it upsets separate().
-    	for (ir=0;ir<irice;ir++) {
-    		if (Mrock[ir] > Mrock_init[ir]) { // ircore is the first layer not full of rock, we stop one layer before that
-				Xhydr[ir] = (Mrock[ir]/Vrock[ir] - rhoRockth) / (rhoHydrth - rhoRockth);
-				if (Xhydr[ir] < 1.0e-10) Xhydr[ir] = 0.0;   // Avoid numerical residuals
-				if (Xhydr[ir] > 1.0-1.0e-10) Xhydr[ir] = 1.0;
-    		}
+    	// Update Xhydr
+    	for (ir=0;ir<ircore;ir++) { // irice?
+			Xhydr[ir] = (Mrock[ir]/Vrock[ir] - rhoRockth) / (rhoHydrth - rhoRockth);
+			if (Xhydr[ir] < 1.0e-10) Xhydr[ir] = 0.0;   // Avoid numerical residuals
+			if (Xhydr[ir] > 1.0-1.0e-10) Xhydr[ir] = 1.0;
     	}
 
 		//-------------------------------------------------------------------
@@ -808,35 +795,26 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			}
 		}
 
-		for (ir=0;ir<irice;ir++) {
+		for (ir=0;ir<ircore;ir++) { //irice?
 			if (fabs(Xhydr_old[ir] - Xhydr[ir]) > 1.0e-10) {
 				Qth[ir] = Qth[ir] + (Xhydr[ir] - Xhydr_old[ir])*Mrock[ir]*Hhydr/dtime;
 				if (Xhydr[ir] - Xhydr_old[ir] > 0.0) Heat_serp = Heat_serp + (Xhydr[ir] - Xhydr_old[ir])*Mrock[ir]*Hhydr/dtime;
 				else Heat_dehydr = Heat_dehydr + (Xhydr_old[ir] - Xhydr[ir])*Mrock[ir]*Hhydr/dtime;
 			}
-
 		}
 
 		//-------------------------------------------------------------------
-		// Calculate fluxes.
-		// Fluxes are assumed to be conductive everywhere except where the
-		// liquid fraction exceeds a small amount (2%), in which case the
-		// conductivity is set to a large but reasonable value, 400 W/m/K.
+		//                     Calculate conductive fluxes
 		//-------------------------------------------------------------------
 
 		for (ir=0;ir<NR;ir++) {
-			frock = fabs(Vrock[ir] / dVol[ir]);
-			fh2os = fabs(Vh2os[ir] / dVol[ir]);
-			fadhs = fabs(Vadhs[ir] / dVol[ir]);
-			fh2ol = fabs(Vh2ol[ir] / dVol[ir]);
-			fnh3l = fabs(Vnh3l[ir] / dVol[ir]);
+			frock = Vrock[ir] / dVol[ir];
+			fh2os = Vh2os[ir] / dVol[ir];
+			fadhs = Vadhs[ir] / dVol[ir];
+			fh2ol = Vh2ol[ir] / dVol[ir];
+			fnh3l = Vnh3l[ir] / dVol[ir];
 
-			kap1 = kapcond(T[ir], frock, fh2os, fadhs, fh2ol, fnh3l, Xhydr[ir]);
-
-			if (fh2ol + fnh3l >= 0.02)
-				kappa[ir] = kap_slush;  // cgs
-			else
-				kappa[ir] = kap1;
+			kappa[ir] = kapcond(T[ir], frock, fh2os, fadhs, fh2ol, fnh3l, Xhydr[ir]);
 		}
 
 		//-------------------------------------------------------------------
@@ -884,14 +862,51 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		}
 
 		//-------------------------------------------------------------------
-		//                    Convection in H2O(s) layer
+		//                  Convection in H2O(l) / mud layer
 		//-------------------------------------------------------------------
 
 		// Reset Nu and irice at each iteration (need to reset irice several times at each iteration because state() is called several times)
 		irice = 0;
 		for (ir=0;ir<NR;ir++) {
 			Nu[ir] = 1.0;
-			if (Mh2ol[ir] > 0.0) irice = ir;
+			if (Mh2ol[ir] > 0.0) irice = ir; // > 0.02? (Keep 2% liquid minimum?)
+		}
+
+		if (irice >= ircore+2 && Xfines*frockp*rho_p/rhoRockth < 0.64) {
+			kap1 = kappa[ircore+1];
+			mu1 = (1.0e-2)/(1.0-Xfines/0.64)/(1.0-Xfines/0.64); // 1.0e-3 in SI, expression from Mueller, S. et al. (2010) Proc Roy Soc A 466, 1201-1228.
+			dT = T[ircore] - T[irice];
+			dr = r[irice+1] - r[ircore+1];
+			jr = (int) (ircore+irice)/2;
+			g1 = Gcgs*M[jr]/(r[jr+1]*r[jr+1]);
+			Ra = alfh2oavg*g1*dT*dr*dr*dr                                                                          // Thermal expansion of rock is neglected
+					*(1.0-Xfines*frockp*rho_p/rhoRockth)*ch2ol                                                     // Heat capacity (volume avg) between water
+							+ (Xfines*frockp*rho_p/rhoRockth)*heatRock(0.5*(T[ircore]+T[irice]))                   // and rock fines
+					*((1.0-Xfines*frockp*rho_p/rhoRockth)*rhoH2olth + (Xfines*frockp*rho_p/rhoRockth)*rhoRockth)   // Density (volume avg) between water and fines
+					*((1.0-Xfines*frockp*rho_p/rhoRockth)*rhoH2olth + (Xfines*frockp*rho_p/rhoRockth)*rhoRockth)   // Density squared
+					/ (kap1*mu1);
+			if (Ra > 0.0)
+				Nu0 = pow((Ra/17610.4),0.25); // Ra_c = 17610 for rigid-rigid boundaries, see e.g. Koschmieder EL (1993) Benard cells and Taylor vortices, Cambridge U Press, p. 20.
+
+			if (Nu0 > 1.0) {
+				for (jr=ircore+1;jr<irice;jr++) {
+					Nu[jr] = Nu0;
+				}
+			}
+		}
+
+		for (ir=ircore;ir<=irice;ir++) {
+			kappa[ir] = kappa[ir]*Nu[ir];
+			if (kappa[ir] > kap_slush) kappa[ir] = kap_slush;
+		}
+
+		//-------------------------------------------------------------------
+		//                    Convection in H2O(s) layer
+		//-------------------------------------------------------------------
+
+		// Reset Nu at each iteration. No need to reset irice, just set for H2O(l) convection above
+		for (ir=0;ir<NR;ir++) {
+			Nu[ir] = 1.0;
 		}
 
 		if (irdiff >= irice+2) {
@@ -1111,7 +1126,6 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	free (dont_dehydrate);
 	free (circ);
 	free (Mrock_init);
-	free (time_hydr);
 	free (aTP);             // Thermal mismatch-specific
 	free (integral);
 	free (alpha);           // Pore water expansion-specific
@@ -1489,7 +1503,7 @@ double kapcond(double T, double frock, double fh2os, double fadhs, double fh2ol,
 
 	// Combined conductivities (equations (7) and (8) of D09)
 	if (frock >= 1.0 - 1.0e-5) // frock can be different from 1 in rock at 1.0e-16 precision if separate() is not called.
-		kap = Xhydr*kaphydr + (1-Xhydr)*kaprock;
+		kap = Xhydr*kaphydr + (1.0-Xhydr)*kaprock;
 	else {
 		// Geometric mean for ice phases (equation 7)
 		kapice = fh2os*log(kaph2os) + fadhs*log(kapadhs) + fh2ol*log(kaph2ol) + fnh3l*log(kapnh3l);
@@ -1556,7 +1570,7 @@ int decay(double *t, double *tzero, double *S) {
 
 int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double **dM, double **dE, double **Mrock, double **Mh2os, double **Madhs,
 		double **Mh2ol, double **Mnh3l, double **Vrock, double **Vh2os, double **Vadhs, double **Vh2ol, double **Vnh3l, double **Erock,
-		double **Eh2os, double **Eslush, double rhoH2olth, double rhoNh3lth, double Xfines){
+		double **Eh2os, double **Eslush, double rhoAdhsth, double rhoH2olth, double rhoNh3lth, double Xfines){
 
 	int ir = 0;
 	int jr = 0;
@@ -1606,8 +1620,9 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 	double q = 0.0;                                               // Volume that does not fit into cell jr, scaled, not necessarily < 1
 	double Volume1 = 0.0;
 	double Volume2 = 0.0;
-	double Mammonia = 0.0;
+	double Madh = 0.0;
 	double Mwater = 0.0;
+	double Mammonia = 0.0;
 	double Vslushtot = 0.0;
 	double Eslushtot = 0.0;
 	int nextcell = 0;
@@ -1675,18 +1690,27 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 			Erocknew[jr] = q*(*Erock)[ir];
 		}
 	}
+	Volcell[*ircore] = Volcell[*ircore] - Vrocknew[*ircore];
 
 	//-------------------------------------------------------------------
 	// Redistribute rock that was not picked up uniformly among ice zones
 	//-------------------------------------------------------------------
 
+	Vice = Vice + Volcell[*ircore]; // Limit case of *ircore
+
 	for (ir=0;ir<=(*irdiff);ir++) {
-		if (ir >= (*ircore)) Vice = Vice + dVol[ir];
+		if (ir >= (*ircore)+1) Vice = Vice + dVol[ir];
 		Mfines = Mfines + (*Mrock)[ir]*Xfines;
 		Vfines = Vfines + (*Vrock)[ir]*Xfines;
 		Efines = Efines + (*Erock)[ir]*Xfines;
 	}
-	for (ir=(*ircore);ir<=(*irdiff);ir++) {
+
+	Mrocknew[*ircore] = Mrocknew[*ircore] + Mfines*Volcell[*ircore]/Vice; // Limit case of *ircore
+	Vrocknew[*ircore] = Vrocknew[*ircore] + Vfines*Volcell[*ircore]/Vice;
+	Erocknew[*ircore] = Erocknew[*ircore] + Efines*Volcell[*ircore]/Vice;
+	Volcell[*ircore] = Volcell[*ircore] - Vfines*Volcell[*ircore]/Vice;
+
+	for (ir=(*ircore)+1;ir<=(*irdiff);ir++) {
 		Mrocknew[ir] = Mrocknew[ir] + Mfines*dVol[ir]/Vice;
 		Vrocknew[ir] = Vrocknew[ir] + Vfines*dVol[ir]/Vice;
 		Erocknew[ir] = Erocknew[ir] + Efines*dVol[ir]/Vice;
@@ -1800,8 +1824,9 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 	//-------------------------------------------------------------------
 
 	for (jr=0;jr<=(*irdiff);jr++) {
-		Mammonia = Mammonia + Xc*Madhsnew[jr] + Mnh3lnew[jr];
-		Mwater = Mwater + (1-Xc)*Madhsnew[jr] + Mh2olnew[jr];
+		Madh = Madh + Madhsnew[jr];
+		Mwater = Mwater + Mh2olnew[jr];
+		Mammonia = Mammonia + Mnh3lnew[jr];
 		Eslushtot = Eslushtot + Eslushnew[jr];
 		Vslushtot = Vslushtot + Vadhsnew[jr] + Vh2olnew[jr] + Vnh3lnew[jr];
 	}
@@ -1816,8 +1841,8 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 		// Slush
 		Volume1 = Vadhsnew[ir] + Vh2olnew[ir] + Vnh3lnew[ir];
 		(*Eslush)[ir] = (Volume1/Vslushtot) * Eslushtot;
-		(*Vadhs)[ir] = 0.0;  // It's OK to set ADH = 0 because we will redo phases right away
-		(*Madhs)[ir] = 0.0;
+		(*Madhs)[ir] = Madh*(Volume1/Vslushtot);
+		(*Vadhs)[ir] = (*Madhs)[ir]/rhoAdhsth;
 		(*Mh2ol)[ir] = Mwater*(Volume1/Vslushtot);
 		(*Vh2ol)[ir] = (*Mh2ol)[ir]/rhoH2olth;
 		(*Mnh3l)[ir] = Mammonia*(Volume1/Vslushtot);
@@ -1831,7 +1856,6 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 		// Totals
 		(*dM)[ir] = (*Mrock)[ir] + (*Mh2os)[ir] + (*Madhs)[ir] + (*Mh2ol)[ir] + (*Mnh3l)[ir];
 		(*dE)[ir] = (*Erock)[ir] + (*Eh2os)[ir] + (*Eslush)[ir];
-
 	}
 
 	//-------------------------------------------------------------------
@@ -1869,7 +1893,6 @@ int dehydrate(double T, double dM, double dVol, double *Mrock, double *Mh2ol, do
 		double *Vh2ol, double rhoRockth, double rhoHydrth, double rhoH2olth, double *Xhydr){
 
 	double Xhydr_old = (*Xhydr);
-	double f_mem = 0.75;                                // Memory of old hydration state, ideally 0, 1 = no change
 
 	// Set hydration level: 1 at Tdehydr_min, 0 at Tdehydr_max, linear in between
 	if (T<Tdehydr_min) (*Xhydr) = 1.0;
@@ -1918,7 +1941,6 @@ int hydrate(double T, double **dM, double *dVol, double **Mrock, double **Mh2os,
 	double Vmoved = 0.0;
 	double q = 0.0;   // Similar q as in the separate() routine
 	double Xhydr_old = (*Xhydr)[ir];
-	double f_mem = 0.85;                                // Memory of old hydration state, ideally 0, 1 = no change
 
 	// Set hydration level: 1 at Tdehydr_min, 0 at Tdehydr_max, linear in between
 	if (T<Tdehydr_min) (*Xhydr)[ir] = 1.0;
@@ -1933,8 +1955,8 @@ int hydrate(double T, double **dM, double *dVol, double **Mrock, double **Mh2os,
 	}
 
 	if (ir >= ircore) { // Easy case, everything stays in the same grid cell
-		//!!Added 12/23/2014, appropriate for mudball hydration, otherwise remove and toggle commented lines below all the way to "Update Xhydr" (after last loop of this subroutine)
 		Vmoved = (*Mrock)[ir]/((*Xhydr)[ir]*rhoHydrth + (1.0-(*Xhydr)[ir])*rhoRockth) - (*Mrock)[ir]/(Xhydr_old*rhoHydrth + (1.0-Xhydr_old)*rhoRockth);
+		if (Vmoved > (*Vh2ol)[ir]) Vmoved = (*Vh2ol)[ir];
 		(*Vrock)[ir] = (*Vrock)[ir] + Vmoved;
 		(*Vh2ol)[ir] = (*Vh2ol)[ir] - Vmoved;
 		(*Mh2ol)[ir] = (*Mh2ol)[ir] - Vmoved*rhoH2olth;
