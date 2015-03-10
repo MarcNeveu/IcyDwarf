@@ -9,10 +9,10 @@ Messages?                     0
 -------------------------------
 Planet parameters
 -------------------------------
-Density (g cm-3)              2.077
+Density (g cm-3)              3.07
 Radius (km)                   475
-Ammonia w.r.t. water          1.0e-10
-Surface temperature (K)       40
+Ammonia w.r.t. water          1.0e-2
+Surface temperature (K)       168
 -------------------------------
 Grid
 -------------------------------
@@ -22,7 +22,7 @@ Output every (Myr)            1
 -------------------------------
 Subroutines
 -------------------------------
-Run thermal?                  1
+Run thermal?                  0
 	Sim starts at (Myr)   3
 	Initial temp (K)      168
 	Degree of hydration   0.45
@@ -31,14 +31,14 @@ Core cracks
 	Calculate aTP?        0
 	Water alpha beta?     0
 	CHNOSZ species?       0
-Geochemistry? (min max step)  0
-	Temperature           5 205 100
-	Pressure              200 1400 200
-	pH                    9 13 2
-	pe                    6 8 0.5
-	Water:rock mass ratio 0.1 10 10
-Compression?                  1
-Cryovolcanism?                1
+Geochemistry? (min max step)  1
+	Temperature           5 105 100
+	Pressure              200 200 200
+	pH                    9 9 2
+	pe = FMQ + …          2 6 4
+	Water:rock mass ratio 10 10 10
+Compression?                  0
+Cryovolcanism?                0
 	After how many Myr?   2500
 	Min temperature (K)   273
 -------------------------------

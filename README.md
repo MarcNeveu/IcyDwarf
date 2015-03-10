@@ -1,20 +1,21 @@
 IcyDwarf
 ========
-*IcyDwarf* calculates the coupled physical-chemical evolution of an icy dwarf planet. As of version 14.4.8, the code calculates:
+*IcyDwarf* calculates the coupled physical-chemical evolution of an icy dwarf planet. As of version 15.3.4, the code calculates:
 - The thermal evolution of an icy dwarf planet, with no chemistry (Thermal subroutine, Desch et al. 2009), but with added rock hydration, dehydration, hydrothermal circulation, and core cracking. The depth of cracking and a bulk water:rock ratio by mass in the rocky core are also computed.
 - Whether cryovolcanism is possible by the exsolution of volatiles from cryolavas.
+- Equilibrium fluid and rock chemistries resulting from water-rock interaction in subsurface oceans in contact with a rocky core.
 
 *IcyDwarfPlot* creates interactive displays of outputs from the following *IcyDwarf* functionalities:
 - Thermal Evolution
 - Core cracking
 
-There is currently no display of cryovolcanism outputs from *IcyDwarf*.
+There is currently no display of cryovolcanism or geochemistry outputs from *IcyDwarf*.
 
 The two codes can run independently of each other, so it's not necessary to install both if you only need one.
 
 # Installation
 
-The installation steps outlined below are valid for Mac (preferably OS 10.9). *IcyDwarf* and *IcyDwarfPlot* should also run on Windows and Linux, but I don't know how to set up the compilation and linking flags, as well as the *R* and *SDL* dependencies. Check out their official websites (links below) for more information. 
+The installation steps outlined below are valid for Mac (preferably OS 10.10). *IcyDwarf* and *IcyDwarfPlot* could also run on Windows and Linux, but compilation instructions are not set up and external I/O handling needs to be modified in the source code. 
 
 ## Install *R*
 *R* is needed only for *IcyDwarf*, to run the geochemistry package *CHNOSZ*.
@@ -32,6 +33,16 @@ In *R*, type the command
 ## Install *Rcpp* and *RInside*
 *Rcpp* and *RInside* are libraries that allow *R* applications to be embedded in C or C++ codes. They are needed only for *IcyDwarf*. Go to http://cran.r-project.org/web/packages/Rcpp/index.html and http://cran.r-project.org/web/packages/RInside/index.html to download the respective archives. On Mac, unzip the archives in */Library/Frameworks/R.framework/Resources/library/*, so that *Rcpp* and *RInside* are two subfolders of *library*.
 
+## Install *IPHREEQC*
+The *IPHREEQC* library is a module that allows the *PHREEQC* application to be embedded in C or C++ codes. It is needed only for *IcyDwarf*. Go to http://wwwbrr.cr.usgs.gov/projects/GWC_coupled/phreeqc to download *IPHREEQC* and follow the default installation instructions:
+
+	./configure
+	make
+	make install
+
+## Install *gcc*
+In recent Mac versions (OS 10.8+), the Mac compiler *clang* has replaced the compiler *gcc*, which is needed to take advantage of the parallel computing capabilities of the *ParamExploration()* routine of *IcyDwarf*. Go to http://hpc.sourceforge.net and follow the instructions there to download and install *gcc*.
+
 ## Install *SDL2*
 *SDL2* is a graphic library, needed only for *IcyDwarfPlot*. Go to http://www.libsdl.org/projects. Download and install *SDL2*, *SDL2_image*, and *SDL2_ttf*. *SDL2_mixer* is not needed as the code doesn't play music for you yet.
 
@@ -48,16 +59,14 @@ The executable files are:
 - */Path_to_GitFolder/IcyDwarf/IcyDwarf/Release/IcyDwarf* (no extension)
 - */Path_to_GitFolder/IcyDwarf/IcyDwarfPlot/Release/IcyDwarfPlot* (no extension)
 
-Just double click to run. You can create shortcuts to these.
-
-## Input file
-The input file is located in the *IcyDwarf/Input* folder. You can copy-paste an input file to the *IcyDwarfPlot/Input* folder as well.
+## Input files
+The respective input files are located in the *IcyDwarf/Input* and *IcyDwarfPlot/Input* folders.
 
 ## Output files
 
 ### Thermal code
 
-The output file of the thermal evolution code is *thermal.txt*. It lists, for a given layer inside a dwarf planet:
+The output file of the thermal evolution code is *Thermal.txt*. It lists, for a given layer inside a dwarf planet:
 - radius (km)
 - temperature (K)
 - mass of rock (g)
@@ -65,6 +74,8 @@ The output file of the thermal evolution code is *thermal.txt*. It lists, for a 
 - mass of ammonia dihydrate (g)
 - mass of liquid water (g)
 - mass of liquid ammonia (g)
+- thermal conductivity (W/m/K)
+- degree of hydration (0: fully dry, 1: fully hydrated)
 
 The first *n_layer* lines list these properties in each layer, from the center to the surface, at *t*=0. The next *n_layer* lines list them at *t+dt_output*, and so on, such that the total number of lines is *n_layer* * *n_output*.
 
@@ -84,80 +95,32 @@ The cryolava routine outputs three files:
 - *Cryolava_partialP.txt*, with the same layout as the molalities file, shows the partial pressure of each of these 10 species
 - *Cryolava_xvap.txt* has the same amount of rows, but only 6 columns which show the depth under the surface (km), total gas pressure (bar), volumic vapor fraction x_vap (a dimensionless indicator of exsolution),  fluid cryolava density (kg m-3), stress intensity K_I at the crack tip (Pa m^0.5), a boolean (0: no crack propagation; 1: crack propagation).
 
+### ParamExploration code
+
+This routine outputs a file that looks much like the PHREEQC selected output specified in the *IcyDwarf/PHREEQC-3.1.2/io* folder, with a few added columns at the beginning (starting T in celsius, P in bar, pH, pe, log fO2 at FMQ(T,P) buffer, pe-FMQ). The file is formatted for easy import into a spreadsheet, with each line describing a different simulation. Lines filled with zeros are PHREEQC simulations that did not converge.
+
 # Modifying the source code
 
 If you wish to modify the code, set up your compiler and linker so that all the relevant flags are added. 
 
-## Compiler setup (*gcc* on Mac OS 10.9 Mavericks)
+## Compiler setup (*gcc* on Mac OS 10.10 Yosemite)
 
 My compiling instructions look like this (I listed each include as a new line for clarity, instead of separating them by a space:
 
-For both IcyDwarf and IcyDwarfPlot:
+For IcyDwarf:
+gcc -I/usr/include -I/usr/local/include -I/Library/Frameworks/R.framework/Versions/3.0/Resources/include -I/Library/Frameworks/R.framework/Versions/3.0/Resources/library/RInside/include -O3 -g -Wall -c -fmessage-length=0 -arch x86_64 -fopenmp -o IcyDwarf.o ../IcyDwarf.c 
+gcc -L/Users/marc/Documents/Research/2011-2016_ASU/2IcyDwarf/Git/IcyDwarf/IcyDwarf -L/usr/local/lib -L/Library/Frameworks/R.framework/Versions/3.0/Resources/lib -F/Library/Frameworks -arch x86_64 -lgomp -o IcyDwarf IcyDwarf.o /Library/Frameworks/R.framework/Resources/library/RInside/lib/x86_64/libRInside.a /usr/local/lib/libiphreeqc-3.1.7.dylib /usr/local/lib/libiphreeqc.dylib /usr/local/lib/libiphreeqc.a -lR
 
-*-I/usr/include*
+For IcyDwarfPlot:
+gcc -I/usr/include -I/Library/Frameworks/SDL2.framework/Versions/A/Headers -I/Library/Frameworks/SDL2_image.framework/Versions/A/Headers -I/Library/Frameworks/SDL2_ttf.framework/Versions/A/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/GLUT.framework/Versions/A/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/OpenGL.framework/Versions/A/Headers -O3 -Wall -c -fmessage-length=0 -o IcyDwarfPlot.o ../IcyDwarfPlot.c 
+gcc -L/Users/marc/Documents/Research/2011-2016_ASU/2IcyDwarf/Git/IcyDwarf/IcyDwarfPlot -F/Library/Frameworks -arch x86_64 -framework openGL -framework Cocoa -framework GLUT -framework SDL2 -framework SDL2_image -framework SDL2_ttf -o IcyDwarfPlot IcyDwarfPlot.o
 
-For IcyDwarf only:
-- *-/Library/Frameworks/R.framework/Versions/3.0/Resources/include*
-- *-/Library/Frameworks/R.framework/Versions/3.0/Resources/library/RInside/include*
-
-For IcyDwarfPlot only:
-- *-I/Library/Frameworks/SDL2.framework/Versions/A/Headers*
-- *-I/Library/Frameworks/SDL2_image.framework/Versions/A/Headers*
-- *-I/Library/Frameworks/SDL2_ttf.framework/Versions/A/Headers*
-- *-I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers*
-- *-I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/GLUT.framework/Versions/A/Headers*
-- *-I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/OpenGL.framework/Versions/A/Headers*
-- *-O3 -Wall -c -fmessage-length=0*
-
-## Linker setup (Mac OS 10.9 Mavericks)
-
-My linker flags for IcyDwarf look like this:
-
-*-F/Library/Frameworks -arch x86_64*
-
-Linker library: *R*
-
-Linker library search paths:
-- */Path_to_GitFolder/IcyDwarf/IcyDwarf*
-- */Library/Frameworks/R.framework/Versions/3.0/Resources/lib* (likely to change with new R versions)
-
-Overall linker instructions:
-
-*-L/Path_to_GitFolder/IcyDwarf/IcyDwarf -L/Library/Frameworks/R.framework/Versions/3.0/Resources/lib -F/Library/Frameworks -arch x86_64*
-
-My linker flags for IcyDwarfPlot look like this:
-
-*-F/Library/Frameworks -arch x86_64 -framework openGL -framework Cocoa -framework GLUT -framework SDL2 -framework SDL2_image -framework SDL2_ttf*
-
-Linker library search path:
-
-*/Path_to_GitFolder/IcyDwarf/IcyDwarfPlot*
-
-Overall linker instructions:
-
-*-L/Path_to_GitFolder/IcyDwarf/IcyDwarfPlot -F/Library/Frameworks -arch x86_64 -framework openGL -framework Cocoa -framework GLUT -framework SDL2 -framework SDL2_image -framework SDL2_ttf*
+Email me if you have any issues.
 
 # Doing science with the code
 
 If you communicate or publish scientific results using this code, please acknowledge one of the following references. Thanks!
 
-Neveu M., Desch S., Castillo-Rogez J. (2014) Modeling core cracking, a key factor in the geophysical evolution 
-and habitability of Ceres. 45th LPSC, abstract 1120.
+Neveu M., Desch S., Castillo-Rogez J. (2015) Core cracking and hydrothermal circulation profoundly affect Ceres' geophysical evolution. Journal of Geophysical Research: Planets, in press. http://dx.doi.org/10.1002/2014JE004714.
 
-Neveu M., Glein C., Anbar A., McKay C., Desch S., Castillo-Rogez J., Tsou P. (2014) Enceladus' fully
-cracked core: Implications for habitability. Workshop on the Habitability of Icy Worlds, abstract #4028.
-
-Neveu M., Desch S., Castillo-Rogez J. (2013) Warm and wet? The role of liquid water in the early
-evolution of Ceres. Workshop on Planetesimal Formation and Differentiation, abstract #8037.
-
-Desch S., Neveu M. (2013) Charon Cryovolcanism and Plutonian Plutonics. AGU Fall Meeting, abstract #P51D-1744.
-
-Neveu M., Napolitano D., Edwards A., Desch S., Glein C., Shock E. (2013) Exotic sodas: Can Gas Exsolution Drive 
-Explosive Cryovolcanism on Pluto and Charon? The Pluto System on the Eve of Exploration by New Horizons: Perspectives 
-and Predictions.
-
-Neveu M., Desch S., Castillo-Rogez J. (2013) Cracking in Ceres' core as an opportunity for late hydrothermal activity. 
-44th LPSC, abstract #2216.
-
-Desch S., Cook J., Doggett T., Porter S. (2009) Thermal evolution of Kuiper belt objects, with implications for
-cryovolcanism. Icarus 202, 694-714.
+Neveu M., Desch S., Shock E., Glein C. (2015) Prerequisites for explosive cryovolcanism on dwarf planet-class Kuiper belt objects. Icarus 246, 48-64. http://dx.doi.org/10.1016/j.icarus.2014.03.043.

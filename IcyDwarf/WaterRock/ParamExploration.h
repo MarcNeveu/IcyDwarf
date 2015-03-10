@@ -36,7 +36,7 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 
 	int thread_id;
 	int phreeqc = 0;
-	int nvar = 100;                                              // Number of variables stored in each PHREEQC simulation
+	int nvar = 1000;                                              // Number of variables stored in each PHREEQC simulation
 	int i = 0;
 	int j = 0;
 
@@ -52,7 +52,7 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 	int npeIter = 0;
 	int nWRiter = 0;
 
-	double T = 0.0;
+	double T = 0.0;                                              // Temperature (celsius)
 	double P = 0.0;												 // Pressure (bar)
 	double pH = 0.0;
 	double pe = 0.0;
@@ -62,8 +62,9 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 	char *infile = (char*)malloc(1024);                          // Path to initial input file
 
 	int nloops = 0;
-	double FMQ = 0.0;
-
+	double logfO2 = 0.0;                                         // O2 fugacity for the Fayalite-Magnetite-Quartz buffer at T,P
+	double logKO2H2O = 0.0;                                      // log K for reaction 4 H+ + 4 e- + O2 = 2 H2O
+	double FMQ = 0.0;                                            // pe corresponding to logfO2
 	//-------------------------------------------------------------------
 	//                         Initializations
 	//-------------------------------------------------------------------
@@ -104,7 +105,6 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 	strncat(infile,dbase,strlen(dbase)-9);
 	strcat(infile,"io/inputIcyDwarf");
 
-	FMQ = -9.18;
 	nloops = 0;
 
 	// Create output
@@ -117,12 +117,25 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 		for (itemp=0;itemp<=nTempIter;itemp++) {
 			T = Tmin + Tstep*(double) itemp;
 
+			// Use CHNOSZ to get log fO2 for F-M-Q buffer at given T and P
+			logfO2 = -3.0*CHNOSZ_logK("quartz", "cr", T, P, "SUPCRT92")
+				     -2.0*CHNOSZ_logK("magnetite", "cr", T, P, "SUPCRT92")
+			         +3.0*CHNOSZ_logK("fayalite", "cr", T, P, "SUPCRT92")
+				     +1.0*CHNOSZ_logK("O2", "g", T, P, "SUPCRT92");
+			logKO2H2O = -4.0*CHNOSZ_logK("H+", "aq", T, P, "SUPCRT92")
+						-4.0*CHNOSZ_logK("e-", "aq", T, P, "SUPCRT92")
+						-1.0*CHNOSZ_logK("O2", "g", T, P, "SUPCRT92")
+						+2.0*CHNOSZ_logK("H2O", "liq", T, P, "SUPCRT92");
+
 			for(iWR=0;iWR<=nWRiter;iWR++) { // Using log because of multiplicative step. log ratio = ln ratio.
 				WR = WRmax/pow(WRstep,(double) iWR);
 
 				for (ipe=0;ipe<=npeIter;ipe++) {
 					pe = pemin + pestep*(double) ipe;
-
+					printf("P=%g (%d of %d) T=%g (%d of %d) W:R=%g (%d of %d) pe=FMQ+%g (%d of %d), "
+							"parallel calculations over %d values of pH\n",
+							P,iPressure+1,nPressureIter+1,T,itemp+1,nTempIter+1,
+							WR,iWR+1,nWRiter+1,pe,ipe+1,npeIter+1,npHiter+1);
 #pragma omp parallel private(thread_id, phreeqc, pH, nloops)
 					{
 					char *tempinput = (char*)malloc(1024);
@@ -141,18 +154,22 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 					for (ipH=0;ipH<=npHiter;ipH++) {
 						pH = pHmin + pHstep*(double) ipH;
 
+						FMQ = -pH + 0.25*(logfO2+logKO2H2O);
+						printf("FMQ pe is %g at T=%g C, P=%g bar, and pH %g\n",FMQ,T,P,pH);
 						WritePHREEQCInput(infile, T, P, pH, FMQ+pe, WR, &tempinput);
 						phreeqc = CreateIPhreeqc(); // Run PHREEQC
 						if (LoadDatabase(phreeqc,dbase) != 0) OutputErrorString(phreeqc);
 						SetSelectedOutputFileOn(phreeqc,1);
 						if (RunFile(phreeqc,tempinput) != 0) OutputErrorString(phreeqc);
 						simdata[ipH][1] = P;
+						simdata[ipH][4] = FMQ;
+						simdata[ipH][5] = pe;
 						ExtractWrite(phreeqc, nvar, &simdata[ipH]);
 
 						++nloops;
 						if (DestroyIPhreeqc(phreeqc) != IPQ_OK) OutputErrorString(phreeqc);
 					}
-					printf("Thread %d performed %d iterations of the loop.\n", thread_id, nloops);
+					printf("Thread %d performed %d iterations of the pH loop.\n", thread_id, nloops);
 
 					free(tempinput);
 					} // Rejoin threads
@@ -213,12 +230,12 @@ int ExtractWrite(int instance, int nvar, double** data) {
 	(*data)[3] = v.dVal;
 
 	GetSelectedOutputValue(instance,1,5,&v);           // W:R
-	(*data)[4] = v.dVal;
+	(*data)[6] = v.dVal;
 
-	for (i=1;i<nvar-4;i++) {                           // Rest of parameters
+	for (i=1;i<nvar-6;i++) {                           // Rest of parameters
 		GetSelectedOutputValue(instance,2,i,&v);
-		if (fabs(v.dVal) < 1e-50) (*data)[i+4] = 0.0;
-		else (*data)[i+4] = v.dVal;
+		if (fabs(v.dVal) < 1e-50) (*data)[i+6] = 0.0;
+		else (*data)[i+6] = v.dVal;
 	}
 	return 0;
 }
@@ -286,7 +303,7 @@ int WritePHREEQCInput(const char *TemplateFile, double temp, double pressure, do
 	fin = fopen (TemplateFile,"r");
 	if (fin == NULL) printf("ParamExploration: Missing input file.\n");
 	fout = fopen (*tempinput,"w");
-	if (fin == NULL) printf("ParamExploration: Missing output file.\n");
+	if (fout == NULL) printf("ParamExploration: Missing output file.\n");
 
 	while (fgets(line, line_length, fin)) {
 		line_no++;

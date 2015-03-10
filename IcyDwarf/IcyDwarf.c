@@ -126,6 +126,7 @@ int main(int argc, char *argv[]){
 	    printf("IcyDwarf: Couldn't retrieve executable directory. Buffer too small; need size %u\n", size);
 
 	input = icy_dwarf_input (input, path);
+
 	warnings = (int) input[0];
 	msgout = (int) input[1];
 	rho_p = input[2];
@@ -213,6 +214,7 @@ int main(int argc, char *argv[]){
 	//-------------------------------------------------------------------
 
 	if (calculate_compression == 1) {
+		printf("Running Compression routine...\n");
 		// Read thermal output
 		thermalout **thoutput = (thermalout**) malloc(NR*sizeof(thermalout*));        // Thermal model output
 		if (thoutput == NULL) printf("IcyDwarf: Not enough memory to create the thoutput structure\n");
@@ -228,6 +230,7 @@ int main(int argc, char *argv[]){
 			free (thoutput[r]);
 		}
 		free (thoutput);
+		printf("\n");
 	}
 
 	//-------------------------------------------------------------------
@@ -251,12 +254,12 @@ int main(int argc, char *argv[]){
 			return -1;
 		}
 		Cryolava(argc, argv, path, NR, NT_output, r_p, thoutput, t_cryolava, CHNOSZ_T_MIN, warnings, msgout);
-		printf("\n");
 
 		for (r=0;r<NR;r++) {
 			free (thoutput[r]);
 		}
 		free (thoutput);
+		printf("\n");
 	}
 
 	//-------------------------------------------------------------------

@@ -118,7 +118,7 @@ int icy_dwarf_input (double **input, char (*thermal_file)[1024], char path[1024]
 
 	i = 0;
 	f = fopen (idi,"r");
-		if (idi == NULL) {
+		if (f == NULL) {
 			printf("IcyDwarf: Missing IcyDwarfInput.txt file.\n");
 		}
 		else {

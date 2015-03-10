@@ -18,7 +18,7 @@
 //-------------------------------------------------------------------
 
 #define v_release 0                                          // 0 for Debug, 1 for Release
-#define cmdline 0										   // If execution from terminal as "./IcyDwarf",
+#define cmdline 1										   // If execution from terminal as "./IcyDwarf",
                                                            // overwritten by v_release.
 //-------------------------------------------------------------------
 // PHYSICAL AND MATHEMATICAL CONSTANTS
@@ -350,8 +350,9 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 
 	i = 0;
 	f = fopen (idi,"r");
-		if (idi == NULL) {
+		if (f == NULL) {
 			printf("IcyDwarf: Missing IcyDwarfInput.txt file.\n");
+			exit(0);
 		}
 		else {
 			fseek(f,155,SEEK_SET);  // Warnings?
@@ -568,7 +569,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 		printf("\t Temperature \t \t %g %g %g\n",input[i],input[i+1],input[i+2]), i = i+3;
 		printf("\t Pressure \t \t %g %g %g\n",input[i],input[i+1],input[i+2]), i = i+3;
 		printf("\t pH \t \t \t %g %g %g\n",input[i],input[i+1],input[i+2]), i = i+3;
-		printf("\t pe \t \t \t %g %g %g\n",input[i],input[i+1],input[i+2]), i = i+3;
+		printf("\t pe = FMQ + ... \t %g %g %g\n",input[i],input[i+1],input[i+2]), i = i+3;
 		printf("\t Water:rock mass ratio \t %g %g %g\n",input[i],input[i+1],input[i+2]), i = i+3;
 		printf("Compression? \t \t \t %g\n",input[i]), i++;
 		printf("Cryovolcanism? \t \t \t %g\n",input[i]), i++;
