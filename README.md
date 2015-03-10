@@ -110,12 +110,12 @@ My compiling instructions look like this (I listed each include as a new line fo
 For IcyDwarf:
 
 	gcc -I/usr/include -I/usr/local/lib/gcc/x86_64-apple-darwin14.0.0/5.0.0/include -I/usr/local/include -I/Library/Frameworks/R.framework/Versions/3.0/Resources/include -I/Library/Frameworks/R.framework/Versions/3.0/Resources/library/RInside/include -O3 -g -Wall -c -fmessage-length=0 -arch x86_64 -fopenmp -o IcyDwarf.o ../IcyDwarf.c 
-gcc -L/Users/marc/Documents/Research/2011-2016_ASU/2IcyDwarf/Git/IcyDwarf/IcyDwarf -L/usr/local/lib -L/Library/Frameworks/R.framework/Versions/3.0/Resources/lib -F/Library/Frameworks -arch x86_64 -lgomp -o IcyDwarf IcyDwarf.o /Library/Frameworks/R.framework/Resources/library/RInside/lib/x86_64/libRInside.a /usr/local/lib/libiphreeqc-3.1.7.dylib /usr/local/lib/libiphreeqc.dylib /usr/local/lib/libiphreeqc.a -lR 
+	gcc -L/Users/marc/Documents/Research/2011-2016_ASU/2IcyDwarf/Git/IcyDwarf/IcyDwarf -L/usr/local/lib -L/Library/Frameworks/R.framework/Versions/3.0/Resources/lib -F/Library/Frameworks -arch x86_64 -lgomp -o IcyDwarf IcyDwarf.o /Library/Frameworks/R.framework/Resources/library/RInside/lib/x86_64/libRInside.a /usr/local/lib/libiphreeqc-3.1.7.dylib /usr/local/lib/libiphreeqc.dylib /usr/local/lib/libiphreeqc.a -lR 
 
 For IcyDwarfPlot:
 
 	gcc -I/usr/include -I/Library/Frameworks/SDL2.framework/Versions/A/Headers -I/Library/Frameworks/SDL2_image.framework/Versions/A/Headers -I/Library/Frameworks/SDL2_ttf.framework/Versions/A/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/GLUT.framework/Versions/A/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/OpenGL.framework/Versions/A/Headers -O3 -Wall -c -fmessage-length=0 -o IcyDwarfPlot.o ../IcyDwarfPlot.c 
-gcc -L/Users/marc/Documents/Research/2011-2016_ASU/2IcyDwarf/Git/IcyDwarf/IcyDwarfPlot -F/Library/Frameworks -arch x86_64 -framework openGL -framework Cocoa -framework GLUT -framework SDL2 -framework SDL2_image -framework SDL2_ttf -o IcyDwarfPlot IcyDwarfPlot.o
+	gcc -L/Users/marc/Documents/Research/2011-2016_ASU/2IcyDwarf/Git/IcyDwarf/IcyDwarfPlot -F/Library/Frameworks -arch x86_64 -framework openGL -framework Cocoa -framework GLUT -framework SDL2 -framework SDL2_image -framework SDL2_ttf -o IcyDwarfPlot IcyDwarfPlot.o
 
 Email me if you have any issues.
 
