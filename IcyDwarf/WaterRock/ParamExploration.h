@@ -16,8 +16,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <IPhreeqc.h>
+#include <omp.h>
 
-#include "/usr/local/lib/gcc/x86_64-apple-darwin14.0.0/5.0.0/include/omp.h"
+//#include "/usr/local/lib/gcc/x86_64-apple-darwin14.0.0/5.0.0/include/omp.h"
 #include "../IcyDwarf.h"
 
 int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, double Pmin, double Pmax, double Pstep,
@@ -60,6 +61,7 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 
 	char *dbase = (char*)malloc(1024);                           // Path to thermodynamic database
 	char *infile = (char*)malloc(1024);                          // Path to initial input file
+	char *outfile = (char*)malloc(1024);                         // Path to output file
 
 	int nloops = 0;
 	double logfO2 = 0.0;                                         // O2 fugacity for the Fayalite-Magnetite-Quartz buffer at T,P
@@ -90,15 +92,10 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 
 	dbase[0] = '\0';
 	infile[0] = '\0';
+	outfile[0] = '\0';
 
-	if (v_release == 1) {
-		dbase = path;
-		strncat(dbase,path,strlen(path)-16);
-	}
-	else if (cmdline == 1) {
-		dbase = path;
-		strncat(dbase,path,strlen(path)-18);
-	}
+	if (v_release == 1) strncat(dbase,path,strlen(path)-16);
+	else if (cmdline == 1) strncat(dbase,path,strlen(path)-18);
 	else strncat(dbase,path,strlen(path)-16);
 	strcat(dbase,"PHREEQC-3.1.2/core3.dat");
 
@@ -108,6 +105,9 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 	nloops = 0;
 
 	// Create output
+	if (v_release == 1) strncat(outfile,path,strlen(path)-16);
+	else if (cmdline == 1) strncat(outfile,path,strlen(path)-18);
+	else strcpy(outfile,path);
 	create_output(path, "Outputs/ParamExploration.txt");
 
 	// nsim PHREEQC simulations = (1 + nTempIter)*(1 + nPressureIter)*(1 + npHiter)*(1 + npeIter)*(1 + nWRiter)
@@ -189,6 +189,7 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 	}
 	free(simdata);
 	free(infile);
+	free(outfile);
 	free(dbase);
 
 	return 0;
