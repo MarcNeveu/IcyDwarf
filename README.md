@@ -1,7 +1,7 @@
 IcyDwarf
 ========
 *IcyDwarf* calculates the coupled physical-chemical evolution of an icy dwarf planet. As of version 15.3, the code calculates:
-- The thermal evolution of an icy dwarf planet, with no chemistry (Thermal subroutine, Desch et al. 2009), but with added rock hydration, dehydration, hydrothermal circulation, and core cracking. The depth of cracking and a bulk water:rock ratio by mass in the rocky core are also computed.
+- The thermal evolution of an icy dwarf planet, with no chemistry, but with rock hydration, dehydration, hydrothermal circulation, and core cracking. The depth of cracking and a bulk water:rock ratio by mass in the rocky core are also computed.
 - Whether cryovolcanism is possible by the exsolution of volatiles from cryolavas.
 - Equilibrium fluid and rock chemistries resulting from water-rock interaction in subsurface oceans in contact with a rocky core.
 
@@ -108,10 +108,12 @@ If you wish to modify the code, set up your compiler and linker so that all the 
 My compiling instructions look like this (I listed each include as a new line for clarity, instead of separating them by a space:
 
 For IcyDwarf:
+
 	gcc -I/usr/include -I/usr/local/lib/gcc/x86_64-apple-darwin14.0.0/5.0.0/include -I/usr/local/include -I/Library/Frameworks/R.framework/Versions/3.0/Resources/include -I/Library/Frameworks/R.framework/Versions/3.0/Resources/library/RInside/include -O3 -g -Wall -c -fmessage-length=0 -arch x86_64 -fopenmp -o IcyDwarf.o ../IcyDwarf.c 
 gcc -L/Users/marc/Documents/Research/2011-2016_ASU/2IcyDwarf/Git/IcyDwarf/IcyDwarf -L/usr/local/lib -L/Library/Frameworks/R.framework/Versions/3.0/Resources/lib -F/Library/Frameworks -arch x86_64 -lgomp -o IcyDwarf IcyDwarf.o /Library/Frameworks/R.framework/Resources/library/RInside/lib/x86_64/libRInside.a /usr/local/lib/libiphreeqc-3.1.7.dylib /usr/local/lib/libiphreeqc.dylib /usr/local/lib/libiphreeqc.a -lR 
 
 For IcyDwarfPlot:
+
 	gcc -I/usr/include -I/Library/Frameworks/SDL2.framework/Versions/A/Headers -I/Library/Frameworks/SDL2_image.framework/Versions/A/Headers -I/Library/Frameworks/SDL2_ttf.framework/Versions/A/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/GLUT.framework/Versions/A/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/OpenGL.framework/Versions/A/Headers -O3 -Wall -c -fmessage-length=0 -o IcyDwarfPlot.o ../IcyDwarfPlot.c 
 gcc -L/Users/marc/Documents/Research/2011-2016_ASU/2IcyDwarf/Git/IcyDwarf/IcyDwarfPlot -F/Library/Frameworks -arch x86_64 -framework openGL -framework Cocoa -framework GLUT -framework SDL2 -framework SDL2_image -framework SDL2_ttf -o IcyDwarfPlot IcyDwarfPlot.o
 

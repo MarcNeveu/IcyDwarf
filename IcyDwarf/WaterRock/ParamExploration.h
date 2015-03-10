@@ -18,7 +18,6 @@
 #include <IPhreeqc.h>
 #include <omp.h>
 
-//#include "/usr/local/lib/gcc/x86_64-apple-darwin14.0.0/5.0.0/include/omp.h"
 #include "../IcyDwarf.h"
 
 int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, double Pmin, double Pmax, double Pstep,
