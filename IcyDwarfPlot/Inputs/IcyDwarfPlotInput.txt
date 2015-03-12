@@ -9,15 +9,12 @@ Messages?                     1
 -------------------------------
 Planet parameters
 -------------------------------
-Density (g cm-3)              2.00
-Radius (km)                   650
-Ammonia w.r.t. water          1.0e-2
-Surface temperature (K)       40
+Radius (km)                   475
 -------------------------------
 Grid
 -------------------------------
 Number of grid zones          200
-Total time of sim (Myr)       1950
+Total time of sim (Myr)       5000
 Output every (Myr)            10
 -------------------------------
 Subroutines
@@ -25,4 +22,10 @@ Subroutines
 Thermal plot
 	IcyDwarf output       Thermal.txt
 	Max temp (K; 0=auto)  1500
+Geochemistry plot
+	Temperature           0 250 50
+	Pressure              200 200 200
+	pH                    7 14 1
+	pe = FMQ + ...        -6 6 1
+	Water:rock mass ratio 0.1 10 10
 

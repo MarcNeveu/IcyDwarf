@@ -116,6 +116,8 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 		for (itemp=0;itemp<=nTempIter;itemp++) {
 			T = Tmin + Tstep*(double) itemp;
 
+			if (T == 0.0) T = 5.0; // PHREEQC crashes at 0 celsius
+
 			// Use CHNOSZ to get log fO2 for F-M-Q buffer at given T and P
 			logfO2 = -3.0*CHNOSZ_logK("quartz", "cr", T, P, "SUPCRT92")
 				     -2.0*CHNOSZ_logK("magnetite", "cr", T, P, "SUPCRT92")
@@ -135,7 +137,7 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 							"parallel calculations over %d values of pH\n",
 							P,iPressure+1,nPressureIter+1,T,itemp+1,nTempIter+1,
 							WR,iWR+1,nWRiter+1,pe,ipe+1,npeIter+1,npHiter+1);
-#pragma omp parallel private(thread_id, phreeqc, pH, nloops)
+#pragma omp parallel private(thread_id, phreeqc, pH, FMQ, nloops)
 					{
 					char *tempinput = (char*)malloc(1024);
 					tempinput[0] = '\0';

@@ -107,9 +107,9 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 		if (Kappa[t] == NULL) printf("Thermal_plot: Not enough memory to create Kappa[NT_output][NR]\n");
 	}
 
-//-------------------------------------------------------------------
-//                     Initialize display elements
-//-------------------------------------------------------------------
+	//-------------------------------------------------------------------
+	//                     Initialize display elements
+	//-------------------------------------------------------------------
 
 	File2tex("Graphics/BG/BG.001.png", &background_tex, path);
 	File2surf("Graphics/Transparent.png", &progress_bar, path);
@@ -140,7 +140,7 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 	alpha = SDL_MapRGBA(value_time->format, 255, 255, 255, 0);   // r,g,b,alpha 0 to 255. Alpha of 0 is transparent
 
 //-------------------------------------------------------------------
-//                Set static elements using crack output
+//              Set static elements using thermal output
 //-------------------------------------------------------------------
 
 	if (Tmax_input == 0) {
@@ -221,6 +221,10 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 					(*view) = 2;
 					return 1;
 				}
+				if (e.button.x >= 120 && e.button.x <= 169 && e.button.y >= 575 && e.button.y <= 599) {
+					(*view) = 3;
+					return 1;
+				}
 
 				// Play - Stop
 				if (e.button.x >= 20 && e.button.x <= 68 && e.button.y >= 511 && e.button.y <= 539) {
@@ -241,6 +245,10 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 							// If switch view
 							else if (e.button.x >= 70 && e.button.x <= 119 && e.button.y >= 575 && e.button.y <= 599) {
 								(*view) = 2;
+								return 1;
+							}
+							else if (e.button.x >= 120 && e.button.x <= 169 && e.button.y >= 575 && e.button.y <= 599) {
+								(*view) = 3;
 								return 1;
 							}
 							// Otherwise

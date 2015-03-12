@@ -86,7 +86,7 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double o
 		Crack[t] = (double*) malloc(NR*sizeof(double));
 		if (Crack[t] == NULL) printf("Crack: Not enough memory to create Crack[NR][NT_output]\n");
 	}
-	Crack = read_input (NR, NT_output, Crack, path, "Outputs/Crack.txt");
+	read_input (NR, NT_output, &Crack, path, "Outputs/Crack.txt");
 
 	double **Crack_depth = (double**) malloc(NT_output*sizeof(double*)); // Crack_depth[NT_output][2]
 	if (Crack_depth == NULL) printf("Crack: Not enough memory to create Crack_depth[NT_output][2]\n");
@@ -94,7 +94,7 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double o
 		Crack_depth[t] = (double*) malloc(2*sizeof(double));
 		if (Crack_depth[t] == NULL) printf("Crack: Not enough memory to create Crack_depth[NT_output][2]\n");
 	}
-	Crack_depth = read_input (2, NT_output, Crack_depth, path, "Outputs/Crack_depth.txt");
+	read_input (2, NT_output, &Crack_depth, path, "Outputs/Crack_depth.txt");
 
 	// Read the W/R file
 	double **WRratio = (double**) malloc(NT_output*sizeof(double*));     // WRratio[NT_output][2]
@@ -103,7 +103,7 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double o
 		WRratio[t] = (double*) malloc(2*sizeof(double));
 		if (WRratio[t] == NULL) printf("Crack: Not enough memory to create WRratio[NT_output][2]\n");
 	}
-	WRratio = read_input (2, NT_output, WRratio, path, "Outputs/Crack_WRratio.txt");
+	read_input (2, NT_output, &WRratio, path, "Outputs/Crack_WRratio.txt");
 
 	//-------------------------------------------------------------------
 	//                     Initialize display elements
@@ -299,6 +299,10 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double o
 					(*view) = 1;
 					return 1;
 				}
+				if (e.button.x >= 120 && e.button.x <= 169 && e.button.y >= 575 && e.button.y <= 599) {
+					(*view) = 3;
+					return 1;
+				}
 
 				// Play - Stop
 				if (e.button.x >= 20 && e.button.x <= 68 && e.button.y >= 511 && e.button.y <= 539) {
@@ -323,6 +327,10 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double o
 							// If switch view
 							else if (e.button.x >= 19 && e.button.x <= 69 && e.button.y >= 575 && e.button.y <= 599) {
 								(*view) = 1;
+								return 1;
+							}
+							else if (e.button.x >= 120 && e.button.x <= 169 && e.button.y >= 575 && e.button.y <= 599) {
+								(*view) = 3;
 								return 1;
 							}
 						}

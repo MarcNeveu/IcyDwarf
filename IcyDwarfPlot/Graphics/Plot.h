@@ -156,7 +156,7 @@ int scanNumber(char (*nb)[10], int i) {
 int File2tex(char* title, SDL_Texture** tex, char* path) {
 	char *temp_png = (char*)malloc(1024); // Don't forget to free!
 	temp_png[0] = '\0';
-	if (release == 1) strncat(temp_png,path,strlen(path)-20);
+	if (v_release == 1) strncat(temp_png,path,strlen(path)-20);
 	else if (cmdline == 1) strncat(temp_png,path,strlen(path)-22);
 	strcat(temp_png,title);
 	(*tex) = LoadImage(temp_png);
@@ -170,7 +170,7 @@ int File2tex(char* title, SDL_Texture** tex, char* path) {
 int File2surf(char* title, SDL_Surface** surf, char* path) {
 	char *temp_png = (char*)malloc(1024); // Don't forget to free!
 	temp_png[0] = '\0';
-	if (release == 1) strncat(temp_png,path,strlen(path)-20);
+	if (v_release == 1) strncat(temp_png,path,strlen(path)-20);
 	else if (cmdline == 1) strncat(temp_png,path,strlen(path)-22);
 	strcat(temp_png,title);
 	(*surf) = IMG_Load(temp_png);

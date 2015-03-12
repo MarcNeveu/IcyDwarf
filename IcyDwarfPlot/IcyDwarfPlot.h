@@ -13,8 +13,8 @@
 #ifndef ICYDWARF_H_
 #define ICYDWARF_H_
 
-#define release 0                                          // 0 for Debug, 1 for Release
-#define cmdline 1										   // If execution from terminal as "./IcyDwarf",
+#define v_release 0                                          // 0 for Debug, 1 for Release
+#define cmdline 0										   // If execution from terminal as "./IcyDwarf",
                                                            // overwritten by release.
 // Physical parameters and constants
 #define G 6.67e-11                                         // Gravitational constant (SI)
@@ -57,7 +57,7 @@ typedef struct {
 int calculate_seafloor (thermalout **thoutput, int NR, int NT, int t);
 int icy_dwarf_input (double **input, char (*thermal_file)[1024], char path[1024]);
 thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char path[1024], char thermal_file[1024]);
-double **read_input (int H, int L, double **Input, char path[1024], char filename[1024]);
+int read_input (int H, int L, double ***Input, char path[1024], char filename[1024]);
 
 //-------------------------------------------------------------------
 //             Calculate the mass of liquid over time
@@ -106,13 +106,9 @@ int icy_dwarf_input (double **input, char (*thermal_file)[1024], char path[1024]
 	int i = 0;
 	int scan = 0;
 
-	for (i=0;i<18;i++) {
-		(*input)[i] = 0.0;
-	}
-
 	char *idi = (char*)malloc(1024);
 	idi[0] = '\0';
-	if (release == 1) strncat(idi,path,strlen(path)-20);
+	if (v_release == 1) strncat(idi,path,strlen(path)-20);
 	else if (cmdline == 1) strncat(idi,path,strlen(path)-22);
 	strcat(idi,"Inputs/IcyDwarfPlotInput.txt");
 
@@ -153,6 +149,66 @@ int icy_dwarf_input (double **input, char (*thermal_file)[1024], char path[1024]
 			fseek(f,24,SEEK_CUR);  // Max temp for plot?
 			scan = fscanf(f, "%lg", &(*input)[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,42,SEEK_CUR);   // Tmin
+			scan = fscanf(f, "%lg", &(*input)[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,1,SEEK_CUR);    // Tmax
+			scan = fscanf(f, "%lg", &(*input)[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,1,SEEK_CUR);    // Tstep
+			scan = fscanf(f, "%lg", &(*input)[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,24,SEEK_CUR);   // Pmin
+			scan = fscanf(f, "%lg", &(*input)[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,1,SEEK_CUR);    // Pmax
+			scan = fscanf(f, "%lg", &(*input)[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,1,SEEK_CUR);    // Pstep
+			scan = fscanf(f, "%lg", &(*input)[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,24,SEEK_CUR);   // pHmin
+			scan = fscanf(f, "%lg", &(*input)[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,1,SEEK_CUR);    // pHmax
+			scan = fscanf(f, "%lg", &(*input)[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,1,SEEK_CUR);    // pHstep
+			scan = fscanf(f, "%lg", &(*input)[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,24,SEEK_CUR);   // pemin
+			scan = fscanf(f, "%lg", &(*input)[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,1,SEEK_CUR);    // pemax
+			scan = fscanf(f, "%lg", &(*input)[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,1,SEEK_CUR);    // pestep
+			scan = fscanf(f, "%lg", &(*input)[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,24,SEEK_CUR);   // WRmin
+			scan = fscanf(f, "%lg", &(*input)[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,1,SEEK_CUR);    // WRmax
+			scan = fscanf(f, "%lg", &(*input)[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,1,SEEK_CUR);    // WRstep
+			scan = fscanf(f, "%lg", &(*input)[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 		}
 		fclose(f);
 
@@ -179,6 +235,12 @@ int icy_dwarf_input (double **input, char (*thermal_file)[1024], char path[1024]
 		printf("Thermal plot\n");
 		printf("\t IcyDwarf output \t %s\n",(*thermal_file));
 		printf("\t Max temp (K; 0=auto) \t %g\n",(*input)[i]), i++;
+		printf("Geochemistry?\n");
+		printf("\t Temperature \t \t %g %g %g\n",(*input)[i],(*input)[i+1],(*input)[i+2]), i = i+3;
+		printf("\t Pressure \t \t %g %g %g\n",(*input)[i],(*input)[i+1],(*input)[i+2]), i = i+3;
+		printf("\t pH \t \t \t %g %g %g\n",(*input)[i],(*input)[i+1],(*input)[i+2]), i = i+3;
+		printf("\t pe = FMQ + ... \t %g %g %g\n",(*input)[i],(*input)[i+1],(*input)[i+2]), i = i+3;
+		printf("\t Water:rock mass ratio \t %g %g %g\n",(*input)[i],(*input)[i+1],(*input)[i+2]), i = i+3;
 		printf("\n");
 
 	free (idi);
@@ -204,7 +266,7 @@ thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char pa
 
 	char *thermal_txt = (char*)malloc(1024);       // Don't forget to free!
 	thermal_txt[0] = '\0';
-	if (release == 1) strncat(thermal_txt,path,strlen(path)-20);
+	if (v_release == 1) strncat(thermal_txt,path,strlen(path)-20);
 	else if (cmdline == 1) strncat(thermal_txt,path,strlen(path)-22);
 	strcat(thermal_txt,"Outputs/");
 	strcat(thermal_txt,thermal_file);
@@ -238,7 +300,7 @@ thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char pa
 //                            Read input
 //-------------------------------------------------------------------
 
-double **read_input (int H, int L, double **Input, char path[1024], char filename[1024]) {
+int read_input (int H, int L, double ***Input, char path[1024], char filename[1024]) {
 
 	FILE *fin;
 	int l = 0;
@@ -250,7 +312,7 @@ double **read_input (int H, int L, double **Input, char path[1024], char filenam
 
 	char *title = (char*)malloc(1024);       // Don't forget to free!
 	title[0] = '\0';
-	if (release == 1) strncat(title,path,strlen(path)-20);
+	if (v_release == 1) strncat(title,path,strlen(path)-20);
 	else if (cmdline == 1) strncat(title,path,strlen(path)-22);
 	strcat(title,filename);
 
@@ -261,7 +323,7 @@ double **read_input (int H, int L, double **Input, char path[1024], char filenam
 	else {
 		for (l=0;l<L;l++) {
 			for (h=0;h<H;h++) {
-				int scan = fscanf(fin,"%lg",&Input[l][h]);
+				int scan = fscanf(fin,"%lg",&(*Input)[l][h]);
 				if (scan != 1)
 					printf("IcyDwarf: Error scanning %s file at l=%d, h=%d.\n",title,l,h);
 			}
@@ -271,7 +333,7 @@ double **read_input (int H, int L, double **Input, char path[1024], char filenam
 	fclose (fin);
 	free (title);
 
-	return Input;
+	return 0;
 }
 
 #endif /* ICYDWARF_H_ */

@@ -17,6 +17,7 @@
 #include "IcyDwarfPlot.h"
 #include "Thermal/Thermal_plot.h"
 #include "Crack/Crack_plot.h"
+#include "WaterRock/ParamExploration_plot.h"
 #include "Graphics/Plot.h"
 
 int main(int argc, char *argv[]){
@@ -39,12 +40,36 @@ int main(int argc, char *argv[]){
     int NT_output = 0;                 // Time step for writing output
 
     // Call specific subroutines
-    int Tmax = 0;                      // Max temperature for display
+    int TdisplayMax = 0;                      // Max temperature for display
+
+    // Geochemistry subroutine inputs
+	double Tmax = 0.0;
+	double Tmin = 0.0;
+	double Tstep = 0.0;
+
+	double Pmax = 0.0;
+	double Pmin = 0.0;
+	double Pstep = 0.0;
+
+	double pHmax = 0.0;
+	double pHmin = 0.0;
+	double pHstep = 0.0;
+
+	double pemax = 0.0;
+	double pemin = 0.0;
+	double pestep = 0.0;
+
+	double WRmax = 0.0;			       // Max water:rock ratio by mass
+	double WRmin = 0.0;				   // Min water:rock ratio by mass
+	double WRstep = 0.0;			   // Step (multiplicative) in water:rock ratio
 
 	int r = 0;
+	int i = 0;
 
-	double *input = (double*) malloc(8*sizeof(double));
+	double *input = (double*) malloc(23*sizeof(double));
 	if (input == NULL) printf("IcyDwarf: Not enough memory to create input[8]\n");
+
+	for (i=0;i<23;i++) input[i] = 0.0;
 
 	//-------------------------------------------------------------------
 	// Startup
@@ -52,8 +77,8 @@ int main(int argc, char *argv[]){
 
 	printf("\n");
 	printf("-------------------------------------------------------------------\n");
-	printf("IcyDwarfPlot v15.2\n");
-	if (release == 1) printf("Release mode\n");
+	printf("IcyDwarfPlot v15.3\n");
+	if (v_release == 1) printf("Release mode\n");
 	else if (cmdline == 1) printf("Command line mode\n");
 	printf("-------------------------------------------------------------------\n");
 
@@ -78,7 +103,12 @@ int main(int argc, char *argv[]){
 	total_time = input[4];
 	output_every = input[5];
 	NT_output = floor(total_time/output_every)+1;
-	Tmax = input[6];
+	TdisplayMax = input[6];
+	Tmin = input[7]; Tmax = input[8]; Tstep = input[9];
+	Pmin = input[10]; Pmax = input[11]; Pstep = input[12];
+	pHmin = input[13]; pHmax = input[14]; pHstep = input[15];
+	pemin = input[16]; pemax = input[17]; pestep = input[18];
+	WRmin = input[19]; WRmax = input[20]; WRstep = input[21];
 
 	//-------------------------------------------------------------------
 	// Read thermal output (currently kbo.dat, need to read Thermal.txt)
@@ -119,7 +149,7 @@ int main(int argc, char *argv[]){
 
 	char *IcyDwarfIcon_icns = (char*)malloc(1024);           // Don't forget to free!
 	IcyDwarfIcon_icns[0] = '\0';
-	if (release == 1) strncat(IcyDwarfIcon_icns,path,strlen(path)-20);
+	if (v_release == 1) strncat(IcyDwarfIcon_icns,path,strlen(path)-20);
 	else if (cmdline == 1) strncat(IcyDwarfIcon_icns,path,strlen(path)-22);
 	strcat(IcyDwarfIcon_icns,"Graphics/CeresDanWiersemaAtIconbug.icns");
 	SDL_Surface* IcyDwarfIcon = IMG_Load(IcyDwarfIcon_icns);
@@ -137,7 +167,7 @@ int main(int argc, char *argv[]){
 
 	char *FontFile = (char*)malloc(1024);      // Don't forget to free!
 	FontFile[0] = '\0';
-	if (release == 1) strncat(FontFile,path,strlen(path)-20);
+	if (v_release == 1) strncat(FontFile,path,strlen(path)-20);
 	else if (cmdline == 1) strncat(FontFile,path,strlen(path)-22);
 	strcat(FontFile,"Graphics/GillSans.ttf");
 
@@ -149,9 +179,12 @@ int main(int argc, char *argv[]){
 
 	while (!quit) {
 		if (view == 1) // Display thermal tab
-			Thermal_plot (path, Tmax, NR, NT_output, output_every, r_p, thoutput, warnings, msgout, renderer, &view, &quit, FontFile, axisTextColor);
+			Thermal_plot (path, TdisplayMax, NR, NT_output, output_every, r_p, thoutput, warnings, msgout, renderer, &view, &quit, FontFile, axisTextColor);
 		if (view == 2) // Display crack tab
 			Crack_plot (path, NR, total_time, NT_output, output_every, r_p, thoutput, warnings, msgout, renderer, &view, &quit, FontFile, axisTextColor);
+		if (view == 3) // Display geochemistry tab
+			ParamExploration_plot (path, warnings, msgout, renderer, &view, &quit, FontFile, axisTextColor, Tmin, Tmax, Tstep, Pmin, Pmax, Pstep,
+				 pHmin, pHmax, pHstep, pemin, pemax, pestep, WRmin, WRmax, WRstep);
 	}
 
 	//-------------------------------------------------------------------
