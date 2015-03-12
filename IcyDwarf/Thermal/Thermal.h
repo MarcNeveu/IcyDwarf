@@ -832,7 +832,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 				Crack_size_avg = Crack_size_avg + Crack_size[ir];
 			}
 			Crack_size_avg = Crack_size_avg / (double) (ircore-ircrack);
-			mu1 = Pa2ba*viscosity(T[ircore],Mh2ol[ircore],Mnh3l[ircore]);
+			mu1 = Pa2ba*viscosity(T[ircore],Mh2ol[ircore],Mnh3l[ircore]); // TODO adjust viscosity for fines fraction
 			kap1 = kappa[ircrack+1];
 			dT = T[ircrack] - T[ircore];
 			dr = r[ircore+1] - r[ircrack+1];

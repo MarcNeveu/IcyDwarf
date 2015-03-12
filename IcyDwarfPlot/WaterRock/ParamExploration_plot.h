@@ -22,6 +22,11 @@ int UpdateDisplaysParamExploration (SDL_Renderer* renderer, SDL_Texture* backgro
 		SDL_Texture* legend5_tex, SDL_Texture* legend6_tex, SDL_Texture* legend7_tex, SDL_Texture* legend8_tex,
 		char* FontFile, int nspecies);
 
+int Angles (int itopic, SDL_Surface **pies, char *FontFile, int npH, int npe, int nWR, int ntemp, int itemp, int ipressure,
+		double pie_radius, double **simdata, int *nspecies,
+		SDL_Texture **legend1_tex, SDL_Texture **legend2_tex, SDL_Texture **legend3_tex, SDL_Texture **legend4_tex,
+		SDL_Texture **legend5_tex, SDL_Texture **legend6_tex, SDL_Texture **legend7_tex, SDL_Texture **legend8_tex);
+
 int Pie(double angle, double angle_start, int iWR, int ipH, int ipe, double pie_radius, SDL_Surface **pies, SDL_Color color);
 
 int ParamExploration_plot (char path[1024],	int warnings, int msgout, SDL_Renderer* renderer, int* view, int* quit, char* FontFile,
@@ -32,7 +37,6 @@ int ParamExploration_plot (char path[1024],	int warnings, int msgout, SDL_Render
 	int j = 0;
 	int nspecies = 0;
 	int nvar = 1000;
-	int isim = 0;
 	int nsim = 0;
 	int ntemp = 0;                                               // Number of different temperatures in output file
 	int npressure = 0;                                           // Number of different pressures in output file
@@ -41,9 +45,6 @@ int ParamExploration_plot (char path[1024],	int warnings, int msgout, SDL_Render
 	int nWR = 0;                                                 // Number of different water:rock ratios in output file
 	int itemp = 0;                                           	 // Rank of temperature in output file
 	int ipressure = 0;                                     	     // Rank of pressure in output file
-	int ipH = 0;                                                 // Rank of pH in output file
-	int ipe = 0;                                                 // Rank of pe in output file
-	int iWR = 0;                                                 // Rank of water:rock ratio in output file
 	int itopic = 0;                                              // Topic addressed (radionuclides, antifreezes, etc.)
 	SDL_Texture* background_tex = NULL;
 	SDL_Texture* pies_tex = NULL;        // Pies
@@ -56,19 +57,7 @@ int ParamExploration_plot (char path[1024],	int warnings, int msgout, SDL_Render
 	SDL_Texture* legend6_tex = NULL;
 	SDL_Texture* legend7_tex = NULL;
 	SDL_Texture* legend8_tex = NULL;
-	SDL_Color red;
-	SDL_Color green;
-	SDL_Color aqua;
-	SDL_Color black;
-	SDL_Color white;
-	SDL_Color grey;
-	SDL_Color purple;
-	SDL_Color gray;
-	SDL_Color yellow;
-	SDL_Color orange;
 	double pie_radius = 0.0;
-	double mass_water = 0.0;
-	double angle = 0.0; double angle2 = 0.0; double angle3 = 0.0;
 
 	ntemp = floor((Tmax-Tmin)/Tstep) + 1;
 	npressure = floor((Pmax-Pmin)/Pstep) + 1;
@@ -103,17 +92,6 @@ int ParamExploration_plot (char path[1024],	int warnings, int msgout, SDL_Render
 
 	pie_radius = 13.0;
 
-	// Colors
-	red.r = 250; red.g = 20; red.b = 20;
-	green.r = 39; green.g = 145; green.b = 39;
-	aqua.r = 0; aqua.g = 128; aqua.b = 255;
-	black.r = 0; black.g = 0; black.b = 0;
-	white.r = 255; white.g = 255; white.b = 255;
-	purple.r = 135; purple.g = 40; purple.b = 166;
-	gray.r = 174; gray.g = 174; gray.b = 174;
-	yellow.r = 245; yellow.g = 217; yellow.b = 33;
-	orange.r = 238; orange.g = 124; orange.b = 22;
-
 	//-------------------------------------------------------------------
 	//                         Interactive display
 	//-------------------------------------------------------------------
@@ -128,40 +106,11 @@ int ParamExploration_plot (char path[1024],	int warnings, int msgout, SDL_Render
 				// Handle click: switch temperature, pressure, or species
 				handleClickParamExploration(e, &itemp, &ipressure, &itopic, ntemp, npressure, &pies);
 
-				// TODO make this a function
-				// Potassium
-				nspecies = 3;
-				Pie(2.0*M_PI/(double)nspecies, 0, -1, 0, 0, 60, &pies, gray);
-				Pie(2.0*M_PI/(double)nspecies, 2.0*M_PI/(double)nspecies, -1, 0, 0, 60, &pies, purple);
-				Pie(2.0*M_PI/(double)nspecies, 2.0*M_PI/(double)nspecies*2.0, -1, 0, 0, 60, &pies, yellow);
-				legend1_tex = renderText("Leached",FontFile, black, 16, renderer);
-				legend2_tex = renderText("Clays",FontFile, white, 16, renderer);
-				legend3_tex = renderText("K-feldspar",FontFile, black, 16, renderer);
+				itopic = 1;
+				Angles (itopic, &pies, FontFile, npH, npe, nWR, ntemp, itemp, ipressure, pie_radius, simdata, &nspecies,
+						&legend1_tex, &legend2_tex, &legend3_tex, &legend4_tex,
+						&legend5_tex, &legend6_tex, &legend7_tex, &legend8_tex);
 
-				for (iWR=0;iWR<nWR;iWR++) {
-					for (ipe=0;ipe<npe;ipe++) {
-						for (ipH=0;ipH<npH;ipH++) {
-							isim = ipH + ipe*npH + iWR*npH*npe + itemp*npH*npe*nWR + ipressure*npH*npe*nWR*ntemp;
-							mass_water = simdata[isim][11];
-							angle = 0.0; angle2 = 0.0; angle3 = 0.0;
-
-							if (mass_water > 0.0) { // Otherwise the simulation crashed and we're not plotting
-								angle = 0.9999*simdata[isim][19]*mass_water/(simdata[isim][52]-simdata[isim][53])*2.0*M_PI;             // Dissolved potassium
-								angle2 = 0.9999*(simdata[isim][778]+simdata[isim][134]+simdata[isim][762]*0.33+simdata[isim][834]*0.33+simdata[isim][652])/(simdata[isim][52]-simdata[isim][53])*2.0*M_PI; // Phlogopite + Annite + Nontronite-K + Saponite-K + Muscovite
-								angle3 = 0.9999*simdata[isim][52]/(simdata[isim][52]-simdata[isim][53])*2.0*M_PI;                       // K-feldspar
-
-								if (angle < 0.0 || angle > 2.0*M_PI) printf("ParamExplorationPlot: angle out of bounds: %g\n",angle);
-								else if (angle > 0.0) Pie(angle, 0, iWR, ipH, ipe, pie_radius, &pies, gray);
-
-								if (angle2 < 0.0 || angle2 > 2.0*M_PI) printf("ParamExplorationPlot: angle out of bounds: %g\n",angle2);
-								else if (angle2 > 0.0) Pie(angle2, angle, iWR, ipH, ipe, pie_radius, &pies, purple);
-
-								if (angle3 < 0.0 || angle3 > 2.0*M_PI) printf("ParamExplorationPlot: angle out of bounds: %g\n",angle3);
-								else if (angle3 > 0.0) Pie(angle3, angle2, iWR, ipH, ipe, pie_radius, &pies, yellow);
-							}
-						}
-					}
-				}
 				pies_tex = SDL_CreateTextureFromSurface(renderer, pies);
 
 				// Switch view
@@ -217,9 +166,8 @@ int UpdateDisplaysParamExploration (SDL_Renderer* renderer, SDL_Texture* backgro
 	ApplySurface(0, 0, background_tex, renderer, NULL);
 	ApplySurface(0, 0, pies_tex, renderer, NULL);
 
-
 	if (nspecies > 7) printf("ParamExploration_plot: UpdateDisplays: too many species for good display of legend\n");
-	for (i=0;i<nspecies;i++) {
+	for (i=0;i<8;i++) {
 		theta_legend = 2.0*M_PI/(double)nspecies*((double)i+0.5);
 		if (i==0) ApplySurface(385 + 40*cos(theta_legend), 502 + 40*sin(theta_legend), legend1_tex, renderer, NULL);
 		if (i==1) ApplySurface(385 + 40*cos(theta_legend), 502 + 40*sin(theta_legend), legend2_tex, renderer, NULL);
@@ -232,7 +180,6 @@ int UpdateDisplaysParamExploration (SDL_Renderer* renderer, SDL_Texture* backgro
 	}
 
 	SDL_RenderPresent(renderer);
-
 	SDL_Delay(16);
 
 	return 0;
@@ -317,6 +264,90 @@ int handleClickParamExploration(SDL_Event e, int *itemp, int *ipressure, int *it
 	}
 
 	// TODO Change topic
+
+	return 0;
+}
+
+//-------------------------------------------------------------------
+//                    Angle calculation subroutine
+//-------------------------------------------------------------------
+
+int Angles (int itopic, SDL_Surface **pies, char *FontFile, int npH, int npe, int nWR, int ntemp, int itemp, int ipressure,
+		double pie_radius, double **simdata, int *nspecies,
+		SDL_Texture **legend1_tex, SDL_Texture **legend2_tex, SDL_Texture **legend3_tex, SDL_Texture **legend4_tex,
+		SDL_Texture **legend5_tex, SDL_Texture **legend6_tex, SDL_Texture **legend7_tex, SDL_Texture **legend8_tex) {
+
+	int i = 0;
+	int ipH = 0; // Rank of pH in output file
+	int ipe = 0; // Rank of pe in output file
+	int iWR = 0; // Rank of water:rock ratio in output file
+	int isim = 0;
+	double mass_water = 0.0;
+	SDL_Color black;
+	SDL_Color white;
+	SDL_Color red;
+	SDL_Color green;
+	SDL_Color aqua;
+	SDL_Color purple;
+	SDL_Color gray;
+	SDL_Color yellow;
+	SDL_Color orange;
+	black.r = 0; black.g = 0; black.b = 0;
+	white.r = 255; white.g = 255; white.b = 255;
+	red.r = 250; red.g = 20; red.b = 20;
+	green.r = 39; green.g = 145; green.b = 39;
+	aqua.r = 0; aqua.g = 128; aqua.b = 255;
+	purple.r = 135; purple.g = 40; purple.b = 166;
+	gray.r = 174; gray.g = 174; gray.b = 174;
+	yellow.r = 245; yellow.g = 217; yellow.b = 33;
+	orange.r = 238; orange.g = 124; orange.b = 22;
+
+	if (itopic == 1) { // Potassium
+		(*nspecies) = 3;
+	}
+
+	double angle[(*nspecies)+1];
+	SDL_Color color[(*nspecies)+1];
+	for (i=0;i<(*nspecies);i++) angle[i] = 0.0;
+	color[0] = black;
+
+	if (itopic == 1) {
+		color[1] = gray; color[2] = purple; color[3] = yellow;
+		(*legend1_tex) = renderText("Leached",FontFile, black, 16, renderer);
+		(*legend2_tex) = renderText("Clays",FontFile, white, 16, renderer);
+		(*legend3_tex) = renderText("K-feldspar",FontFile, black, 16, renderer);
+		(*legend4_tex) = NULL;
+		(*legend5_tex) = NULL;
+		(*legend6_tex) = NULL;
+		(*legend7_tex) = NULL;
+	}
+
+	for (i=0;i<(*nspecies);i++) { // Legend pie
+		Pie(2.0*M_PI/(double)(*nspecies), 2.0*M_PI/(double)(*nspecies)*(double)i, -1, 0, 0, 60, &(*pies), color[i+1]);
+	}
+
+	for (iWR=0;iWR<nWR;iWR++) {
+		for (ipe=0;ipe<npe;ipe++) {
+			for (ipH=0;ipH<npH;ipH++) {
+				isim = ipH + ipe*npH + iWR*npH*npe + itemp*npH*npe*nWR + ipressure*npH*npe*nWR*ntemp;
+				mass_water = simdata[isim][11];
+				for (i=0;i<(*nspecies);i++) angle[i] = 0.0;
+
+				if (mass_water > 0.0) { // Otherwise the simulation crashed and we're not plotting
+					if (itopic == 1) {
+						angle[1] = 0.9999*simdata[isim][19]*mass_water/(simdata[isim][52]-simdata[isim][53])*2.0*M_PI;             // Dissolved potassium
+						angle[2] = 0.9999*(simdata[isim][778]+simdata[isim][134]+simdata[isim][762]*0.33+simdata[isim][834]*0.33+simdata[isim][652])/(simdata[isim][52]-simdata[isim][53])*2.0*M_PI; // Phlogopite + Annite + Nontronite-K + Saponite-K + Muscovite
+						angle[3] = 0.9999*simdata[isim][52]/(simdata[isim][52]-simdata[isim][53])*2.0*M_PI;                       // K-feldspar
+					}
+
+					for (i=0;i<(*nspecies);i++) {
+						if (angle[i+1] < 0.0 || angle[i+1] > 2.0*M_PI) printf("ParamExplorationPlot: angle out of bounds: %g\n",angle[i+1]);
+						else if (angle[i+1] > 0.0) Pie(angle[i+1], angle[i], iWR, ipH, ipe, pie_radius, &(*pies), color[i+1]);
+					}
+				}
+			}
+		}
+	}
 
 	return 0;
 }
