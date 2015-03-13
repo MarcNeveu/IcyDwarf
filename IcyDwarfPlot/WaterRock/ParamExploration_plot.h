@@ -106,7 +106,7 @@ int ParamExploration_plot (char path[1024],	int warnings, int msgout, SDL_Render
 				// Handle click: switch temperature, pressure, or species
 				handleClickParamExploration(e, &itemp, &ipressure, &itopic, ntemp, npressure, &pies);
 
-				itopic = 1;
+				if (itopic > 2) itopic = 2;
 				Angles (itopic, &pies, FontFile, npH, npe, nWR, ntemp, itemp, ipressure, pie_radius, simdata, &nspecies,
 						&legend1_tex, &legend2_tex, &legend3_tex, &legend4_tex,
 						&legend5_tex, &legend6_tex, &legend7_tex, &legend8_tex);
@@ -166,17 +166,17 @@ int UpdateDisplaysParamExploration (SDL_Renderer* renderer, SDL_Texture* backgro
 	ApplySurface(0, 0, background_tex, renderer, NULL);
 	ApplySurface(0, 0, pies_tex, renderer, NULL);
 
-	if (nspecies > 7) printf("ParamExploration_plot: UpdateDisplays: too many species for good display of legend\n");
+	if (nspecies > 7+1) printf("ParamExploration_plot: UpdateDisplays: too many species for good display of legend\n");
 	for (i=0;i<8;i++) {
 		theta_legend = 2.0*M_PI/(double)nspecies*((double)i+0.5);
-		if (i==0) ApplySurface(385 + 40*cos(theta_legend), 502 + 40*sin(theta_legend), legend1_tex, renderer, NULL);
-		if (i==1) ApplySurface(385 + 40*cos(theta_legend), 502 + 40*sin(theta_legend), legend2_tex, renderer, NULL);
-		if (i==2) ApplySurface(385 + 40*cos(theta_legend), 502 + 40*sin(theta_legend), legend3_tex, renderer, NULL);
-		if (i==3) ApplySurface(385 + 40*cos(theta_legend), 502 + 40*sin(theta_legend), legend4_tex, renderer, NULL);
-		if (i==4) ApplySurface(385 + 40*cos(theta_legend), 502 + 40*sin(theta_legend), legend5_tex, renderer, NULL);
-		if (i==5) ApplySurface(385 + 40*cos(theta_legend), 502 + 40*sin(theta_legend), legend6_tex, renderer, NULL);
-		if (i==6) ApplySurface(385 + 40*cos(theta_legend), 502 + 40*sin(theta_legend), legend7_tex, renderer, NULL);
-		if (i==7) ApplySurface(385 + 40*cos(theta_legend), 502 + 40*sin(theta_legend), legend8_tex, renderer, NULL);
+		if (i==0) ApplySurface(405 + 50*cos(theta_legend), 502 + 50*sin(theta_legend), legend1_tex, renderer, NULL);
+		if (i==1) ApplySurface(405 + 50*cos(theta_legend), 502 + 50*sin(theta_legend), legend2_tex, renderer, NULL);
+		if (i==2) ApplySurface(405 + 50*cos(theta_legend), 502 + 50*sin(theta_legend), legend3_tex, renderer, NULL);
+		if (i==3) ApplySurface(405 + 50*cos(theta_legend), 502 + 50*sin(theta_legend), legend4_tex, renderer, NULL);
+		if (i==4) ApplySurface(405 + 50*cos(theta_legend), 502 + 50*sin(theta_legend), legend5_tex, renderer, NULL);
+		if (i==5) ApplySurface(405 + 50*cos(theta_legend), 502 + 50*sin(theta_legend), legend6_tex, renderer, NULL);
+		if (i==6) ApplySurface(405 + 50*cos(theta_legend), 502 + 50*sin(theta_legend), legend7_tex, renderer, NULL);
+		if (i==7) ApplySurface(405 + 50*cos(theta_legend), 502 + 50*sin(theta_legend), legend8_tex, renderer, NULL);
 	}
 
 	SDL_RenderPresent(renderer);
@@ -227,7 +227,6 @@ int handleClickParamExploration(SDL_Event e, int *itemp, int *ipressure, int *it
 			(*itemp) = 6; xstart = 763; xend = 788;
 		}
 
-		// Need this break in the else-if structure
 		if (e.button.y >= 438 && e.button.y <= 450) {        		// y
 			(*ipressure) = 6; ystart = 438; yend = 450;
 		}
@@ -263,7 +262,16 @@ int handleClickParamExploration(SDL_Event e, int *itemp, int *ipressure, int *it
 		}
 	}
 
-	// TODO Change topic
+	// Change topic
+	if (e.button.x >= 4 && e.button.x <= 104 && e.button.y >= 444 && e.button.y <= 491) (*itopic) = 1;       // Potassium
+	else if (e.button.x >= 12 && e.button.x <= 105 && e.button.y >= 506 && e.button.y <= 532) (*itopic) = 2;  // NH3
+	else if (e.button.x >= 12 && e.button.x <= 105 && e.button.y >= 536 && e.button.y <= 562) (*itopic) = 3;  // Salts
+	else if (e.button.x >= 223 && e.button.x <= 321 && e.button.y >= 437 && e.button.y <= 463) (*itopic) = 4; // Total gas
+	else if (e.button.x >= 223 && e.button.x <= 321 && e.button.y >= 468 && e.button.y <= 496) (*itopic) = 5; // Gas makeup
+	else if (e.button.x >= 255 && e.button.x <= 321 && e.button.y >= 502 && e.button.y <= 528) (*itopic) = 6; // Brucite
+	else if (e.button.x >= 255 && e.button.x <= 321 && e.button.y >= 532 && e.button.y <= 558) (*itopic) = 7; // Magnesite
+	else if (e.button.x >= 255 && e.button.x <= 321 && e.button.y >= 561 && e.button.y <= 587) (*itopic) = 8; // Mineral makeup
+	else if (e.button.x >= 115 && e.button.x <= 210 && e.button.y >= 436 && e.button.y <= 489) (*itopic) = 9; // Solution makeup
 
 	return 0;
 }
@@ -297,14 +305,13 @@ int Angles (int itopic, SDL_Surface **pies, char *FontFile, int npH, int npe, in
 	red.r = 250; red.g = 20; red.b = 20;
 	green.r = 39; green.g = 145; green.b = 39;
 	aqua.r = 0; aqua.g = 128; aqua.b = 255;
-	purple.r = 135; purple.g = 40; purple.b = 166;
+	purple.r = 168; purple.g = 50; purple.b = 208;
 	gray.r = 174; gray.g = 174; gray.b = 174;
 	yellow.r = 245; yellow.g = 217; yellow.b = 33;
 	orange.r = 238; orange.g = 124; orange.b = 22;
 
-	if (itopic == 1) { // Potassium
-		(*nspecies) = 3;
-	}
+	if (itopic == 1) (*nspecies) = 3;      // Potassium
+	else if (itopic == 2) (*nspecies) = 8; // NH3
 
 	double angle[(*nspecies)+1];
 	SDL_Color color[(*nspecies)+1];
@@ -314,12 +321,24 @@ int Angles (int itopic, SDL_Surface **pies, char *FontFile, int npH, int npe, in
 	if (itopic == 1) {
 		color[1] = gray; color[2] = purple; color[3] = yellow;
 		(*legend1_tex) = renderText("Leached",FontFile, black, 16, renderer);
-		(*legend2_tex) = renderText("Clays",FontFile, white, 16, renderer);
+		(*legend2_tex) = renderText("Clays",FontFile, black, 16, renderer);
 		(*legend3_tex) = renderText("K-feldspar",FontFile, black, 16, renderer);
 		(*legend4_tex) = NULL;
 		(*legend5_tex) = NULL;
 		(*legend6_tex) = NULL;
 		(*legend7_tex) = NULL;
+		(*legend8_tex) = NULL;
+	}
+	else if (itopic == 2) {
+		color[1] = green; color[2] = red; color[3] = orange; color[4] = yellow; color[5] = white; color[6] = aqua; color[7] = purple; color[8] = gray;
+		(*legend1_tex) = renderText("NH3(aq)",FontFile, black, 16, renderer);
+		(*legend2_tex) = renderText("musc/feldspar",FontFile, black, 16, renderer);
+		(*legend3_tex) = renderText("NH4-",FontFile, black, 16, renderer);
+		(*legend4_tex) = renderText("N2(g)",FontFile, black, 16, renderer);
+		(*legend5_tex) = renderText("NH3(g)",FontFile, black, 16, renderer);
+		(*legend6_tex) = renderText("N2(aq)",FontFile, black, 16, renderer);
+		(*legend7_tex) = renderText("NH4+(aq)",FontFile, black, 16, renderer);
+		(*legend8_tex) = renderText("Other N(aq)",FontFile, black, 16, renderer);
 	}
 
 	for (i=0;i<(*nspecies);i++) { // Legend pie
@@ -331,18 +350,34 @@ int Angles (int itopic, SDL_Surface **pies, char *FontFile, int npH, int npe, in
 			for (ipH=0;ipH<npH;ipH++) {
 				isim = ipH + ipe*npH + iWR*npH*npe + itemp*npH*npe*nWR + ipressure*npH*npe*nWR*ntemp;
 				mass_water = simdata[isim][11];
-				for (i=0;i<(*nspecies);i++) angle[i] = 0.0;
+				for (i=0;i<(*nspecies)+1;i++) angle[i] = 0.0;
 
 				if (mass_water > 0.0) { // Otherwise the simulation crashed and we're not plotting
 					if (itopic == 1) {
-						angle[1] = 0.9999*simdata[isim][19]*mass_water/(simdata[isim][52]-simdata[isim][53])*2.0*M_PI;             // Dissolved potassium
-						angle[2] = 0.9999*(simdata[isim][778]+simdata[isim][134]+simdata[isim][762]*0.33+simdata[isim][834]*0.33+simdata[isim][652])/(simdata[isim][52]-simdata[isim][53])*2.0*M_PI; // Phlogopite + Annite + Nontronite-K + Saponite-K + Muscovite
-						angle[3] = 0.9999*simdata[isim][52]/(simdata[isim][52]-simdata[isim][53])*2.0*M_PI;                       // K-feldspar
+						double total_K = 0.0; total_K = simdata[isim][52]-simdata[isim][53]; // Initial K-feldspar
+						angle[1] = 0.999*2.0*M_PI*simdata[isim][19]*mass_water/total_K;             // Dissolved potassium
+						angle[2] = 0.999*2.0*M_PI*(simdata[isim][778]+simdata[isim][134]+simdata[isim][762]*0.33+simdata[isim][834]*0.33+simdata[isim][652])/total_K; // Phlogopite + Annite + Nontronite-K + Saponite-K + Muscovite
+						angle[3] = 0.999*2.0*M_PI*simdata[isim][52]/total_K;                       // K-feldspar
+					}
+					else if (itopic == 2) {
+						// Initial dissolved N + pyridine. Dissolved N, if specified in ppm in the input, depends on the mass of C, N, S.
+						// That's too complicated to figure out analytically, just copy-paste from any PHREEQC speciation run of the template input.
+						double total_N = 0.0; total_N = 1.879e+00*simdata[isim][6] + simdata[isim][84]-simdata[isim][85];
+						angle[1] = 0.999*2.0*M_PI*simdata[isim][33]*mass_water/total_N; // NH3(aq)
+						angle[2] = 0.999*2.0*M_PI*simdata[isim][712]/total_N;           // NH4-feldspar
+						angle[3] = 0.999*2.0*M_PI*simdata[isim][714]/total_N;           // NH4-muscovite
+						angle[4] = 0.999*2.0*M_PI*2.0*simdata[isim][654]/total_N; 		// N2(g)
+						angle[5] = 0.999*2.0*M_PI*simdata[isim][710]/total_N; 			// NH3(g)
+						angle[6] = 0.999*2.0*M_PI*2.0*simdata[isim][34]*mass_water/total_N; // N2(aq)
+						angle[7] = 0.999*2.0*M_PI*simdata[isim][32]*mass_water/total_N; // NH4+(aq)
+						angle[8] = 0.999*2.0*M_PI*(simdata[isim][23]-simdata[isim][32]-2.0*simdata[isim][34]-simdata[isim][33])*mass_water/total_N; // NH4+(aq)
 					}
 
 					for (i=0;i<(*nspecies);i++) {
-						if (angle[i+1] < 0.0 || angle[i+1] > 2.0*M_PI) printf("ParamExplorationPlot: angle out of bounds: %g\n",angle[i+1]);
+						if (angle[i+1] < 0.0 && angle[i+1] > -1.0e-4) angle[i+1] = 0.0;
+						if (angle[i+1] < 0.0 || angle[i+1] > 2.0*M_PI) printf("ParamExplorationPlot: angle %d out of bounds: %g at ipH %d, ipe %d, iWR %d\n",i+1,angle[i+1],ipH,ipe,iWR);
 						else if (angle[i+1] > 0.0) Pie(angle[i+1], angle[i], iWR, ipH, ipe, pie_radius, &(*pies), color[i+1]);
+						angle[i+1] = angle[i+1] + angle[i]; // To change the starting angle at the next iteration
 					}
 				}
 			}
@@ -375,7 +410,7 @@ int Pie(double angle, double angle_start, int iWR, int ipH, int ipe, double pie_
 	x = 0; y = 0;
 	// Position in the correct subwindow according to water:rock ratio
 	if (iWR == -1) {
-		x = x + 400; y = y + 510; // Legend pie
+		x = x + 430; y = y + 510; // Legend pie
 	}
 	else if (iWR == 0) {
 		x = x + 590; y = y + 380; // Bottom right
