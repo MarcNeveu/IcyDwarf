@@ -843,7 +843,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 				Crack_size_avg = Crack_size_avg + Crack_size[ir];
 			}
 			Crack_size_avg = Crack_size_avg / (double) (ircore-ircrack);
-			jr = floor(((double)ircrack + (double)ircore)/2.0);
+			jr = floor(((double)ircrack + (double)ircore)*0.5);
 			mu1 = Pa2ba*viscosity(T[jr],Mh2ol[ircore],Mnh3l[ircore])/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // Mueller, S. et al. (2010) Proc Roy Soc A 466, 1201-1228.
 			dT = T[ircrack] - T[ircore];
 			dr = r[ircore+1] - r[ircrack+1];
@@ -889,7 +889,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		}
 
 		if (irice >= ircore+2 && Xfines*frockp*rho_p/rhoRockth < 0.64) {
-			jr = (int) (ircore+irice)/2;
+			jr = (int) (ircore+irice)*0.5;
 			mu1 = Pa2ba*viscosity(T[jr],Mh2ol[jr],Mnh3l[jr])/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // Mueller, S. et al. (2010) Proc Roy Soc A 466, 1201-1228.
 			dT = T[ircore] - T[irice];
 			dr = r[irice+1] - r[ircore+1];
@@ -935,7 +935,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			jr = (int) (irice+irdiff)/2;
 			alf1 = -0.5 + 6.0*(T[jr]-50.0)/200.0; // Not as in D09!
 			alf1 = alf1 * 1.0e-5;
-			cp1 = fineMassFrac*7.73e4*T[jr] + (1.0-fineMassFrac*heatRock(T[jr]));                   // cgs
+			cp1 = (1.0-fineMassFrac)*7.73e4*T[jr] + fineMassFrac*heatRock(T[jr]);                   // cgs
 			kap1 = kappa[jr];                  // cgs
 			mu1 = (1.0e15)*exp(25.0*(273.0/T[jr]-1.0))/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // 1.0e14 in SI
 			dT = T[irice] - T[irdiff];
