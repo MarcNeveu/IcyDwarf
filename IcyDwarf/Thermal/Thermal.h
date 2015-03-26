@@ -925,13 +925,11 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		}
 
 		fineMassFrac = 0.0; fineVolFrac = 0.0;
-		// Calculate fine volume fraction in ice
-		if (irice > 0) {
-			fineMassFrac = Mrock[irice-1]/(Mh2ol[irice-1]+Mrock[irice-1]);
-			fineVolFrac = fineMassFrac*dM[irice-1]/dVol[irice-1]/(Xhydr[irice-1]*rhoHydrth+(1.0-Xhydr[irice-1])*rhoRockth);
-		}
-
 		if (irdiff >= irice+2) {
+			// Calculate fine volume fraction in ice
+			fineMassFrac = Mrock[irice+1]/(Mh2os[irice+1]+Mrock[irice+1]);
+			fineVolFrac = fineMassFrac*dM[irice+1]/dVol[irice+1]/(Xhydr[irice+1]*rhoHydrth+(1.0-Xhydr[irice+1])*rhoRockth);
+			// Calculate Ra
 			jr = (int) (irice+irdiff)/2;
 			alf1 = -0.5 + 6.0*(T[jr]-50.0)/200.0; // Not as in D09!
 			alf1 = alf1 * 1.0e-5;
