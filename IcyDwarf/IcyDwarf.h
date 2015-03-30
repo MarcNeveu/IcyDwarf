@@ -54,8 +54,6 @@
 // GENERAL PARAMETERS
 //-------------------------------------------------------------------
 
-#define rhoRock 3800.0                                     // Density of rock
-#define rhoHydr 2600.0                                     // Density of hydrated rock
 #define rhoH2os 935.0                                      // Density of H2O(s) 935 at T<100 K, but 918 at 273 K (TEOS-10, Feistel and Wagner 2006)
 #define rhoH2ol 1000.0                                     // Density of H2O(l)
 #define rhoAdhs 985.0                                      // Density of ADH(s)
@@ -191,7 +189,7 @@ typedef struct {
 #include <stdlib.h>
 
 double *calculate_pressure (double *Pressure, int NR, double *dM, double *Mrock, double *Mh2os, double *Madhs,
-		double *Mh2ol, double *Mnh3l, double *r);
+		double *Mh2ol, double *Mnh3l, double *r, double rhoHydr, double rhoDry, double *Xhydr);
 double calculate_mass_liquid (int NR, int NT, int t, thermalout **thoutput);
 int calculate_seafloor (thermalout **thoutput, int NR, int NT, int t);
 int look_up (double x, double x_var, double x_step, int size, int warnings);
@@ -209,7 +207,7 @@ int append_output (int L, double *Output, char path[1024], const char filename[1
 //-------------------------------------------------------------------
 
 double *calculate_pressure (double *Pressure, int NR, double *dM, double *Mrock, double *Mh2os, double *Madhs,
-		double *Mh2ol, double *Mnh3l, double *r) {
+		double *Mh2ol, double *Mnh3l, double *r, double rhoHydr, double rhoDry, double *Xhydr) {
 
 	int ir = 0;
 
@@ -253,7 +251,7 @@ double *calculate_pressure (double *Pressure, int NR, double *dM, double *Mrock,
 	Pressure[NR-1] = 0.0;
 	for (ir=NR-2;ir>=0;ir--)
 		Pressure[ir] = Pressure[ir+1] + 0.5*(g[ir+1]+g[ir])*(r[ir+1]-r[ir])/km2cm*km*
-						(frock[ir+1]*rhoRock + fh2os[ir+1]*rhoH2os +
+						(frock[ir+1]*(Xhydr[ir]*rhoHydr + (1.0-Xhydr[ir])*rhoDry) + fh2os[ir+1]*rhoH2os +
 						 fh2ol[ir+1]*rhoH2ol + fadhs[ir+1]*rhoAdhs +
 						 fnh3l[ir+1]*rhoNh3l);
 
@@ -367,11 +365,23 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
+			fseek(f,31,SEEK_CUR);   // Hydrated rock density (g cm-3)
+			scan = fscanf(f, "%lg", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,31,SEEK_CUR);   // Dry rock density (g cm-3)
+			scan = fscanf(f, "%lg", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
 			fseek(f,31,SEEK_CUR);   // Radius (km)
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
 			fseek(f,31,SEEK_CUR);   // Ammonia w.r.t. water
+			scan = fscanf(f, "%lg", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,31,SEEK_CUR);   // Briny water?
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
@@ -392,6 +402,10 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
 			fseek(f,105,SEEK_CUR);  // Run thermal?
+			scan = fscanf(f, "%lg", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,24,SEEK_CUR);   // Sim time step (yr)
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
@@ -544,8 +558,11 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 		printf("Planet parameters\n");
 		printf("-------------------------------\n");
 		printf("Density (g cm-3) \t \t %g\n",input[i]), i++;
+		printf("Hydr. rock density (g cm-3) \t %g\n",input[i]), i++;
+		printf("Dry rock density (g cm-3) \t %g\n",input[i]), i++;
 		printf("Radius (km) \t \t \t %g\n",input[i]), i++;
 		printf("Ammonia w.r.t. water \t \t %g\n",input[i]), i++;
+		printf("Briny liquid? y=1, n=0 \t \t %g\n",input[i]), i++;
 		printf("Surface temperature (K) \t %g\n",input[i]), i++;
 		printf("-------------------------------\n");
 		printf("Grid\n");
@@ -557,6 +574,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 		printf("Subroutines\n");
 		printf("-------------------------------\n");
 		printf("Run thermal? \t \t \t %g\n",input[i]), i++;
+		printf("\t Sim time step (yr) \t %g\n",input[i]), i++;
 		printf("\t Sim starts at (Myr) \t %g\n",input[i]), i++;
 		printf("\t Initial temp (K) \t %g\n",input[i]), i++;
 		printf("\t Degree of hydration \t %g\n",input[i]), i++;

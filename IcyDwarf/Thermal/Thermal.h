@@ -28,15 +28,16 @@
 
 #include "../IcyDwarf.h"
 
-int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p,
-		int warnings, int msgout, double Xp, double *Xhydr, double Xfines, double tzero, double Tsurf, double Tinit, double fulltime,
-		double dtoutput, int *crack_input, int *crack_species);
+int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p, double rhoHydr, double rhoDry,
+		int warnings, int msgout, double Xp, double Xsalt, double *Xhydr, double Xfines, double tzero, double Tsurf,
+		double Tinit, double dtime, double fulltime, double dtoutput, int *crack_input, int *crack_species);
 
-int state (char path[1024], int itime, int ir, double E, double *frock, double *fh2os, double *fadhs, double *fh2ol, double *fnh3l, double *T);
+int state (char path[1024], int itime, int ir, double E, double *frock, double *fh2os, double *fadhs, double *fh2ol, double *fnh3l,
+		double Xsalt, double *T);
 
 double heatRock (double T);
 
-int heatIce (double T, double X, double *E, double *gh2os, double *gadhs, double *gh2ol, double *gnh3l);
+int heatIce (double T, double X, double Xsalt, double *E, double *gh2os, double *gadhs, double *gh2ol, double *gnh3l);
 
 double kapcond(double T, double frock, double fh2os, double fadhs, double fh2ol, double dnh3l, double Xhydr);
 
@@ -56,9 +57,9 @@ int hydrate(double T, double **dM, double *dVol, double **Mrock, double **Mh2os,
 
 double viscosity(double T, double Mh2ol, double Mnh3l);
 
-int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p,
-		int warnings, int msgout, double Xp, double *Xhydr, double Xfines, double tzero, double Tsurf, double Tinit, double fulltime,
-		double dtoutput, int *crack_input, int *crack_species) {
+int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p, double rhoHydr, double rhoDry,
+		int warnings, int msgout, double Xp, double Xsalt, double *Xhydr, double Xfines, double tzero, double Tsurf,
+		double Tinit, double dtime, double fulltime, double dtoutput, int *crack_input, int *crack_species) {
 
 	//-------------------------------------------------------------------
 	//                 Declarations and initializations
@@ -85,8 +86,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double Heat_grav = 0.0;
 	double Heat_serp = 0.0;
 	double Heat_dehydr = 0.0;
-	double dtime = 0.0;                  // Time step (s)
-	double realtime = 0.0;                   // Time elapsed (s)
+	double realtime = 0.0;               // Time elapsed (s)
 	double frockp = 0.0;                 // Fraction of rock in the planet by mass
 	double e1 = 0.0;                     // Temporary specific energy (erg/g)
 	double frock = 0.0;                  // Rock mass fraction
@@ -113,7 +113,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double Nu0 = 0.0;                    // Critical Nusselt number = Ra_c^0.25
 	double Crack_size_avg = 0.0;         // Average crack size in cracked layer
 	double Tliq = 0.0;                   // Melting temperature of an ammonia-water mixture (K)
-	double rhoRockth = rhoRock*gram;     // Density of dry rock (g/cm3)
+	double rhoRockth = rhoDry*gram;     // Density of dry rock (g/cm3)
 	double rhoHydrth = rhoHydr*gram;     // Density of hydrated rock (g/cm3)
 	double rhoH2osth = rhoH2os*gram;	 // Density of water ice (g/cm3)
 	double rhoAdhsth = rhoAdhs*gram;	 // Density of ammonia dihydrate ice (g/cm3)
@@ -450,7 +450,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		fadhs = Madhs[ir] / dM[ir];
 		fh2ol = Mh2ol[ir] / dM[ir];
 		fnh3l = Mnh3l[ir] / dM[ir];
-		state (path, itime, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, &temp1);
+		state (path, itime, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, Xsalt, &temp1);
 		T[ir] = temp1;
 		Mrock[ir] = dM[ir]*frock;
 		Mh2os[ir] = dM[ir]*fh2os;
@@ -495,7 +495,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		Thermal[8] = Xhydr[ir];
 		append_output(9, Thermal, path, "Outputs/Thermal.txt");
 	}
-	Heat[0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
+	Heat[0] = 0.0;                     // t in Gyr
 	Heat[1] = Heat_radio;
 	Heat[2] = Heat_grav;
 	Heat[3] = Heat_serp;
@@ -506,7 +506,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	append_output(NR, Crack, path, "Outputs/Crack.txt");        // Crack type
 
 	// Crack depth (km)
-	Crack_depth[0] = (double) itime*dtime/Gyr2sec;              // t in Gyr
+	Crack_depth[0] = 0.0;              // t in Gyr
 
 	for (ir=0;ir<NR;ir++) {
 		if (Crack[ir] > 0.0) break;
@@ -517,7 +517,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
 	// Water:rock ratio by mass in cracked layer
 	// Depends entirely on porosity! The W/R by volume is porosity. Here, we say W/R = Mliq/Mcracked_rock.
-	WRratio[0] = (double) itime*dtime/Gyr2sec;                   // t in Gyr
+	WRratio[0] = 0.0;                   // t in Gyr
 	Mliq = 0.0;
 	for (ir=0;ir<NR;ir++) {
 		Mliq = Mliq + Mh2ol[ir] + Mnh3l[ir];
@@ -549,7 +549,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	fadhs = Madhs[ir] / dM[ir];
     	fh2ol = Mh2ol[ir] / dM[ir];
     	fnh3l = Mnh3l[ir] / dM[ir];
-    	state (path, itime, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, &temp1);
+		state (path, itime, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, Xsalt, &temp1);
     	T[ir] = temp1;
     	Mrock[ir] = dM[ir]*frock;
     	Mh2os[ir] = dM[ir]*fh2os;
@@ -563,7 +563,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	//                       Initialize time loop
 	//-------------------------------------------------------------------
 
-    dtime = 0.00005*Myr2sec;  // Static time step. Make it dynamic, CFL-compliant?
+    dtime = dtime*1.0e-6*Myr2sec;  // Static time step. Make it dynamic, CFL-compliant?
     // dtime = 0.0010*Myr2sec / ((double) NR / 100.0) / ((double) NR / 100.0);
 
     realtime = -dtime;
@@ -592,7 +592,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	//-------------------------------------------------------------------
 
     	if (i == 1) {
-    		Pressure = calculate_pressure(Pressure, NR, dM, Mrock, Mh2os, Madhs, Mh2ol, Mnh3l, r);     // Pressure
+    		Pressure = calculate_pressure(Pressure, NR, dM, Mrock, Mh2os, Madhs, Mh2ol, Mnh3l, r, rhoHydr, rhoDry, Xhydr);     // Pressure
     	}
 
     	//-------------------------------------------------------------------
@@ -610,7 +610,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 						crack(T[ir], T_old[ir], Pressure[ir], &Crack[ir], &Crack_size[ir], Xhydr[ir], Xhydr_old[ir],
 								dtime, Mrock[ir], Mrock_init[ir], &Act[ir], warnings, crack_input, crack_species,
 								aTP, integral, alpha, beta, silica, chrysotile, magnesite, circ[ir], &Stress[ir],
-								&P_pore[ir], &P_hydr[ir], Brittle_strength[ir]);
+								&P_pore[ir], &P_hydr[ir], Brittle_strength[ir], rhoHydrth, rhoRockth);
 					}
 					else { // Reset all the variables modified by crack()
 						Crack[ir] = 0.0;
@@ -693,7 +693,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			fadhs = Madhs[ir] / dM[ir];
 			fh2ol = Mh2ol[ir] / dM[ir];
 			fnh3l = Mnh3l[ir] / dM[ir];
-	    	state (path, itime, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, &temp1);
+			state (path, itime, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, Xsalt, &temp1);
 			T[ir] = temp1;
 			Mrock[ir] = dM[ir]*frock;
 			Mh2os[ir] = dM[ir]*fh2os;
@@ -747,7 +747,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			fadhs = Madhs[ir] / dM[ir];
 			fh2ol = Mh2ol[ir] / dM[ir];
 			fnh3l = Mnh3l[ir] / dM[ir];
-	    	state (path, itime, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, &temp1);
+			state (path, itime, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, Xsalt, &temp1);
 			T[ir] = temp1;
 			Mrock[ir] = dM[ir]*frock;
 			Mh2os[ir] = dM[ir]*fh2os;
@@ -986,7 +986,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			fadhs = Madhs[ir] / dM[ir];
 			fh2ol = Mh2ol[ir] / dM[ir];
 			fnh3l = Mnh3l[ir] / dM[ir];
-	    	state (path, itime, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, &temp1);
+			state (path, itime, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, Xsalt, &temp1);
 	    	T[ir] = temp1;
 			Mrock[ir] = dM[ir]*frock;
 			Mh2os[ir] = dM[ir]*fh2os;
@@ -1175,7 +1175,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
  *
  *--------------------------------------------------------------------*/
 
-int state (char path[1024], int itime, int ir, double E, double *frock, double *fh2os, double *fadhs, double *fh2ol, double *fnh3l, double *T) {
+int state (char path[1024], int itime, int ir, double E, double *frock, double *fh2os, double *fadhs, double *fh2ol, double *fnh3l,
+		double Xsalt, double *T) {
 
 	int iter = 0;
 	double X = 0.0;         // Total solid (dihydrate) + liquid ammonia fraction
@@ -1210,19 +1211,19 @@ int state (char path[1024], int itime, int ir, double E, double *frock, double *
 		// Calculate Elo
 		Tp = Tlo;
     	Erock = heatRock(Tp);
-    	heatIce (Tp, X, &Eice, &gh2os, &gadhs, &gh2ol, &gnh3l);
+    	heatIce (Tp, X, Xsalt, &Eice, &gh2os, &gadhs, &gh2ol, &gnh3l);
     	Elo = (*frock)*Erock + (1.0-(*frock))*Eice;
 
     	// Calculate Emd
 		Tp = Tmd;
 		Erock = heatRock(Tp);
-		heatIce (Tp, X, &Eice, &gh2os, &gadhs, &gh2ol, &gnh3l);
+		heatIce (Tp, X, Xsalt, &Eice, &gh2os, &gadhs, &gh2ol, &gnh3l);
     	Emd = (*frock)*Erock + (1.0-(*frock))*Eice;
 
     	// Calculate Ehi
 		Tp = Thi;
 		Erock = heatRock(Tp);
-    	heatIce (Tp, X, &Eice, &gh2os, &gadhs, &gh2ol, &gnh3l);
+    	heatIce (Tp, X, Xsalt, &Eice, &gh2os, &gadhs, &gh2ol, &gnh3l);
     	Ehi = (*frock)*Erock + (1.0-(*frock))*Eice;
 
     	if (E >= Elo && E <= Ehi && Elo > 0.0 && Ehi > 0.0 && Emd > 0.0) {
@@ -1322,7 +1323,7 @@ double heatRock (double T) {
  *
  *--------------------------------------------------------------------*/
 
-int heatIce (double T, double X, double *E, double *gh2os, double *gadhs, double *gh2ol, double *gnh3l){
+int heatIce (double T, double X, double Xsalt, double *E, double *gh2os, double *gadhs, double *gh2ol, double *gnh3l){
 
 	double Xb = 0.0;        // Specific point on simplified, analytical phase diagram with quadratic equation
 	double Xliq = 0.0;      // Ammonia fraction of the liquid
@@ -1337,7 +1338,7 @@ int heatIce (double T, double X, double *E, double *gh2os, double *gadhs, double
 	// The H2O-NH3 phase diagram is divided into 9 regions and simplified to be analytically tractable.
 
 	// Low-ammonia case
-	if (X <= Xb) {
+	if (X <= Xb && Xsalt <= 0.0) { // Melting point of pure water
 
 		// Low NH3 - Region 1
 		if (T <= 174.0) {
@@ -1405,7 +1406,7 @@ int heatIce (double T, double X, double *E, double *gh2os, double *gadhs, double
 			(*E) = (*E) + (T2-271.0)*X*(cnh3l + ch2ol*(1.0/Xb - 1.0))
 					    + (1.0-X/Xb)*(T2-271.0)/4.0 * (  lh2o
 							                           + 0.5*ch2ol*(T2-271.0)
-							                           + 0.5*qh2o*271.0*(279.0-T2));
+							                           + 0.5*qh2o*271.0*(275.0-T2));
 			(*gh2os) = (1.0-X/Xb)*(275.0-T)/4.0;
 			(*gadhs) = 0.0;
 			(*gh2ol) = (1.0-X/Xb)*(T-271.0)/4.0 + (X/Xb - X);
@@ -1416,11 +1417,102 @@ int heatIce (double T, double X, double *E, double *gh2os, double *gadhs, double
 		(*E) = (*E) + (T2-271.0)*X*(cnh3l + ch2ol*(1.0/Xb - 1.0))
 				    + (1.0-X/Xb)*(T2-271.0)/4.0 * (  lh2o
 						                           + 0.5*ch2ol*(T2-271.0)
-						                           + 0.5*qh2o*271.0*(279.0-T2));
+						                           + 0.5*qh2o*271.0*(275.0-T2));
 
 		// Low NH3 - Region 5
 		if (T > 275.0) {
 			(*E) = (*E) + (X*cnh3l + (1.0-X)*ch2ol)*(T-275.0);
+			(*gh2os) = 0.0;
+			(*gadhs) = 0.0;
+			(*gh2ol) = 1.0-X;
+			(*gnh3l) = X;
+		}
+	}
+
+	else if (X <= Xb && Xsalt > 0.0) { // Melting point of brine at 250 K
+
+		// Low NH3 - Region 1
+		if (T <= 174.0) {
+			T2 = T;
+			(*E) = 0.5*qh2o*T2*T2 + (X/Xc)*0.5*(qadh-qh2o)*T2*T2;
+			(*gh2os) = 1.0 - X/Xc;
+			(*gadhs) = X/Xc;
+			(*gh2ol) = 0.0;
+			(*gnh3l) = 0.0;
+			return 1;
+		}
+		T2 = 174.0;
+		(*E) = 0.5*qh2o*T2*T2 + (X/Xc)*0.5*(qadh-qh2o)*T2*T2;
+
+		// Low NH3 - Region 2
+		if (T > 174.0 && T <= 178.0) {
+			T2 = T;
+			(*E) = (*E) + (1.0-X/Xc)*0.5*qh2o*(T2*T2 - 174.0*174.0)
+					    + X/Xc*(T2-174.0)/4.0* ( ladh
+							                   + (182.0 - T2)/2.0*qadh*174.0
+							                   + Xc*(T2-174.0/2.0*cnh3l)
+							                   + (1.0-Xc)*(T2-174.0)/2.0*ch2ol);
+			(*gh2os) = 1.0-X/Xc;
+			(*gadhs) = X/Xc*(178.0-T)/4.0;
+			(*gh2ol) = X/Xc*(T-174.0)/4.0*(1.0-Xc);
+			(*gnh3l) = X/Xc*(T-174.0)/4.0*Xc;
+			return 2;
+		}
+		T2 = 178.0;
+		(*E) = (*E) + (1.0-X/Xc)*0.5*qh2o*(T2*T2 - 174.0*174.0)
+				    + X/Xc*(T2-174.0)/4.0* ( ladh
+					                   	   + (182.0 - T2)/2.0*qadh*174.0
+						                   + Xc*(T2-174.0/2.0*cnh3l)
+						                   + (1.0-Xc)*(T2-174.0)/2.0*ch2ol);
+
+		// Low NH3 - Region 3
+		if (T > 178.0 && T <= 248.0) {
+			T2 = T;
+			r = sqrt((273.0-T2)/95.0);
+			Xliq = Xc*r;
+			(*E) = (*E) + 0.5*qh2o*(T2*T2 - 178.0*178.0)
+					    + X*(cnh3l-ch2ol)*(T2-178.0)
+					    + X/Xc*(1.0-r)* (  lh2o/r
+							             + 2.0*95.0*ch2ol
+							             - 2.0*95.0*qh2o*273.0
+							             + 2.0*qh2o*95.0*95.0/3.0*(1.0+r+r*r) );
+			(*gh2os) = 1.0 - X/Xliq;
+			(*gadhs) = 0.0;
+			(*gh2ol) = X/Xliq - X;
+			(*gnh3l) = X;
+			return 3;
+		}
+		T2 = 248.0;
+		r = sqrt((273.0-T2)/95.0);
+		(*E) = (*E) + 0.5*qh2o*(T2*T2 - 178.0*178.0)
+				    + X*(cnh3l-ch2ol)*(T2-178.0)
+				    + X/Xc*(1.0-r)* (  lh2o/r
+						             + 2.0*95.0*ch2ol
+						             - 2.0*95.0*qh2o*273.0
+						             + 2.0*qh2o*95.0*95.0/3.0*(1.0+r+r*r) );
+
+		// Low NH3 - Region 4
+		if (T > 248.0 && T <= 252.0) {
+			T2 = T;
+			(*E) = (*E) + (T2-248.0)*X*(cnh3l + ch2ol*(1.0/Xb - 1.0))
+					    + (1.0-X/Xb)*(T2-248.0)/4.0 * (  lh2o
+							                           + 0.5*ch2ol*(T2-248.0)
+							                           + 0.5*qh2o*248.0*(252.0-T2));
+			(*gh2os) = (1.0-X/Xb)*(252.0-T)/4.0;
+			(*gadhs) = 0.0;
+			(*gh2ol) = (1.0-X/Xb)*(T-248.0)/4.0 + (X/Xb - X);
+			(*gnh3l) = X;
+			return 4;
+		}
+		T2 = 252.0;
+		(*E) = (*E) + (T2-248.0)*X*(cnh3l + ch2ol*(1.0/Xb - 1.0))
+				    + (1.0-X/Xb)*(T2-248.0)/4.0 * (  lh2o
+						                           + 0.5*ch2ol*(T2-248.0)
+						                           + 0.5*qh2o*248.0*(252.0-T2));
+
+		// Low NH3 - Region 5
+		if (T > 252.0) {
+			(*E) = (*E) + (X*cnh3l + (1.0-X)*ch2ol)*(T-252.0);
 			(*gh2os) = 0.0;
 			(*gadhs) = 0.0;
 			(*gh2ol) = 1.0-X;

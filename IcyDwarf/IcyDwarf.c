@@ -36,10 +36,14 @@ int main(int argc, char *argv[]){
 
 	// Planet inputs
     double rho_p = 0.0;                // Planetary density
+    double rhoHydrRock = 0.0;              // Density of hydrated rock endmember
+    double rhoDryRock = 0.0;               // Density of dry rock endmember
     double r_p = 0.0;                  // Planetary rdouble
     double nh3 = 0.0;                  // Ammonia w.r.t. water
+    double salt = 0.0;                 // Salt w.r.t. water (3/30/2015: binary quantity)
     double Tsurf = 0.0;				   // Surface temperature
     double Tinit = 0.0;                // Initial temperature
+    double timestep = 0.0;             // Time step of the sim (yr)
     double tzero = 0.0;                // Time zero of the sim (Myr)
     double Hydr_init = 0.0;            // Initial degree of hydration of the rock (0=fully dry, 1=fully hydrated)
     double Xfines = 0.0;               // Mass or volume fraction of rock in fine grains that don't settle into a core (0=none, 1=all)
@@ -91,9 +95,9 @@ int main(int argc, char *argv[]){
 	int r = 0;
 	int i = 0;
 
-	double *input = (double*) malloc(45*sizeof(double));
+	double *input = (double*) malloc(50*sizeof(double));
 	if (input == NULL) printf("IcyDwarf: Not enough memory to create input[28]\n");
-	for (i=0;i<45;i++) input[i] = 0.0;
+	for (i=0;i<50;i++) input[i] = 0.0;
 
 	//-------------------------------------------------------------------
 	// Startup
@@ -130,33 +134,37 @@ int main(int argc, char *argv[]){
 	warnings = (int) input[0];
 	msgout = (int) input[1];
 	rho_p = input[2];
-	r_p = input[3];
-	nh3 = input[4];
-	Tsurf = input[5];
-	NR = input[6];
-	total_time = input[7];
-	output_every = input[8];
+	rhoHydrRock = input[3]*1000.0;
+	rhoDryRock = input[4]*1000.0;
+	r_p = input[5];
+	nh3 = input[6];
+	salt = input[7];
+	Tsurf = input[8];
+	NR = input[9];
+	total_time = input[10];
+	output_every = input[11];
 	NT_output = floor(total_time/output_every)+1;
-	calculate_thermal = (int) input[9];
-	tzero = input[10];     // Myr
-	Tinit = input[11];
-	Hydr_init = input[12];
-	Xfines = input[13];
-	calculate_aTP = (int) input[14];
-	calculate_alpha_beta = (int) input[15];
-	calculate_crack_species = (int) input[16];
-	calculate_geochemistry = (int) input[17];
-	Tmin = input[18], Tmax = input[19], Tstep = input[20];
-	Pmin = input[21], Pmax = input[22], Pstep = input[23];
-	pHmin = input[24], pHmax = input[25], pHstep = input[26];
-	pemin = input[27], pemax = input[28], pestep = input[29];
-	WRmin = input[30], WRmax = input[31], WRstep = input[32];
-	calculate_compression = (int) input[33];
-	calculate_cryolava = (int) input[34];
-	t_cryolava = (int) input[35]/input[8];
-	CHNOSZ_T_MIN = input[36];
-	for (i=37;i<41;i++) crack_input[i-37] = (int) input[i];
-	for (i=41;i<44;i++) crack_species[i-41] = (int) input[i];
+	calculate_thermal = (int) input[12];
+	timestep = input[13];  // yr
+	tzero = input[14];     // Myr
+	Tinit = input[15];
+	Hydr_init = input[16];
+	Xfines = input[17];
+	calculate_aTP = (int) input[18];
+	calculate_alpha_beta = (int) input[19];
+	calculate_crack_species = (int) input[20];
+	calculate_geochemistry = (int) input[21];
+	Tmin = input[22], Tmax = input[23], Tstep = input[24];
+	Pmin = input[25], Pmax = input[26], Pstep = input[27];
+	pHmin = input[28], pHmax = input[29], pHstep = input[30];
+	pemin = input[31], pemax = input[32], pestep = input[33];
+	WRmin = input[34], WRmax = input[35], WRstep = input[36];
+	calculate_compression = (int) input[37];
+	calculate_cryolava = (int) input[38];
+	t_cryolava = (int) input[39]/input[11];
+	CHNOSZ_T_MIN = input[40];
+	for (i=41;i<45;i++) crack_input[i-41] = (int) input[i];
+	for (i=45;i<48;i++) crack_species[i-45] = (int) input[i];
 
 	//-------------------------------------------------------------------
 	// Cracking depth calculations
@@ -190,7 +198,8 @@ int main(int argc, char *argv[]){
 
 	if (calculate_thermal == 1) {
 		printf("Running thermal evolution code...\n");
-		Thermal(argc, argv, path, NR, r_p, rho_p, warnings, msgout, nh3, Xhydr, Xfines, tzero, Tsurf, Tinit, total_time, output_every, crack_input, crack_species);
+		Thermal(argc, argv, path, NR, r_p, rho_p, rhoHydrRock, rhoDryRock, warnings, msgout, nh3, salt, Xhydr, Xfines, tzero, Tsurf, Tinit,
+				timestep, total_time, output_every, crack_input, crack_species);
 		printf("\n");
 	}
 
@@ -223,8 +232,9 @@ int main(int argc, char *argv[]){
 			if (thoutput[r] == NULL) printf("IcyDwarf: Not enough memory to create the thoutput structure\n");
 		}
 		thoutput = read_thermal_output (thoutput, NR, NT_output, path);
+		for (r=0;r<NR;r++) Xhydr[r] = thoutput[r][NT_output].famor;
 
-		compression(NR, NT_output, thoutput, NT_output-1, 202, 304, 403, 0, path);
+		compression(NR, NT_output, thoutput, NT_output-1, 202, 304, 403, 0, path, rhoHydrRock, rhoDryRock, Xhydr);
 
 		for (r=0;r<NR;r++) {
 			free (thoutput[r]);
@@ -248,12 +258,14 @@ int main(int argc, char *argv[]){
 			if (thoutput[r] == NULL) printf("IcyDwarf: Not enough memory to create the thoutput structure\n");
 		}
 		thoutput = read_thermal_output (thoutput, NR, NT_output, path);
+		for (r=0;r<NR;r++) Xhydr[r] = thoutput[r][NT_output].famor;
 
 		if (t_cryolava > NT_output) {
 			printf("Icy Dwarf: t_cryolava > total time of sim\n");
 			return -1;
 		}
-		Cryolava(argc, argv, path, NR, NT_output, r_p, thoutput, t_cryolava, CHNOSZ_T_MIN, warnings, msgout);
+		Cryolava(argc, argv, path, NR, NT_output, r_p, thoutput, t_cryolava, CHNOSZ_T_MIN, warnings, msgout,
+				rhoHydrRock, rhoDryRock, Xhydr);
 
 		for (r=0;r<NR;r++) {
 			free (thoutput[r]);

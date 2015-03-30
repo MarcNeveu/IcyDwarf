@@ -45,11 +45,13 @@
 
 #include "../CHNOSZ_commands.h"
 
-int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p, thermalout **thoutput, int t_cryolava, double CHNOSZ_T_MIN, int warnings, int msgout);
+int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p, thermalout **thoutput, int t_cryolava,
+		double CHNOSZ_T_MIN, int warnings, int msgout, double rhoHydr, double rhoDry, double *Xhydr);
 double f (float P, float Mliq, double *Abundances, double *K_rxn, double x);
 double f_prime (float P, float Mliq, double *Abundances, double *K_rxn, double x);
 
-int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p, thermalout **thoutput, int t_cryolava, double CHNOSZ_T_MIN, int warnings, int msgout) {
+int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p, thermalout **thoutput, int t_cryolava,
+		double CHNOSZ_T_MIN, int warnings, int msgout, double rhoHydr, double rhoDry, double *Xhydr) {
 
 	// Counters
 	int r = 0;
@@ -128,7 +130,7 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 		dM[r] = Mrock[r] + Mh2os[r] + Madhs[r] + Mh2ol[r] + Mnh3l[r];
 		radius[r] = thoutput[r][t].radius*km2cm;
 	}
-	Pressure = calculate_pressure(Pressure, NR, dM, Mrock, Mh2os, Madhs, Mh2ol, Mnh3l, radius);         // Calculate pressures
+	Pressure = calculate_pressure(Pressure, NR, dM, Mrock, Mh2os, Madhs, Mh2ol, Mnh3l, radius, rhoHydr, rhoDry, Xhydr);         // Calculate pressures
 
 	// Find the seafloor radius and get the temperature there
 	r_seafloor =  calculate_seafloor (thoutput, NR, NT, t);

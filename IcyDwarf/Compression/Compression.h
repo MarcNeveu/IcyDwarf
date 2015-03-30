@@ -29,7 +29,7 @@
 #include "../IcyDwarf.h"
 
 int compression(int NR, int NT, thermalout **thoutput, int t, int dbincore, int dboutcore, int dbmantle, int specify,
-		char path[1024]);
+		char path[1024], double rhoHydr, double rhoDry, double *Xhydr);
 
 int planmat(int ncomp, int **dbindex, int **eos, double **rho0, double **c, double **nn, double **Ks0, double **Ksp,
 		double **V0, double **Tref, double **a0, double **a1, double **b0, double **b1, double **b2, char path[1024]);
@@ -37,7 +37,7 @@ int planmat(int ncomp, int **dbindex, int **eos, double **rho0, double **c, doub
 int planmat_index(int mat, int ncomp, int *dbindex);
 
 int compression(int NR, int NT, thermalout **thoutput, int t, int dbincore, int dboutcore, int dbmantle, int specify,
-		char path[1024]) {
+		char path[1024], double rhoHydr, double rhoDry, double *Xhydr) {
 
 	//-------------------------------------------------------------------
 	// Declarations and initializations
@@ -387,7 +387,7 @@ int compression(int NR, int NT, thermalout **thoutput, int t, int dbincore, int 
 			dM[ir] = Mrock[ir] + Mh2os[ir] + Madhs[ir] + Mh2ol[ir] + Mnh3l[ir];
 			r[ir+1] = thoutput[ir][t].radius*km2cm;
 		}
-		P = calculate_pressure(P, NR, dM, Mrock, Mh2os, Madhs, Mh2ol, Mnh3l, r);
+		P = calculate_pressure(P, NR, dM, Mrock, Mh2os, Madhs, Mh2ol, Mnh3l, r, rhoHydr, rhoDry, Xhydr);
 		for (ir=1;ir<NR;ir++) {
 			rho[ir] = dM[ir]*gram / (4.0/3.0*PI_greek*(thoutput[ir][t].radius*thoutput[ir][t].radius*thoutput[ir][t].radius -
 					thoutput[ir-1][t].radius*thoutput[ir-1][t].radius*thoutput[ir-1][t].radius)*km*km*km);
