@@ -1468,7 +1468,7 @@ int heatIce (double T, double X, double Xsalt, double *E, double *gh2os, double 
 		// Low NH3 - Region 3
 		if (T > 178.0 && T <= 248.0) {
 			T2 = T;
-			r = sqrt((273.0-T2)/95.0);
+			r = sqrt((250.0-T2)/95.0);
 			Xliq = Xc*r;
 			(*E) = (*E) + 0.5*qh2o*(T2*T2 - 178.0*178.0)
 					    + X*(cnh3l-ch2ol)*(T2-178.0)
@@ -1483,7 +1483,7 @@ int heatIce (double T, double X, double Xsalt, double *E, double *gh2os, double 
 			return 3;
 		}
 		T2 = 248.0;
-		r = sqrt((273.0-T2)/95.0);
+		r = sqrt((250.0-T2)/95.0);
 		(*E) = (*E) + 0.5*qh2o*(T2*T2 - 178.0*178.0)
 				    + X*(cnh3l-ch2ol)*(T2-178.0)
 				    + X/Xc*(1.0-r)* (  lh2o/r
