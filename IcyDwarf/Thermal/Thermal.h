@@ -30,7 +30,7 @@
 
 int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p, double rhoHydr, double rhoDry,
 		int warnings, int msgout, double Xp, double Xsalt, double *Xhydr, double Xfines, double tzero, double Tsurf,
-		double Tinit, double dtime, double fulltime, double dtoutput, int *crack_input, int *crack_species);
+		double Tinit, double dtime, double fulltime, double dtoutput, int *crack_input, int *crack_species, int chondr);
 
 int state (char path[1024], int itime, int ir, double E, double *frock, double *fh2os, double *fadhs, double *fh2ol, double *fnh3l,
 		double Xsalt, double *T);
@@ -41,7 +41,7 @@ int heatIce (double T, double X, double Xsalt, double *E, double *gh2os, double 
 
 double kapcond(double T, double frock, double fh2os, double fadhs, double fh2ol, double dnh3l, double Xhydr);
 
-int decay(double *t, double *tzero, double *S);
+int decay(double *t, double *tzero, double *S, int chondr);
 
 int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double **dM, double **dE, double **Mrock, double **Mh2os, double **Madhs,
 		double **Mh2ol, double **Mnh3l, double **Vrock, double **Vh2os, double **Vadhs, double **Vh2ol, double **Vnh3l, double **Erock,
@@ -59,7 +59,7 @@ double viscosity(double T, double Mh2ol, double Mnh3l);
 
 int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p, double rhoHydr, double rhoDry,
 		int warnings, int msgout, double Xp, double Xsalt, double *Xhydr, double Xfines, double tzero, double Tsurf,
-		double Tinit, double dtime, double fulltime, double dtoutput, int *crack_input, int *crack_species) {
+		double Tinit, double dtime, double fulltime, double dtoutput, int *crack_input, int *crack_species, int chondr) {
 
 	//-------------------------------------------------------------------
 	//                 Declarations and initializations
@@ -673,14 +673,14 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 					if (Xhydr[ir] >= (1.0+1.0e-10)*Xhydr_temp) dont_dehydrate[ir] = 1; // +epsilon to beat machine error
 				}
 			}
-			for (ir=0;ir<ircore;ir++) { // irice?
-				if (T[ir] > Tdehydr_min && Xhydr[ir] >= 0.01 && dont_dehydrate[ir] == 0) {
-					dehydrate(T[ir], dM[ir], dVol[ir], &Mrock[ir], &Mh2ol[ir], &Vrock[ir], &Vh2ol[ir], rhoRockth, rhoHydrth, rhoH2olth,
-							&Xhydr[ir]);
-					structure_changed = 1;
-				}
-			}
     	}
+		for (ir=0;ir<ircore;ir++) { // irice?
+			if (T[ir] > Tdehydr_min && Xhydr[ir] >= 0.01 && dont_dehydrate[ir] == 0) {
+				dehydrate(T[ir], dM[ir], dVol[ir], &Mrock[ir], &Mh2ol[ir], &Vrock[ir], &Vh2ol[ir], rhoRockth, rhoHydrth, rhoH2olth,
+						&Xhydr[ir]);
+				structure_changed = 1;
+			}
+		}
 
 		//-------------------------------------------------------------------
 		//               Allow for chemical equilibrium again
@@ -780,7 +780,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		// - hydration / dehydration (cooling)
 		//-------------------------------------------------------------------
 
-		decay(&realtime, &tzero, &S);
+		decay(&realtime, &tzero, &S, chondr);
 		for (ir=0;ir<NR;ir++) {
 			Qth[ir] = (Mrock[ir] - rhoH2olth*(Mrock[ir]/(Xhydr[ir]*rhoHydrth+(1.0-Xhydr[ir])*rhoRockth) - Mrock[ir]/rhoRockth))
 			                *S; // Scaled for hydration, because hydrated rock has more mass (i.e. mass of -OH) but no extra radionuclides
@@ -1641,7 +1641,7 @@ double kapcond(double T, double frock, double fh2os, double fadhs, double fh2ol,
  *
  *--------------------------------------------------------------------*/
 
-int decay(double *t, double *tzero, double *S) {
+int decay(double *t, double *tzero, double *S, int chondr) {
 
 	double si = 1.0 / (1.0e6 * 1.67e-24 * 151.0); // Grams^-1 / # of Si atoms: 1e6 atoms * nucleon mass in grams * avg. molar mass of rock
 
@@ -1651,22 +1651,31 @@ int decay(double *t, double *tzero, double *S) {
 	 * Because of the loss of neutrino energies, the radiogenic heating rate can't be determined from the parent-daughter mass deficit alone.
 	 * Uncertainties in neutrino energy during radioactive decay are about 10%, lead to similar uncertainties in DeltaE_x.
 	 * To simplify, heat energy released in each decay chain = parent-daughter mass deficit minus 1 MeV per emitted neutrino (avg. neutrino energy).
-	 * Assumed values:
-	 * Radionuclide  t1/2 (Gyr)  DeltaE (MeV)	Initial # per 1e6 Si atoms    Reference
-	 * ------------  ----------  ------------   --------------------------    ---------
-	 *  40 K         1.265       0.6087         5.244                         Desch et al. (2009)
-	 * 235 U         0.704       42.74          0.00592                       Desch et al. (2009)
-	 * 238 U         4.47        46.07          0.01871                       Desch et al. (2009)
-	 * 232 Th        14.0        38.96          0.04399                       Desch et al. (2009)
-	 *  26 Al        0.000716    3.117          5e-5*8.41e4 = (26Al/27Al)*Al  Castillo-Rogez et al. (2007, Icarus 190, 179-202); Lodders (2003) */
+	 * Assumed values (CI):
+	 * Radionuclide  t1/2 (Gyr)  DeltaE (MeV)	Initial # per 1e6 Si atoms, CI   CO         Reference
+	 *                                          (Lodders 2003)                   (Wasson & Kallemeyn 1988)
+	 * ------------  ----------  ------------   ------------------------------   -------    ---------
+	 *  40 K         1.265       0.6087         5.244                            2.219      Desch et al. (2009)
+	 * 235 U         0.704       42.74          0.00592                          0.00619    Desch et al. (2009)
+	 * 238 U         4.47        46.07          0.01871                          0.01942    Desch et al. (2009)
+	 * 232 Th        14.0        38.96          0.04399                          0.04293    Desch et al. (2009)
+	 *  26 Al        0.000716    3.117          5e-5*8.41e4 = (26Al/27Al)*Al                Castillo-Rogez et al. (2007, Icarus 190, 179-202); Lodders (2003) */
 
 	// ln 2 = 0.6931
 
 	// Long-lived radionuclides (DeltaE for Th and U is given as parent-daughter minus 1 MeV per emitted nucleon)
-	(*S) = 5.244   * 0.6087      / 1.265 * exp(-((*t)+(*tzero))*0.6931/(1.265*Gyr2sec))  // 40 K
-	     + 0.00592 * (46.74-4.0) / 0.704 * exp(-((*t)+(*tzero))*0.6931/(0.704*Gyr2sec))  // 235 U
-	     + 0.01871 * (52.07-6.0) / 4.47  * exp(-((*t)+(*tzero))*0.6931/(4.47 *Gyr2sec))  // 238 U
-         + 0.04399 * (42.96-4.0) / 14.0  * exp(-((*t)+(*tzero))*0.6931/(14.0 *Gyr2sec)); // 232 Th
+	if (chondr == 1) { // CO abundances
+		(*S) = 2.219   * 0.6087      / 1.265 * exp(-((*t)+(*tzero))*0.6931/(1.265*Gyr2sec))  // 40 K
+			 + 0.00619 * (46.74-4.0) / 0.704 * exp(-((*t)+(*tzero))*0.6931/(0.704*Gyr2sec))  // 235 U
+			 + 0.01942 * (52.07-6.0) / 4.47  * exp(-((*t)+(*tzero))*0.6931/(4.47 *Gyr2sec))  // 238 U
+			 + 0.04293 * (42.96-4.0) / 14.0  * exp(-((*t)+(*tzero))*0.6931/(14.0 *Gyr2sec)); // 232 Th
+	}
+	else {             // Default: CI abundances
+		(*S) = 5.244   * 0.6087      / 1.265 * exp(-((*t)+(*tzero))*0.6931/(1.265*Gyr2sec))  // 40 K
+			 + 0.00592 * (46.74-4.0) / 0.704 * exp(-((*t)+(*tzero))*0.6931/(0.704*Gyr2sec))  // 235 U
+			 + 0.01871 * (52.07-6.0) / 4.47  * exp(-((*t)+(*tzero))*0.6931/(4.47 *Gyr2sec))  // 238 U
+			 + 0.04399 * (42.96-4.0) / 14.0  * exp(-((*t)+(*tzero))*0.6931/(14.0 *Gyr2sec)); // 232 Th
+	}
 	// Short-lived radionuclides
 	(*S) = (*S) + (5.0e-5*8.410e4) * 3.117 / 0.000716 * exp(-((*t)+(*tzero))*0.6931/(0.000716*Gyr2sec)); // 26 Al
 

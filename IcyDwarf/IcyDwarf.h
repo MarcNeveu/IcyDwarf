@@ -373,6 +373,10 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
+			fseek(f,31,SEEK_CUR);   // Chondrite type
+			scan = fscanf(f, "%lg", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
 			fseek(f,31,SEEK_CUR);   // Radius (km)
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
@@ -560,6 +564,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 		printf("Density (g cm-3) \t \t %g\n",input[i]), i++;
 		printf("Hydr. rock density (g cm-3) \t %g\n",input[i]), i++;
 		printf("Dry rock density (g cm-3) \t %g\n",input[i]), i++;
+		printf("Chondrite type? 1:CO, otw CI \t %g\n",input[i]), i++;
 		printf("Radius (km) \t \t \t %g\n",input[i]), i++;
 		printf("Ammonia w.r.t. water \t \t %g\n",input[i]), i++;
 		printf("Briny liquid? y=1, n=0 \t \t %g\n",input[i]), i++;

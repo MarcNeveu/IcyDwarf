@@ -47,6 +47,8 @@ int main(int argc, char *argv[]){
     double tzero = 0.0;                // Time zero of the sim (Myr)
     double Hydr_init = 0.0;            // Initial degree of hydration of the rock (0=fully dry, 1=fully hydrated)
     double Xfines = 0.0;               // Mass or volume fraction of rock in fine grains that don't settle into a core (0=none, 1=all)
+    int chondr = 0;                    // Nature of the chondritic material incorporated (3/30/2015: default=CI or 1=CO), matters
+                                       // for radiogenic heating, see Thermal-state()
 
     // Grid inputs
 	int NR = 0;                        // Number of grid zones
@@ -136,35 +138,36 @@ int main(int argc, char *argv[]){
 	rho_p = input[2];
 	rhoHydrRock = input[3]*1000.0;
 	rhoDryRock = input[4]*1000.0;
-	r_p = input[5];
-	nh3 = input[6];
-	salt = input[7];
-	Tsurf = input[8];
-	NR = input[9];
-	total_time = input[10];
-	output_every = input[11];
+	chondr = input[5];
+	r_p = input[6];
+	nh3 = input[7];
+	salt = input[8];
+	Tsurf = input[9];
+	NR = input[10];
+	total_time = input[11];
+	output_every = input[12];
 	NT_output = floor(total_time/output_every)+1;
-	calculate_thermal = (int) input[12];
-	timestep = input[13];  // yr
-	tzero = input[14];     // Myr
-	Tinit = input[15];
-	Hydr_init = input[16];
-	Xfines = input[17];
-	calculate_aTP = (int) input[18];
-	calculate_alpha_beta = (int) input[19];
-	calculate_crack_species = (int) input[20];
-	calculate_geochemistry = (int) input[21];
-	Tmin = input[22], Tmax = input[23], Tstep = input[24];
-	Pmin = input[25], Pmax = input[26], Pstep = input[27];
-	pHmin = input[28], pHmax = input[29], pHstep = input[30];
-	pemin = input[31], pemax = input[32], pestep = input[33];
-	WRmin = input[34], WRmax = input[35], WRstep = input[36];
-	calculate_compression = (int) input[37];
-	calculate_cryolava = (int) input[38];
-	t_cryolava = (int) input[39]/input[11];
-	CHNOSZ_T_MIN = input[40];
-	for (i=41;i<45;i++) crack_input[i-41] = (int) input[i];
-	for (i=45;i<48;i++) crack_species[i-45] = (int) input[i];
+	calculate_thermal = (int) input[13];
+	timestep = input[14];  // yr
+	tzero = input[15];     // Myr
+	Tinit = input[16];
+	Hydr_init = input[17];
+	Xfines = input[18];
+	calculate_aTP = (int) input[19];
+	calculate_alpha_beta = (int) input[20];
+	calculate_crack_species = (int) input[21];
+	calculate_geochemistry = (int) input[22];
+	Tmin = input[23], Tmax = input[24], Tstep = input[25];
+	Pmin = input[26], Pmax = input[27], Pstep = input[28];
+	pHmin = input[29], pHmax = input[30], pHstep = input[31];
+	pemin = input[32], pemax = input[33], pestep = input[34];
+	WRmin = input[35], WRmax = input[36], WRstep = input[37];
+	calculate_compression = (int) input[38];
+	calculate_cryolava = (int) input[39];
+	t_cryolava = (int) input[40]/input[12];
+	CHNOSZ_T_MIN = input[41];
+	for (i=42;i<46;i++) crack_input[i-42] = (int) input[i];
+	for (i=46;i<49;i++) crack_species[i-46] = (int) input[i];
 
 	//-------------------------------------------------------------------
 	// Cracking depth calculations
@@ -199,7 +202,7 @@ int main(int argc, char *argv[]){
 	if (calculate_thermal == 1) {
 		printf("Running thermal evolution code...\n");
 		Thermal(argc, argv, path, NR, r_p, rho_p, rhoHydrRock, rhoDryRock, warnings, msgout, nh3, salt, Xhydr, Xfines, tzero, Tsurf, Tinit,
-				timestep, total_time, output_every, crack_input, crack_species);
+				timestep, total_time, output_every, crack_input, crack_species, chondr);
 		printf("\n");
 	}
 
