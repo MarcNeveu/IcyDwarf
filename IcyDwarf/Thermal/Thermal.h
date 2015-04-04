@@ -831,7 +831,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
 		fineMassFrac = 0.0; fineVolFrac = 0.0;
 		// Calculate fine volume fraction in liquid
-		if (ircore < NR && Mh2ol[ircore+1] > 0.0) {
+		if (ircore < NR && Mh2ol[ircore+1] > 0.02*dM[ircore+1]) {
 			fineMassFrac = Mrock[ircore+1]/(Mh2ol[ircore+1]+Mrock[ircore+1]);
 			fineVolFrac = fineMassFrac*dM[ircore+1]/dVol[ircore+1]/(Xhydr[ircore+1]*rhoHydrth+(1.0-Xhydr[ircore+1])*rhoRockth);
 		}
@@ -885,7 +885,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		irice = 0;
 		for (ir=0;ir<NR;ir++) {
 			Nu[ir] = 1.0;
-			if (Mh2ol[ir] > 0.0) irice = ir; // > 0.02? (Keep 2% liquid minimum?)
+			if (Mh2ol[ir] > 0.02*dM[ir]) irice = ir; // > 0.02? (Keep 2% liquid minimum?)
 		}
 
 		if (irice >= ircore+2 && Xfines*frockp*rho_p/rhoRockth < 0.64) {
