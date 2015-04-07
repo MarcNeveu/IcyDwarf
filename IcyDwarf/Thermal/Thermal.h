@@ -886,7 +886,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		irice = 0;
 		for (ir=0;ir<NR;ir++) {
 			Nu[ir] = 1.0;
-			if (Mh2ol[ir] > 0.02*dM[ir]) irice = ir; // 2% liquid minimum for liquid convection
+			if (Mh2ol[ir] > 0.0) irice = ir; // 2% liquid minimum for liquid convection? If set, seems to mess up the long-lived radiogenic heating for some reason.
 		}
 
 		if (irice >= ircore+2 && fineVolFrac < 0.64) {
@@ -964,7 +964,6 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
 		for (ir=1;ir<NR;ir++) {
 			RRflux[ir] = -r[ir]*r[ir]*(kappa[ir]+kappa[ir-1]) * (T[ir]-T[ir-1]) / (r[ir+1]-r[ir-1]);
-			if (itime > 1e6 && kappa[ir] > 3.0e5) printf("Alert! time=%g, radius=%g, kappa=%g\n",realtime/Myr2sec,r[ir]/km2cm,kappa[ir]/1.0e5);
 		}
 
 		//-------------------------------------------------------------------
