@@ -11,11 +11,12 @@
 #include "../Graphics/Plot.h"
 #include <math.h>
 
-#define nleg 14
+#define nleg 15
 
 int ParamExploration_plot (char path[1024],	int warnings, int msgout, SDL_Renderer* renderer, int* view, int* quit, char* FontFile,
 		SDL_Color axisTextColor, double Tmin, double Tmax, double Tstep, double Pmin, double Pmax, double Pstep,
-		double pHmin, double pHmax, double pHstep, double pemin, double pemax, double pestep, double WRmin, double WRmax, double WRstep);
+		double pHmin, double pHmax, double pHstep, double pemin, double pemax, double pestep, double WRmin, double WRmax, double WRstep,
+		int chondrite);
 
 int handleClickParamExploration(SDL_Event e, int *itemp, int *ipressure, int *itopic, int ntemp, int npressure, SDL_Surface **pies,
 		int *xstart, int *xend, int *ystart, int *yend);
@@ -24,13 +25,14 @@ int UpdateDisplaysParamExploration (SDL_Renderer* renderer, SDL_Texture* backgro
 		char* FontFile, int nspecies, int itopic);
 
 int Angles (int itopic, SDL_Surface **pies, char *FontFile, int npH, int npe, int nWR, int ntemp, int itemp, int ipressure,
-		double pie_radius, double **simdata, int *nspecies, SDL_Texture *(*leg_tex)[nleg]);
+		double pie_radius, double **simdata, int *nspecies, SDL_Texture *(*leg_tex)[nleg], int chondrite);
 
 int Pie(double angle, double angle_start, int iWR, int ipH, int ipe, double pie_radius, SDL_Surface **pies, SDL_Color color);
 
 int ParamExploration_plot (char path[1024],	int warnings, int msgout, SDL_Renderer* renderer, int* view, int* quit, char* FontFile,
 		SDL_Color axisTextColor, double Tmin, double Tmax, double Tstep, double Pmin, double Pmax, double Pstep,
-		double pHmin, double pHmax, double pHstep, double pemin, double pemax, double pestep, double WRmin, double WRmax, double WRstep) {
+		double pHmin, double pHmax, double pHstep, double pemin, double pemax, double pestep, double WRmin, double WRmax, double WRstep,
+		int chondrite) {
 
 	int i = 0;
 	int j = 0;
@@ -100,7 +102,7 @@ int ParamExploration_plot (char path[1024],	int warnings, int msgout, SDL_Render
 				// Handle click: switch temperature, pressure, or species
 				handleClickParamExploration(e, &itemp, &ipressure, &itopic, ntemp, npressure, &pies, &xstart, &xend, &ystart, &yend);
 
-				Angles (itopic, &pies, FontFile, npH, npe, nWR, ntemp, itemp, ipressure, pie_radius, simdata, &nspecies, &leg_tex);
+				Angles (itopic, &pies, FontFile, npH, npe, nWR, ntemp, itemp, ipressure, pie_radius, simdata, &nspecies, &leg_tex, chondrite);
 
 				pies_tex = SDL_CreateTextureFromSurface(renderer, pies);
 
@@ -248,14 +250,13 @@ int handleClickParamExploration(SDL_Event e, int *itemp, int *ipressure, int *it
 
 	// Change topic
 	if (e.button.x >= 4 && e.button.x <= 104 && e.button.y >= 444 && e.button.y <= 491) (*itopic) = 1;       // Potassium
-	else if (e.button.x >= 12 && e.button.x <= 105 && e.button.y >= 506 && e.button.y <= 532) (*itopic) = 2;  // NH3
-	else if (e.button.x >= 12 && e.button.x <= 105 && e.button.y >= 536 && e.button.y <= 562) (*itopic) = 3;  // Salts
+	else if (e.button.x >= 12 && e.button.x <= 105 && e.button.y >= 505 && e.button.y <= 562) (*itopic) = 2;  // NH3
 	else if (e.button.x >= 223 && e.button.x <= 321 && e.button.y >= 437 && e.button.y <= 463) (*itopic) = 4; // Total gas
 	else if (e.button.x >= 223 && e.button.x <= 321 && e.button.y >= 468 && e.button.y <= 496) (*itopic) = 5; // Gas makeup
-	else if (e.button.x >= 255 && e.button.x <= 321 && e.button.y >= 502 && e.button.y <= 528) (*itopic) = 6; // Brucite / carbonates
-	else if (e.button.x >= 255 && e.button.x <= 321 && e.button.y >= 532 && e.button.y <= 558) (*itopic) = 7; // ?
-	else if (e.button.x >= 255 && e.button.x <= 321 && e.button.y >= 561 && e.button.y <= 587) (*itopic) = 8; // Mineral makeup
-	else if (e.button.x >= 115 && e.button.x <= 210 && e.button.y >= 436 && e.button.y <= 489) (*itopic) = 9; // Solution makeup
+	else if (e.button.x >= 218 && e.button.x <= 321 && e.button.y >= 506 && e.button.y <= 532) (*itopic) = 6; // Brucite / carbonates
+	else if (e.button.x >= 218 && e.button.x <= 321 && e.button.y >= 537 && e.button.y <= 563) (*itopic) = 8; // Mineral makeup
+	else if (e.button.x >= 115 && e.button.x <= 210 && e.button.y >= 437 && e.button.y <= 463) (*itopic) = 9; // Solution makeup
+	else if (e.button.x >= 115 && e.button.x <= 210 && e.button.y >= 468 && e.button.y <= 494) (*itopic) = 10; // Solution ionic strength
 
 	return 0;
 }
@@ -265,7 +266,7 @@ int handleClickParamExploration(SDL_Event e, int *itemp, int *ipressure, int *it
 //-------------------------------------------------------------------
 
 int Angles (int itopic, SDL_Surface **pies, char *FontFile, int npH, int npe, int nWR, int ntemp, int itemp, int ipressure,
-		double pie_radius, double **simdata, int *nspecies, SDL_Texture *(*leg_tex)[nleg]) {
+		double pie_radius, double **simdata, int *nspecies, SDL_Texture *(*leg_tex)[nleg], int chondrite) {
 
 	int i = 0;
 	int ipH = 0; // Rank of pH in output file
@@ -283,6 +284,7 @@ int Angles (int itopic, SDL_Surface **pies, char *FontFile, int npH, int npe, in
 	SDL_Color purple;
 	SDL_Color gray;
 	SDL_Color yellow;
+	SDL_Color pale_yellow;
 	SDL_Color orange;
 	SDL_Color pink;
 	SDL_Color cyan;
@@ -297,6 +299,7 @@ int Angles (int itopic, SDL_Surface **pies, char *FontFile, int npH, int npe, in
 	purple.r = 168; purple.g = 50; purple.b = 208;
 	gray.r = 174; gray.g = 174; gray.b = 174;
 	yellow.r = 245; yellow.g = 217; yellow.b = 33;
+	pale_yellow.r = 255; pale_yellow.g = 255; pale_yellow.b = 158;
 	orange.r = 238; orange.g = 124; orange.b = 22;
 	pink.r = 255; pink.g = 47; pink.b = 146;
 	cyan.r = 138; cyan.g = 240; cyan.b = 255;
@@ -308,7 +311,7 @@ int Angles (int itopic, SDL_Surface **pies, char *FontFile, int npH, int npe, in
 	else if (itopic == 4) (*nspecies) = 1;  // Total gases
 	else if (itopic == 5) (*nspecies) = 5;  // Gases
 	else if (itopic == 6) (*nspecies) = 5;  // Brucite / carbonates
-	else if (itopic == 8) (*nspecies) = 13; // Mineral makeup
+	else if (itopic == 8) (*nspecies) = 14; // Mineral makeup
 	else if (itopic == 9) (*nspecies) = 11; // Solution
 
 	double angle[(*nspecies)+1];
@@ -361,7 +364,8 @@ int Angles (int itopic, SDL_Surface **pies, char *FontFile, int npH, int npe, in
 	}
 	else if (itopic == 8) {
 		color[1] = gray; color[2] = light_green; color[3] = black; color[4] = cyan; color[5] = green; color[6] = purple;
-		color[7] = pink; color[8] = orange; color[9] = red; color[10] = white; color[11] = maroon; color[12] = aqua; color[13] = yellow;
+		color[7] = pink; color[8] = orange; color[9] = red; color[10] = white; color[11] = maroon; color[12] = aqua;
+		color[13] = yellow; color[14] = pale_yellow;
 		(*leg_tex)[0] = renderText("per mol solids",FontFile, black, 16, renderer);
 		(*leg_tex)[1] = renderText("Andr",FontFile, black, 16, renderer);
 		(*leg_tex)[2] = renderText("Atg",FontFile, black, 16, renderer);
@@ -376,6 +380,7 @@ int Angles (int itopic, SDL_Surface **pies, char *FontFile, int npH, int npe, in
 		(*leg_tex)[11] = renderText("Px",FontFile, white, 16, renderer);
 		(*leg_tex)[12] = renderText("Sap",FontFile, black, 16, renderer);
 		(*leg_tex)[13] = renderText("Troi",FontFile, black, 16, renderer);
+		(*leg_tex)[14] = renderText("Pyr",FontFile, black, 16, renderer);
 	}
 	else if (itopic == 9) {
 		color[1] = gray; color[2] = black; color[3] = cyan; color[4] = red; color[5] = pink; color[6] = orange; color[7] = green;
@@ -426,7 +431,14 @@ int Angles (int itopic, SDL_Surface **pies, char *FontFile, int npH, int npe, in
 
 				if (mass_water > 0.0) { // Otherwise the simulation crashed and we're not plotting
 					if (itopic == 1) {
-						double total_K = 0.0; total_K = simdata[isim][52]-simdata[isim][53]; // Initial K-feldspar
+						double total_K = 0.0;
+						if (chondrite == 0) // ordinary chondrite (H/L/LL), K present as K-feldspar initially
+							total_K = simdata[isim][52]-simdata[isim][53]; // Initial K-feldspar
+						else                // carbonaceous chondrite (CI/CM), K present as clays
+							total_K = (simdata[isim][854]-simdata[isim][855])*0.2    // Smectite-high-Fe-Mg
+							        + (simdata[isim][762]-simdata[isim][763])*0.33   // Nontronite-K
+							        + (simdata[isim][640]-simdata[isim][641])*0.33   // Montmor-K
+							        + (simdata[isim][274]-simdata[isim][275])*3.467; // Clinoptilolite-K
 						angle[1] = 0.999*2.0*M_PI*simdata[isim][19]*mass_water/total_K;             // Dissolved potassium
 						angle[2] = 0.999*2.0*M_PI*(simdata[isim][778]+simdata[isim][134]+simdata[isim][762]*0.33+simdata[isim][834]*0.33+simdata[isim][652])/total_K; // Phlogopite + Annite + Nontronite-K + Saponite-K + Muscovite
 						angle[3] = 0.999*2.0*M_PI*simdata[isim][52]/total_K;                       // K-feldspar
@@ -473,6 +485,7 @@ int Angles (int itopic, SDL_Surface **pies, char *FontFile, int npH, int npe, in
 						angle[11] = 0.999*2.0*M_PI*(simdata[isim][60]+simdata[isim][62])/total_Min; // Px: enstatite + ferrosilite
 						angle[12] = 0.999*2.0*M_PI*(simdata[isim][830]+simdata[isim][832]+simdata[isim][834]+simdata[isim][836]+simdata[isim][838])/total_Min; // Sap
 						angle[13] = 0.999*2.0*M_PI*simdata[isim][76]/total_Min; // Troi
+						angle[14] = 0.999*2.0*M_PI*simdata[isim][796]/total_Min; // Pyrite
 					}
 					else if (itopic == 9) {
 						double total_Sol = 0.0; // Approx. final mass of solids and gases

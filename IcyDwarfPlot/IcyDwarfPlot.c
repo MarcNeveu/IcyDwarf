@@ -40,9 +40,11 @@ int main(int argc, char *argv[]){
     int NT_output = 0;                 // Time step for writing output
 
     // Call specific subroutines
-    int TdisplayMax = 0;                      // Max temperature for display
+    int TdisplayMax = 0;               // Max temperature for display
 
     // Geochemistry subroutine inputs
+    int chondrite = 0;                 // Chondrite type: ordinary (H/L/LL) or carbonaceous (CI/CM)
+
 	double Tmax = 0.0;
 	double Tmin = 0.0;
 	double Tstep = 0.0;
@@ -109,6 +111,7 @@ int main(int argc, char *argv[]){
 	pHmin = input[13]; pHmax = input[14]; pHstep = input[15];
 	pemin = input[16]; pemax = input[17]; pestep = input[18];
 	WRmin = input[19]; WRmax = input[20]; WRstep = input[21];
+	chondrite = (int) input[22];
 
 	//-------------------------------------------------------------------
 	// Read thermal output (currently kbo.dat, need to read Thermal.txt)
@@ -184,7 +187,7 @@ int main(int argc, char *argv[]){
 			Crack_plot (path, NR, total_time, NT_output, output_every, r_p, thoutput, warnings, msgout, renderer, &view, &quit, FontFile, axisTextColor);
 		if (view == 3) // Display geochemistry tab
 			ParamExploration_plot (path, warnings, msgout, renderer, &view, &quit, FontFile, axisTextColor, Tmin, Tmax, Tstep, Pmin, Pmax, Pstep,
-				 pHmin, pHmax, pHstep, pemin, pemax, pestep, WRmin, WRmax, WRstep);
+				 pHmin, pHmax, pHstep, pemin, pemax, pestep, WRmin, WRmax, WRstep, chondrite);
 	}
 
 	//-------------------------------------------------------------------

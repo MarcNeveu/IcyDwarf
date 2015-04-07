@@ -97,7 +97,7 @@ return r_seafloor;
 }
 
 //-------------------------------------------------------------------
-//                    Read IcyDwarf Plot input file
+//                    Read IcyDwarfPlot input file
 //-------------------------------------------------------------------
 
 int icy_dwarf_input (double **input, char (*thermal_file)[1024], char path[1024]) {
@@ -209,6 +209,10 @@ int icy_dwarf_input (double **input, char (*thermal_file)[1024], char path[1024]
 			fseek(f,1,SEEK_CUR);    // WRstep
 			scan = fscanf(f, "%lg", &(*input)[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,24,SEEK_CUR);    // Chondrite type: 0=ordinary, default carbonaceous
+			scan = fscanf(f, "%lg", &(*input)[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 		}
 		fclose(f);
 
@@ -241,6 +245,7 @@ int icy_dwarf_input (double **input, char (*thermal_file)[1024], char path[1024]
 		printf("\t pH \t \t \t %g %g %g\n",(*input)[i],(*input)[i+1],(*input)[i+2]), i = i+3;
 		printf("\t pe = FMQ + ... \t %g %g %g\n",(*input)[i],(*input)[i+1],(*input)[i+2]), i = i+3;
 		printf("\t Water:rock mass ratio \t %g %g %g\n",(*input)[i],(*input)[i+1],(*input)[i+2]), i = i+3;
+		printf("\t Rock type 0:OC def:CC \t %g\n",(*input)[i]);
 		printf("\n");
 
 	free (idi);
