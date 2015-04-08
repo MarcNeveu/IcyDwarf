@@ -75,6 +75,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	int irdiff = 0;                      // Radius of differentiation
 	int irdiffold = 0;
 	int irice = 0;                       // Radius of the top of the slush layer
+	int irice_cv = 0;                    // Same but for convection purposes
 	int iriceold = 0;
 	int ircore = 0;                      // Radius of the core
 	int ircrack = 0;                     // Inner radius of the continuously cracked rock layer in contact with the ocean
@@ -660,7 +661,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	irice = 0;
     	for (ir=0;ir<NR;ir++) {
     		Xhydr_old[ir] = Xhydr[ir];
-    		if (Mh2ol[ir] > 0) irice = ir;
+    		if (Mh2ol[ir] > 0.0) irice = ir;
     	}
 
     	if (Xfines == 0.0) {
@@ -882,11 +883,11 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		//                  Convection in H2O(l) / mud layer
 		//-------------------------------------------------------------------
 
-		// Reset Nu and irice at each iteration (need to reset irice several times at each iteration because state() is called several times)
+		// Reset Nu and irice at each iteration (need to reset irice several times at each iteration because state() is called several times, and because for convection we want a slightly different definition (2% liquid))
 		irice = 0;
 		for (ir=0;ir<NR;ir++) {
 			Nu[ir] = 1.0;
-			if (Mh2ol[ir] > 0.0) irice = ir; // 2% liquid minimum for liquid convection? If set, seems to mess up the long-lived radiogenic heating for some reason.
+			if (Mh2ol[ir] > 0.0) irice = ir; // 2% liquid minimum for liquid convection?
 		}
 
 		if (irice >= ircore+2 && fineVolFrac < 0.64) {
@@ -897,7 +898,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			kap1 = kappa[jr];
 			g1 = Gcgs*M[jr]/(r[jr+1]*r[jr+1]);
 			Ra = alfh2oavg*g1*dT*dr*dr*dr                                                                                    // Thermal expansion of rock is neglected
-					*((1.0-fineMassFrac)*ch2ol + fineMassFrac*(heatRock(T[jr]+2.0)-heatRock(T[jr]-2.0))*0.25)                // For rock, cp = d(energy)/d(temp), here taken over 4 K surrounding T[jr]                                        // Heat capacity
+					*((1.0-fineMassFrac)*ch2ol + fineMassFrac*(heatRock(T[jr]+2.0)-heatRock(T[jr]-2.0))*0.25)                // For rock, cp = d(energy)/d(temp), here taken over 4 K surrounding T[jr]
 					*((1.0-fineMassFrac)*rhoH2olth + fineMassFrac*(Xhydr[ircore+1]*rhoHydrth+(1.0-Xhydr[ircore+1])*rhoRockth)) // Density
 					*((1.0-fineMassFrac)*rhoH2olth + fineMassFrac*(Xhydr[ircore+1]*rhoHydrth+(1.0-Xhydr[ircore+1])*rhoRockth)) // Squared
 					/ (kap1*mu1);
@@ -925,20 +926,23 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			Nu[ir] = 1.0;
 		}
 
+		if (irice > ircore) irice_cv = irice;
+		else irice_cv = ircore; // Case where there is no longer liquid: irice=0 (should =ircore but that crashes the code)
+
 		fineMassFrac = 0.0; fineVolFrac = 0.0;
-		if (irdiff >= irice+2 && fineVolFrac < 0.64) {
+		if (irdiff >= irice_cv+2 && fineVolFrac < 0.64) {
 			// Calculate fine volume fraction in ice
-			fineMassFrac = Mrock[irice+1]/(Mh2os[irice+1]+Mrock[irice+1]);
-			fineVolFrac = fineMassFrac*dM[irice+1]/dVol[irice+1]/(Xhydr[irice+1]*rhoHydrth+(1.0-Xhydr[irice+1])*rhoRockth);
+			fineMassFrac = Mrock[irice_cv+1]/(Mh2os[irice_cv+1]+Mrock[irice_cv+1]);
+			fineVolFrac = fineMassFrac*dM[irice_cv+1]/dVol[irice_cv+1]/(Xhydr[irice_cv+1]*rhoHydrth+(1.0-Xhydr[irice_cv+1])*rhoRockth);
 			// Calculate Ra
-			jr = (int) (irice+irdiff)/2;
+			jr = (int) (irice_cv+irdiff)/2;
 			alf1 = -0.5 + 6.0*(T[jr]-50.0)/200.0; // Not as in D09!
 			alf1 = alf1 * 1.0e-5;
 			cp1 = (1.0-fineMassFrac)*qh2o*T[jr] + fineMassFrac*(heatRock(T[jr]+2.0)-heatRock(T[jr]-2.0))*0.25; // For rock, cp = d(energy)/d(temp), here taken over 4 K surrounding T[jr]
 			kap1 = kappa[jr];                  // cgs
 			mu1 = (1.0e15)*exp(25.0*(273.0/T[jr]-1.0))/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // 1.0e14 in SI
-			dT = T[irice] - T[irdiff];
-			dr = r[irdiff+1] - r[irice+1];
+			dT = T[irice_cv] - T[irdiff];
+			dr = r[irdiff+1] - r[irice_cv+1];
 			g1 = Gcgs*M[jr]/(r[jr+1]*r[jr+1]);
 			Ra = alf1*g1*dT*dr*dr*dr*cp1
 					*((1.0-fineMassFrac)*rhoH2osth + fineMassFrac*(Xhydr[ircore+1]*rhoHydrth+(1.0-Xhydr[ircore+1])*rhoRockth))
@@ -947,13 +951,13 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			Nu0 = pow((Ra/1707.762),0.25);
 
 			if (Nu0 > 1.0) {
-				for (jr=irice;jr<=irdiff;jr++) {
+				for (jr=irice_cv;jr<=irdiff;jr++) {
 					Nu[jr] = Nu0;
 				}
 			}
 		}
 
-		for (ir=irice;ir<=irdiff;ir++) {
+		for (ir=irice_cv;ir<=irdiff;ir++) {
 			kappa[ir] = kappa[ir]*Nu[ir];
 			if (kappa[ir] > kap_ice_cv) kappa[ir] = kap_ice_cv;
 		}
