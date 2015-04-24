@@ -213,6 +213,10 @@ int icy_dwarf_input (double **input, char (*thermal_file)[1024], char path[1024]
 			fseek(f,24,SEEK_CUR);    // Chondrite type: 0=ordinary, default carbonaceous
 			scan = fscanf(f, "%lg", &(*input)[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,24,SEEK_CUR);    // Fluid type: 1=cometary, default pure water
+			scan = fscanf(f, "%lg", &(*input)[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 		}
 		fclose(f);
 
@@ -246,6 +250,7 @@ int icy_dwarf_input (double **input, char (*thermal_file)[1024], char path[1024]
 		printf("\t pe = FMQ + ... \t %g %g %g\n",(*input)[i],(*input)[i+1],(*input)[i+2]), i = i+3;
 		printf("\t Water:rock mass ratio \t %g %g %g\n",(*input)[i],(*input)[i+1],(*input)[i+2]), i = i+3;
 		printf("\t Rock type 0:OC def:CC \t %g\n",(*input)[i]);
+		printf("\t Fluid 1:comet def:H2O \t %g\n",(*input)[i]);
 		printf("\n");
 
 	free (idi);

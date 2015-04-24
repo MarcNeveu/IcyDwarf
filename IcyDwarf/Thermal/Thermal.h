@@ -45,7 +45,7 @@ int decay(double *t, double *tzero, double *S, int chondr);
 
 int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double **dM, double **dE, double **Mrock, double **Mh2os, double **Madhs,
 		double **Mh2ol, double **Mnh3l, double **Vrock, double **Vh2os, double **Vadhs, double **Vh2ol, double **Vnh3l, double **Erock,
-		double **Eh2os, double **Eslush, double rhoAdhsth, double rhoH2olth, double rhoNh3lth, double Xfines);
+		double **Eh2os, double **Eslush, double rhoAdhsth, double rhoH2olth, double rhoNh3lth, double Xfines, int itime);
 
 int dehydrate(double T, double dM, double dVol, double *Mrock, double *Mh2ol, double *Vrock,
 		double *Vh2ol, double rhoRockth, double rhoHydrth, double rhoH2olth, double *Xhydr);
@@ -658,8 +658,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	}
 
     	iriceold = irice;
-    	irice = 0;
-    	for (ir=0;ir<NR;ir++) {
+    	irice = ircore;
+    	for (ir=ircore;ir<NR;ir++) {
     		Xhydr_old[ir] = Xhydr[ir];
     		if (Mh2ol[ir] > 0.0) irice = ir;
     	}
@@ -707,6 +707,13 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	//           Differentiate the rock, liquids, and H2O ice
     	//-------------------------------------------------------------------
 
+		// Recalculate irice in case some small amount of liquid was refrozen in the above chemical equilibrium calculation
+    	irice = ircore;
+    	for (ir=ircore;ir<NR;ir++) {
+    		Xhydr_old[ir] = Xhydr[ir];
+    		if (Mh2ol[ir] > 0.0) irice = ir;
+    	}
+
     	irdiffold = irdiff;
     	if (Xp >= 1.0e-2) Tliq = 174.0; // Differentiation occurs at the solidus (first melt). We set 174 K instead of 176 K for consistency with the heatIce() subroutine.
     	else Tliq = 271.0;             // instead of 273 K for consistency with heatIce().
@@ -727,7 +734,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
     	if (irdiff > 0 && (irdiff != irdiffold || irice != iriceold || structure_changed == 1)) {
     		separate(NR, &irdiff, &ircore, &irice, dVol, &dM, &dE, &Mrock, &Mh2os, &Madhs, &Mh2ol, &Mnh3l,
-    				 &Vrock, &Vh2os, &Vadhs, &Vh2ol, &Vnh3l, &Erock, &Eh2os, &Eslush, rhoAdhsth, rhoH2olth, rhoNh3lth, Xfines);
+    				 &Vrock, &Vh2os, &Vadhs, &Vh2ol, &Vnh3l, &Erock, &Eh2os, &Eslush, rhoAdhsth, rhoH2olth, rhoNh3lth, Xfines, itime);
     	}
 
     	// Update Xhydr
@@ -884,17 +891,17 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		//-------------------------------------------------------------------
 
 		// Reset Nu and irice at each iteration (need to reset irice several times at each iteration because state() is called several times, and because for convection we want a slightly different definition (2% liquid))
-		irice = 0;
+		irice_cv = 0;
 		for (ir=0;ir<NR;ir++) {
 			Nu[ir] = 1.0;
-			if (Mh2ol[ir] > 0.0) irice = ir; // 2% liquid minimum for liquid convection?
+			if (Mh2ol[ir] > 0.0) irice_cv = ir; // 2% liquid minimum for liquid convection?
 		}
 
-		if (irice >= ircore+2 && fineVolFrac < 0.64) {
-			jr = (int) (ircore+irice)*0.5;
+		if (irice_cv >= ircore+2 && fineVolFrac < 0.64) {
+			jr = (int) (ircore+irice_cv)*0.5;
 			mu1 = Pa2ba*viscosity(T[jr],Mh2ol[jr],Mnh3l[jr])/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // Mueller, S. et al. (2010) Proc Roy Soc A 466, 1201-1228.
-			dT = T[ircore] - T[irice];
-			dr = r[irice+1] - r[ircore+1];
+			dT = T[ircore] - T[irice_cv];
+			dr = r[irice_cv+1] - r[ircore+1];
 			kap1 = kappa[jr];
 			g1 = Gcgs*M[jr]/(r[jr+1]*r[jr+1]);
 			Ra = alfh2oavg*g1*dT*dr*dr*dr                                                                                    // Thermal expansion of rock is neglected
@@ -906,7 +913,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 				Nu0 = pow((Ra/1707.762),0.25); // Ra_c given by http://home.iitk.ac.in/~sghorai/NOTES/benard/node15.html, see also Koschmieder EL (1993) Benard cells and Taylor vortices, Cambridge U Press, p. 20.
 
 			if (Nu0 > 1.0) {
-				for (jr=ircore;jr<irice;jr++) {
+				for (jr=ircore;jr<irice_cv;jr++) {
 					Nu[jr] = Nu0;
 				}
 			}
@@ -927,7 +934,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		}
 
 		if (irice > ircore) irice_cv = irice;
-		else irice_cv = ircore; // Case where there is no longer liquid: irice=0 (should =ircore but that crashes the code)
+		else irice_cv = ircore; // Case where there is no longer liquid: irice=0 (should =ircore but that crashes the code. 15/4/25: no longer true?)
 
 		fineMassFrac = 0.0; fineVolFrac = 0.0;
 		if (irdiff >= irice_cv+2 && fineVolFrac < 0.64) {
@@ -1698,7 +1705,7 @@ int decay(double *t, double *tzero, double *S, int chondr) {
 
 int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double **dM, double **dE, double **Mrock, double **Mh2os, double **Madhs,
 		double **Mh2ol, double **Mnh3l, double **Vrock, double **Vh2os, double **Vadhs, double **Vh2ol, double **Vnh3l, double **Erock,
-		double **Eh2os, double **Eslush, double rhoAdhsth, double rhoH2olth, double rhoNh3lth, double Xfines){
+		double **Eh2os, double **Eslush, double rhoAdhsth, double rhoH2olth, double rhoNh3lth, double Xfines, int itime){
 
 	int ir = 0;
 	int jr = 0;
@@ -1967,14 +1974,25 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 		(*Erock)[ir] = Erocknew[ir];
 
 		// Slush
-		Volume1 = Vadhsnew[ir] + Vh2olnew[ir] + Vnh3lnew[ir];
-		(*Eslush)[ir] = (Volume1/Vslushtot) * Eslushtot;
-		(*Madhs)[ir] = Madh*(Volume1/Vslushtot);
-		(*Vadhs)[ir] = (*Madhs)[ir]/rhoAdhsth;
-		(*Mh2ol)[ir] = Mwater*(Volume1/Vslushtot);
-		(*Vh2ol)[ir] = (*Mh2ol)[ir]/rhoH2olth;
-		(*Mnh3l)[ir] = Mammonia*(Volume1/Vslushtot);
-		(*Vnh3l)[ir] = (*Mnh3l)[ir]/rhoNh3lth;
+		if (Vslushtot > 0.0) {
+			Volume1 = Vadhsnew[ir] + Vh2olnew[ir] + Vnh3lnew[ir];
+			(*Eslush)[ir] = (Volume1/Vslushtot) * Eslushtot;
+			(*Madhs)[ir] = Madh*(Volume1/Vslushtot);
+			(*Vadhs)[ir] = (*Madhs)[ir]/rhoAdhsth;
+			(*Mh2ol)[ir] = Mwater*(Volume1/Vslushtot);
+			(*Vh2ol)[ir] = (*Mh2ol)[ir]/rhoH2olth;
+			(*Mnh3l)[ir] = Mammonia*(Volume1/Vslushtot);
+			(*Vnh3l)[ir] = (*Mnh3l)[ir]/rhoNh3lth;
+		}
+		else {
+			(*Eslush)[ir] = 0.0;
+			(*Madhs)[ir] = 0.0;
+			(*Vadhs)[ir] = 0.0;
+			(*Mh2ol)[ir] = 0.0;
+			(*Vh2ol)[ir] = 0.0;
+			(*Mnh3l)[ir] = 0.0;
+			(*Vnh3l)[ir] = 0.0;
+		}
 
 		// H2O ice
 		(*Vh2os)[ir] = Vh2osnew[ir];

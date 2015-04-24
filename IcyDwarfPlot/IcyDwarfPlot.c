@@ -44,6 +44,7 @@ int main(int argc, char *argv[]){
 
     // Geochemistry subroutine inputs
     int chondrite = 0;                 // Chondrite type: ordinary (H/L/LL) or carbonaceous (CI/CM)
+    int comet = 0;                     // 1: cometary fluid, 0: pure water
 
 	double Tmax = 0.0;
 	double Tmin = 0.0;
@@ -68,10 +69,10 @@ int main(int argc, char *argv[]){
 	int r = 0;
 	int i = 0;
 
-	double *input = (double*) malloc(23*sizeof(double));
+	double *input = (double*) malloc(24*sizeof(double));
 	if (input == NULL) printf("IcyDwarf: Not enough memory to create input[8]\n");
 
-	for (i=0;i<23;i++) input[i] = 0.0;
+	for (i=0;i<24;i++) input[i] = 0.0;
 
 	//-------------------------------------------------------------------
 	// Startup
@@ -112,6 +113,7 @@ int main(int argc, char *argv[]){
 	pemin = input[16]; pemax = input[17]; pestep = input[18];
 	WRmin = input[19]; WRmax = input[20]; WRstep = input[21];
 	chondrite = (int) input[22];
+	comet = (int) input[23];
 
 	//-------------------------------------------------------------------
 	// Read thermal output (currently kbo.dat, need to read Thermal.txt)
@@ -187,7 +189,7 @@ int main(int argc, char *argv[]){
 			Crack_plot (path, NR, total_time, NT_output, output_every, r_p, thoutput, warnings, msgout, renderer, &view, &quit, FontFile, axisTextColor);
 		if (view == 3) // Display geochemistry tab
 			ParamExploration_plot (path, warnings, msgout, renderer, &view, &quit, FontFile, axisTextColor, Tmin, Tmax, Tstep, Pmin, Pmax, Pstep,
-				 pHmin, pHmax, pHstep, pemin, pemax, pestep, WRmin, WRmax, WRstep, chondrite);
+				 pHmin, pHmax, pHstep, pemin, pemax, pestep, WRmin, WRmax, WRstep, chondrite, comet);
 	}
 
 	//-------------------------------------------------------------------
