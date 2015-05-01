@@ -58,6 +58,7 @@ int calculate_seafloor (thermalout **thoutput, int NR, int NT, int t);
 int icy_dwarf_input (double **input, char (*thermal_file)[1024], char path[1024]);
 thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char path[1024], char thermal_file[1024]);
 int read_input (int H, int L, double ***Input, char path[1024], char filename[1024]);
+int write_output (int H, int L, double **Output, char path[1024], const char filename[1024]);
 
 //-------------------------------------------------------------------
 //             Calculate the mass of liquid over time
@@ -341,6 +342,44 @@ int read_input (int H, int L, double ***Input, char path[1024], char filename[10
 	}
 
 	fclose (fin);
+	free (title);
+
+	return 0;
+}
+
+//-------------------------------------------------------------------
+//               Write output (no need to create output)
+//-------------------------------------------------------------------
+
+int write_output (int H, int L, double **Output, char path[1024], const char filename[1024]) {
+
+	FILE *fout;
+	int l = 0;
+	int h = 0;
+
+	// Turn working directory into full file path by moving up two directories
+	// to IcyDwarf (e.g., removing "Release/IcyDwarf" characters) and specifying
+	// the right path end.
+
+	char *title = (char*)malloc(1024*sizeof(char));       // Don't forget to free!
+	title[0] = '\0';
+	if (v_release == 1) strncat(title,path,strlen(path)-20);
+	else if (cmdline == 1) strncat(title,path,strlen(path)-22);
+	strcat(title,filename);
+
+	fout = fopen(title,"w");
+	if (fout == NULL) {
+		printf("IcyDwarf: Error opening %s output file.\n",title);
+	}
+	else {
+		for (l=0;l<L;l++) {
+			for (h=0;h<H;h++) {
+				fprintf(fout,"%g \t", Output[l][h]);
+			}
+			fprintf(fout,"\n");
+		}
+	}
+	fclose (fout);
 	free (title);
 
 	return 0;

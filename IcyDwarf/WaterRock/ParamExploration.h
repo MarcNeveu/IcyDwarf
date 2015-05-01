@@ -36,7 +36,7 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 
 	int thread_id;
 	int phreeqc = 0;
-	int nvar = 1000;                                              // Number of variables stored in each PHREEQC simulation
+	int nvar = 2300;                                              // Number of variables stored in each PHREEQC simulation
 	int i = 0;
 	int j = 0;
 
@@ -96,7 +96,7 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 	if (v_release == 1) strncat(dbase,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(dbase,path,strlen(path)-18);
 	else strncat(dbase,path,strlen(path)-16);
-	strcat(dbase,"PHREEQC-3.1.2/core3.dat");
+	strcat(dbase,"PHREEQC-3.1.2/core4.dat");
 
 	strncat(infile,dbase,strlen(dbase)-9);
 	strcat(infile,"io/inputIcyDwarf");
@@ -327,6 +327,14 @@ int WritePHREEQCInput(const char *TemplateFile, double temp, double pressure, do
 		}
 		else if (line_no == 9) {
 			fputs(ConCat("\t -water \t",WR_str),fout);
+			fputs("\n",fout);
+		}
+		else if (line[1] == '-' && line[2] == 'p' && line[3] == 'r' && line[4] == 'e' && line[5] == 's') {
+			fputs(ConCat("\t -pressure \t",pressure_str),fout);
+			fputs("\n",fout);
+		}
+		else if (line[1] == '-' && line[2] == 't' && line[3] == 'e' && line[4] == 'm' && line[5] == 'p') {
+			fputs(ConCat("\t -temperature \t",temp_str),fout);
 			fputs("\n",fout);
 		}
 		else fputs(line,fout);

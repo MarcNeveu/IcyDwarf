@@ -45,7 +45,7 @@ int decay(double *t, double *tzero, double *S, int chondr);
 
 int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double **dM, double **dE, double **Mrock, double **Mh2os, double **Madhs,
 		double **Mh2ol, double **Mnh3l, double **Vrock, double **Vh2os, double **Vadhs, double **Vh2ol, double **Vnh3l, double **Erock,
-		double **Eh2os, double **Eslush, double rhoAdhsth, double rhoH2olth, double rhoNh3lth, double Xfines, int itime);
+		double **Eh2os, double **Eslush, double rhoAdhsth, double rhoH2olth, double rhoNh3lth, double Xfines);
 
 int dehydrate(double T, double dM, double dVol, double *Mrock, double *Mh2ol, double *Vrock,
 		double *Vh2ol, double rhoRockth, double rhoHydrth, double rhoH2olth, double *Xhydr);
@@ -734,7 +734,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
     	if (irdiff > 0 && (irdiff != irdiffold || irice != iriceold || structure_changed == 1)) {
     		separate(NR, &irdiff, &ircore, &irice, dVol, &dM, &dE, &Mrock, &Mh2os, &Madhs, &Mh2ol, &Mnh3l,
-    				 &Vrock, &Vh2os, &Vadhs, &Vh2ol, &Vnh3l, &Erock, &Eh2os, &Eslush, rhoAdhsth, rhoH2olth, rhoNh3lth, Xfines, itime);
+    				 &Vrock, &Vh2os, &Vadhs, &Vh2ol, &Vnh3l, &Erock, &Eh2os, &Eslush, rhoAdhsth, rhoH2olth, rhoNh3lth, Xfines);
     	}
 
     	// Update Xhydr
@@ -1705,7 +1705,7 @@ int decay(double *t, double *tzero, double *S, int chondr) {
 
 int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double **dM, double **dE, double **Mrock, double **Mh2os, double **Madhs,
 		double **Mh2ol, double **Mnh3l, double **Vrock, double **Vh2os, double **Vadhs, double **Vh2ol, double **Vnh3l, double **Erock,
-		double **Eh2os, double **Eslush, double rhoAdhsth, double rhoH2olth, double rhoNh3lth, double Xfines, int itime){
+		double **Eh2os, double **Eslush, double rhoAdhsth, double rhoH2olth, double rhoNh3lth, double Xfines){
 
 	int ir = 0;
 	int jr = 0;
