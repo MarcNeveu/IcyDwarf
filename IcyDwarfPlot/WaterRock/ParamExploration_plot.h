@@ -101,7 +101,9 @@ int ParamExploration_plot (char path[1024],	int warnings, int msgout, SDL_Render
 	//                     Initialize display elements
 	//-------------------------------------------------------------------
 
-	File2tex("Graphics/BG/BG.005.png", &background_tex, path);
+	// !! WHITE BACKGROUND FOR GRL PAPER
+	// File2tex("Graphics/BG/BG.005.png", &background_tex, path);
+	File2tex("Graphics/BG/BG.006.png", &background_tex, path);
 	File2surf("Graphics/Transparent.png", &pies, path);
 	pie_radius = 13.0;
 
@@ -399,25 +401,27 @@ int Angles (int itopic, SDL_Surface **pies, char *FontFile, int npH, int npe, in
 		color[13] = yellow; color[14] = gold;
 		(*leg_tex)[0] = renderText("per mol solids",FontFile, black, 16, renderer);
 		(*leg_tex)[1] = renderText("Andr",FontFile, black, 16, renderer);
-		(*leg_tex)[3] = renderText("C(s)",FontFile, white, 16, renderer);
 		if (idb == 3) {
 			(*leg_tex)[2] = renderText("Atg",FontFile, black, 16, renderer);
+			(*leg_tex)[3] = renderText("C(s)",FontFile, white, 16, renderer);
 			(*leg_tex)[4] = renderText("Cronst",FontFile, black, 16, renderer);
 			(*leg_tex)[5] = renderText("Green",FontFile, black, 16, renderer);
+			(*leg_tex)[6] = renderText("H2SO4-salt",FontFile, black, 16, renderer);
 			(*leg_tex)[10] = renderText("Oliv",FontFile, black, 16, renderer);
+			(*leg_tex)[11] = renderText("Px",FontFile, white, 16, renderer);
 		}
 		else {
 			(*leg_tex)[2] = renderText("Talc",FontFile, black, 16, renderer);
-			(*leg_tex)[2] = renderText("Serp",FontFile, black, 16, renderer);
+			(*leg_tex)[3] = renderText("Ni/Fe(O)",FontFile, white, 16, renderer);
 			(*leg_tex)[4] = renderText("Serp",FontFile, black, 16, renderer);
 			(*leg_tex)[5] = renderText("Chl",FontFile, black, 16, renderer);
+			(*leg_tex)[6] = renderText("Zeo",FontFile, black, 16, renderer);
 			(*leg_tex)[10] = renderText("Ni",FontFile, black, 16, renderer);
+			(*leg_tex)[11] = renderText("Ol+Px",FontFile, white, 16, renderer);
 		}
-		(*leg_tex)[6] = renderText("H2SO4-salt",FontFile, black, 16, renderer);
 		(*leg_tex)[7] = renderText("Hem",FontFile, black, 16, renderer);
 		(*leg_tex)[8] = renderText("Mgt",FontFile, black, 16, renderer);
 		(*leg_tex)[9] = renderText("NH4-",FontFile, black, 16, renderer);
-		(*leg_tex)[11] = renderText("Px",FontFile, white, 16, renderer);
 		(*leg_tex)[12] = renderText("Sap",FontFile, black, 16, renderer);
 		(*leg_tex)[13] = renderText("Troi",FontFile, black, 16, renderer);
 		(*leg_tex)[14] = renderText("Pyr",FontFile, black, 16, renderer);
@@ -546,17 +550,27 @@ int Angles (int itopic, SDL_Surface **pies, char *FontFile, int npH, int npe, in
 						else if (itopic == 8) {
 							angle[1] = 0.999*2.0*M_PI*simdata[isim][581]/total_Min; // Andr
 							angle[2] = 0.999*2.0*M_PI*simdata[isim][1523]/total_Min; // Talc
-							angle[3] = 0.999*2.0*M_PI*simdata[isim][667]/total_Min; // C
+							angle[3] = 0.999*2.0*M_PI*(simdata[isim][915]+simdata[isim][927]+simdata[isim][1587])/total_Min; // Fe + FeO + Trevorite (NiFe2O4)
 							angle[4] = 0.999*2.0*M_PI*(simdata[isim][593]+simdata[isim][819]+simdata[isim][979])/total_Min; // Serpentine clays: atg + cronst + greenalite
-							angle[5] = 0.999*2.0*M_PI*simdata[isim][835]/total_Min; // Chlorites clays: daphnite
-							angle[6] = 0.999*2.0*M_PI*(simdata[isim][989]+simdata[isim][991])/total_Min; // H2SO4:4H2O and H2SO4:6.5H2O
+							angle[5] = 0.999*2.0*M_PI*(simdata[isim][727]+simdata[isim][729]+simdata[isim][835])/total_Min; // Chlorites clays: clinochlore-14A and 7A, daphnite
+
+							// !! ONLY FOR GRL PAPER: CARBONATES TOGETHER WITH OTHER MINERALS, IN PURPLE
+							angle[6] = 0.999*2.0*M_PI*simdata[isim][1135]/total_Min // Magnesite
+							         + 0.999*2.0*M_PI*simdata[isim][1029]/total_Min // Hydromagnesite
+							         + 0.999*2.0*M_PI*simdata[isim][1023]/total_Min // Huntite
+							         + 0.999*2.0*M_PI*(simdata[isim][853]+simdata[isim][855]+simdata[isim][857])/total_Min; // Dolomite
+							// angle[6] = 0.999*2.0*M_PI*simdata[isim][1157]/total_Min; // Zeolite: mesolite
+
 							angle[7] = 0.999*2.0*M_PI*simdata[isim][1011]/total_Min; // Hem
 							angle[8] = 0.999*2.0*M_PI*simdata[isim][1137]/total_Min; // Mgt
 							angle[9] = 0.999*2.0*M_PI*(simdata[isim][1305]+simdata[isim][1307])/total_Min; // NH4-feldspar + NH4-muscovite
 							angle[10] = 0.999*2.0*M_PI*simdata[isim][1323]/total_Min; // Ni metal
-							angle[11] = 0.999*2.0*M_PI*(simdata[isim][859]+simdata[isim][943])/total_Min; // Px: enstatite + ferrosilite
+							angle[11] = 0.999*2.0*M_PI*(simdata[isim][859]+simdata[isim][943]+simdata[isim][1251]+simdata[isim][951]+simdata[isim][913]+simdata[isim][1221])/total_Min; // Px: enstatite + ferrosilite + Na2SiO3, Ol: forsterite + fayalite + monticellite (CaMgSiO4)
 							angle[12] = 0.999*2.0*M_PI*(simdata[isim][1433]+simdata[isim][1435]+simdata[isim][1437]+simdata[isim][1439]+simdata[isim][1441])/total_Min; // Sap
-							angle[13] = 0.999*2.0*M_PI*simdata[isim][1591]/total_Min; // Troi
+
+							// !! ONLY FOR GRL PAPER: BRUCITE TOGETHER WITH OTHER MINERALS, IN YELLOW
+							angle[13] = 0.999*2.0*M_PI*simdata[isim][659]/total_Min; // Brucite
+							// angle[13] = 0.999*2.0*M_PI*simdata[isim][1591]/total_Min; // Troi
 							angle[14] = 0.999*2.0*M_PI*simdata[isim][1397]/total_Min; // Pyrite
 						}
 						else if (itopic == 9) {

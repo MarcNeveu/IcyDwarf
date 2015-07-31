@@ -3,16 +3,16 @@ TITLE IcyDwarf generated speciation input using core4.dat
 SOLUTION 1 Pure water
 
 	 pH 	 	13
-	 temp 	 	150 # celsius
+	 temp 	 	100 # celsius
 	 pressure	200 # atm
-	 pe		-12.3957 # -log activity (e-)
-	 -water		1 #kg
+	 pe		-11.18 # -log activity (e-)
+	 -water		0.1 #kg
 
 GAS_PHASE 1 No initial gas, formation if sum (partial pressures)>pressure
 
 	-fixed_pressure
 	-pressure 	200
-	-temperature	150
+	-temperature	100
 	C2H4(g)        	0.0
   	C2H6(g)		0.0
   	CH4(g)		0.0
@@ -28,91 +28,24 @@ GAS_PHASE 1 No initial gas, formation if sum (partial pressures)>pressure
 	O2(g)          	0.0
 	SO2(g) 		0.0
 
-EQUILIBRIUM_PHASES 1 CM chondrite
+EQUILIBRIUM_PHASES 1 Ordinary chondrite
 
 #Composition from McSween et al. 1991 Ordinary chondrite, total 1 kg
-					#moles by default
-#Phyllosilicates
-	Antigorite		0.0	0.053	#Mg48Si34O85(OH)62 /16
-	Amesite-14A		0.0	0.0056	#Mg4Al4Si2O10(OH)8
-	Cronstedtite-7A		0.0	0.59	#Fe2Fe2SiO5(OH)4
-	Smectite-high-Fe-Mg	0.0	0.036	#Ca.025Na.1K.2Fe.5Fe.2Mg1.15Al1.25Si3.5H2O12
-	Nontronite-Mg		0.0	0.056	#Mg.165Fe2Al.33Si3.67H2O12
-	Nontronite-Ca		0.0	0.056	#Ca.165Fe2Al.33Si3.67H2O12
-	Nontronite-K		0.0	0.0028	#K.33Fe2Al.33Si3.67H2O12
-	Nontronite-Na		0.0	0.056	#Na.33Fe2Al.33Si3.67H2O12
-	Clinochlore-14A		0.0	0.045 	#Mg5Al2Si3O10(OH)8
-	Daphnite-14A		0.0	0.034	#Fe5AlAlSi3O10(OH)8
-	Saponite-Ca		0.0	0.014	#Ca.165Mg3Al.33Si3.67O10(OH)2
-	Saponite-Na		0.0	0.022	#Na.33Mg3Al.33Si3.67O10(OH)2
-	Montmor-Ca		0.0	0.0056	#Ca.165Mg.33Al1.67Si4O10(OH)2
-	Montmor-K		0.0	0.0011	#K.33Mg.33Al1.67Si4O10(OH)2
-	Montmor-Na		0.0	0.0084	#Na.33Mg.33Al1.67Si4O10(OH)2
-	Clinoptilolite-Ca	0.0	0.0022	#Ca1.7335Al3.45Fe.017Si14.533O36:10.922H2O
-	Clinoptilolite-K	0.0	0.00056	#K3.467Al3.45Fe.017Si14.533O36:10.922H2O
-	Clinoptilolite-Na	0.0	0.0067	#Na3.467Al3.45Fe.017Si14.533O36:10.922H2O
-#Carbonates, sulfates, salts, oxides
-	Hydroxyapatite		0.0	0.010	#Ca5(OH)(PO4)3
-	Calcite			0.0	0.112	#CaCO3
-	Gypsum			0.0	0.022	#CaSO4:2H2O
-	Halite			0.0	0.0045	#NaCl
-	Albite			0.0	0.045	#NaAlSi3O8
-	Magnetite		0.0	0.077	#Fe3O4
-#Pyroxenes
-	Enstatite		0.0	0.212	#MgSiO3
-	Ferrosilite		0.0	0.095	#FeSiO3
-	Wollastonite		0.0	0.028	#CaSiO3
-	Na2SiO3			0.0	0.045	#Na2SiO3
-#Olivines
-	Forsterite		0.0	0.670	#Mg2SiO4
-	Fayalite		0.0	0.020	#Fe2SiO4
-	Tephroite		0.0	0.016	#Mn2SiO4, Allen & Mason 1973, proxy for substitution in olivine and sulfide
-	Chromite		0.0	0.031	#FeCr2O4, Metzler+1992
-	Mo			0.0	1.5e-5  #Mo
-#Sulfides
-#Tochilinite = troilite+brucite	0.0	0.078	#6(Fe0.9S):5(Fe,Mg)(OH)2, Mg endmember
-	Brucite			0.0	0.39 	#Mg(OH)2, 6*0.078
-	Troilite		0.0	0.636	#FeS, 5*0.078+0.168
-	Millerite		0.0	0.196	#NiS, pentlandite proxy
-	Covellite		0.0	0.0018	#CuS
-	Sphalerite		0.0	0.0028	#ZnS
-#CAIs
-	Akermanite		0.0	0.025	#Ca2MgSi2O7
-	Gehlenite		0.0	0.0084	#Ca2Al2SiO7
-	Grossular		0.0	0.0017	#Ca3Al2(SiO4)3
-	Corundum		0.0	0.017	#Al2O3
-	Rutile			0.0	0.013	#TiO2
-#Organics (Alexander+ 98, 07, Helgeson+ 09, Busemann+ 06, Richard 01, Richard & Helgeson 98)
-	KerogenC515		0.0	2.8e-5	#C515H596O72
-	KerogenC128		0.0	0.0089	#C128H68O7
-	Pyridine		0.0	0.106	#C5H5N
-	[(6)(CB)(CB)S]		0.0	0.112	#Aromatic S
-	[(aro)-O-(aro)]		0.0	0.251	#Aromatic O
-#Trace elements measured by GRaND onboard Dawn (Prettyman, pers. comm.; Lodders 2003 Table 9)
-	B			0.0	5.5e-5	#B
-	Co			0.0	0.0097	#Co
-	EuO			0.0	4.95e-7	#EuO
-	Gd2O3			0.0	8.7e-7	#Gd2O3
-	Eucryptite		0.0	1.95e-4	#LiAlSiO4
-	Sc			0.0	1.8e-4	#Sc
-	Sm2O3			0.0	6.6e-7	#Sm2O3
-	Thorianite		0.0	1.7e-7	#ThO2
-	Uraninite		0.0	4.6e-8	#UO2
+						#moles by default
+	K-Feldspar			0.0	0.022	# KAlSi3O8
+	Albite				0.0	0.305	# NaAlSi3O8
+	Anorthite			0.0	0.06	# CaAl2(SiO4)2
+	Diopside			0.0	0.22	# CaMgSi2O6
+	Enstatite			0.0	1.6	# MgSiO3
+	Ferrosilite			0.0	0.65	# FeSiO3
+	Forsterite			0.0	1.9	# Mg2SiO4
+	Fayalite			0.0	0.8	# Fe2SiO4
 #
-	#TOTAL	mass 1.00 kg, see “Starting rock compo” spreadsheet
+	#TOTAL	mass 1.02 kg, see “Starting rock compo” spreadsheet
 #
 #Phases allowed to precipitate
-	(NH4)2SO4		0	0	# (NH4)2SO4
-	(NH4)2SO4:2NH4NO3	0	0	# (NH4)2SO4:2NH4NO3
-	(NH4)2SO4:3NH4NO3	0	0	# (NH4)2SO4:3NH4NO3
-	(NH4)2SO4:Al2(SO4)3:24H2O	0	0	# (NH4)2SO4:Al2(SO4)3:24H2O
-	(NH4)2SO4:Cr2(SO4)3:24H2O	0	0	# (NH4)2SO4:Cr2(SO4)3:24H2O
-	(NH4)3H(SO4)2		0	0	# (NH4)3H(SO4)2
-	(UO2)2Cl3		0	0	# (UO2)2Cl3
-	(UO2)2P2O7		0	0	# (UO2)2P2O7
-	(UO2)3(PO4)2		0	0	# (UO2)3(PO4)2
-	(UO2)3(PO4)2:4H2O	0	0	# (UO2)3(PO4)2:4H2O
 	Afwillite		0	0	# Ca3Si2O4(OH)6
+	Akermanite		0	0	# Ca2MgSi2O7
 	Al			0	0	# Al
 	Al2(SO4)3		0	0	# Al2(SO4)3
 	Al2(SO4)3:6H2O		0	0	# Al2(SO4)3:6H2O
@@ -123,6 +56,7 @@ EQUILIBRIUM_PHASES 1 CM chondrite
 	Alum-Na			0	0	# NaAl(SO4)2:12H2O
 	Alunite			0	0	# KAl3(OH)6(SO4)2
 	Alunogen		0	0	# Al2(SO4)3:17H2O
+	Amesite-14A		0	0	# Mg4Al4Si2O10(OH)8
 	Analcime		0	0	# Na.96Al.96Si2.04O6:H2O
 	Analcime-dehy		0	0	# Na.96Al.96Si2.04O6
 	Anatase			0	0	# TiO2
@@ -130,9 +64,9 @@ EQUILIBRIUM_PHASES 1 CM chondrite
 	Andradite		0	0	# Ca3Fe2(SiO4)3
 	Anhydrite		0	0	# CaSO4
 	Annite			0	0	# KFe3AlSi3O10(OH)2
-	Anorthite		0	0	# CaAl2(SiO4)2
 	Antarcticite		0	0	# CaCl2:6H2O
 	Anthophyllite		0	0	# Mg7Si8O22(OH)2
+	Antigorite		0	0	# Mg48Si34O85(OH)62
 	Antlerite		0	0	# Cu3(SO4)(OH)4
 	Aphthitalite		0	0	# NaK3(SO4)2
 	Aragonite		0	0	# CaCO3
@@ -164,6 +98,7 @@ EQUILIBRIUM_PHASES 1 CM chondrite
 	Bornite			0	0	# Cu5FeS4
 	Brezinaite		0	0	# Cr3S4
 	Brochantite		0	0	# Cu4(SO4)(OH)6
+	Brucite			0	0	# Mg(OH)2
 	Brushite		0	0	# CaHPO4:2H2O
 	Bunsenite		0	0	# NiO
 	Burkeite		0	0	# Na6CO3(SO4)2
@@ -179,6 +114,7 @@ EQUILIBRIUM_PHASES 1 CM chondrite
 	Ca4Cl2(OH)6:13H2O	0	0	# Ca4Cl2(OH)6:13H2O
 	CaAl2O4			0	0	# CaAl2O4
 	CaAl2O4:10H2O		0	0	# CaAl2O4:10H2O
+	Calcite			0	0	# CaCO3
 	Carnallite		0	0	# KMgCl3:6H2O
 	CaSO4:0.5H2O(beta)	0	0	# CaSO4:0.5H2O
 	Cattierite		0	0	# CoS2
@@ -195,6 +131,7 @@ EQUILIBRIUM_PHASES 1 CM chondrite
 	Chloromagnesite		0	0	# MgCl2
 	Chrysocolla		0	0	# CuSiH4O5
 	Chrysotile		0	0	# Mg3Si2O5(OH)4
+	Clinochlore-14A		0	0	# Mg5Al2Si3O10(OH)8
 	Clinochlore-7A		0	0	# Mg5Al2Si3O10(OH)8
 	Clinoptilolite-dehy-Ca	0	0	# Ca1.7335Al3.45Fe.017Si14.533O36
 	Clinoptilolite-dehy-K	0	0	# K3.467Al3.45Fe.017Si14.533O36
@@ -204,6 +141,9 @@ EQUILIBRIUM_PHASES 1 CM chondrite
 	Clinoptilolite-hy-K	0	0	# K3.467Al3.45Fe.017Si14.533O36:7.499H2O
 	Clinoptilolite-hy-Na	0	0	# Na3.467Al3.45Fe.017Si14.533O36:10.877H2O
 	Clinoptilolite-NH4	0	0	# (NH4)3.467Al3.45Fe.017Si14.533O36:10.922H2O
+	Clinoptilolite-Ca	0	0	# Ca1.7335Al3.45Fe.017Si14.533O36:10.922H2O
+	Clinoptilolite-K	0	0	# K3.467Al3.45Fe.017Si14.533O36:10.922H2O
+	Clinoptilolite-Na	0	0	# Na3.467Al3.45Fe.017Si14.533O36:10.922H2O
 	Clinozoisite		0	0	# Ca2Al3Si3O12(OH)
 	Co(NO3)2		0	0	# Co(NO3)2
 	Co(OH)2			0	0	# Co(OH)2
@@ -222,6 +162,7 @@ EQUILIBRIUM_PHASES 1 CM chondrite
 	Coquimbite		0	0	# Fe2(SO4)3:9H2O
 	Cordierite_anhyd	0	0	# Mg2Al4Si5O18
 	Cordierite_hydr		0	0	# Mg2Al4Si5O18:H2O
+	Corundum		0	0	# Al2O3
 	CoS			0	0	# CoS
 	CoSO4			0	0	# CoSO4
 	CoSO4.3Co(OH)2		0	0	# CoSO4(Co(OH)2)3
@@ -234,6 +175,7 @@ EQUILIBRIUM_PHASES 1 CM chondrite
 	Cristobalite(beta)	0	0	# SiO2
 	CrO2			0	0	# CrO2
 	CrO3			0	0	# CrO3
+	Cronstedtite-7A		0	0	# Fe2Fe2SiO5(OH)4
 	CrS			0	0	# CrS
 	Cu			0	0	# Cu
 	Cu3(PO4)2		0	0	# Cu3(PO4)2
@@ -241,13 +183,13 @@ EQUILIBRIUM_PHASES 1 CM chondrite
 	CuCl2			0	0	# CuCl2
 	CuCr2O4			0	0	# CuCr2O4
 	Cuprite			0	0	# Cu2O
+	Daphnite-14A		0	0	# Fe5AlAlSi3O10(OH)8
 	Daphnite-7A		0	0	# Fe5AlAlSi3O10(OH)8
 	Darapskite		0	0	# Na2SO4:NaNO3:2H2O
 	Dawsonite		0	0	# NaAlCO3(OH)2
 	Delafossite		0	0	# CuFeO2
 	Diaspore		0	0	# AlHO2
 	Dicalcium_silicate	0	0	# Ca2SiO4
-	Diopside		0	0	# CaMgSi2O6
 	Dioptase		0	0	# CuSiO2(OH)2
 	Dolomite		0	0	# CaMg(CO3)2
 	Dolomite-dis		0	0	# CaMg(CO3)2
@@ -276,7 +218,6 @@ EQUILIBRIUM_PHASES 1 CM chondrite
 	EuPO4:10H2O		0	0	# EuPO4:10H2O
 	EuS			0	0	# EuS
 	EuSO4			0	0	# EuSO4
-	Fe			0	0	# Fe
 	Fe(OH)2			0	0	# Fe(OH)2
 	Fe2(SO4)3:2K2SO4:14H2O	0	0	# Fe2(SO4)3(K2SO4)2:14H2O
 	FeCl2:4H2O		0	0	# FeCl2:4H2O
@@ -300,16 +241,20 @@ EQUILIBRIUM_PHASES 1 CM chondrite
 	Gd(OH)3(am)		0	0	# Gd(OH)3
 	Gd2(CO3)3		0	0	# Gd2(CO3)3
 	GdPO4:10H2O		0	0	# GdPO4:10H2O
+	Gehlenite		0	0	# Ca2Al2SiO7
 	Gibbsite		0	0	# Al(OH)3
 	Gismondine		0	0	# Ca2Al4Si4O16:9H2O
 	Glauberite		0	0	# Na2Ca(SO4)2
 	Goethite		0	0	# FeOOH
 	Greenalite		0	0	# Fe3Si2O5(OH)4
 	Grossite		0	0	# CaAl4O7
+	Grossular		0	0	# Ca3Al2(SiO4)3
+	Gypsum			0	0	# CaSO4:2H2O
 	Gyrolite		0	0	# Ca2Si3O7(OH)2:1.5H2O
 	H2SO4:4H2O		0	0	# H2SO4:4H2O
 	H2SO4:6.5H2O		0	0	# H2SO4:6.5H2O
 	Haiweeite		0	0	# Ca(UO2)2(Si2O5)3:5H2O
+	Halite			0	0	# NaCl
 	Halotrichite		0	0	# FeSO4:Al2(SO4)3:22H2O
 	Hatrurite		0	0	# Ca3SiO5
 	Hausmannite		0	0	# Mn3O4
@@ -333,13 +278,11 @@ EQUILIBRIUM_PHASES 1 CM chondrite
 	Ice			0	0	# H2O
 	Ikaite			0	0	# CaCO3:6H2O
 	Illite			0	0	# K0.6Mg0.25Al1.8Al0.5Si3.5O10(OH)2
-	Ilmenite		0	0	# FeTiO3
 	Jadeite			0	0	# NaAl(SiO3)2
 	Jarosite		0	0	# KFe3(SO4)2(OH)6
 	Jarosite-H3O		0	0	# H3OFe3(SO4)2(OH)6
 	Jarosite-Na		0	0	# NaFe3(SO4)2(OH)6
 	K			0	0	# K
-	K-Feldspar		0	0	# KAlSi3O8
 	K2CO3:1.5H2O		0	0	# K2CO3:1.5H2O
 	K2O			0	0	# K2O
 	K2SO4:Al2(SO4)3:24H2O	0	0	# K2SO4:Al2(SO4)3:24H2O
@@ -355,7 +298,8 @@ EQUILIBRIUM_PHASES 1 CM chondrite
 	Kaolinite		0	0	# Al2Si2O5(OH)4
 	Katoite			0	0	# Ca3Al2H12O12
 	KClO4			0	0	# KClO4
-	KerogenC292		0	0	# 
+	KerogenC515		0	0	# C515H596O72
+	KerogenC128		0	0	# C128H68O7
 	Kieserite		0	0	# MgSO4:H2O
 	KMgCl3			0	0	# KMgCl3
 	KMgCl3:2H2O		0	0	# KMgCl3:2H2O
@@ -377,6 +321,7 @@ EQUILIBRIUM_PHASES 1 CM chondrite
 	Lopezite		0	0	# K2Cr2O7
 	Magnesiochromite	0	0	# MgCr2O4
 	Magnesite		0	0	# MgCO3
+	Magnetite		0	0	# Fe3O4
 	Malachite		0	0	# Cu2CO3(OH)2
 	Manganite		0	0	# MnO(OH)
 	Manganosite		0	0	# MnO
@@ -401,6 +346,7 @@ EQUILIBRIUM_PHASES 1 CM chondrite
 	MgSO4:12H2O		0	0	# MgSO4:12H2O
 	MgUO4			0	0	# MgUO4
 	Mikasaite		0	0	# Fe2(SO4)3
+	Millerite		0	0	# NiS
 	Minnesotaite		0	0	# Fe3Si4O10(OH)2
 	Mirabilite		0	0	# Na2SO4:10H2O
 	Misenite		0	0	# K8H6(SO4)7
@@ -417,7 +363,10 @@ EQUILIBRIUM_PHASES 1 CM chondrite
 	Molysite		0	0	# FeCl3
 	Monohydrocalcite	0	0	# CaCO3:H2O
 	Monticellite		0	0	# CaMgSiO4
+	Montmor-Ca		0	0	# Ca.165Mg.33Al1.67Si4O10(OH)2
+	Montmor-K		0	0	# K.33Mg.33Al1.67Si4O10(OH)2
 	Montmor-Mg		0	0	# Mg.495Al1.67Si4O10(OH)2
+	Montmor-Na		0	0	# Na.33Mg.33Al1.67Si4O10(OH)2
 	Mordenite		0	0	# Ca.2895Na.361Al.94Si5.06O12:3.468H2O
 	Mordenite-dehy		0	0	# Ca.2895Na.361Al.94Si5.06O12
 	Morenosite		0	0	# NiSO4:7H2O
@@ -428,6 +377,7 @@ EQUILIBRIUM_PHASES 1 CM chondrite
 	Na2Cr2O7		0	0	# Na2Cr2O7
 	Na2CrO4			0	0	# Na2CrO4
 	Na2O			0	0	# Na2O
+	Na2SiO3			0	0	# Na2SiO3
 	Na2SO4:(NH4)2SO4:4H2O	0	0	# Na2SO4:(NH4)2SO4:4H2O
 	Na2SO4:Al2(SO4)3:24H2O	0	0	# Na2SO4:Al2(SO4)3:24H2O
 	Na2SO4:Cr2(SO4)3:24H2O	0	0	# Na2SO4:Cr2(SO4)3:24H2O
@@ -463,7 +413,6 @@ EQUILIBRIUM_PHASES 1 CM chondrite
 	NH4HSO4			0	0	# NH4HSO4
 	NH4HSO4:NH4NO3		0	0	# NH4HSO4:NH4NO3
 	NH4NO3			0	0	# NH4NO3
-	Ni			0	0	# Ni
 	Ni(OH)2			0	0	# Ni(OH)2
 	Ni2P2O7			0	0	# Ni2P2O7
 	Ni2SiO4			0	0	# Ni2SiO4
@@ -478,6 +427,10 @@ EQUILIBRIUM_PHASES 1 CM chondrite
 	NiSO4:6H2O(alpha)	0	0	# NiSO4:6H2O
 	Niter			0	0	# KNO3
 	Nontronite-H		0	0	# H.33Fe2Al.33Si3.67H2O12
+	Nontronite-Mg		0	0	# Mg.165Fe2Al.33Si3.67H2O12
+	Nontronite-Ca		0	0	# Ca.165Fe2Al.33Si3.67H2O12
+	Nontronite-K		0	0	# K.33Fe2Al.33Si3.67H2O12
+	Nontronite-Na		0	0	# Na.33Fe2Al.33Si3.67H2O12
 	Okenite			0	0	# CaSi2O4(OH)2:H2O
 	Oxychloride-Mg		0	0	# Mg2Cl(OH)3:4H2O
 	P			0	0	# P
@@ -509,12 +462,15 @@ EQUILIBRIUM_PHASES 1 CM chondrite
 	Romerite		0	0	# Fe3(SO4)4:14H2O
 	Rozenite		0	0	# FeSO4:4H2O
 	Rutherfordine		0	0	# UO2CO3
+	Rutile			0	0	# TiO2
 	S			0	0	# S
 	Saleeite		0	0	# Mg(UO2)2(PO4)2
 	Sanidine_high		0	0	# KAlSi3O8
+	Saponite-Ca		0	0	# Ca.165Mg3Al.33Si3.67O10(OH)2
 	Saponite-H		0	0	# H.33Mg3Al.33Si3.67O10(OH)2
 	Saponite-K		0	0	# K.33Mg3Al.33Si3.67O10(OH)2
 	Saponite-Mg		0	0	# Mg3.165Al.33Si3.67O10(OH)2
+	Saponite-Na		0	0	# Na.33Mg3Al.33Si3.67O10(OH)2
 	Scacchite		0	0	# MnCl2
 	Schoepite		0	0	# UO3:2H2O
 	Schoepite-dehy(.393)	0	0	# UO3:.393H2O
@@ -535,6 +491,7 @@ EQUILIBRIUM_PHASES 1 CM chondrite
 	Sm(OH)3(am)		0	0	# Sm(OH)3
 	Sm2(CO3)3		0	0	# Sm2(CO3)3
 	Sm2(SO4)3		0	0	# Sm2(SO4)3
+	Smectite-high-Fe-Mg	0	0	# Ca.025Na.1K.2Fe.5Fe.2Mg1.15Al1.25Si3.5H2O12
 	Smectite-low-Fe-Mg	0	0	# Ca.02Na.15K.2Fe.29Fe.16Mg.9Al1.25Si3.75H2O12
 	Smithsonite		0	0	# ZnCO3
 	SmPO4:10H2O		0	0	# SmPO4:10H2O
@@ -661,6 +618,7 @@ EQUILIBRIUM_PHASES 1 CM chondrite
 	Weeksite		0	0	# K2(UO2)2(Si2O5)3:4H2O
 	Whitlockite		0	0	# Ca3(PO4)2
 	Willemite		0	0	# Zn2SiO4
+	Wollastonite		0	0	# CaSiO3
 	Wurtzite		0	0	# ZnS
 	Wustite			0	0	# Fe.947O
 	Xonotlite		0	0	# Ca6Si6O17(OH)2
@@ -691,7 +649,7 @@ EQUILIBRIUM_PHASES 1 CM chondrite
 
 SELECTED_OUTPUT 1
 	
-#	-file		/Users/marc/Documents/Research/2011-2016_ASU/2IcyDwarf/Git/IcyDwarf/IcyDwarf/PHREEQC-3.1.2/io/selectedIcyDwarf.out
+	-file		/Users/marc/Documents/Research/2011-2016_ASU/2IcyDwarf/Git/IcyDwarf/IcyDwarf/PHREEQC-3.1.2/io/selectedIcyDwarf.out
 	-state 		false	
 	-solution 	false
 	-distance 	false

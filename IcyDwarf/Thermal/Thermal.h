@@ -843,7 +843,6 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			fineMassFrac = Mrock[ircore+1]/(Mh2ol[ircore+1]+Mrock[ircore+1]);
 			fineVolFrac = fineMassFrac*dM[ircore+1]/dVol[ircore+1]/(Xhydr[ircore+1]*rhoHydrth+(1.0-Xhydr[ircore+1])*rhoRockth);
 		}
-
 		Crack_size_avg = 0.0;
 		if (ircrack < ircore && Mh2ol[ircore] > 0.0 && fineVolFrac < 0.64) {
 			// Calculate Rayleigh number

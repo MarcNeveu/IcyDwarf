@@ -70,6 +70,10 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 	//                         Initializations
 	//-------------------------------------------------------------------
 
+	pemin = 0.25*pemin;
+	pemax = 0.25*pemax;
+	pestep = 0.25*pestep;
+
 	nTempIter = floor((Tmax-Tmin)/Tstep);
 	nPressureIter = floor((Pmax-Pmin)/Pstep);
 	npHiter = floor((pHmax-pHmin)/pHstep);
@@ -164,7 +168,7 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 						if (RunFile(phreeqc,tempinput) != 0) OutputErrorString(phreeqc);
 						simdata[ipH][1] = P;
 						simdata[ipH][4] = FMQ;
-						simdata[ipH][5] = pe;
+						simdata[ipH][5] = pe*4.0;
 						ExtractWrite(phreeqc, nvar, &simdata[ipH]);
 
 						++nloops;
