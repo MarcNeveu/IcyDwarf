@@ -15,10 +15,12 @@
 # JH85b: http://dx.doi.org/10.2113/gsecongeo.80.5.1365
 # Marion+99: http://dx.doi.org/10.1016/S0016-7037(99)00102-7
 # Marion01: http://dx.doi.org/10.1016/S0016-7037(00)00588-3
+# Marion02: http://dx.doi.org/10.1016/S0016-7037(02)00857-8
 # Marion+03: http://dx.doi.org/10.1016/S0016-7037(03)00372-7
 # Marion+05: http://dx.doi.org/10.1016/j.gca.2004.06.024
 # Marion+08: http://dx.doi.org/10.1016/j.gca.2007.10.012
 # Marion+09: http://dx.doi.org/10.1016/j.gca.2009.03.013
+# Marion+10: http://dx.doi.org/10.1016/j.icarus.2009.12.003
 # Marion+11: http://dx.doi.org/10.1016/j.icarus.2011.01.035
 # Marion+12: http://dx.doi.org/10.1016/j.icarus.2012.06.016
 # mincryst: database.iem.ac.ru/mincryst
@@ -995,7 +997,7 @@ Zr(OH)2+2 =  Zr(OH)2+2
 	-delta_H	0	      	# Not possible to calculate deltarH	C2H6
 #	deltafH	-0 kcal/mol
         -analytic    0.10777E+02    0.72105E-01   -0.67489E+05   -0.13915E+02   -0.10531E+04
-#	-analytic -539.9 1.2150 0 0 0 -8.296E-4 # generated using CHNOSZ, discrepant with above expression
+#	-analytic -539.9 1.2150 0 0 0 -8.296E-4 # !!! generated using CHNOSZ, discrepant with above expression
 #       -Range:  0-300
 	-Vm 8.75 13.1051 1.6258 -3.3207 -0.06270 # SH90
 
@@ -4362,7 +4364,7 @@ Cd+2 + CH3COOH  =  CdCH3COO+ + H+
 	-delta_H	0	      	# Not possible to calculate deltarH	Fe(OH)2
 #	deltafH	-0 kcal/mol
  
-2 H2O + Fe+3  =  Fe(OH)2+ +2 H+
+2 H2O + Fe+3  =  Fe(OH)2+ + 2 H+
         -llnl_gamma           4.0    
         log_k           -5.67
 	-delta_H	0	      	# Not possible to calculate deltarH	Fe(OH)2+
@@ -4370,12 +4372,12 @@ Cd+2 + CH3COOH  =  CdCH3COO+ + H+
 	-analytic 6.872E+0	0	-3.739E+3	0	0	0 # Marion+08
 #	-Range: 273-298 K
  
-3 H2O + Fe+3  =  Fe(OH)3 +3 H+
+3 H2O + Fe+3  =  Fe(OH)3 + 3 H+
         -llnl_gamma           3.0    
         log_k           -12
 	-delta_H	0	      	# Not possible to calculate deltarH	Fe(OH)3
 #	deltafH	-0 kcal/mol
-	-analytic 5.619E+0	0	-5.431E+3	0	0	0 # MArion+08
+	-analytic 5.619E+0	0	-5.431E+3	0	0	0 # Marion+08
 #	-Range: 273-298 K
  
 3 H2O + Fe+2  =  Fe(OH)3- +3 H+
@@ -4555,7 +4557,7 @@ Fe+2 + CO3-2 = FeCO3
 	-delta_H	0	      	# Not possible to calculate deltarH	FeNO3+2
 #	deltafH	-0 kcal/mol
  
-1 H2O + Fe+2  =  FeOH+ +1 H+
+1 H2O + Fe+2  =  FeOH+ + H+
         -llnl_gamma           4.0    
         log_k           -9.5
 	-delta_H	0	      	# Not possible to calculate deltarH	FeOH+
@@ -11495,14 +11497,14 @@ Bilinite # Marion+08
 	-Vm 507.02
 
 Birnessite
-        Mn8O14:5H2O +4 H+  =  + 3 MnO4-2 + 5 Mn+2 + 7 H2O
+        Mn8O14:5H2O + 4 H+ = 3 MnO4-2 + 5 Mn+2 + 7 H2O
         log_k           -85.5463
 	-delta_H	0	      	# Not possible to calculate deltarH	Birnessite
 #	deltafH	0 kcal/mol
 	-Vm 251.16 # Webmineral.com, density 3
 
 Bischofite
-        MgCl2:6H2O  =  + Mg+2 + 2 Cl- + 6 H2O
+        MgCl2:6H2O = Mg+2 + 2 Cl- + 6 H2O
         log_k           4.3923
 	-delta_H	0	      	# Not possible to calculate deltarH	Bischofite
 #	deltafH	0 kcal/mol
@@ -14293,7 +14295,7 @@ K2SO4:Cr2(SO4)3:24H2O # Christov02a
 	log_k		-11.8541
 
 K2UO4
-       K2UO4 +4 H+  =  + UO2+2 + 2 H2O + 2 K+
+       K2UO4 +4 H+ = UO2+2 + 2 H2O + 2 K+
         log_k           33.8714
 	-delta_H	-174.316	kJ/mol	# Calculated deltarH	K2UO4
 #	deltafH	-1920.7 kJ/mol
@@ -14301,7 +14303,7 @@ K2UO4
 #       -Range:  0-200
 
 K3H(SO4)2
-       K3H(SO4)2  =  + H+ + 2 SO4-2 + 3 K+
+       K3H(SO4)2 = H+ + 2 SO4-2 + 3 K+
         log_k           -3.6233
 	-delta_H	0	      	# Not possible to calculate deltarH	K3H(SO4)2
 #	deltafH	0 kcal/mol
@@ -14366,20 +14368,20 @@ KTcO4
 #       -Range:  0-300
 
 KUO2AsO4
-       KUO2AsO4 +2 H+  =  + H2AsO4- + K+ + UO2+2
+       KUO2AsO4 +2 H+ = H2AsO4- + K+ + UO2+2
         log_k           -4.1741
 	-delta_H	0	      	# Not possible to calculate deltarH	KUO2AsO4
 #	Enthalpy of formation:	0 kcal/mol
 
 Kainite
-        KMgClSO4:3H2O  =  + Cl- + K+ + Mg+2 + SO4-2 + 3 H2O
+        KMgClSO4:3H2O = Cl- + K+ + Mg+2 + SO4-2 + 3 H2O
         log_k           -0.3114
 	-delta_H	0	      	# Not possible to calculate deltarH	Kainite
 #	deltafH	0 kcal/mol
 	-Vm 118.56 # Webmineral.com
 
 Kalicinite
-        KHCO3  =  + HCO3- + K+
+        KHCO3 = HCO3- + K+
         log_k           0.2837
 	-delta_H	0	      	# Not possible to calculate deltarH	Kalicinite
 #	deltafH	0 kcal/mol
@@ -14427,7 +14429,7 @@ Katoite
 	-delta_H	0	      	# Not possible to calculate deltarH	Katoite
 #	deltafH	0 kcal/mol
 
-KClO4 # Marion+11
+KClO4 # Marion+10
 	KClO4 = K+ + ClO4-
 	log_k		-1.9844
 	-analytic -22.702	0.10768	0	0	0	-1.28e-4 # Fit
@@ -14954,7 +14956,7 @@ MgCl2:H2O
         -analytic -2.4414e2 -8.1310e-2 1.1862e4 9.8878e1 1.8516e2
 #       -Range:  0-300
 
-Mg(ClO4)2:6H2O # Marion+11
+Mg(ClO4)2:6H2O # Marion+10
 	Mg(ClO4)2:6H2O = Mg+2 + 2 ClO4- + 6 H2O
 	log_k		5.6556
 	-analytic -5.492E+0	6.257E-2	0	0	0	-8.445E-5
@@ -15495,14 +15497,14 @@ NaBr:2H2O
         -analytic -4.1855e1 -4.6170e-3 8.3883e2 1.7182e1 1.4259e1
 #       -Range:  0-200
 
-NaClO4 # Marion+11
+NaClO4 # Marion+10
 	NaClO4 = Na+ + ClO4-
 	log_k		2.9091
 	-analytic 1.834E+1	-9.811E-2	0	0	0	1.555E-4
 #	-Range: 324-373
 	-Vm 48.98 # Webmineral.com
 
-NaClO4:H2O # Marion+11
+NaClO4:H2O # Marion+10
 	NaClO4:H2O = Na+ + ClO4- + H2O
 	log_k		2.1763
 	-analytic 1.486E-2	7.250E-3	0	0	0	0
@@ -15750,11 +15752,11 @@ NH4HSO4:NH4NO3 # Clegg+98a,b
 	(NH4)2SO4:2NH4NO3 = 4 NH4+ + SO4-2 + 2 NO3-
 	log_k		1.9326
 
-(NH4)2SO4:3NH4NO3
+(NH4)2SO4:3NH4NO3 # Clegg+98a,b
 	(NH4)2SO4:3NH4NO3 = 5 NH4+ + SO4-2 + 3 NO3-
 	log_k		2.9463
 
-NH4-muscovite # Watkins81 for NH4-feldspar, SH88 for H+ and NH4+, SHS89 for SiO2(aq), SSW+97 for Al+3, WP02 for H2O 
+NH4-muscovite # Watkins81 for NH4-muscovite, SH88 for H+ and NH4+, SHS89 for SiO2(aq), SSW+97 for Al+3, WP02 for H2O 
 	NH4Al3Si3O10(OH)2 + 10 H+ = NH4+ + 3 Al+3 + 3 SiO2 + 6 H2O
 	log_k		6.8109
 	-analytical -6.638E+1	3.170E-1	0	0	0	-2.386E-4
@@ -16354,13 +16356,13 @@ Phosgenite
 	-Vm 89.07 # mincryst
 
 Pickeringite # Marion+09
-	MgSO4:Al2(SO4)3:22H2O = Mg+2 + 2Al+3 + 4SO4-2 + 22H2O
+	MgSO4:Al2(SO4)3:22H2O = Mg+2 + 2 Al+3 + 4 SO4-2 + 22 H2O
 	log_k		-8.0131
 	-analytical -8.013E+0	0	0	0	0	0
 	-Vm 471.9
 
 Picromerite
-        K2Mg(SO4)2:6H2O  =  + Mg+2 + 2 K+ + 2 SO4-2 + 6 H2O
+        K2Mg(SO4)2:6H2O = Mg+2 + 2 K+ + 2 SO4-2 + 6 H2O
         log_k           -4.4396
 	-delta_H	0	      	# Not possible to calculate deltarH	Picromerite
 #	deltafH	0 kcal/mol
@@ -19813,7 +19815,7 @@ KerogenC515
 #  Richard & Helgeson (1998) http://dx.doi.org/10.1016/S0016-7037(97)00345-1
 #  Helgeson et al. (2009) http://dx.doi.org/10.1016/j.gca.2008.03.004
 #subcrt(c("kerogen C515","O2","CO2","H2O"),c(-1,-628,515,298),c("cr","aq","aq","liq"))
-	C515H596O72 + 628.0 O2 = + 515.0 CO2 + 298.0 H2O
+	C515H596O72 + 628 O2 = 515 CO2 + 298 H2O
 	log_k 		48112.16
 	-delta_H 	-65346.703	kcal/mol
 	-analytic 104660.55 -244.27 0 0 0 0.183
@@ -19826,7 +19828,7 @@ KerogenC292
 #  Richard & Helgeson (1998) http://dx.doi.org/10.1016/S0016-7037(97)00345-1
 #  Helgeson et al. (2009) http://dx.doi.org/10.1016/j.gca.2008.03.004
 #subcrt(c("kerogen C292","O2","CO2","H2O"),c(-1,-358,292,144),c("cr","aq","aq","liq"))
-	C292H288O12 + 358.0 O2 = + 292.0 CO2 + 144.0 H2O
+	C292H288O12 + 358 O2 = 292 CO2 + 144 H2O
 	log_k		27153.69
 	-delta_H	-36994.127	kcal/mol
 	-analytic 59184.26 -138.37 0 0 0 0.10
@@ -19839,7 +19841,7 @@ KerogenC128
 #  Richard & Helgeson (1998) http://dx.doi.org/10.1016/S0016-7037(97)00345-1
 #  Helgeson et al. (2009) http://dx.doi.org/10.1016/j.gca.2008.03.004
 #subcrt(c("kerogen C128","O2","CO2","H2O"),c(-1,-141.5,128,34),c("cr","aq","aq","liq"))
-	C128H68O7 + 141.5 O2 = + 128.0 CO2 + 34 H2O
+	C128H68O7 + 141.5 O2 = 128 CO2 + 34 H2O
 	log_k		10740.654
 	-delta_H	-14623.902	kcal/mol
 	-analytic 23405.37 -54.726 0 0 0 0.041
@@ -19851,7 +19853,7 @@ Pyridine
 #Original data from:
 #  Helgeson et al. (1998) http://dx.doi.org/10.1016/S0016-7037(97)00219-6
 #subcrt(c("pyridine","O2","CO2","H2O","N2"),c(-1,-6.25,5,2.5,0.5),c("cr","aq","aq","liq","aq"))
-	C5H5N + 6.25 O2 = + 5 CO2 + 2.5 H2O + 0.5 N2
+	C5H5N + 6.25 O2 = 5 CO2 + 2.5 H2O + 0.5 N2
 	log_k		490.7474
 	-delta_H	-669.9574	kcal/mol
 	-analytic 1071.04 -2.50773 0 0 0 0.00188
@@ -19862,7 +19864,7 @@ Pyridine
 # Calculated manually
 #Original data from:
 #  Richard (2001) http://dx.doi.org/10.1016/S0016-7037(01)00761-X) 
-	S + 1.0 O2 = + 1.0 SO2
+	S + O2 = SO2
 	log_k	63.04
 	-analytic 137.16 -0.320465 0 0 0 0.000241
 	-Vm 16.5 #cm3/mol
@@ -19873,7 +19875,7 @@ Pyridine
 #Original data from:
 #  Richard & Helgeson (1998) http://dx.doi.org/10.1016/S0016-7037(97)00345-1
 #subcrt(c("[(aro)-O-(aro)]","O2"),c(-1,0.5),c("cr","aq"))
-	O = + 0.5 O2
+	O = 0.5 O2
 	log_k		-20.610681
 	-delta_H	30.240		kcal/mol
 	-analytic -46.6 0.111 0 0 0 -7.99e-5
@@ -19883,7 +19885,7 @@ Pyridine
 # Gases
 
 Ar(g)
-        Ar  =  + 1 Ar       
+        Ar = Ar       
         log_k           -2.8587
 	-delta_H	-12.0081	kJ/mol	# Calculated enthalpy of reaction	Ar(g)
 #	deltafH	0 kcal/mol
