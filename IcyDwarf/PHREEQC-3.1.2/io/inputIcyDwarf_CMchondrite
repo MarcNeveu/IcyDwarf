@@ -3,16 +3,16 @@ TITLE IcyDwarf generated speciation input using core4.dat
 SOLUTION 1 Pure water
 
 	 pH 	 	13
-	 temp 	 	100 # celsius
+	 temp 	 	150 # celsius
 	 pressure	200 # atm
-	 pe		-11.18 # -log activity (e-)
-	 -water		0.1 #kg
+	 pe		-6.3957 # -log activity (e-)
+	 -water		1 #kg
 
 GAS_PHASE 1 No initial gas, formation if sum (partial pressures)>pressure
 
 	-fixed_pressure
 	-pressure 	200
-	-temperature	100
+	-temperature	150
 	C2H4(g)        	0.0
   	C2H6(g)		0.0
   	CH4(g)		0.0
@@ -28,24 +28,91 @@ GAS_PHASE 1 No initial gas, formation if sum (partial pressures)>pressure
 	O2(g)          	0.0
 	SO2(g) 		0.0
 
-EQUILIBRIUM_PHASES 1 Ordinary chondrite
+EQUILIBRIUM_PHASES 1 CM chondrite
 
-#Composition from McSween et al. 1991 Ordinary chondrite, total 1 kg
-						#moles by default
-	K-Feldspar			0.0	0.022	# KAlSi3O8
-	Albite				0.0	0.305	# NaAlSi3O8
-	Anorthite			0.0	0.06	# CaAl2(SiO4)2
-	Diopside			0.0	0.22	# CaMgSi2O6
-	Enstatite			0.0	1.6	# MgSiO3
-	Ferrosilite			0.0	0.65	# FeSiO3
-	Forsterite			0.0	1.9	# Mg2SiO4
-	Fayalite			0.0	0.8	# Fe2SiO4
+#Composition from Howard et al. 2011 CM chondrite, total 1 kg
+					#moles by default
+#Phyllosilicates
+	Antigorite		0.0	0.053	# Mg48Si34O85(OH)62 /16
+	Amesite-14A		0.0	0.0056	# Mg4Al4Si2O10(OH)8
+	Cronstedtite-7A		0.0	0.59	# Fe2Fe2SiO5(OH)4
+	Smectite-high-Fe-Mg	0.0	0.036	# Ca.025Na.1K.2Fe.5Fe.2Mg1.15Al1.25Si3.5H2O12
+	Nontronite-Mg		0.0	0.056	# Mg.165Fe2Al.33Si3.67H2O12
+	Nontronite-Ca		0.0	0.056	# Ca.165Fe2Al.33Si3.67H2O12
+	Nontronite-K		0.0	0.0028	# K.33Fe2Al.33Si3.67H2O12
+	Nontronite-Na		0.0	0.056	# Na.33Fe2Al.33Si3.67H2O12
+	Clinochlore-14A		0.0	0.045 	# Mg5Al2Si3O10(OH)8
+	Daphnite-14A		0.0	0.034	# Fe5AlAlSi3O10(OH)8
+	Saponite-Ca		0.0	0.014	# Ca.165Mg3Al.33Si3.67O10(OH)2
+	Saponite-Na		0.0	0.022	# Na.33Mg3Al.33Si3.67O10(OH)2
+	Montmor-Ca		0.0	0.0056	# Ca.165Mg.33Al1.67Si4O10(OH)2
+	Montmor-K		0.0	0.0011	# K.33Mg.33Al1.67Si4O10(OH)2
+	Montmor-Na		0.0	0.0084	# Na.33Mg.33Al1.67Si4O10(OH)2
+	Clinoptilolite-Ca	0.0	0.0022	# Ca1.7335Al3.45Fe.017Si14.533O36:10.922H2O
+	Clinoptilolite-K	0.0	0.00056	# K3.467Al3.45Fe.017Si14.533O36:10.922H2O
+	Clinoptilolite-Na	0.0	0.0067	# Na3.467Al3.45Fe.017Si14.533O36:10.922H2O
+#Carbonates, sulfates, salts, oxides
+	Hydroxyapatite		0.0	0.010	# Ca5(OH)(PO4)3
+	Calcite			0.0	0.112	# CaCO3
+	Gypsum			0.0	0.022	# CaSO4:2H2O
+	Halite			0.0	0.0045	# NaCl
+	Albite			0.0	0.045	# NaAlSi3O8
+	Magnetite		0.0	0.077	# Fe3O4
+#Pyroxenes
+	Enstatite		0.0	0.212	# MgSiO3
+	Ferrosilite		0.0	0.095	# FeSiO3
+	Wollastonite		0.0	0.028	# CaSiO3
+	Na2SiO3			0.0	0.045	# Na2SiO3
+#Olivines
+	Forsterite		0.0	0.670	# Mg2SiO4
+	Fayalite		0.0	0.020	# Fe2SiO4
+	Tephroite		0.0	0.016	# Mn2SiO4, Allen & Mason 1973, proxy for substitution in olivine and sulfide
+	Chromite		0.0	0.031	# FeCr2O4, Metzler+1992
+	Mo			0.0	1.5e-5  # Mo
+#Sulfides
+#Tochilinite = troilite+brucite	0.0	0.078	# 6(Fe0.9S):5(Fe,Mg)(OH)2, Mg endmember
+	Brucite			0.0	0.39 	# Mg(OH)2, 6*0.078
+	Troilite		0.0	0.636	# FeS, 5*0.078+0.168
+	Millerite		0.0	0.196	# NiS, pentlandite proxy
+	Covellite		0.0	0.0018	# CuS
+	Sphalerite		0.0	0.0028	# ZnS
+#CAIs
+	Akermanite		0.0	0.025	# Ca2MgSi2O7
+	Gehlenite		0.0	0.0084	# Ca2Al2SiO7
+	Grossular		0.0	0.0017	# Ca3Al2(SiO4)3
+	Corundum		0.0	0.017	# Al2O3
+	Rutile			0.0	0.013	# TiO2
+#Organics (Alexander+ 98, 07, Helgeson+ 09, Busemann+ 06, Richard 01, Richard & Helgeson 98)
+	KerogenC515		0.0	2.8e-5	# C515H596O72
+	KerogenC128		0.0	0.0089	# C128H68O7
+	Pyridine		0.0	0.106	# C5H5N
+	[(6)(CB)(CB)S]		0.0	0.112	# Aromatic S
+	[(aro)-O-(aro)]		0.0	0.251	# Aromatic O
+#Trace elements measured by GRaND onboard Dawn (Prettyman, pers. comm.; Lodders 2003 Table 9)
+	B			0.0	5.5e-5	# B
+	Co			0.0	0.0097	# Co
+	EuO			0.0	4.95e-7	# EuO
+	Gd2O3			0.0	8.7e-7	# Gd2O3
+	Eucryptite		0.0	1.95e-4	# LiAlSiO4
+	Sc			0.0	1.8e-4	# Sc
+	Sm2O3			0.0	6.6e-7	# Sm2O3
+	Thorianite		0.0	1.7e-7	# ThO2
+	Uraninite		0.0	4.6e-8	# UO2
 #
-	#TOTAL	mass 1.02 kg, see “Starting rock compo” spreadsheet
+	#TOTAL	mass 1.00 kg, see “Starting rock compo” spreadsheet
 #
 #Phases allowed to precipitate
+	(NH4)2SO4		0	0	# (NH4)2SO4
+	(NH4)2SO4:2NH4NO3	0	0	# (NH4)2SO4:2NH4NO3
+	(NH4)2SO4:3NH4NO3	0	0	# (NH4)2SO4:3NH4NO3
+	(NH4)2SO4:Al2(SO4)3:24H2O	0	0	# (NH4)2SO4:Al2(SO4)3:24H2O
+	(NH4)2SO4:Cr2(SO4)3:24H2O	0	0	# (NH4)2SO4:Cr2(SO4)3:24H2O
+	(NH4)3H(SO4)2		0	0	# (NH4)3H(SO4)2
+	(UO2)2Cl3		0	0	# (UO2)2Cl3
+	(UO2)2P2O7		0	0	# (UO2)2P2O7
+	(UO2)3(PO4)2		0	0	# (UO2)3(PO4)2
+	(UO2)3(PO4)2:4H2O	0	0	# (UO2)3(PO4)2:4H2O
 	Afwillite		0	0	# Ca3Si2O4(OH)6
-	Akermanite		0	0	# Ca2MgSi2O7
 	Al			0	0	# Al
 	Al2(SO4)3		0	0	# Al2(SO4)3
 	Al2(SO4)3:6H2O		0	0	# Al2(SO4)3:6H2O
@@ -56,7 +123,6 @@ EQUILIBRIUM_PHASES 1 Ordinary chondrite
 	Alum-Na			0	0	# NaAl(SO4)2:12H2O
 	Alunite			0	0	# KAl3(OH)6(SO4)2
 	Alunogen		0	0	# Al2(SO4)3:17H2O
-	Amesite-14A		0	0	# Mg4Al4Si2O10(OH)8
 	Analcime		0	0	# Na.96Al.96Si2.04O6:H2O
 	Analcime-dehy		0	0	# Na.96Al.96Si2.04O6
 	Anatase			0	0	# TiO2
@@ -64,9 +130,9 @@ EQUILIBRIUM_PHASES 1 Ordinary chondrite
 	Andradite		0	0	# Ca3Fe2(SiO4)3
 	Anhydrite		0	0	# CaSO4
 	Annite			0	0	# KFe3AlSi3O10(OH)2
+	Anorthite		0	0	# CaAl2(SiO4)2
 	Antarcticite		0	0	# CaCl2:6H2O
 	Anthophyllite		0	0	# Mg7Si8O22(OH)2
-	Antigorite		0	0	# Mg48Si34O85(OH)62
 	Antlerite		0	0	# Cu3(SO4)(OH)4
 	Aphthitalite		0	0	# NaK3(SO4)2
 	Aragonite		0	0	# CaCO3
@@ -98,7 +164,6 @@ EQUILIBRIUM_PHASES 1 Ordinary chondrite
 	Bornite			0	0	# Cu5FeS4
 	Brezinaite		0	0	# Cr3S4
 	Brochantite		0	0	# Cu4(SO4)(OH)6
-	Brucite			0	0	# Mg(OH)2
 	Brushite		0	0	# CaHPO4:2H2O
 	Bunsenite		0	0	# NiO
 	Burkeite		0	0	# Na6CO3(SO4)2
@@ -114,7 +179,6 @@ EQUILIBRIUM_PHASES 1 Ordinary chondrite
 	Ca4Cl2(OH)6:13H2O	0	0	# Ca4Cl2(OH)6:13H2O
 	CaAl2O4			0	0	# CaAl2O4
 	CaAl2O4:10H2O		0	0	# CaAl2O4:10H2O
-	Calcite			0	0	# CaCO3
 	Carnallite		0	0	# KMgCl3:6H2O
 	CaSO4:0.5H2O(beta)	0	0	# CaSO4:0.5H2O
 	Cattierite		0	0	# CoS2
@@ -131,7 +195,6 @@ EQUILIBRIUM_PHASES 1 Ordinary chondrite
 	Chloromagnesite		0	0	# MgCl2
 	Chrysocolla		0	0	# CuSiH4O5
 	Chrysotile		0	0	# Mg3Si2O5(OH)4
-	Clinochlore-14A		0	0	# Mg5Al2Si3O10(OH)8
 	Clinochlore-7A		0	0	# Mg5Al2Si3O10(OH)8
 	Clinoptilolite-dehy-Ca	0	0	# Ca1.7335Al3.45Fe.017Si14.533O36
 	Clinoptilolite-dehy-K	0	0	# K3.467Al3.45Fe.017Si14.533O36
@@ -141,9 +204,6 @@ EQUILIBRIUM_PHASES 1 Ordinary chondrite
 	Clinoptilolite-hy-K	0	0	# K3.467Al3.45Fe.017Si14.533O36:7.499H2O
 	Clinoptilolite-hy-Na	0	0	# Na3.467Al3.45Fe.017Si14.533O36:10.877H2O
 	Clinoptilolite-NH4	0	0	# (NH4)3.467Al3.45Fe.017Si14.533O36:10.922H2O
-	Clinoptilolite-Ca	0	0	# Ca1.7335Al3.45Fe.017Si14.533O36:10.922H2O
-	Clinoptilolite-K	0	0	# K3.467Al3.45Fe.017Si14.533O36:10.922H2O
-	Clinoptilolite-Na	0	0	# Na3.467Al3.45Fe.017Si14.533O36:10.922H2O
 	Clinozoisite		0	0	# Ca2Al3Si3O12(OH)
 	Co(NO3)2		0	0	# Co(NO3)2
 	Co(OH)2			0	0	# Co(OH)2
@@ -162,7 +222,6 @@ EQUILIBRIUM_PHASES 1 Ordinary chondrite
 	Coquimbite		0	0	# Fe2(SO4)3:9H2O
 	Cordierite_anhyd	0	0	# Mg2Al4Si5O18
 	Cordierite_hydr		0	0	# Mg2Al4Si5O18:H2O
-	Corundum		0	0	# Al2O3
 	CoS			0	0	# CoS
 	CoSO4			0	0	# CoSO4
 	CoSO4.3Co(OH)2		0	0	# CoSO4(Co(OH)2)3
@@ -175,7 +234,6 @@ EQUILIBRIUM_PHASES 1 Ordinary chondrite
 	Cristobalite(beta)	0	0	# SiO2
 	CrO2			0	0	# CrO2
 	CrO3			0	0	# CrO3
-	Cronstedtite-7A		0	0	# Fe2Fe2SiO5(OH)4
 	CrS			0	0	# CrS
 	Cu			0	0	# Cu
 	Cu3(PO4)2		0	0	# Cu3(PO4)2
@@ -183,13 +241,13 @@ EQUILIBRIUM_PHASES 1 Ordinary chondrite
 	CuCl2			0	0	# CuCl2
 	CuCr2O4			0	0	# CuCr2O4
 	Cuprite			0	0	# Cu2O
-	Daphnite-14A		0	0	# Fe5AlAlSi3O10(OH)8
 	Daphnite-7A		0	0	# Fe5AlAlSi3O10(OH)8
 	Darapskite		0	0	# Na2SO4:NaNO3:2H2O
 	Dawsonite		0	0	# NaAlCO3(OH)2
 	Delafossite		0	0	# CuFeO2
 	Diaspore		0	0	# AlHO2
 	Dicalcium_silicate	0	0	# Ca2SiO4
+	Diopside		0	0	# CaMgSi2O6
 	Dioptase		0	0	# CuSiO2(OH)2
 	Dolomite		0	0	# CaMg(CO3)2
 	Dolomite-dis		0	0	# CaMg(CO3)2
@@ -218,6 +276,7 @@ EQUILIBRIUM_PHASES 1 Ordinary chondrite
 	EuPO4:10H2O		0	0	# EuPO4:10H2O
 	EuS			0	0	# EuS
 	EuSO4			0	0	# EuSO4
+	Fe			0	0	# Fe
 	Fe(OH)2			0	0	# Fe(OH)2
 	Fe2(SO4)3:2K2SO4:14H2O	0	0	# Fe2(SO4)3(K2SO4)2:14H2O
 	FeCl2:4H2O		0	0	# FeCl2:4H2O
@@ -241,20 +300,16 @@ EQUILIBRIUM_PHASES 1 Ordinary chondrite
 	Gd(OH)3(am)		0	0	# Gd(OH)3
 	Gd2(CO3)3		0	0	# Gd2(CO3)3
 	GdPO4:10H2O		0	0	# GdPO4:10H2O
-	Gehlenite		0	0	# Ca2Al2SiO7
 	Gibbsite		0	0	# Al(OH)3
 	Gismondine		0	0	# Ca2Al4Si4O16:9H2O
 	Glauberite		0	0	# Na2Ca(SO4)2
 	Goethite		0	0	# FeOOH
 	Greenalite		0	0	# Fe3Si2O5(OH)4
 	Grossite		0	0	# CaAl4O7
-	Grossular		0	0	# Ca3Al2(SiO4)3
-	Gypsum			0	0	# CaSO4:2H2O
 	Gyrolite		0	0	# Ca2Si3O7(OH)2:1.5H2O
 	H2SO4:4H2O		0	0	# H2SO4:4H2O
 	H2SO4:6.5H2O		0	0	# H2SO4:6.5H2O
 	Haiweeite		0	0	# Ca(UO2)2(Si2O5)3:5H2O
-	Halite			0	0	# NaCl
 	Halotrichite		0	0	# FeSO4:Al2(SO4)3:22H2O
 	Hatrurite		0	0	# Ca3SiO5
 	Hausmannite		0	0	# Mn3O4
@@ -278,11 +333,13 @@ EQUILIBRIUM_PHASES 1 Ordinary chondrite
 	Ice			0	0	# H2O
 	Ikaite			0	0	# CaCO3:6H2O
 	Illite			0	0	# K0.6Mg0.25Al1.8Al0.5Si3.5O10(OH)2
+	Ilmenite		0	0	# FeTiO3
 	Jadeite			0	0	# NaAl(SiO3)2
 	Jarosite		0	0	# KFe3(SO4)2(OH)6
 	Jarosite-H3O		0	0	# H3OFe3(SO4)2(OH)6
 	Jarosite-Na		0	0	# NaFe3(SO4)2(OH)6
 	K			0	0	# K
+	K-Feldspar		0	0	# KAlSi3O8
 	K2CO3:1.5H2O		0	0	# K2CO3:1.5H2O
 	K2O			0	0	# K2O
 	K2SO4:Al2(SO4)3:24H2O	0	0	# K2SO4:Al2(SO4)3:24H2O
@@ -298,8 +355,7 @@ EQUILIBRIUM_PHASES 1 Ordinary chondrite
 	Kaolinite		0	0	# Al2Si2O5(OH)4
 	Katoite			0	0	# Ca3Al2H12O12
 	KClO4			0	0	# KClO4
-	KerogenC515		0	0	# C515H596O72
-	KerogenC128		0	0	# C128H68O7
+	KerogenC292		0	0	# 
 	Kieserite		0	0	# MgSO4:H2O
 	KMgCl3			0	0	# KMgCl3
 	KMgCl3:2H2O		0	0	# KMgCl3:2H2O
@@ -321,7 +377,6 @@ EQUILIBRIUM_PHASES 1 Ordinary chondrite
 	Lopezite		0	0	# K2Cr2O7
 	Magnesiochromite	0	0	# MgCr2O4
 	Magnesite		0	0	# MgCO3
-	Magnetite		0	0	# Fe3O4
 	Malachite		0	0	# Cu2CO3(OH)2
 	Manganite		0	0	# MnO(OH)
 	Manganosite		0	0	# MnO
@@ -346,7 +401,6 @@ EQUILIBRIUM_PHASES 1 Ordinary chondrite
 	MgSO4:12H2O		0	0	# MgSO4:12H2O
 	MgUO4			0	0	# MgUO4
 	Mikasaite		0	0	# Fe2(SO4)3
-	Millerite		0	0	# NiS
 	Minnesotaite		0	0	# Fe3Si4O10(OH)2
 	Mirabilite		0	0	# Na2SO4:10H2O
 	Misenite		0	0	# K8H6(SO4)7
@@ -363,10 +417,7 @@ EQUILIBRIUM_PHASES 1 Ordinary chondrite
 	Molysite		0	0	# FeCl3
 	Monohydrocalcite	0	0	# CaCO3:H2O
 	Monticellite		0	0	# CaMgSiO4
-	Montmor-Ca		0	0	# Ca.165Mg.33Al1.67Si4O10(OH)2
-	Montmor-K		0	0	# K.33Mg.33Al1.67Si4O10(OH)2
 	Montmor-Mg		0	0	# Mg.495Al1.67Si4O10(OH)2
-	Montmor-Na		0	0	# Na.33Mg.33Al1.67Si4O10(OH)2
 	Mordenite		0	0	# Ca.2895Na.361Al.94Si5.06O12:3.468H2O
 	Mordenite-dehy		0	0	# Ca.2895Na.361Al.94Si5.06O12
 	Morenosite		0	0	# NiSO4:7H2O
@@ -377,7 +428,6 @@ EQUILIBRIUM_PHASES 1 Ordinary chondrite
 	Na2Cr2O7		0	0	# Na2Cr2O7
 	Na2CrO4			0	0	# Na2CrO4
 	Na2O			0	0	# Na2O
-	Na2SiO3			0	0	# Na2SiO3
 	Na2SO4:(NH4)2SO4:4H2O	0	0	# Na2SO4:(NH4)2SO4:4H2O
 	Na2SO4:Al2(SO4)3:24H2O	0	0	# Na2SO4:Al2(SO4)3:24H2O
 	Na2SO4:Cr2(SO4)3:24H2O	0	0	# Na2SO4:Cr2(SO4)3:24H2O
@@ -413,6 +463,7 @@ EQUILIBRIUM_PHASES 1 Ordinary chondrite
 	NH4HSO4			0	0	# NH4HSO4
 	NH4HSO4:NH4NO3		0	0	# NH4HSO4:NH4NO3
 	NH4NO3			0	0	# NH4NO3
+	Ni			0	0	# Ni
 	Ni(OH)2			0	0	# Ni(OH)2
 	Ni2P2O7			0	0	# Ni2P2O7
 	Ni2SiO4			0	0	# Ni2SiO4
@@ -427,10 +478,6 @@ EQUILIBRIUM_PHASES 1 Ordinary chondrite
 	NiSO4:6H2O(alpha)	0	0	# NiSO4:6H2O
 	Niter			0	0	# KNO3
 	Nontronite-H		0	0	# H.33Fe2Al.33Si3.67H2O12
-	Nontronite-Mg		0	0	# Mg.165Fe2Al.33Si3.67H2O12
-	Nontronite-Ca		0	0	# Ca.165Fe2Al.33Si3.67H2O12
-	Nontronite-K		0	0	# K.33Fe2Al.33Si3.67H2O12
-	Nontronite-Na		0	0	# Na.33Fe2Al.33Si3.67H2O12
 	Okenite			0	0	# CaSi2O4(OH)2:H2O
 	Oxychloride-Mg		0	0	# Mg2Cl(OH)3:4H2O
 	P			0	0	# P
@@ -462,15 +509,12 @@ EQUILIBRIUM_PHASES 1 Ordinary chondrite
 	Romerite		0	0	# Fe3(SO4)4:14H2O
 	Rozenite		0	0	# FeSO4:4H2O
 	Rutherfordine		0	0	# UO2CO3
-	Rutile			0	0	# TiO2
 	S			0	0	# S
 	Saleeite		0	0	# Mg(UO2)2(PO4)2
 	Sanidine_high		0	0	# KAlSi3O8
-	Saponite-Ca		0	0	# Ca.165Mg3Al.33Si3.67O10(OH)2
 	Saponite-H		0	0	# H.33Mg3Al.33Si3.67O10(OH)2
 	Saponite-K		0	0	# K.33Mg3Al.33Si3.67O10(OH)2
 	Saponite-Mg		0	0	# Mg3.165Al.33Si3.67O10(OH)2
-	Saponite-Na		0	0	# Na.33Mg3Al.33Si3.67O10(OH)2
 	Scacchite		0	0	# MnCl2
 	Schoepite		0	0	# UO3:2H2O
 	Schoepite-dehy(.393)	0	0	# UO3:.393H2O
@@ -491,7 +535,6 @@ EQUILIBRIUM_PHASES 1 Ordinary chondrite
 	Sm(OH)3(am)		0	0	# Sm(OH)3
 	Sm2(CO3)3		0	0	# Sm2(CO3)3
 	Sm2(SO4)3		0	0	# Sm2(SO4)3
-	Smectite-high-Fe-Mg	0	0	# Ca.025Na.1K.2Fe.5Fe.2Mg1.15Al1.25Si3.5H2O12
 	Smectite-low-Fe-Mg	0	0	# Ca.02Na.15K.2Fe.29Fe.16Mg.9Al1.25Si3.75H2O12
 	Smithsonite		0	0	# ZnCO3
 	SmPO4:10H2O		0	0	# SmPO4:10H2O
@@ -618,7 +661,6 @@ EQUILIBRIUM_PHASES 1 Ordinary chondrite
 	Weeksite		0	0	# K2(UO2)2(Si2O5)3:4H2O
 	Whitlockite		0	0	# Ca3(PO4)2
 	Willemite		0	0	# Zn2SiO4
-	Wollastonite		0	0	# CaSiO3
 	Wurtzite		0	0	# ZnS
 	Wustite			0	0	# Fe.947O
 	Xonotlite		0	0	# Ca6Si6O17(OH)2
@@ -649,7 +691,7 @@ EQUILIBRIUM_PHASES 1 Ordinary chondrite
 
 SELECTED_OUTPUT 1
 	
-	-file		/Users/marc/Documents/Research/2011-2016_ASU/2IcyDwarf/Git/IcyDwarf/IcyDwarf/PHREEQC-3.1.2/io/selectedIcyDwarf.out
+#	-file		/Users/marc/Documents/Research/2011-2016_ASU/2IcyDwarf/Git/IcyDwarf/IcyDwarf/PHREEQC-3.1.2/io/selectedIcyDwarf.out
 	-state 		false	
 	-solution 	false
 	-distance 	false
@@ -659,7 +701,7 @@ SELECTED_OUTPUT 1
 	-ionic_strength	true
 	-water		true
 	-totals 	Al B C Ca Cl Co Cr Cu Eu Fe Gd K Li Mg Mn Mo N Na Ni P S Sc Si Sm Th Ti U Zn
-	-molalities 	OH- H+ H2O AlO2- NaAlO2 HAlO2 Al(OH)2+ AlOH+2 Al(SO4)2- AlSO4+ AlHPO4+ Al+3 Al2(OH)2+4 AlH2PO4+2 AlCH3COO+2 Al3(OH)4+5 Al(CH3COO)2+ Al13O4(OH)24+7 BH4- BO2- B(OH)3 NaB(OH)4 CaB(OH)4+ MgB(OH)4+ B2O(OH)5- C2H4 C2H6 CH4 CO CO3-2 HCO3- CaCO3 NaCO3- NaHCO3 CO2 HCOO- MnCO3 UO2(CO3)3-4 CaHCO3+ MgCO3 EuOH(CO3)2-2 UO2(CO3)3-5 Eu(OH)2CO3- FeCO3 MgHCO3+ EuOHCO3 MnHCO3+ Eu(CO3)3-3 Sm(CO3)2- Gd(CO3)2- U(CO3)5-6 UO2(CO3)2-2 FeHCO3+ Eu(CO3)2- HCOOH SmCO3+ GdCO3+ EuCO3+ CO(NH2)2 SCN- ScCH3COO+2 CH3COO- ZnCO3 U(CO3)4-4 SmHCO3+2 NaCH3COO ZnHCO3+ GdHCO3+2 LiCH3COO UO2CO3 CH3OH EuHCO3+2 CN- CH3COOH KCH3COO CaCH3COO+ CH2O Cu(CO3)2-2 CuCO3(OH)2-2 NH4CH3COO HCN CuCO3 MnCH3COO+ MgCH3COO+ CoCH3COO+ FeCO3+ (UO2)2CO3(OH)3- FeCH3COO+ CH3CH2OH (UO2)3(CO3)6-6 NiCH3COO+ Sc(CH3COO)2+ SmCH3COO+2 ZnCH3COO+ GdCH3COO+2 EuCH3COO+2 CuCH3COO Li(CH3COO)2- Na(CH3COO)2- Ca(CH3COO)2 K(CH3COO)2- NH4(CH3COO)2- Mn(CH3COO)2 AlCH3COO+2 Mg(CH3COO)2 Co(CH3COO)2 UO2SCN+ CuCH3COO+ Fe(CH3COO)2 Ni(CH3COO)2 Sc(CH3COO)3 Zn(CH3COO)2 Sm(CH3COO)2+ Gd(CH3COO)2+ Eu(CH3COO)2+ Zn(SCN)2 Cu(CH3COO)2- (UO2)3(OH)5CO2+ (UO2)3O(OH)2(HCO3)+ Mn(CH3COO)3- Al(CH3COO)2+ UO2(SCN)2 Co(CH3COO)3- Cu(CH3COO)2 USCN+3 Ni(CH3COO)3- Sm(CH3COO)3 Gd(CH3COO)3 Zn(CH3COO)3- Eu(CH3COO)3 UO2(SCN)3- Cu(CH3COO)3- Zn(SCN)4-2 Zn(CN)4-2 (UO2)11(CO3)6(OH)12-2 CaSO4 CaCO3 Ca+2 CaPO4- CaHCO3+ CaB(OH)4+ CaCl+ CaHPO4 CaOH+ CaCl2 CaP2O7-2 CaH2PO4+ CaCH3COO+ Ca(CH3COO)2 CaNO3+ Cl- NaCl LiCl KCl CaCl+ MnCl+ CaCl2 MgCl+ CoCl+ HCl FeCl+ MnCl3- EuCl+ CuCl2- EuCl2 CuCl3-2 Zn(OH)Cl EuCl3- ZnCl+ FeCl2 EuCl4-2 NiCl+ SmCl+2 GdCl+2 FeCl4-2 EuCl+2 ZnCl2 SmCl2+ GdCl2+ ZnCl3- EuCl2+ ZnCl4-2 SmCl3 GdCl3 EuCl3 GdCl4- SmCl4- UO2Cl+ EuCl4- CuCl+ UO2Cl2 CrCl+2 CuCl2 CrCl2+ FeCl+2 FeCl2+ CuCl4-2 FeCl4- ThCl+3 CrO3Cl- ThCl2+2 UCl+3 ThCl3+ ThCl4 ClO- HClO ClO2- HClO2 ClO3- UO2ClO3+ ClO4- ZnClO4+ HCoO2- Co(HS)2 CoHS+ Co(OH)2 Co+2 CoSO4 CoCl+ Co(OH)4-2 CoS2O3 Co2OH+3 CoCH3COO+ Co4(OH)4+4 Co(CH3COO)2 Co(CH3COO)3- CoNO3+ Co+3 Cr+2 Cr(OH)4- Cr(OH)3 Cr(OH)2+ CrOH+2 Cr+3 CrCl+2 CrCl2+ Cr2(OH)2+4 Cr3(OH)4+5 CrO4-3 CrO4-2 HCrO4- H2CrO4 CrO3Cl- Cr2O7-2 CuCl2- CuCl3-2 Cu+ CuCH3COO Cu(CH3COO)2- Cu(CO3)2-2 CuCO3(OH)2-2 CuCO3 CuO2-2 CuOH+ CuPO4- CuSO4 Cu+2 CuNH3+2 CuHPO4 CuCl+ Cu(NH3)2+2 CuCl2 Cu(NH3)3+2 CuH2PO4+ CuCl4-2 CuCH3COO+ Cu(CH3COO)2 CuNO2+ Cu(CH3COO)3- Cu(NO2)2 Eu+2 EuCl+ EuCl2 EuCl3- EuCl4-2 EuO2- EuO2H EuOH(CO3)2-2 Eu(OH)2CO3- EuOHCO3 Eu(CO3)3-3 Eu(PO4)2-3 EuO+ Eu(CO3)2- EuOH+2 Eu(SO4)2- EuCO3+ EuPO4 EuSO4+ Eu+3 EuHCO3+2 EuHPO4+ EuCl+2 Eu(HPO4)2- EuCl2+ Eu2(OH)2+4 EuCl3 EuH2PO4+2 EuCl4- EuCH3COO+2 Eu(CH3COO)2+ Eu(CH3COO)3 EuNO3+2 Fe(OH)3- FeOH+ FeCO3 FeSO4 FePO4- Fe+2 Fe(OH)2 FeHCO3+ FeHPO4 FeCl+ Fe(OH)4-2 FeCl2 FeCl4-2 FeH2PO4+ FeCH3COO+ Fe(CH3COO)2 Fe(OH)4- Fe(OH)3 Fe(OH)2+ FeOH+2 FeCO3+ FeHPO4+ FeSO4+ Fe(SO4)2- Fe+3 FeCl+2 FeCl2+ FeCl4- FeH2PO4+2 Fe2(OH)2+4 Fe3(OH)4+5 FeNO2+2 FeNO3+2 Gd+2 GdO2- GdO2H Gd(PO4)2-3 GdO+ Gd(CO3)2- GdOH+2 GdPO4 GdCO3+ Gd(SO4)2- Gd+3 GdHCO3+2 GdCl+2 Gd(HPO4)2- GdSO4+ GdCl2+ GdCl3 GdH2PO4+2 GdCl4- GdCH3COO+2 Gd(CH3COO)2+ Gd(CH3COO)3 GdNO3+2 GdHPO4+ H2 KSO4- K+ KCl KOH KHPO4- KP2O7-3 KHSO4 KCH3COO K(CH3COO)2- LiSO4- Li+ LiCl LiOH LiCH3COO Li(CH3COO)2- MgSO4 MgCO3 Mg+2 MgPO4- MgHCO3+ MgCl+ MgB(OH)4+ MgHPO4 MgP2O7-2 MgH2PO4+ MgCH3COO+ Mg4(OH)4+4 Mg(CH3COO)2 MnSO4 MnCO3 Mn+2 MnPO4- MnOH+ MnCl+ Mn(OH)2 MnHPO4 MnHCO3+ Mn2(OH)3+ Mn(OH)3- Mn(OH)4-2 MnCl3- MnH2PO4+ Mn2OH+3 MnCH3COO+ Mn(CH3COO)2 Mn(CH3COO)3- MnNO3+ Mn(NO3)2 Mn+3 MnO4-2 MnO4- MoO4-2 N3- HN3 ZnN3+ UO2N3+ Zn(N3)2 UO2(N3)2 UO2(N3)3- UO2(N3)4-2 NH3 NH4+ NH4SO4- CO(NH2)2 SCN- Zn(NH3)+2 Ni(NH3)2+2 CN- Zn(NH3)2+2 NH4CH3COO HCN Zn(NH3)3+2 CuNH3+2 Zn(NH3)4+2 Cu(NH3)2+2 Cu(NH3)3+2 Ni(NH3)6+2 NH4(CH3COO)2- UO2SCN+ Zn(SCN)2 UO2(SCN)2 USCN+3 UO2(SCN)3- Zn(SCN)4-2 Zn(CN)4-2 N2 NO2- HNO2 CuNO2+ FeNO2+2 Cu(NO2)2 NO3- CaNO3+ MnNO3+ HNO3 CoNO3+ NiNO3+ SmNO3+2 GdNO3+2 EuNO3+2 UO2NO3+ FeNO3+2 UNO3+3 Mn(NO3)2 Ni(NO3)2 U(NO3)2+2 NaSO4- Na+ NaHSiO3 NaCl NaOH NaCO3- NaHCO3 NaAlO2 NaB(OH)4 NaHPO4- NaP2O7-3 Na2P2O7-2 NaHP2O7-2 NaCH3COO Na(CH3COO)2- NiSO4 Ni(OH)2 Ni+2 Ni(OH)3- NiCl+ Ni(NH3)2+2 NiP2O7-2 NiHP2O7- Ni2OH+3 NiCH3COO+ Ni(NH3)6+2 Ni(CH3COO)2 Ni4(OH)4+4 Ni(CH3COO)3- NiNO3+ Ni(NO3)2 HCOO- HCOOH ScCH3COO+2 CH3COO- NaCH3COO LiCH3COO CH3OH CN- CH3COOH KCH3COO CaCH3COO+ CH2O NH4CH3COO HCN MnCH3COO+ MgCH3COO+ CoCH3COO+ FeCH3COO+ CH3CH2OH NiCH3COO+ Sc(CH3COO)2+ SmCH3COO+2 ZnCH3COO+ GdCH3COO+2 EuCH3COO+2 CuCH3COO Li(CH3COO)2- Na(CH3COO)2- Ca(CH3COO)2 K(CH3COO)2- NH4(CH3COO)2- Mn(CH3COO)2 AlCH3COO+2 Mg(CH3COO)2 Co(CH3COO)2 CuCH3COO+ Fe(CH3COO)2 Ni(CH3COO)2 Sc(CH3COO)3 Zn(CH3COO)2 Sm(CH3COO)2+ Gd(CH3COO)2+ Eu(CH3COO)2+ Cu(CH3COO)2- O2 Mn(CH3COO)3- Al(CH3COO)2+ Co(CH3COO)3- Cu(CH3COO)2 Ni(CH3COO)3- Sm(CH3COO)3 Gd(CH3COO)3 Zn(CH3COO)3- Eu(CH3COO)3 Cu(CH3COO)3- Zn(CN)4-2 PH4+ PO4-3 HPO4-2 P2O7-4 CaPO4- H2PO4- MnPO4- CaHPO4 KHPO4- NaHPO4- MgPO4- HP2O7-3 Sm(PO4)2-3 Gd(PO4)2-3 MnHPO4 NaP2O7-3 Eu(PO4)2-3 MgHPO4 KP2O7-3 FePO4- CaP2O7-2 Na2P2O7-2 MgP2O7-2 FeHPO4 SmPO4 NaHP2O7-2 GdPO4 EuPO4 H3PO4 H2P2O7-2 MnH2PO4+ ZnPO4- SmHPO4+ EuHPO4+ UO2PO4- ZnHPO4 Sm(HPO4)2- Gd(HPO4)2- CaH2PO4+ Eu(HPO4)2- NiP2O7-2 MgH2PO4+ UO2HPO4 H3P2O7- SmH2PO4+2 GdH2PO4+2 AlHPO4+ EuH2PO4+2 FeH2PO4+ Th(HPO4)3-2 CuPO4- NiHP2O7- FeHPO4+ Th(HPO4)2 CuHPO4 UO2H2PO4+ H4P2O7 ZnH2PO4+ CuH2PO4+ ThHPO4+2 UO2(H2PO4)2 AlH2PO4+2 UO2H3PO4+2 FeH2PO4+2 ThH2PO4+3 UO2(H2PO4)(H3PO4)+ Th(H2PO4)2+2 ThH3PO4+4 GdHPO4+ S-2 HS- H2S Co(HS)2 CoHS+ S2-2 S3-2 SCN- S4-2 S5-2 UO2SCN+ Zn(SCN)2 UO2(SCN)2 USCN+3 UO2(SCN)3- Zn(SCN)4-2 S2O3-2 HS2O3- CoS2O3 UO2S2O3 S2O4-2 SO3-2 HSO3- SO2 H2SO3 UO2SO3 S2O6-2 S4O6-2 UO2(SO3)2-2 S3O6-2 S5O6-2 S2O5-2 SO4-2 NaSO4- LiSO4- KSO4- CaSO4 MgSO4 MnSO4 HSO4- CoSO4 FeSO4 KHSO4 NH4SO4- NiSO4 Eu(SO4)2- Sm(SO4)2- SmSO4+ Gd(SO4)2- ZnSO4 EuSO4+ UO2(SO4)2-2 H2SO4 GdSO4+ Al(SO4)2- UO2SO4 AlSO4+ CuSO4 FeSO4+ Fe(SO4)2- Th(SO4)4-4 Th(SO4)2 Th(SO4)3-2 ThSO4+2 U(SO4)2 USO4+2 S2O8-2 HSO5- Sc+3 ScCH3COO+2 Sc(CH3COO)2+ Sc(CH3COO)3 HSiO3- SiO2 NaHSiO3 H2SiO4-2 H4(H2SiO4)4-4 H6(H2SiO4)4-2 Sm+2 SmO2- SmO2H SmO+ Sm(PO4)2-3 Sm(CO3)2- SmOH+2 SmCO3+ SmPO4 Sm(SO4)2- SmSO4+ Sm+3 SmHCO3+2 SmHPO4+ SmCl+2 Sm(HPO4)2- SmCl2+ SmCl3 SmH2PO4+2 SmCl4- SmCH3COO+2 Sm(CH3COO)2+ Sm(CH3COO)3 SmNO3+2 Th(OH)4 Th(OH)3+ Th(HPO4)3-2 Th(OH)2+2 Th(HPO4)2 Th(SO4)4-4 Th(SO4)2 Th(SO4)3-2 ThOH+3 ThSO4+2 ThHPO4+2 Th+4 ThCl+3 ThH2PO4+3 ThCl2+2 ThCl3+ ThCl4 Th(H2PO4)2+2 ThH3PO4+4 Th2(OH)2+6 Th4(OH)8+8 Th6(OH)15+9 Ti(OH)4 U+3 U(OH)4 U(CO3)5-6 U(CO3)4-4 UOH+3 U(SO4)2 USO4+2 U+4 UCl+3 USCN+3 UNO3+3 U(NO3)2+2 UO2(CO3)3-5 UO2+ UO2(CO3)3-4 UO2(CO3)2-2 UO2(OH)3- UO2(OH)2 UO2(OH)4-2 UO2CO3 UO2PO4- UO2OH+ UO2(SO4)2-2 UO2SO4 UO2HPO4 UO2+2 (UO2)2CO3(OH)3- UO2Cl+ UO2SO3 (UO2)3(CO3)6-6 UO2H2PO4+ UO2Cl2 UO2S2O3 UO2(SO3)2-2 UO2(H2PO4)2 (UO2)2(OH)2+2 UO2H3PO4+2 (UO2)3(OH)7- UO2SCN+ (UO2)3(OH)5+ (UO2)2OH+3 UO2(H2PO4)(H3PO4)+ (UO2)3(OH)4+2 (UO2)3(OH)5CO2+ (UO2)3O(OH)2(HCO3)+ UO2(SCN)2 (UO2)4(OH)7+ UO2N3+ UO2(SCN)3- UO2NO3+ UO2(N3)2 UO2ClO3+ UO2(N3)3- (UO2)11(CO3)6(OH)12-2 UO2(N3)4-2 Zn(OH)2 ZnOH+ ZnSO4 Zn(OH)3- ZnCO3 Zn(OH)4-2 Zn(OH)Cl ZnPO4- Zn+2 ZnCl+ ZnHCO3+ Zn(NH3)+2 ZnHPO4 ZnCl2 ZnCl3- Zn(NH3)2+2 ZnCl4-2 Zn(NH3)3+2 Zn(NH3)4+2 ZnCH3COO+ ZnH2PO4+ Zn(CH3COO)2 Zn(SCN)2 ZnN3+ Zn(CH3COO)3- Zn(SCN)4-2 Zn(CN)4-2 Zn(N3)2 ZnClO4+
+	-molalities 	OH-	H+	H2O	AlO2-	NaAlO2	HAlO2	Al(OH)2+	AlOH+2	Al(SO4)2-	AlSO4+	AlHPO4+	Al+3	Al2(OH)2+4	AlH2PO4+2	AlCH3COO+2	Al3(OH)4+5	Al(CH3COO)2+	Al13O4(OH)24+7	BH4-	BO2-	B(OH)3	NaB(OH)4	CaB(OH)4+	MgB(OH)4+	B2O(OH)5-	C2H4	C2H6	CH4	CO	CO3-2	HCO3-	CaCO3	NaCO3-	NaHCO3	CO2	HCOO-	MnCO3	UO2(CO3)3-4	CaHCO3+	MgCO3	EuOH(CO3)2-2	UO2(CO3)3-5	Eu(OH)2CO3-	FeCO3	MgHCO3+	EuOHCO3	MnHCO3+	Eu(CO3)3-3	Sm(CO3)2-	Gd(CO3)2-	U(CO3)5-6	UO2(CO3)2-2	FeHCO3+	Eu(CO3)2-	HCOOH	SmCO3+	GdCO3+	EuCO3+	CO(NH2)2	SCN-	ScCH3COO+2	CH3COO-	ZnCO3	U(CO3)4-4	SmHCO3+2	NaCH3COO	ZnHCO3+	GdHCO3+2	LiCH3COO	UO2CO3	CH3OH	EuHCO3+2	CN-	CH3COOH	KCH3COO	CaCH3COO+	CH2O	Cu(CO3)2-2	CuCO3(OH)2-2	NH4CH3COO	HCN	CuCO3	MnCH3COO+	MgCH3COO+	CoCH3COO+	FeCO3+	(UO2)2CO3(OH)3-	FeCH3COO+	CH3CH2OH	(UO2)3(CO3)6-6	NiCH3COO+	Sc(CH3COO)2+	SmCH3COO+2	ZnCH3COO+	GdCH3COO+2	EuCH3COO+2	CuCH3COO	Li(CH3COO)2-	Na(CH3COO)2-	Ca(CH3COO)2	K(CH3COO)2-	NH4(CH3COO)2-	Mn(CH3COO)2	Mg(CH3COO)2	Co(CH3COO)2	UO2SCN+	CuCH3COO+	Fe(CH3COO)2	Ni(CH3COO)2	Sc(CH3COO)3	Zn(CH3COO)2	Sm(CH3COO)2+	Gd(CH3COO)2+	Eu(CH3COO)2+	Zn(SCN)2	Cu(CH3COO)2-	(UO2)3(OH)5CO2+	(UO2)3O(OH)2(HCO3)+	Mn(CH3COO)3-	UO2(SCN)2	Co(CH3COO)3-	Cu(CH3COO)2	USCN+3	Ni(CH3COO)3-	Sm(CH3COO)3	Gd(CH3COO)3	Zn(CH3COO)3-	Eu(CH3COO)3	UO2(SCN)3-	Cu(CH3COO)3-	Zn(SCN)4-2	Zn(CN)4-2	(UO2)11(CO3)6(OH)12-2	CaSO4	Ca+2	CaPO4-	CaCl+	CaHPO4	CaOH+	CaCl2	CaP2O7-2	CaH2PO4+	CaNO3+	Cl-	NaCl	LiCl	KCl	MnCl+	MgCl+	CoCl+	HCl	FeCl+	MnCl3-	EuCl+	CuCl2-	EuCl2	CuCl3-2	Zn(OH)Cl	EuCl3-	ZnCl+	FeCl2	EuCl4-2	NiCl+	SmCl+2	GdCl+2	FeCl4-2	EuCl+2	ZnCl2	SmCl2+	GdCl2+	ZnCl3-	EuCl2+	ZnCl4-2	SmCl3	GdCl3	EuCl3	GdCl4-	SmCl4-	UO2Cl+	EuCl4-	CuCl+	UO2Cl2	CrCl+2	CuCl2	CrCl2+	FeCl+2	FeCl2+	CuCl4-2	FeCl4-	ThCl+3	CrO3Cl-	ThCl2+2	UCl+3	ThCl3+	ThCl4	ClO-	HClO	ClO2-	HClO2	ClO3-	UO2ClO3+	ClO4-	ZnClO4+	HCoO2-	Co(HS)2	CoHS+	Co(OH)2	Co+2	CoSO4	Co(OH)4-2	CoS2O3	Co2OH+3	Co4(OH)4+4	CoNO3+	Co+3	Cr+2	Cr(OH)4-	Cr(OH)3	Cr(OH)2+	CrOH+2	Cr+3	Cr2(OH)2+4	Cr3(OH)4+5	CrO4-3	CrO4-2	HCrO4-	H2CrO4	Cr2O7-2	Cu+	CuO2-2	CuOH+	CuPO4-	CuSO4	Cu+2	CuNH3+2	CuHPO4	Cu(NH3)2+2	Cu(NH3)3+2	CuH2PO4+	CuNO2+	Cu(NO2)2	Eu+2	EuO2-	EuO2H	Eu(PO4)2-3	EuO+	EuOH+2	Eu(SO4)2-	EuPO4	EuSO4+	Eu+3	EuHPO4+	Eu(HPO4)2-	Eu2(OH)2+4	EuH2PO4+2	EuNO3+2	Fe(OH)3-	FeOH+	FeSO4	FePO4-	Fe+2	Fe(OH)2	FeHPO4	Fe(OH)4-2	FeH2PO4+	Fe(OH)4-	Fe(OH)3	Fe(OH)2+	FeOH+2	FeHPO4+	FeSO4+	Fe(SO4)2-	Fe+3	FeH2PO4+2	Fe2(OH)2+4	Fe3(OH)4+5	FeNO2+2	FeNO3+2	Gd+2	GdO2-	GdO2H	Gd(PO4)2-3	GdO+	GdOH+2	GdPO4	Gd(SO4)2-	Gd+3	Gd(HPO4)2-	GdSO4+	GdH2PO4+2	GdNO3+2	GdHPO4+	H2	KSO4-	K+	KOH	KHPO4-	KP2O7-3	KHSO4	LiSO4-	Li+	LiOH	MgSO4	Mg+2	MgPO4-	MgHPO4	MgP2O7-2	MgH2PO4+	Mg4(OH)4+4	MnSO4	Mn+2	MnPO4-	MnOH+	Mn(OH)2	MnHPO4	Mn2(OH)3+	Mn(OH)3-	Mn(OH)4-2	MnH2PO4+	Mn2OH+3	MnNO3+	Mn(NO3)2	Mn+3	MnO4-2	MnO4-	MoO4-2	N3-	HN3	ZnN3+	UO2N3+	Zn(N3)2	UO2(N3)2	UO2(N3)3-	UO2(N3)4-2	NH3	NH4+	NH4SO4-	Zn(NH3)+2	Ni(NH3)2+2	Zn(NH3)2+2	Zn(NH3)3+2	Zn(NH3)4+2	Ni(NH3)6+2	N2	NO2-	HNO2	NO3-	HNO3	NiNO3+	SmNO3+2	UO2NO3+	UNO3+3	Ni(NO3)2	U(NO3)2+2	NaSO4-	Na+	NaHSiO3	NaOH	NaHPO4-	NaP2O7-3	Na2P2O7-2	NaHP2O7-2	NiSO4	Ni(OH)2	Ni+2	Ni(OH)3-	NiP2O7-2	NiHP2O7-	Ni2OH+3	Ni4(OH)4+4	O2	PH4+	PO4-3	HPO4-2	P2O7-4	H2PO4-	HP2O7-3	Sm(PO4)2-3	SmPO4	H3PO4	H2P2O7-2	ZnPO4-	SmHPO4+	UO2PO4-	ZnHPO4	Sm(HPO4)2-	UO2HPO4	H3P2O7-	SmH2PO4+2	Th(HPO4)3-2	Th(HPO4)2	UO2H2PO4+	H4P2O7	ZnH2PO4+	ThHPO4+2	UO2(H2PO4)2	UO2H3PO4+2	ThH2PO4+3	UO2(H2PO4)(H3PO4)+	Th(H2PO4)2+2	ThH3PO4+4	S-2	HS-	H2S	S2-2	S3-2	S4-2	S5-2	S2O3-2	HS2O3-	UO2S2O3	S2O4-2	SO3-2	HSO3-	SO2	H2SO3	UO2SO3	S2O6-2	S4O6-2	UO2(SO3)2-2	S3O6-2	S5O6-2	S2O5-2	SO4-2	HSO4-	Sm(SO4)2-	SmSO4+	ZnSO4	UO2(SO4)2-2	H2SO4	UO2SO4	Th(SO4)4-4	Th(SO4)2	Th(SO4)3-2	ThSO4+2	U(SO4)2	USO4+2	S2O8-2	HSO5-	Sc+3	HSiO3-	SiO2	H2SiO4-2	H4(H2SiO4)4-4	H6(H2SiO4)4-2	Sm+2	SmO2-	SmO2H	SmO+	SmOH+2	Sm+3	Th(OH)4	Th(OH)3+	Th(OH)2+2	ThOH+3	Th+4	Th2(OH)2+6	Th4(OH)8+8	Th6(OH)15+9	Ti(OH)4	U+3	U(OH)4	UOH+3	U+4	UO2+	UO2(OH)3-	UO2(OH)2	UO2(OH)4-2	UO2OH+	UO2+2	(UO2)2(OH)2+2	(UO2)3(OH)7-	(UO2)3(OH)5+	(UO2)2OH+3	(UO2)3(OH)4+2	(UO2)4(OH)7+	Zn(OH)2	ZnOH+	Zn(OH)3-	Zn(OH)4-2	Zn+2
 	-equilibrium_phases   	(NH4)2SO4 (NH4)2SO4:2NH4NO3 (NH4)2SO4:3NH4NO3 (NH4)2SO4:Al2(SO4)3:24H2O (NH4)2SO4:Cr2(SO4)3:24H2O (NH4)3H(SO4)2 (UO2)2Cl3 (UO2)2P2O7 (UO2)3(PO4)2 (UO2)3(PO4)2:4H2O [(6)(CB)(CB)S] [(aro)-O-(aro)] Afwillite Akermanite Al Al2(SO4)3 Al2(SO4)3:6H2O Alabandite Albite Albite_high Albite_low Alum-K Alum-Na Alunite Alunogen Amesite-14A Analcime Analcime-dehy Anatase Andalusite Andradite Anhydrite Annite Anorthite Antarcticite Anthophyllite Antigorite Antlerite Aphthitalite Aragonite Arcanite Artinite Atacamite Autunite-H Azurite B B2O3 Bassanite Bassetite Beidellite-Ca Beidellite-H Beidellite-K Beidellite-Mg Beidellite-Na Berlinite Bieberite Bilinite Birnessite Bischofite Bixbyite Bloedite Boehmite Boltwoodite Boltwoodite-Na Borax Boric_acid Bornite Brezinaite Brochantite Brucite Brushite Bunsenite Burkeite C Ca Ca-Al_Pyroxene Ca2Al2O5:8H2O Ca2Cl2(OH)2:H2O Ca3Al2O6 Ca4Al2Fe2O10 Ca4Al2O7:13H2O Ca4Al2O7:19H2O Ca4Cl2(OH)6:13H2O CaAl2O4 CaAl2O4:10H2O Calcite Carnallite CaSO4:0.5H2O(beta) Cattierite CaUO4 Cejkaite Celadonite Chalcanthite Chalcedony Chalcocite Chalcocyanite Chalcopyrite Chamosite-7A Chloraluminite Chloromagnesite Chromite Chrysocolla Chrysotile Clinochlore-14A Clinochlore-7A Clinoptilolite-Ca Clinoptilolite-dehy-Ca Clinoptilolite-dehy-K Clinoptilolite-dehy-Na Clinoptilolite-dehy-NH4 Clinoptilolite-hy-Ca Clinoptilolite-hy-K Clinoptilolite-hy-Na Clinoptilolite-K Clinoptilolite-Na Clinoptilolite-NH4 Clinozoisite Co Co(NO3)2 Co(OH)2 Co2SiO4 Co3(PO4)2 CoCl2 CoCl2:2H2O CoCl2:6H2O Coesite CoFe2O4 Coffinite CoHPO4 Colemanite CoO Copiapite Coquimbite Cordierite_anhyd Cordierite_hydr Corundum CoS CoSO4 CoSO4.3Co(OH)2 CoSO4:6H2O CoSO4:H2O Covellite Cr Cr2(SO4)3:16H2O CrCl3 Cristobalite(alpha) Cristobalite(beta) CrO2 CrO3 Cronstedtite-7A CrS Cu Cu3(PO4)2 Cu3(PO4)2:3H2O CuCl2 CuCr2O4 Cuprite Daphnite-14A Daphnite-7A Darapskite Dawsonite Delafossite Diaspore Dicalcium_silicate Diopside Dioptase Dolomite Dolomite-dis Dolomite-ord Enstatite Epidote Epidote-ord Epsomite Erythrosiderite Eskolaite Ettringite Eu Eu(NO3)3:6H2O Eu(OH)2.5Cl.5 Eu(OH)2Cl Eu(OH)3 Eu2(CO3)3:3H2O Eu2(SO4)3:8H2O Eu2O3(cubic) Eu2O3(monoclinic) Eu3O4 EuCl2 EuCl3 EuCl3:6H2O Eucryptite EuO EuOCl EuOHCO3 EuPO4:10H2O EuS EuSO4 Fayalite Fe Fe(OH)2 Fe2(SO4)3:2K2SO4:14H2O FeCl2:4H2O FeCl2:6H2O FeCl3:10H2O FeO Ferricopiapite Ferrihydrite Ferrite-Ca Ferrite-Cu Ferrite-Dicalcium Ferrite-Mg Ferrite-Zn Ferrosilite FeSO4 FeSO4:K2SO4:6H2O FeSO4:Na2SO4:4H2O Forsterite Foshagite Gaylussite Gd Gd(OH)3 Gd(OH)3(am) Gd2(CO3)3 Gd2O3 GdPO4:10H2O Gehlenite Gibbsite Gismondine Glauberite Goethite Greenalite Grossite Grossular Gypsum Gyrolite H2SO4:4H2O H2SO4:6.5H2O Haiweeite Halite Halotrichite Hatrurite Hausmannite HCl:3H2O HCl:6H2O Heazlewoodite Hedenbergite Hematite Hercynite Hexahydrite Hillebrandite HNO3:3H2O Hopeite Huntite Hydroboracite Hydrohalite Hydromagnesite Hydromolysite Hydrophilite Hydroxyapatite Hydrozincite Ice Ikaite Illite Ilmenite Jadeite Jarosite Jarosite-H3O Jarosite-Na K K-Feldspar K2CO3:1.5H2O K2O K2SO4:Al2(SO4)3:24H2O K2SO4:Cr2(SO4)3:24H2O K2UO4 K3H(SO4)2 K5H3(SO4)4 K8H4(CO3)6:3H2O Kainite KAl(SO4)2 Kalicinite Kalsilite Kaolinite Katoite KClO4 KerogenC128 KerogenC292 KerogenC515 Kieserite KMgCl3 KMgCl3:2H2O KNaCO3:6H2O Kornelite Korshunovskite Kyanite Lansfordite Larnite Laumontite Lawrencite Lawsonite Leonite Lepidocrocite Li Li2UO4 Lime Linnaeite Lopezite Magnesiochromite Magnesite Magnetite Malachite Manganite Manganosite Margarite Maximum_Microcline Mayenite Melanterite Mercallite Merwinite Mesolite Mg Mg(ClO4)2:6H2O Mg1.25SO4(OH)0.5:0.5H2O Mg1.5SO4(OH) MgCl2:12H2O MgCl2:2H2O MgCl2:4H2O MgCl2:8H2O MgCl2:H2O MgOHCl MgSO4 MgSO4:12H2O MgUO4 Mikasaite Millerite Minnesotaite Mirabilite Misenite Mn Mn(OH)2(am) Mn(OH)3 Mn3(PO4)2 MnCl2:2H2O MnCl2:4H2O MnCl2:H2O MnHPO4 MnO2(gamma) MnSO4 Mo Molysite Monohydrocalcite Monticellite Montmor-Ca Montmor-K Montmor-Mg Montmor-Na Mordenite Mordenite-dehy Morenosite Muscovite Na Na2CO3 Na2CO3:7H2O Na2Cr2O7 Na2CrO4 Na2O Na2SiO3 Na2SO4:(NH4)2SO4:4H2O Na2SO4:Al2(SO4)3:24H2O Na2SO4:Cr2(SO4)3:24H2O Na2SO4:NaNO3:H2O Na2SO4:NiSO4:4H2O Na2U2O7 Na2UO4(alpha) Na3H(SO4)2 Na3UO4 Na4Ca(SO4)3:2H2O Na4SiO4 Na6Si2O7 NaClO4 NaClO4:H2O NaFeO2 NaH3(SO4)2:H2O Nahcolite NaHSO4 Nantokite Natroalunite Natrolite Natron Natrosilite NaUO3 Nepheline Nesquehonite NH4-feldspar NH4-muscovite NH4Cl NH4Cl:MgCl2:6H2O NH4ClO4 NH4HCO3 NH4HSO4 NH4HSO4:NH4NO3 NH4NO3 Ni Ni(OH)2 Ni2P2O7 Ni2SiO4 Ni3(PO4)2 Nickelbischofite NiCl2 NiCl2:2H2O NiCl2:4H2O NiCO3 Ningyoite NiSO4 NiSO4:6H2O(alpha) Niter Nontronite-Ca Nontronite-H Nontronite-K Nontronite-Mg Nontronite-Na Okenite Oxychloride-Mg P Paragonite Pargasite Pentahydrite Periclase Petalite Phlogopite Pickeringite Picromerite Pirssonite Polydymite Polyhalite Portlandite Prehnite Pseudowollastonite Pyridine Pyrite Pyrolusite Pyrophyllite Pyrrhotite Quartz Rankinite Rhodochrosite Rhodonite Rhomboclase Ripidolite-14A Ripidolite-7A Romerite Rozenite Rutherfordine Rutile S Saleeite Sanidine_high Saponite-Ca Saponite-H Saponite-K Saponite-Mg Saponite-Na Sc Scacchite Schoepite Schoepite-dehy(.393) Schoepite-dehy(.648) Schoepite-dehy(.85) Schoepite-dehy(.9) Schoepite-dehy(1.0) Schwertmannite Scolecite Sepiolite Si Siderite Sillimanite SiO2(am) Sklodowskite Sm Sm(OH)3 Sm(OH)3(am) Sm2(CO3)3 Sm2(SO4)3 Sm2O3 Smectite-high-Fe-Mg Smectite-low-Fe-Mg Smithsonite SmPO4:10H2O Soda-niter Soddyite Sphaerocobaltite Sphalerite Spinel Spinel-Co Spodumene Starkeyite Stilbite Strengite Sylvite Syngenite Szomolnokite Tachyhydrite Talc Tarapacaite Tenorite Tephroite Th Th(NO3)4:5H2O Th(OH)4 Th(SO4)2 Th2S3 Th7S12 ThCl4 Thenardite Thermonatrite Thorianite ThS ThS2 Ti Ti2O3 Ti3O5 TiB2 TiC TiCl2 TiCl3 TiN TiO(alpha) Titanite Tobermorite-11A Tobermorite-14A Tobermorite-9A Todorokite Torbernite Tremolite Trevorite Tridymite Troilite Trona Trona-K U U(CO3)2 U(HPO4)2:4H2O U(OH)2SO4 U(SO3)2 U(SO4)2 U(SO4)2:4H2O U(SO4)2:8H2O U2C3 U2O2Cl5 U2S3 U3P4 U3S5 U5O12Cl UC UC1.94(alpha) UCl3 UCl4 UCl5 UCl6 UH3(beta) UN UN1.59(alpha) UN1.73(alpha) UO2(am) UO2(NO3)2 UO2(NO3)2:2H2O UO2(NO3)2:3H2O UO2(NO3)2:6H2O UO2(NO3)2:H2O UO2(OH)2(beta) UO2(PO3)2 UO2.25 UO2.25(beta) UO2.3333(beta) UO2.6667 UO2Cl UO2Cl2 UO2Cl2:3H2O UO2Cl2:H2O UO2ClOH:2H2O UO2CO3 UO2HPO4 UO2HPO4:4H2O UO2SO3 UO2SO4 UO2SO4:2.5H2O UO2SO4:3.5H2O UO2SO4:3H2O UO2SO4:H2O UO3(alpha) UO3(beta) UO3(gamma) UO3:.9H2O(alpha) UO3:2H2O UOCl UOCl2 UOCl3 UP UP2 UP2O7 UP2O7:20H2O UPO5 Uraninite Uranophane US US1.9 US2 US3 Vaesite Vaterite Vivianite Voltaite Wairakite Weeksite Whitlockite Willemite Wollastonite Wurtzite Wustite Xonotlite Zincite Zn Zn(BO2)2 Zn(ClO4)2:6H2O Zn(NO3)2:6H2O Zn(OH)2(beta) Zn(OH)2(epsilon) Zn(OH)2(gamma) Zn2(OH)3Cl Zn2SO4(OH)2 Zn2TiO4 Zn3O(SO4)2 Zn5(NO3)2(OH)8 ZnCl2 ZnCl2(NH3)2 ZnCl2(NH3)4 ZnCl2(NH3)6 ZnCO3:H2O ZnCr2O4 ZnSO4 ZnSO4:6H2O ZnSO4:7H2O ZnSO4:H2O Zoisite
 	-si 		Brucite Magnesite
 	-gases 		C2H4(g) C2H6(g)	CH4(g) CO(g) CO2(g) H2(g) H2O(g) H2S(g) N2(g) NH3(g) NO(g) NO2(g) O2(g) SO2(g)
