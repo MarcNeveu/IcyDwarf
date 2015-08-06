@@ -38,7 +38,7 @@ int ParamExploration_plot (char path[1024],	int warnings, int msgout, SDL_Render
 		int chondrite, int comet) {
 
 	int transpose_data = 0;
-	int breakup_file = 1;
+	int breakup_file = 0;
 	int i = 0;
 	int j = 0;
 	int nspecies = 0;
@@ -159,6 +159,7 @@ int ParamExploration_plot (char path[1024],	int warnings, int msgout, SDL_Render
 	}
 
 	File2surf("Graphics/Transparent.png", &pies, path);
+	pie_radius = 13.0;
 
 	//-------------------------------------------------------------------
 	//                         Interactive display
@@ -231,7 +232,7 @@ int UpdateDisplaysParamExploration (SDL_Renderer* renderer, SDL_Texture* backgro
 	SDL_RenderClear(renderer);
 	ApplySurface(0, 0, background_tex, renderer, NULL);
 	ApplySurface(0, 0, pies_tex, renderer, NULL);
-	ApplySurface(358, 433, leg_tex[0], renderer, NULL);
+	ApplySurface(348, 433, leg_tex[0], renderer, NULL);
 
 	if (itopic == 1) R = 40;
 	if (itopic == 4 || itopic == 10) {
@@ -245,8 +246,11 @@ int UpdateDisplaysParamExploration (SDL_Renderer* renderer, SDL_Texture* backgro
 	if (itopic == 11) {
 		x = 340; y = 540;
 	}
+	if (itopic == 12) {
+		x = 305; y = 500;
+	}
 
-	if (itopic != 11) {
+	if (itopic < 11) {
 		for (i=0;i<nleg-1;i++) {
 			theta_legend = 2.0*M_PI/(double)nspecies*((double)i+0.5);
 			ApplySurface(x + R*cos(theta_legend), y + R*sin(theta_legend), leg_tex[i+1], renderer, NULL);
@@ -444,7 +448,8 @@ int handleClickParamExploration(SDL_Event e, int *itemp, int *ipressure, int *ip
 	else if (e.button.x >= 218 && e.button.x <= 321 && e.button.y >= 537 && e.button.y <= 563) (*itopic) = 8; // Mineral makeup
 	else if (e.button.x >= 115 && e.button.x <= 210 && e.button.y >= 437 && e.button.y <= 463) (*itopic) = 9; // Solution makeup
 	else if (e.button.x >= 115 && e.button.x <= 210 && e.button.y >= 468 && e.button.y <= 494) (*itopic) = 10; // Solution ionic strength
-	else if (e.button.x >= 145 && e.button.x <= 210 && e.button.y >= 523 && e.button.y <= 549) (*itopic) = 11; // Solution ionic strength
+	else if (e.button.x >= 145 && e.button.x <= 210 && e.button.y >= 506 && e.button.y <= 532) (*itopic) = 11; // Solution pH/pe
+	else if (e.button.x >= 145 && e.button.x <= 210 && e.button.y >= 537 && e.button.y <= 563) (*itopic) = 12; // Mass of H2O
 
 	return 0;
 }
@@ -515,14 +520,14 @@ int Angles (int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npres
 
 	if (itopic == 1) {
 		color[1] = gray; color[2] = purple; color[3] = yellow;
-		(*leg_tex)[0] = renderText("per mol K",FontFile, black, 16, renderer);
+		(*leg_tex)[0] = renderText("mol per mol K",FontFile, black, 16, renderer);
 		(*leg_tex)[1] = renderText("Leached",FontFile, black, 16, renderer);
 		(*leg_tex)[2] = renderText("Clays",FontFile, black, 16, renderer);
 		(*leg_tex)[3] = renderText("K-feldspar",FontFile, black, 16, renderer);
 	}
 	else if (itopic == 2) {
 		color[1] = green; color[2] = red; color[3] = orange; color[4] = yellow; color[5] = white; color[6] = aqua; color[7] = purple; color[8] = gray;
-		(*leg_tex)[0] = renderText("per mol N",FontFile, black, 16, renderer);
+		(*leg_tex)[0] = renderText("mol per mol N",FontFile, black, 16, renderer);
 		(*leg_tex)[1] = renderText("NH3(aq)",FontFile, black, 16, renderer);
 		(*leg_tex)[2] = renderText("musc/feldspar",FontFile, black, 16, renderer);
 		(*leg_tex)[3] = renderText("NH4-",FontFile, black, 16, renderer);
@@ -533,12 +538,12 @@ int Angles (int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npres
 		(*leg_tex)[8] = renderText("Other N(aq)",FontFile, black, 16, renderer);
 	}
 	else if (itopic == 4) {
-		(*leg_tex)[0] = renderText("gas per kg rock",FontFile, black, 16, renderer);
+		(*leg_tex)[0] = renderText("mol gas per kg rock",FontFile, black, 16, renderer);
 		(*leg_tex)[1] = renderText("1         10         100",FontFile, black, 16, renderer);
 	}
 	else if (itopic == 5) {
 		color[1] = black; color[2] = aqua; color[3] = yellow; color[4] = red; color[5] = white;
-		(*leg_tex)[0] = renderText("per mol gas",FontFile, black, 16, renderer);
+		(*leg_tex)[0] = renderText("mol per mol gas",FontFile, black, 16, renderer);
 		(*leg_tex)[1] = renderText("C2H6",FontFile, white, 16, renderer);
 		(*leg_tex)[2] = renderText("CO2",FontFile, black, 16, renderer);
 		(*leg_tex)[3] = renderText("N2",FontFile, black, 16, renderer);
@@ -547,7 +552,7 @@ int Angles (int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npres
 	}
 	else if (itopic == 6) {
 		color[1] = pink; color[2] = aqua; color[3] = purple; color[4] = white; color[5] = green;
-		(*leg_tex)[0] = renderText("per mol solids",FontFile, black, 16, renderer);
+		(*leg_tex)[0] = renderText("mol per mol solids",FontFile, black, 16, renderer);
 		(*leg_tex)[1] = renderText("Brucite",FontFile, black, 16, renderer);
 		(*leg_tex)[2] = renderText("Magnesite",FontFile, black, 16, renderer);
 		(*leg_tex)[3] = renderText("Hydromagnesite",FontFile, black, 16, renderer);
@@ -558,23 +563,24 @@ int Angles (int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npres
 		color[1] = gray; color[2] = light_green; color[3] = black; color[4] = cyan; color[5] = green; color[6] = purple;
 		color[7] = pink; color[8] = orange; color[9] = red; color[10] = white; color[11] = maroon; color[12] = aqua;
 		color[13] = gold; color[14] = yellow;
-		(*leg_tex)[0] = renderText("per mol solids",FontFile, black, 16, renderer);
-		(*leg_tex)[1] = renderText("Andr+Kato",FontFile, black, 16, renderer);
+		(*leg_tex)[0] = renderText("mol per mol solids",FontFile, black, 16, renderer);
 		if (idb == 3) {
+			(*leg_tex)[1] = renderText("Andr",FontFile, black, 16, renderer);
 			(*leg_tex)[2] = renderText("Atg",FontFile, black, 16, renderer);
 			(*leg_tex)[3] = renderText("C(s)",FontFile, white, 16, renderer);
 			(*leg_tex)[4] = renderText("Cronst",FontFile, black, 16, renderer);
 			(*leg_tex)[5] = renderText("Green",FontFile, black, 16, renderer);
-			(*leg_tex)[6] = renderText("Carb",FontFile, black, 16, renderer);
+			(*leg_tex)[6] = renderText("Zeo",FontFile, black, 16, renderer);
 			(*leg_tex)[10] = renderText("Oliv",FontFile, black, 16, renderer);
 			(*leg_tex)[11] = renderText("Px",FontFile, white, 16, renderer);
 		}
 		else {
+			(*leg_tex)[1] = renderText("AKCTD",FontFile, black, 16, renderer);
 			(*leg_tex)[2] = renderText("Talc",FontFile, black, 16, renderer);
 			(*leg_tex)[3] = renderText("Ni/Fe(O)",FontFile, white, 16, renderer);
 			(*leg_tex)[4] = renderText("Serp",FontFile, black, 16, renderer);
 			(*leg_tex)[5] = renderText("Chl",FontFile, black, 16, renderer);
-			(*leg_tex)[6] = renderText("Zeo",FontFile, black, 16, renderer);
+			(*leg_tex)[6] = renderText("Carb",FontFile, black, 16, renderer);
 			(*leg_tex)[10] = renderText("Ni",FontFile, black, 16, renderer);
 			(*leg_tex)[11] = renderText("Ol+Px",FontFile, white, 16, renderer);
 		}
@@ -588,7 +594,7 @@ int Angles (int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npres
 	else if (itopic == 9) {
 		color[1] = gray; color[2] = black; color[3] = cyan; color[4] = red; color[5] = pink; color[6] = orange; color[7] = green;
 		color[8] = white; color[9] = purple; color[10] = yellow; color[11] = aqua; color[12] = gold;
-		(*leg_tex)[0] = renderText("per mol solutes",FontFile, black, 16, renderer);
+		(*leg_tex)[0] = renderText("mol per mol solutes",FontFile, black, 16, renderer);
 		(*leg_tex)[1] = renderText("Al",FontFile, black, 16, renderer);
 		(*leg_tex)[2] = renderText("C",FontFile, white, 16, renderer);
 		(*leg_tex)[3] = renderText("Ca",FontFile, black, 16, renderer);
@@ -603,7 +609,7 @@ int Angles (int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npres
 		(*leg_tex)[12] = renderText("H",FontFile, black, 16, renderer);
 	}
 	else if (itopic == 10) {
-		(*leg_tex)[0] = renderText("per kg H2O",FontFile, black, 16, renderer);
+		(*leg_tex)[0] = renderText("mol per kg H2O",FontFile, black, 16, renderer);
 		(*leg_tex)[1] = renderText("1         10         100",FontFile, black, 16, renderer);
 	}
 	else if (itopic == 11) {
@@ -611,6 +617,10 @@ int Angles (int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npres
 		(*leg_tex)[2] = renderText("-6",FontFile, black, 16, renderer);
 		(*leg_tex)[3] = renderText("0",FontFile, black, 16, renderer);
 		(*leg_tex)[4] = renderText("6",FontFile, black, 16, renderer);
+	}
+	else if (itopic == 12) {
+		(*leg_tex)[0] = renderText("mass H2O for ~1 kg rock",FontFile, black, 16, renderer);
+		(*leg_tex)[1] = renderText("<0.01     0.1         1         >10",FontFile, black, 16, renderer);
 	}
 
 	if (itopic == 4) {
@@ -645,6 +655,24 @@ int Angles (int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npres
 		Pie(2.0*M_PI, 0.0, -2, 4, -2, 10.0-6.0, &(*pies), key, 0, 0);
 		Pie(2.0*M_PI, 0.0, -2, 4, 0, 10.0+0.0, &(*pies), key, 0, 0);
 		Pie(2.0*M_PI, 0.0, -2, 4, 2, 10.0+6.0, &(*pies), key, 0, 0);
+	}
+	else if (itopic == 12) {
+		key.r = (Uint8) (200.0*(1.0-0.5*(log(0.01)/log(10.0)+2.0)/3.0));
+		key.g = (Uint8) (100.0*(1.0+0.35*(log(0.01)/log(10.0)+2.0)/3.0));
+		key.b = (Uint8) (255.0*(log(0.01)/log(10.0)+2.0)/3.0);
+		Pie(2.0*M_PI, 0.0, -2, -1, 0, 17.0, &(*pies), key, 0, 0);
+		key.r = (Uint8) (200.0*(1.0-0.5*(log(0.1)/log(10.0)+2.0)/3.0));
+		key.g = (Uint8) (100.0*(1.0+0.35*(log(0.1)/log(10.0)+2.0)/3.0));
+		key.b = (Uint8) (255.0*(log(0.1)/log(10.0)+2.0)/3.0);
+		Pie(2.0*M_PI, 0.0, -2, 1, 0, 17.0, &(*pies), key, 0, 0);
+		key.r = (Uint8) (200.0*(1.0-0.5*(log(1.0)/log(10.0)+2.0)/3.0));
+		key.g = (Uint8) (100.0*(1.0+0.35*(log(1.0)/log(10.0)+2.0)/3.0));
+		key.b = (Uint8) (255.0*(log(1.0)/log(10.0)+2.0)/3.0);
+		Pie(2.0*M_PI, 0.0, -2, 3, 0, 17.0, &(*pies), key, 0, 0);
+		key.r = (Uint8) (200.0*(1.0-0.5*(log(10.0)/log(10.0)+2.0)/3.0));
+		key.g = (Uint8) (100.0*(1.0+0.35*(log(10.0)/log(10.0)+2.0)/3.0));
+		key.b = (Uint8) (255.0*(log(10.0)/log(10.0)+2.0)/3.0);
+		Pie(2.0*M_PI, 0.0, -2, 5, 0, 17.0, &(*pies), key, 0, 0);
 	}
 	else {
 		for (i=0;i<(*nspecies);i++) { // Legend pie
@@ -711,11 +739,11 @@ int Angles (int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npres
 								angle[5] = 0.999*2.0*M_PI*(simdata[isim][853]+simdata[isim][855]+simdata[isim][857])/total_Min; // Dolomite
 							}
 							else if (itopic == 8) {
-								angle[1] = 0.999*2.0*M_PI*(simdata[isim][581]+simdata[isim][1086])/total_Min; // Andr+Kato
+								angle[1] = 0.999*2.0*M_PI*(simdata[isim][581]+simdata[isim][1085]+simdata[isim][791]+simdata[isim][1585]+simdata[isim][849])/total_Min; // Andr+Kato+Corundum+Tremolite+Diopside
 								angle[2] = 0.999*2.0*M_PI*simdata[isim][1523]/total_Min; // Talc
 								angle[3] = 0.999*2.0*M_PI*(simdata[isim][915]+simdata[isim][927]+simdata[isim][1587])/total_Min; // Fe + FeO + Trevorite (NiFe2O4)
 								angle[4] = 0.999*2.0*M_PI*(simdata[isim][593]+simdata[isim][819]+simdata[isim][979])/total_Min; // Serpentine clays: atg + cronst + greenalite
-								angle[5] = 0.999*2.0*M_PI*(simdata[isim][727]+simdata[isim][729]+simdata[isim][835])/total_Min; // Chlorites clays: clinochlore-14A and 7A, daphnite
+								angle[5] = 0.999*2.0*M_PI*(simdata[isim][727]+simdata[isim][729]+simdata[isim][835])/total_Min; // Chlorites clays: clinochlore-14A and 7A, daphnite-14A
 
 								// !! ONLY FOR GRL PAPER: CARBONATES TOGETHER WITH OTHER MINERALS, IN PURPLE
 								angle[6] = 0.999*2.0*M_PI*simdata[isim][1135]/total_Min // Magnesite
@@ -770,6 +798,24 @@ int Angles (int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npres
 								if (simdata[isim][7]/14.0 > 1.0) key.g = 0;
 								else key.g = (int) ((1.0-(simdata[isim][7]/7.0-1.0))*255.0);
 								Pie(2.0*M_PI, 0.0, iWR, ipH, ipe, 10.0+simdata[isim][5]+simdata[isim][8]-simdata[isim][3], &(*pies), key, 0, 0); // log = natural logarithm ln
+							}
+							else if (itopic == 12) {
+								if (simdata[isim][11] < 0.01) {
+									key.r = 200;
+									key.g = 100;
+									key.b = 0;
+								}
+								else if (simdata[isim][11] > 10.0) {
+									key.r = 100;
+									key.g = 135;
+									key.b = 255;
+								}
+								else {
+									key.r = (Uint8) (200.0*(1.0-0.5*(log(simdata[isim][11])/log(10.0)+2.0)/3.0)); // log = natural logarithm ln
+									key.g = (Uint8) (100.0*(1.0+0.35*(log(simdata[isim][11])/log(10.0)+2.0)/3.0));
+									key.b = (Uint8) (255.0*(log(simdata[isim][11])/log(10.0)+2.0)/3.0);
+								}
+								Pie(2.0*M_PI, 0.0, iWR, ipH, ipe, pie_radius, &(*pies), key, 0, 0);
 							}
 							else {
 								for (i=0;i<(*nspecies);i++) {
@@ -964,11 +1010,11 @@ int Angles (int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npres
 							angle[5] = 0.999*2.0*M_PI*(simdata[isim][853]+simdata[isim][855]+simdata[isim][857])/total_Min; // Dolomite
 						}
 						else if (itopic == 8) {
-							angle[1] = 0.999*2.0*M_PI*(simdata[isim][581]+simdata[isim][1086])/total_Min; // Andr+Kato
+							angle[1] = 0.999*2.0*M_PI*(simdata[isim][581]+simdata[isim][1085]+simdata[isim][791]+simdata[isim][1585]+simdata[isim][849])/total_Min; // Andr+Kato+Corundum+Tremolite+Diopside
 							angle[2] = 0.999*2.0*M_PI*simdata[isim][1523]/total_Min; // Talc
 							angle[3] = 0.999*2.0*M_PI*(simdata[isim][915]+simdata[isim][927]+simdata[isim][1587])/total_Min; // Fe + FeO + Trevorite (NiFe2O4)
 							angle[4] = 0.999*2.0*M_PI*(simdata[isim][593]+simdata[isim][819]+simdata[isim][979])/total_Min; // Serpentine clays: atg + cronst + greenalite
-							angle[5] = 0.999*2.0*M_PI*(simdata[isim][727]+simdata[isim][729]+simdata[isim][835])/total_Min; // Chlorites clays: clinochlore-14A and 7A, daphnite
+							angle[5] = 0.999*2.0*M_PI*(simdata[isim][727]+simdata[isim][729]+simdata[isim][835])/total_Min; // Chlorites clays: clinochlore-14A and 7A, daphnite-14A
 
 							// !! ONLY FOR GRL PAPER: CARBONATES TOGETHER WITH OTHER MINERALS, IN PURPLE
 							angle[6] = 0.999*2.0*M_PI*simdata[isim][1135]/total_Min // Magnesite
@@ -1028,6 +1074,24 @@ int Angles (int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npres
 							if (simdata[isim][7]/14.0 > 1.0) key.g = 0;
 							else key.g = (int) ((1.0-(simdata[isim][7]/7.0-1.0))*255.0);
 							Pie(2.0*M_PI, 0.0, 0, itemp, ipressure, 10.0+simdata[isim][5]+simdata[isim][8]-simdata[isim][3], &(*pies), key, 0, 1); // log = natural logarithm ln
+						}
+						else if (itopic == 12) {
+							if (simdata[isim][11] < 0.01) {
+								key.r = 200;
+								key.g = 100;
+								key.b = 0;
+							}
+							else if (simdata[isim][11] > 10.0) {
+								key.r = 100;
+								key.g = 135;
+								key.b = 255;
+							}
+							else {
+								key.r = (Uint8) (200.0*(1.0-0.5*(log(simdata[isim][11])/log(10.0)+2.0)/3.0)); // log = natural logarithm ln
+								key.g = (Uint8) (100.0*(1.0+0.35*(log(simdata[isim][11])/log(10.0)+2.0)/3.0));
+								key.b = (Uint8) (255.0*(log(simdata[isim][11])/log(10.0)+2.0)/3.0);
+							}
+							Pie(2.0*M_PI, 0.0, 0, itemp, ipressure, pie_radius, &(*pies), key, 0, 1);
 						}
 						else {
 							for (i=0;i<(*nspecies);i++) {
