@@ -22,8 +22,13 @@ int handleClickParamExploration (SDL_Event e, int *itemp, int *ipressure, int *i
 		int npH, int npe, SDL_Surface **pies, int *xstart, int *xend, int *ystart, int *yend, int *PT, int *iWR,
 		SDL_Texture **background_tex, double *pie_radius, char *path);
 
+int FinditopicX(int itopic);
+int FinditopicY(int itopic);
+int FindPTXY(int itemp, int ipressure, int *xstart, int *xend, int *ystart, int *yend);
+int FindpHpeXY(int ipH, int ipe, int *xstart, int *xend, int *ystart, int *yend);
+
 int UpdateDisplaysParamExploration (SDL_Renderer* renderer, SDL_Texture* background_tex, SDL_Texture* pies_tex, SDL_Texture* leg_tex[nleg],
-		char* FontFile, int nspecies, int itopic);
+		char* FontFile, int nspecies, int itopic, int PT);
 
 int Angles (int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npressure, int npH, int npe, int nWR, int temp,
 		int pressure, int pH, int pe, int WR, double pie_radius, double **simdata, int *nspecies, SDL_Texture *(*leg_tex)[nleg],
@@ -158,14 +163,28 @@ int ParamExploration_plot (char path[1024],	int warnings, int msgout, SDL_Render
 		exit(0);
 	}
 
+	//-------------------------------------------------------------------
+	//                         Initialize display
+	//-------------------------------------------------------------------
+
+	SDL_Event e;
+
 	File2surf("Graphics/Transparent.png", &pies, path);
 	pie_radius = 13.0;
+	itopic = 8; // Orange shade the bottom right selector
+	FindPTXY(0, 0, &xstart, &xend, &ystart, &yend);
+
+	handleClickParamExploration(e, &itemp, &ipressure, &ipH, &ipe, &itopic, ntemp, npressure, npH, npe, &pies,
+			&xstart, &xend, &ystart, &yend, &PT, &iWR, &background_tex, &pie_radius, path);
+
+	Angles (itopic, &pies, FontFile, ntemp, npressure, npH, npe, nWR, itemp, ipressure, ipH, ipe, iWR, pie_radius, simdata,
+			&nspecies, &leg_tex, chondrite, comet, PT);
+
+	pies_tex = SDL_CreateTextureFromSurface(renderer, pies);
 
 	//-------------------------------------------------------------------
 	//                         Interactive display
 	//-------------------------------------------------------------------
-
-	SDL_Event e;
 
 	while (!(*quit) && (*view) == 3){
 		while (SDL_PollEvent(&e)){
@@ -201,7 +220,7 @@ int ParamExploration_plot (char path[1024],	int warnings, int msgout, SDL_Render
 			File2tex("Graphics/BG/BG.007.png", &background_tex, path);
 		}
 		// Update displays
-		UpdateDisplaysParamExploration(renderer, background_tex, pies_tex, leg_tex, FontFile, nspecies, itopic);
+		UpdateDisplaysParamExploration(renderer, background_tex, pies_tex, leg_tex, FontFile, nspecies, itopic, PT);
 	}
 
 	//-------------------------------------------------------------------
@@ -223,7 +242,7 @@ int ParamExploration_plot (char path[1024],	int warnings, int msgout, SDL_Render
 //-------------------------------------------------------------------
 
 int UpdateDisplaysParamExploration (SDL_Renderer* renderer, SDL_Texture* background_tex, SDL_Texture* pies_tex, SDL_Texture* leg_tex[nleg],
-		char* FontFile, int nspecies, int itopic) {
+		char* FontFile, int nspecies, int itopic, int PT) {
 
 	double theta_legend = 0.0;
 	int i = 0;
@@ -235,8 +254,11 @@ int UpdateDisplaysParamExploration (SDL_Renderer* renderer, SDL_Texture* backgro
 	ApplySurface(348, 433, leg_tex[0], renderer, NULL);
 
 	if (itopic == 1) R = 40;
-	if (itopic == 4 || itopic == 10) {
+	if ((itopic == 4 && PT == 0) || itopic == 10) {
 		x = 418; y = 530;
+	}
+	if (itopic == 4 && PT == 1) {
+		x = 418; y = 540;
 	}
 	if (itopic == 5) {
 		x = 415; R = 40;
@@ -278,17 +300,23 @@ int handleClickParamExploration(SDL_Event e, int *itemp, int *ipressure, int *ip
 		SDL_Texture **background_tex, double *pie_radius, char *path) {
 
 	int x = 0; int y = 0;
+	int xWR = 0; int yWR = 0;
+	int xtopic = 0; int ytopic = 0;
 	Uint32 *pixmem32;
+
+	xtopic = FinditopicX((*itopic)); ytopic = FinditopicY((*itopic));
 
 	// Switch between P/T and pe/pH views
 	if (e.button.x >= 173 && e.button.x <= 209 && e.button.y >= 571 && e.button.y <= 592) {
 		(*PT) = 1;
 		(*iWR) = 0;
 		(*pie_radius) = 26.0;
+		FindpHpeXY((*ipH), (*ipe), &(*xstart), &(*xend), &(*ystart), &(*yend));
 	}
 	if (e.button.x >= 211 && e.button.x <= 247 && e.button.y >= 571 && e.button.y <= 592) {
 		(*PT) = 0;
 		(*pie_radius) = 13.0;
+		FindPTXY((*itemp), (*ipressure), &(*xstart), &(*xend), &(*ystart), &(*yend));
 	}
 
 	// Reset screen
@@ -302,53 +330,26 @@ int handleClickParamExploration(SDL_Event e, int *itemp, int *ipressure, int *ip
 	if ((*PT) == 0) {
 		// Change temperature/pressure
 		if (e.button.x >= 601 && e.button.x <= 788 && e.button.y >= 438 && e.button.y <= 546) {
-			if (e.button.x >= 601 && e.button.x <= 625) {		        // x
-				(*itemp) = 0; (*xstart) = 601; (*xend) = 625;
-			}
-			else if (e.button.x >= 628 && e.button.x <= 652) {
-				(*itemp) = 1; (*xstart) = 628; (*xend) = 652;
-			}
-			else if (e.button.x >= 655 && e.button.x <= 679) {
-				(*itemp) = 2; (*xstart) = 655; (*xend) = 679;
-			}
-			else if (e.button.x >= 682 && e.button.x <= 706) {
-				(*itemp) = 3; (*xstart) = 682; (*xend) = 706;
-			}
-			else if (e.button.x >= 709 && e.button.x <= 733) {
-				(*itemp) = 4; (*xstart) = 709; (*xend) = 733;
-			}
-			else if (e.button.x >= 736 && e.button.x <= 760) {
-				(*itemp) = 5; (*xstart) = 736; (*xend) = 760;
-			}
-			else if (e.button.x >= 763 && e.button.x <= 788) {
-				(*itemp) = 6; (*xstart) = 763; (*xend) = 788;
-			}
+			if (e.button.x >= 601 && e.button.x <= 625) (*itemp) = 0;
+			else if (e.button.x >= 628 && e.button.x <= 652) (*itemp) = 1;
+			else if (e.button.x >= 655 && e.button.x <= 679) (*itemp) = 2;
+			else if (e.button.x >= 682 && e.button.x <= 706) (*itemp) = 3;
+			else if (e.button.x >= 709 && e.button.x <= 733) (*itemp) = 4;
+			else if (e.button.x >= 736 && e.button.x <= 760) (*itemp) = 5;
+			else if (e.button.x >= 763 && e.button.x <= 788) (*itemp) = 6;
 
-			if (e.button.y >= 438 && e.button.y <= 450) {        		// y
-				(*ipressure) = 6; (*ystart) = 438; (*yend) = 450;
-			}
-			else if (e.button.y >= 455 && e.button.y <= 467) {
-				(*ipressure) = 5; (*ystart) = 455; (*yend) = 467;
-			}
-			else if (e.button.y >= 471 && e.button.y <= 483) {
-				(*ipressure) = 4; (*ystart) = 471; (*yend) = 483;
-			}
-			else if (e.button.y >= 487 && e.button.y <= 499) {
-				(*ipressure) = 3; (*ystart) = 487; (*yend) = 499;
-			}
-			else if (e.button.y >= 503 && e.button.y <= 515) {
-				(*ipressure) = 2; (*ystart) = 503; (*yend) = 515;
-			}
-			else if (e.button.y >= 519 && e.button.y <= 531) {
-				(*ipressure) = 1; (*ystart) = 519; (*yend) = 531;
-			}
-			else if (e.button.y >= 535 && e.button.y <= 546) {
-				(*ipressure) = 0; (*ystart) = 535; (*yend) = 546;
-			}
+			if (e.button.y >= 438 && e.button.y <= 450) (*ipressure) = 6;
+			else if (e.button.y >= 455 && e.button.y <= 467) (*ipressure) = 5;
+			else if (e.button.y >= 471 && e.button.y <= 483) (*ipressure) = 4;
+			else if (e.button.y >= 487 && e.button.y <= 499) (*ipressure) = 3;
+			else if (e.button.y >= 503 && e.button.y <= 515) (*ipressure) = 2;
+			else if (e.button.y >= 519 && e.button.y <= 531) (*ipressure) = 1;
+			else if (e.button.y >= 535 && e.button.y <= 546) (*ipressure) = 0;
 
-			if (*itemp > ntemp-1) *itemp = ntemp - 1;
-			if (*ipressure > npressure-1) *ipressure = npressure - 1;
+			if ((*itemp) > ntemp-1) (*itemp) = ntemp - 1;
+			if ((*ipressure) > npressure-1) (*ipressure) = npressure - 1;
 		}
+		FindPTXY((*itemp), (*ipressure), &(*xstart), &(*xend), &(*ystart), &(*yend));
 	}
 
 	if ((*PT) == 1) {
@@ -359,84 +360,33 @@ int handleClickParamExploration(SDL_Event e, int *itemp, int *ipressure, int *ip
 
 		// Change pH/pe
 		if (e.button.x >= 578 && e.button.x <= 792 && e.button.y >= 342 && e.button.y <= 546) {
-			if (e.button.x >= 578 && e.button.x <= 602) {		        // x
-				(*ipH) = 0; (*xstart) = 578; (*xend) = 602;
-			}
-			else if (e.button.x >= 605 && e.button.x <= 629) {
-				(*ipH) = 1; (*xstart) = 605; (*xend) = 629;
-			}
-			else if (e.button.x >= 632 && e.button.x <= 656) {
-				(*ipH) = 2; (*xstart) = 632; (*xend) = 656;
-			}
-			else if (e.button.x >= 659 && e.button.x <= 683) {
-				(*ipH) = 3; (*xstart) = 659; (*xend) = 683;
-			}
-			else if (e.button.x >= 686 && e.button.x <= 710) {
-				(*ipH) = 4; (*xstart) = 686; (*xend) = 710;
-			}
-			else if (e.button.x >= 713 && e.button.x <= 737) {
-				(*ipH) = 5; (*xstart) = 713; (*xend) = 737;
-			}
-			else if (e.button.x >= 740 && e.button.x <= 764) {
-				(*ipH) = 6; (*xstart) = 740; (*xend) = 764;
-			}
-			else if (e.button.x >= 767 && e.button.x <= 792) {
-				(*ipH) = 7; (*xstart) = 767; (*xend) = 792;
-			}
+			if (e.button.x >= 578 && e.button.x <= 602) (*ipH) = 0;
+			else if (e.button.x >= 605 && e.button.x <= 629) (*ipH) = 1;
+			else if (e.button.x >= 632 && e.button.x <= 656) (*ipH) = 2;
+			else if (e.button.x >= 659 && e.button.x <= 683) (*ipH) = 3;
+			else if (e.button.x >= 686 && e.button.x <= 710) (*ipH) = 4;
+			else if (e.button.x >= 713 && e.button.x <= 737) (*ipH) = 5;
+			else if (e.button.x >= 740 && e.button.x <= 764) (*ipH) = 6;
+			else if (e.button.x >= 767 && e.button.x <= 792) (*ipH) = 7;
 
-			if (e.button.y >= 343 && e.button.y <= 355) {        		// y
-				(*ipe) = 12; (*ystart) = 343; (*yend) = 355;
-			}
-			else if (e.button.y >= 359 && e.button.y <= 371) {
-				(*ipe) = 11; (*ystart) = 359; (*yend) = 371;
-			}
-			else if (e.button.y >= 375 && e.button.y <= 387) {
-				(*ipe) = 10; (*ystart) = 375; (*yend) = 387;
-			}
-			else if (e.button.y >= 391 && e.button.y <= 403) {
-				(*ipe) = 9; (*ystart) = 391; (*yend) = 403;
-			}
-			else if (e.button.y >= 407 && e.button.y <= 419) {
-				(*ipe) = 8; (*ystart) = 407; (*yend) = 419;
-			}
-			else if (e.button.y >= 423 && e.button.y <= 435) {
-				(*ipe) = 7; (*ystart) = 423; (*yend) = 435;
-			}
-			else if (e.button.y >= 439 && e.button.y <= 451) {
-				(*ipe) = 6; (*ystart) = 439; (*yend) = 451;
-			}
-			else if (e.button.y >= 455 && e.button.y <= 467) {
-				(*ipe) = 5; (*ystart) = 455; (*yend) = 467;
-			}
-			else if (e.button.y >= 471 && e.button.y <= 483) {
-				(*ipe) = 4; (*ystart) = 471; (*yend) = 483;
-			}
-			else if (e.button.y >= 487 && e.button.y <= 499) {
-				(*ipe) = 3; (*ystart) = 487; (*yend) = 499;
-			}
-			else if (e.button.y >= 503 && e.button.y <= 515) {
-				(*ipe) = 2; (*ystart) = 503; (*yend) = 515;
-			}
-			else if (e.button.y >= 519 && e.button.y <= 531) {
-				(*ipe) = 1; (*ystart) = 519; (*yend) = 531;
-			}
-			else if (e.button.y >= 535 && e.button.y <= 546) {
-				(*ipe) = 0; (*ystart) = 535; (*yend) = 546;
-			}
+			if (e.button.y >= 343 && e.button.y <= 355) (*ipe) = 12;
+			else if (e.button.y >= 359 && e.button.y <= 371) (*ipe) = 11;
+			else if (e.button.y >= 375 && e.button.y <= 387) (*ipe) = 10;
+			else if (e.button.y >= 391 && e.button.y <= 403) (*ipe) = 9;
+			else if (e.button.y >= 407 && e.button.y <= 419) (*ipe) = 8;
+			else if (e.button.y >= 423 && e.button.y <= 435) (*ipe) = 7;
+			else if (e.button.y >= 439 && e.button.y <= 451) (*ipe) = 6;
+			else if (e.button.y >= 455 && e.button.y <= 467) (*ipe) = 5;
+			else if (e.button.y >= 471 && e.button.y <= 483) (*ipe) = 4;
+			else if (e.button.y >= 487 && e.button.y <= 499) (*ipe) = 3;
+			else if (e.button.y >= 503 && e.button.y <= 515) (*ipe) = 2;
+			else if (e.button.y >= 519 && e.button.y <= 531) (*ipe) = 1;
+			else if (e.button.y >= 535 && e.button.y <= 546) (*ipe) = 0;
 
 			if (*ipH > npH-1) *ipH = npH - 1;
 			if (*ipe > npe-1) *ipe = npe - 1;
 		}
-	}
-
-	// Orange shading of active button
-	if ((*xstart) > 0 && (*ystart) > 0) {
-		for (x=(*xstart)+1;x<(*xend);x++) {
-			for (y=(*ystart)+1;y<(*yend);y++) {
-				pixmem32 = (Uint32*) (*pies)->pixels + y*(*pies)->w + x;
-				*pixmem32 = SDL_MapRGBA((*pies)->format, (230*(1-abs(y-(*ystart))/12) + 4*230)/5, 150, 0, 255);
-			}
-		}
+		FindpHpeXY((*ipH), (*ipe), &(*xstart), &(*xend), &(*ystart), &(*yend));
 	}
 
 	// Change topic
@@ -451,6 +401,209 @@ int handleClickParamExploration(SDL_Event e, int *itemp, int *ipressure, int *ip
 	else if (e.button.x >= 145 && e.button.x <= 210 && e.button.y >= 506 && e.button.y <= 532) (*itopic) = 11; // Solution pH/pe
 	else if (e.button.x >= 145 && e.button.x <= 210 && e.button.y >= 537 && e.button.y <= 563) (*itopic) = 12; // Mass of H2O
 
+	// Orange shading of active buttons
+	if ((*xstart) > 0 && (*ystart) > 0) { // Bottom right selector
+		for (x=(*xstart)+1; x<(*xend); x++) {
+			for (y=(*ystart)+1; y<(*yend); y++) {
+				pixmem32 = (Uint32*) (*pies)->pixels + y*(*pies)->w + x;
+				*pixmem32 = SDL_MapRGBA((*pies)->format, (230*(1-abs(y-(*ystart))/12) + 4*230)/5, 150, 0, 255);
+			}
+		}
+	}
+	if ((*PT) == 1) { // WR selector in P/T mode: shade by 2 pixels all around
+		if ((*iWR) == 2) xWR = 580;
+		else if ((*iWR) == 1) xWR = 640;
+		else xWR = 700;
+		yWR = 209;
+		for (x=xWR-2; x<xWR; x++) {
+			for (y=yWR-2; y<yWR+29+2; y++) {
+				pixmem32 = (Uint32*) (*pies)->pixels + y*(*pies)->w + x;
+				*pixmem32 = SDL_MapRGBA((*pies)->format, 230, 150, 0, 255);
+			}
+		}
+		for (x=xWR+54; x<xWR+54+2; x++) {
+			for (y=yWR-2; y<yWR+29+2; y++) {
+				pixmem32 = (Uint32*) (*pies)->pixels + y*(*pies)->w + x;
+				*pixmem32 = SDL_MapRGBA((*pies)->format, 230, 150, 0, 255);
+			}
+		}
+		for (x=xWR; x<xWR+54; x++) {
+			for (y=yWR-2; y<yWR; y++) {
+				pixmem32 = (Uint32*) (*pies)->pixels + y*(*pies)->w + x;
+				*pixmem32 = SDL_MapRGBA((*pies)->format, 230, 150, 0, 255);
+			}
+		}
+		for (x=xWR; x<xWR+54; x++) {
+			for (y=yWR+29; y<yWR+29+2; y++) {
+				pixmem32 = (Uint32*) (*pies)->pixels + y*(*pies)->w + x;
+				*pixmem32 = SDL_MapRGBA((*pies)->format, 230, 150, 0, 255);
+			}
+		}
+	}
+
+	// Shading around topic selector
+	xtopic = FinditopicX((*itopic)); ytopic = FinditopicY((*itopic));
+
+	for (x=xtopic-2; x<xtopic; x++) {
+		for (y=ytopic-2; y<ytopic+26+2; y++) {
+			pixmem32 = (Uint32*) (*pies)->pixels + y*(*pies)->w + x;
+			*pixmem32 = SDL_MapRGBA((*pies)->format, 230, 150, 0, 255);
+		}
+	}
+	for (x=xtopic+65; x<xtopic+65+2; x++) {
+		for (y=ytopic-2; y<ytopic+26+2; y++) {
+			pixmem32 = (Uint32*) (*pies)->pixels + y*(*pies)->w + x;
+			*pixmem32 = SDL_MapRGBA((*pies)->format, 230, 150, 0, 255);
+		}
+	}
+	for (x=xtopic; x<xtopic+65; x++) {
+		for (y=ytopic-2; y<ytopic; y++) {
+			pixmem32 = (Uint32*) (*pies)->pixels + y*(*pies)->w + x;
+			*pixmem32 = SDL_MapRGBA((*pies)->format, 230, 150, 0, 255);
+		}
+	}
+	for (x=xtopic; x<xtopic+65; x++) {
+		for (y=ytopic+26; y<ytopic+26+2; y++) {
+			pixmem32 = (Uint32*) (*pies)->pixels + y*(*pies)->w + x;
+			*pixmem32 = SDL_MapRGBA((*pies)->format, 230, 150, 0, 255);
+		}
+	}
+
+	return 0;
+}
+
+//-------------------------------------------------------------------
+//                      Find X and Y functions
+//-------------------------------------------------------------------
+
+int FinditopicX(int itopic) {
+	int x = 0;
+	if (itopic <= 2) x = 39;
+	else if (itopic <= 8) x = 255;
+	else x = 145;
+	return x;
+}
+int FinditopicY(int itopic) {
+	int y = 0;
+	if (itopic == 1) y = 454;
+	else if (itopic == 2) y = 523;
+	else if (itopic == 4 || itopic == 9) y = 437;
+	else if (itopic == 5 || itopic == 10) y = 468;
+	else if (itopic == 6 || itopic == 11) y = 506;
+	else if (itopic == 8 || itopic == 12) y = 537;
+	return y;
+}
+int FindPTXY(int itemp, int ipressure, int *xstart, int *xend, int *ystart, int *yend) {
+	if (itemp == 0) { // x
+		(*xstart) = 601; (*xend) = 625;
+	}
+	else if (itemp == 1) {
+		(*xstart) = 628; (*xend) = 652;
+	}
+	else if (itemp == 2) {
+		(*xstart) = 655; (*xend) = 679;
+	}
+	else if (itemp == 3) {
+		(*xstart) = 682; (*xend) = 706;
+	}
+	else if (itemp == 4) {
+		(*xstart) = 709; (*xend) = 733;
+	}
+	else if (itemp == 5) {
+		(*xstart) = 736; (*xend) = 760;
+	}
+	else if (itemp == 6) {
+		(*xstart) = 763; (*xend) = 788;
+	}
+
+	if (ipressure == 6) { // y
+		(*ystart) = 438; (*yend) = 450;
+	}
+	else if (ipressure == 5) {
+		(*ystart) = 455; (*yend) = 467;
+	}
+	else if (ipressure == 4) {
+		(*ystart) = 471; (*yend) = 483;
+	}
+	else if (ipressure == 3) {
+		(*ystart) = 487; (*yend) = 499;
+	}
+	else if (ipressure == 2) {
+		(*ystart) = 503; (*yend) = 515;
+	}
+	else if (ipressure == 1) {
+		(*ystart) = 519; (*yend) = 531;
+	}
+	else if (ipressure == 0) {
+		(*ystart) = 535; (*yend) = 546;
+	}
+	return 0;
+}
+int FindpHpeXY(int ipH, int ipe, int *xstart, int *xend, int *ystart, int *yend) {
+	if (ipH == 0) {		        // x
+		(*xstart) = 578; (*xend) = 602;
+	}
+	else if (ipH == 1) {
+		(*xstart) = 605; (*xend) = 629;
+	}
+	else if (ipH == 2) {
+		(*xstart) = 632; (*xend) = 656;
+	}
+	else if (ipH == 3) {
+		(*xstart) = 659; (*xend) = 683;
+	}
+	else if (ipH == 4) {
+		(*xstart) = 686; (*xend) = 710;
+	}
+	else if (ipH == 5) {
+		(*xstart) = 713; (*xend) = 737;
+	}
+	else if (ipH == 6) {
+		(*xstart) = 740; (*xend) = 764;
+	}
+	else if (ipH == 7) {
+		(*xstart) = 767; (*xend) = 792;
+	}
+
+	if (ipe == 12) {        		// y
+		(*ystart) = 343; (*yend) = 355;
+	}
+	else if (ipe == 11) {
+		(*ystart) = 359; (*yend) = 371;
+	}
+	else if (ipe == 10) {
+		(*ystart) = 375; (*yend) = 387;
+	}
+	else if (ipe == 9) {
+		(*ystart) = 391; (*yend) = 403;
+	}
+	else if (ipe == 8) {
+		(*ystart) = 407; (*yend) = 419;
+	}
+	else if (ipe == 7) {
+		(*ystart) = 423; (*yend) = 435;
+	}
+	else if (ipe == 6) {
+		(*ystart) = 439; (*yend) = 451;
+	}
+	else if (ipe == 5) {
+		(*ystart) = 455; (*yend) = 467;
+	}
+	else if (ipe == 4) {
+		(*ystart) = 471; (*yend) = 483;
+	}
+	else if (ipe == 3) {
+		(*ystart) = 487; (*yend) = 499;
+	}
+	else if (ipe == 2) {
+		(*ystart) = 503; (*yend) = 515;
+	}
+	else if (ipe == 1) {
+		(*ystart) = 519; (*yend) = 531;
+	}
+	else if (ipe == 0) {
+		(*ystart) = 535; (*yend) = 546;
+	}
 	return 0;
 }
 
@@ -505,7 +658,7 @@ int Angles (int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npres
 
 	if (itopic == 1) (*nspecies) = 3;       // Potassium
 	else if (itopic == 2) (*nspecies) = 8;  // NH3
-	else if (itopic == 4 || itopic == 10 || itopic == 11) (*nspecies) = 1;  // Total gases / ionic strength
+	else if (itopic == 4 || itopic == 10 || itopic == 11 || itopic == 12) (*nspecies) = 1;  // Total gases / ionic strength / pH-pe / W:R
 	else if (itopic == 5) (*nspecies) = 5;  // Gases
 	else if (itopic == 6) (*nspecies) = 5;  // Brucite / carbonates
 	else if (itopic == 8) (*nspecies) = 14; // Mineral makeup
@@ -624,13 +777,24 @@ int Angles (int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npres
 	}
 
 	if (itopic == 4) {
-		key.r = 255; key.b = 0;
-		key.g = (int) ((1.0-1.0/100.0)*255.0);
-		Pie(2.0*M_PI, 0.0, -2, 0, 0, 2.0*log(1.0e1), &(*pies), key, 0, 0);
-		key.g = (int) ((1.0-10.0/100.0)*255.0);
-		Pie(2.0*M_PI, 0.0, -2, 2, 0, 2.0*log(10.0e1), &(*pies), key, 0, 0);
-		key.g = (int) ((1.0-100.0/100.0)*255.0);
-		Pie(2.0*M_PI, 0.0, -2, 4, 0, 2.0*log(100.0e1), &(*pies), key, 0, 0);
+		if (PT == 1) {
+			key.r = 255; key.b = 0;
+			key.g = (int) ((1.0-1.0/100.0)*255.0);
+			Pie(2.0*M_PI, 0.0, -2, 0, 0, 4.0*log(1.0e1), &(*pies), key, 0, 0);
+			key.g = (int) ((1.0-10.0/100.0)*255.0);
+			Pie(2.0*M_PI, 0.0, -2, 2, 0, 4.0*log(10.0e1), &(*pies), key, 0, 0);
+			key.g = (int) ((1.0-100.0/100.0)*255.0);
+			Pie(2.0*M_PI, 0.0, -2, 4, 0, 4.0*log(100.0e1), &(*pies), key, 0, 0);
+		}
+		else {
+			key.r = 255; key.b = 0;
+			key.g = (int) ((1.0-1.0/100.0)*255.0);
+			Pie(2.0*M_PI, 0.0, -2, 0, 0, 2.0*log(1.0e1), &(*pies), key, 0, 0);
+			key.g = (int) ((1.0-10.0/100.0)*255.0);
+			Pie(2.0*M_PI, 0.0, -2, 2, 0, 2.0*log(10.0e1), &(*pies), key, 0, 0);
+			key.g = (int) ((1.0-100.0/100.0)*255.0);
+			Pie(2.0*M_PI, 0.0, -2, 4, 0, 2.0*log(100.0e1), &(*pies), key, 0, 0);
+		}
 	}
 	else if (itopic == 10) {
 		key.r = 255; key.b = 0;
@@ -1053,13 +1217,13 @@ int Angles (int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npres
 							key.r = 255; key.b = 0;
 							if (total_Gas/100.0 > 1.0) key.g = 0;
 							else key.g = (int) ((1.0-total_Gas/100.0)*255.0);
-							Pie(2.0*M_PI, 0.0, 0, itemp, ipressure, 2.0*log(10.0*total_Gas), &(*pies), key, 0, 1); // log = natural logarithm ln
+							Pie(2.0*M_PI, 0.0, 0, itemp, ipressure, 4.0*log(10.0*total_Gas), &(*pies), key, 0, 1); // log = natural logarithm ln
 						}
 						else if (itopic == 5) {
 							for (i=0;i<(*nspecies);i++) {
 								if (angle[i+1] < 0.0 && angle[i+1] > -1.0e-4) angle[i+1] = 0.0;
 								//if (angle[i+1] < 0.0 || angle[i+1] > 2.0*M_PI) printf("ParamExplorationPlot: angle %d out of bounds: %g at ipH %d, ipe %d, iWR %d, itemp %d, ipressure %d\n",i+1,angle[i+1],ipH,ipe,iWR,itemp,ipressure);
-								else if (angle[i+1] > 0.0) Pie(angle[i+1], angle[i], 0, itemp, ipressure, 2.0*log(10.0*total_Gas), &(*pies), color[i+1], 0, 1);
+								else if (angle[i+1] > 0.0) Pie(angle[i+1], angle[i], 0, itemp, ipressure, 4.0*log(10.0*total_Gas), &(*pies), color[i+1], 0, 1);
 								angle[i+1] = angle[i+1] + angle[i]; // To change the starting angle at the next iteration
 							}
 						}
