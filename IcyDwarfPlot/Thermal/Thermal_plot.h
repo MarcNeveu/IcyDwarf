@@ -491,27 +491,27 @@ int TwoAxisPlot (SDL_Renderer* renderer, char *FontFile, double **Values, int gr
 	// y-axis numbers
 	for (itempk=itempk_step;itempk<itempk_max;itempk=itempk+itempk_step) {
 		if (Tmax > (double) itempk*itempk_fold_min && Tmax <= (double) itempk*itempk_fold_max+itempk_fold_step) {
-			scanNumber(&nb, itempk);          // Right-justified
+			scanNumber(&nb, (double) itempk);          // Right-justified
 			ynumber1_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			scanNumber(&nb, itempk*2);
+			scanNumber(&nb, (double) itempk*2.0);
 			ynumber2_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			scanNumber(&nb, itempk*3);
+			scanNumber(&nb, (double) itempk*3.0);
 			ynumber3_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			scanNumber(&nb, itempk*4);
+			scanNumber(&nb, (double) itempk*4.0);
 			ynumber4_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			scanNumber(&nb, itempk*5);
+			scanNumber(&nb, (double) itempk*5.0);
 			ynumber5_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			scanNumber(&nb, itempk*6);
+			scanNumber(&nb, (double) itempk*6.0);
 			ynumber6_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			scanNumber(&nb, itempk*7);
+			scanNumber(&nb, (double) itempk*7.0);
 			if ((double) itempk*7.0 < Tmax) ynumber7_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			scanNumber(&nb, itempk*8);
+			scanNumber(&nb, (double) itempk*8.0);
 			if ((double) itempk*8.0 < Tmax) ynumber8_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			scanNumber(&nb, itempk*9);
+			scanNumber(&nb, (double) itempk*9.0);
 			if ((double) itempk*9.0 < Tmax) ynumber9_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			scanNumber(&nb, itempk*10);
+			scanNumber(&nb, (double) itempk*10.0);
 			if ((double) itempk*10.0 < Tmax) ynumber10_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			scanNumber(&nb, itempk*11);
+			scanNumber(&nb, (double) itempk*11.0);
 			if ((double) itempk*11.0 < Tmax) ynumber11_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
 			break;
 		}
@@ -587,6 +587,10 @@ int TwoAxisPlot (SDL_Renderer* renderer, char *FontFile, double **Values, int gr
 
 	return 0;
 }
+
+//-------------------------------------------------------------------
+//                         Update Displays
+//-------------------------------------------------------------------
 
 int UpdateDisplays (SDL_Renderer* renderer, SDL_Texture* background_tex, char* FontFile, thermalout **thoutput,
 		double **TempK, double **Hydr, double **Kappa, int structure, int grid, int hold_tracks, int plot_switch,

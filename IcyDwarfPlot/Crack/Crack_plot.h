@@ -204,13 +204,13 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double o
 	tmax_tex = renderText(nb,FontFile, axisTextColor, 14, renderer);
 
 	// y-axis: max depth
-	scanNumber(&nb, (min_depth-max_depth)*(int) r_p/NR);
+	scanNumber(&nb, (double)(min_depth-max_depth)*r_p/(double)NR);
 	max_depth_tex = renderText(nb,FontFile, axisTextColor, 14, renderer);
-	scanNumber(&nb, 0.25*(min_depth-max_depth)*(int) r_p/NR);
+	scanNumber(&nb, 0.25*(double)(min_depth-max_depth)*r_p/(double)NR);
 	depth1_tex = renderText(nb,FontFile, axisTextColor, 14, renderer);
-	scanNumber(&nb, 0.5*(min_depth-max_depth)*(int) r_p/NR);
+	scanNumber(&nb, 0.5*(double)(min_depth-max_depth)*r_p/(double)NR);
 	depth2_tex = renderText(nb,FontFile, axisTextColor, 14, renderer);
-	scanNumber(&nb, 0.75*(min_depth-max_depth)*(int) r_p/NR);
+	scanNumber(&nb, 0.75*(double)(min_depth-max_depth)*r_p/(double)NR);
 	depth3_tex = renderText(nb,FontFile, axisTextColor, 14, renderer);
 
 	//-------------------------------------------------------------------
@@ -256,13 +256,13 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double o
 	//                  Numbers for zoom on subseafloor
 	//-------------------------------------------------------------------
 
-	scanNumber(&nb, (int) r_p);                // Surface radius
+	scanNumber(&nb, r_p);                // Surface radius
 	surface_radius = renderText(nb,FontFile, axisTextColor, 12, renderer);
 
-	scanNumber(&nb, min_depth*(int) r_p/NR);   // Core radius
+	scanNumber(&nb, (double)min_depth*r_p/(double)NR);   // Core radius
 	seafloor_radius = renderText(nb,FontFile, axisTextColor, 12, renderer);
 
-	scanNumber(&nb, max_depth*(int) r_p/NR);   // Radius of cracked zone
+	scanNumber(&nb, (double)max_depth*r_p/(double)NR);   // Radius of cracked zone
 	cracked_radius = renderText(nb,FontFile, axisTextColor, 12, renderer);
 
 	//-------------------------------------------------------------------

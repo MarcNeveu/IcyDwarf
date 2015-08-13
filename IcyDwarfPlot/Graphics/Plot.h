@@ -27,7 +27,7 @@ SDL_Rect ClipNumber(int number,int font);
 Uint32 get_pixel32( SDL_Surface *surface, int x, int y );               // Currently not used
 int put_pixel32( SDL_Surface *surface, int x, int y, Uint32 pixel );   // Currently not used
 int renderTexture(SDL_Texture *tex, SDL_Renderer *ren, int x, int y);
-int scanNumber(char (*nb)[10], int i);
+int scanNumber(char (*nb)[10], double i);
 int File2tex(char* title, SDL_Texture** tex, char* path);
 int File2surf(char* title, SDL_Surface** surf, char* path);
 
@@ -145,10 +145,10 @@ int renderTexture(SDL_Texture *tex, SDL_Renderer *ren, int x, int y) {
 }
 
 // Convert number to string, right-aligned
-int scanNumber(char (*nb)[10], int i) {
-	if (i<100) sprintf((*nb), "   %d", i);
-	else if (i<1000) sprintf((*nb), "  %d", i);
-	else sprintf((*nb), "%d", i);
+int scanNumber(char (*nb)[10], double i) {
+	if (i<100.0) sprintf((*nb), "   %g", i);
+	else if (i<1000.0) sprintf((*nb), "  %g", i);
+	else sprintf((*nb), "%g", i);
 	return 0;
 }
 
