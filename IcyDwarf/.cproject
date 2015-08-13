@@ -8,8 +8,6 @@
 				<externalSettings/>
 				<extensions>
 					<extension id="org.eclipse.cdt.core.MachO64" point="org.eclipse.cdt.core.BinaryParser"/>
-					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GLDErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
@@ -18,20 +16,24 @@
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
 				<configuration artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug,org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe" cleanCommand="rm -rf" description="" id="cdt.managedbuild.config.gnu.macosx.exe.debug.1256657878" name="Debug" parent="cdt.managedbuild.config.gnu.macosx.exe.debug">
 					<folderInfo id="cdt.managedbuild.config.gnu.macosx.exe.debug.1256657878." name="/" resourcePath="">
-						<toolChain id="cdt.managedbuild.toolchain.gnu.macosx.exe.debug.1918625884" name="MacOSX GCC" superClass="cdt.managedbuild.toolchain.gnu.macosx.exe.debug">
+						<toolChain id="cdt.managedbuild.toolchain.gnu.macosx.exe.debug.1918625884" name="MacOSX GCC" nonInternalBuilderId="cdt.managedbuild.target.gnu.builder.macosx.exe.debug" superClass="cdt.managedbuild.toolchain.gnu.macosx.exe.debug">
 							<targetPlatform id="cdt.managedbuild.target.gnu.platform.macosx.exe.debug.1885527442" name="Debug Platform" superClass="cdt.managedbuild.target.gnu.platform.macosx.exe.debug"/>
-							<builder buildPath="${workspace_loc:/IcyDwarf}/Debug" id="cdt.managedbuild.target.gnu.builder.macosx.exe.debug.1621476949" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.macosx.exe.debug"/>
-							<tool id="cdt.managedbuild.tool.macosx.c.linker.macosx.exe.debug.1586980802" name="MacOS X C Linker" superClass="cdt.managedbuild.tool.macosx.c.linker.macosx.exe.debug">
+							<builder autoBuildTarget="all" buildPath="${workspace_loc:/IcyDwarf}/Debug" cleanBuildTarget="clean" id="org.eclipse.cdt.build.core.internal.builder.1838511231" incrementalBuildTarget="all" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="CDT Internal Builder" superClass="org.eclipse.cdt.build.core.internal.builder"/>
+							<tool command="gcc" commandLinePattern="${COMMAND} ${FLAGS} ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS}" id="cdt.managedbuild.tool.macosx.c.linker.macosx.exe.debug.1586980802" name="MacOS X C Linker" superClass="cdt.managedbuild.tool.macosx.c.linker.macosx.exe.debug">
 								<option id="macosx.c.link.option.libs.1008309297" name="Libraries (-l)" superClass="macosx.c.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="R"/>
 								</option>
 								<option id="macosx.c.link.option.paths.1817112563" name="Library search path (-L)" superClass="macosx.c.link.option.paths" valueType="libPaths">
-									<listOptionValue builtIn="false" value="/Users/marc/Documents/Research/&quot;2011 thru 2016 ASU/2. Subsurface hydrospheres&quot;/Git/IcyDwarf/IcyDwarf"/>
-									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Resources/lib/x86_64"/>
+									<listOptionValue builtIn="false" value="/Users/marc/Documents/Research/2011-2016_ASU/2IcyDwarf/Git/IcyDwarf/IcyDwarf"/>
+									<listOptionValue builtIn="false" value="/usr/local/lib"/>
+									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Versions/3.0/Resources/lib"/>
 								</option>
-								<option id="macosx.c.link.option.ldflags.1667768476" name="Linker flags" superClass="macosx.c.link.option.ldflags" value="-F/Library/Frameworks -arch x86_64" valueType="string"/>
+								<option id="macosx.c.link.option.ldflags.1667768476" name="Linker flags" superClass="macosx.c.link.option.ldflags" value="-F/Library/Frameworks -arch x86_64 -lgomp" valueType="string"/>
 								<option id="macosx.c.link.option.userobjs.1352728355" name="Other objects" superClass="macosx.c.link.option.userobjs" valueType="userObjs">
 									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Resources/library/RInside/lib/x86_64/libRInside.a"/>
+									<listOptionValue builtIn="false" value="/usr/local/lib/libiphreeqc-3.1.7.dylib"/>
+									<listOptionValue builtIn="false" value="/usr/local/lib/libiphreeqc.dylib"/>
+									<listOptionValue builtIn="false" value="/usr/local/lib/libiphreeqc.a"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.macosx.c.linker.input.1183805878" superClass="cdt.managedbuild.tool.macosx.c.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
@@ -47,11 +49,13 @@
 								<option id="gnu.cpp.compilermacosx.exe.debug.option.optimization.level.251155130" name="Optimization Level" superClass="gnu.cpp.compilermacosx.exe.debug.option.optimization.level" value="gnu.cpp.compiler.optimization.level.none" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.macosx.exe.debug.option.debugging.level.221131213" name="Debug Level" superClass="gnu.cpp.compiler.macosx.exe.debug.option.debugging.level" value="gnu.cpp.compiler.debugging.level.max" valueType="enumerated"/>
 							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.c.compiler.macosx.exe.debug.239374527" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.macosx.exe.debug">
+							<tool command="gcc" id="cdt.managedbuild.tool.gnu.c.compiler.macosx.exe.debug.239374527" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.macosx.exe.debug">
 								<option defaultValue="gnu.c.optimization.level.none" id="gnu.c.compiler.macosx.exe.debug.option.optimization.level.1247380547" name="Optimization Level" superClass="gnu.c.compiler.macosx.exe.debug.option.optimization.level" valueType="enumerated"/>
 								<option id="gnu.c.compiler.macosx.exe.debug.option.debugging.level.1151105240" name="Debug Level" superClass="gnu.c.compiler.macosx.exe.debug.option.debugging.level" value="gnu.c.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.include.paths.1102186728" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="/usr/include"/>
+									<listOptionValue builtIn="false" value="/usr/local/lib/gcc/x86_64-apple-darwin14.0.0/5.0.0/include"/>
+									<listOptionValue builtIn="false" value="/usr/local/include"/>
 									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Versions/3.0/Resources/include"/>
 									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Versions/3.0/Resources/library/RInside/include"/>
 								</option>
@@ -61,7 +65,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="WaterRock|Crack|Thermal|Cryolava_old|Cryolava" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="WaterRock|Crack|Thermal|Cryolava|Cryolava_old" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Crack"/>
 						<entry excluding="Cryolava_old" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Cryolava"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Cryolava/Cryolava_old"/>
@@ -77,8 +81,6 @@
 				<externalSettings/>
 				<extensions>
 					<extension id="org.eclipse.cdt.core.MachO64" point="org.eclipse.cdt.core.BinaryParser"/>
-					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GLDErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
@@ -87,20 +89,24 @@
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
 				<configuration artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.release,org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe" cleanCommand="rm -rf" description="" id="cdt.managedbuild.config.macosx.exe.release.624184685" name="Release" parent="cdt.managedbuild.config.macosx.exe.release">
 					<folderInfo id="cdt.managedbuild.config.macosx.exe.release.624184685." name="/" resourcePath="">
-						<toolChain id="cdt.managedbuild.toolchain.gnu.macosx.exe.release.1345931613" name="MacOSX GCC" superClass="cdt.managedbuild.toolchain.gnu.macosx.exe.release">
+						<toolChain id="cdt.managedbuild.toolchain.gnu.macosx.exe.release.1345931613" name="MacOSX GCC" nonInternalBuilderId="cdt.managedbuild.target.gnu.builder.macosx.exe.release" superClass="cdt.managedbuild.toolchain.gnu.macosx.exe.release">
 							<targetPlatform id="cdt.managedbuild.target.gnu.platform.macosx.exe.release.1126277957" name="Debug Platform" superClass="cdt.managedbuild.target.gnu.platform.macosx.exe.release"/>
-							<builder autoBuildTarget="all" buildPath="${workspace_loc:/IcyDwarf}/Release" cleanBuildTarget="clean" enableAutoBuild="false" enableCleanBuild="true" enabledIncrementalBuild="true" id="cdt.managedbuild.target.gnu.builder.macosx.exe.release.1160659499" incrementalBuildTarget="all" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" parallelBuildOn="false" stopOnErr="true" superClass="cdt.managedbuild.target.gnu.builder.macosx.exe.release"/>
+							<builder autoBuildTarget="all" buildPath="${workspace_loc:/IcyDwarf}/Release" cleanBuildTarget="clean" id="org.eclipse.cdt.build.core.internal.builder.1822872773" incrementalBuildTarget="all" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="CDT Internal Builder" superClass="org.eclipse.cdt.build.core.internal.builder"/>
 							<tool command="gcc" commandLinePattern="${COMMAND} ${FLAGS} ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS}" id="cdt.managedbuild.tool.macosx.c.linker.macosx.exe.release.1154934444" name="MacOS X C Linker" superClass="cdt.managedbuild.tool.macosx.c.linker.macosx.exe.release">
 								<option id="macosx.c.link.option.libs.869306267" name="Libraries (-l)" superClass="macosx.c.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="R"/>
 								</option>
 								<option id="macosx.c.link.option.paths.1132158293" name="Library search path (-L)" superClass="macosx.c.link.option.paths" valueType="libPaths">
-									<listOptionValue builtIn="false" value="/Users/marc/Documents/Research/&quot;2011 thru 2016 ASU/2. Subsurface hydrospheres&quot;/Git/IcyDwarf/IcyDwarf"/>
+									<listOptionValue builtIn="false" value="/Users/marc/Documents/Research/2011-2016_ASU/2IcyDwarf/Git/IcyDwarf/IcyDwarf"/>
+									<listOptionValue builtIn="false" value="/usr/local/lib"/>
 									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Versions/3.0/Resources/lib"/>
 								</option>
-								<option id="macosx.c.link.option.ldflags.1918427544" name="Linker flags" superClass="macosx.c.link.option.ldflags" value="-F/Library/Frameworks -arch x86_64" valueType="string"/>
+								<option id="macosx.c.link.option.ldflags.1918427544" name="Linker flags" superClass="macosx.c.link.option.ldflags" value="-F/Library/Frameworks -arch x86_64 -lgomp" valueType="string"/>
 								<option id="macosx.c.link.option.userobjs.2145990486" name="Other objects" superClass="macosx.c.link.option.userobjs" valueType="userObjs">
 									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Resources/library/RInside/lib/x86_64/libRInside.a"/>
+									<listOptionValue builtIn="false" value="/usr/local/lib/libiphreeqc-3.1.7.dylib"/>
+									<listOptionValue builtIn="false" value="/usr/local/lib/libiphreeqc.dylib"/>
+									<listOptionValue builtIn="false" value="/usr/local/lib/libiphreeqc.a"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.macosx.c.linker.input.1720534438" superClass="cdt.managedbuild.tool.macosx.c.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
@@ -121,10 +127,12 @@
 								<option id="gnu.c.compiler.macosx.exe.release.option.debugging.level.864024125" name="Debug Level" superClass="gnu.c.compiler.macosx.exe.release.option.debugging.level" value="gnu.c.debugging.level.default" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.include.paths.1923154675" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="/usr/include"/>
+									<listOptionValue builtIn="false" value="/usr/local/lib/gcc/x86_64-apple-darwin14.0.0/5.0.0/include"/>
+									<listOptionValue builtIn="false" value="/usr/local/include"/>
 									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Versions/3.0/Resources/include"/>
 									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Versions/3.0/Resources/library/RInside/include"/>
 								</option>
-								<option id="gnu.c.compiler.option.misc.other.361968030" name="Other flags" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0" valueType="string"/>
+								<option id="gnu.c.compiler.option.misc.other.361968030" name="Other flags" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0 -arch x86_64 -fopenmp" valueType="string"/>
 								<option id="gnu.c.compiler.option.debugging.gprof.1305378107" name="Generate gprof information (-pg)" superClass="gnu.c.compiler.option.debugging.gprof" value="false" valueType="boolean"/>
 								<option id="gnu.c.compiler.option.debugging.prof.796180563" name="Generate prof information (-p)" superClass="gnu.c.compiler.option.debugging.prof" value="false" valueType="boolean"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1547280650" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
@@ -132,7 +140,7 @@
 						</toolChain>
 					</folderInfo>
 					<sourceEntries>
-						<entry excluding="WaterRock|Crack|Thermal|Cryolava_old|Cryolava" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+						<entry excluding="WaterRock|Crack|Thermal|Cryolava|Cryolava_old" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Crack"/>
 						<entry excluding="Cryolava_old" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Cryolava"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Cryolava/Cryolava_old"/>
@@ -159,6 +167,9 @@
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="refreshScope" versionNumber="2">
 		<configuration configurationName="Release">
+			<resource resourceType="PROJECT" workspacePath="/IcyDwarf"/>
+		</configuration>
+		<configuration configurationName="Multiple configurations">
 			<resource resourceType="PROJECT" workspacePath="/IcyDwarf"/>
 		</configuration>
 		<configuration configurationName="Debug">

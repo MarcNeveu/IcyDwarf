@@ -991,18 +991,25 @@ Zr(OH)2+2 =  Zr(OH)2+2
 #       -Range:  0-300
 	-Vm 6.7617 8.7279 2.3212 -3.1397 -0.31790 # SH90
 
- 2 H+  + 2 HCO3-  + H2O  = C2H6  + 3.5 O2
+ 2 H+ + 2 HCO3- + H2O = C2H6 + 3.5 O2
         -llnl_gamma           3.0    
         log_k            -228.6072
 	-delta_H	0	      	# Not possible to calculate deltarH	C2H6
 #	deltafH	-0 kcal/mol
-        -analytic    0.10777E+02    0.72105E-01   -0.67489E+05   -0.13915E+02   -0.10531E+04
-#	-analytic -539.9 1.2150 0 0 0 -8.296E-4 # !!! generated using CHNOSZ, discrepant with above expression
+#       -analytic    -0.10777E+02    0.72105E-01   -0.67489E+05   -0.13915E+02   -0.10531E+04
+	-analytic -539.9 1.2150 0 0 0 -8.296E-4 # !!! generated using CHNOSZ, discrepant with above expression unless the first term is -0.10777E+02 instead of 0.10777E+02
 #       -Range:  0-300
 	-Vm 8.75 13.1051 1.6258 -3.3207 -0.06270 # SH90
 
+3 H+ + 3 HCO3- + H2O = C3H8 + 5 O2 # SH90
+	-llnl_gamma           3.0 # thermo.com.V8.R6+.tdat
+	log_k		 -363.088
+	-analytic -8.04E+2 1.877 0 0 0 -1.33E-3
+#	-Range:  0-350
+	-Vm 10.768 17.6785 -0.5878 -3.5097 -0.165
+
  2.000 H+  + 2 HCO3-  = C2H4 + 3 O2
-        -llnl_gamma           3.0    
+        -llnl_gamma           3.0
         log_k            -254.5034
 	-delta_H	1446.6	kJ/mol	# Calculated deltarH	C2H4
 #	deltafH	24.65 kcal/mol
@@ -19894,6 +19901,15 @@ Ar(g)
 	-T_c 150.687 # K
 	-P_c 47.99 # atm, 4.863 MPa
 	-Omega 0.000 # Wikipedia, citing Yaws, Carl L. (2001). Matheson Gas Data Book. McGraw-Hill.
+
+C3H8(g) # HOK+98
+	C3H8 = C3H8
+	log_k		-2.876
+	-analytic 1.885	-2.55E-2 0 0 0 3.20E-5 # Not the best
+#	25C, 1 bar, data fitter 0-300C
+	-T_c 369.522
+	-P_c 42.4924
+	-Omega 0.152 # http://webserver.dmt.upm.es/~isidoro/dat1/eGAS.pdf
 
 C2H6(g) # HOK+98
 	C2H6 = C2H6
