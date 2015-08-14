@@ -21,9 +21,9 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double o
 int UpdateDisplaysCrack(SDL_Renderer* renderer, SDL_Texture* background_tex, SDL_Surface* crack_time, SDL_Surface* WR,
 		SDL_Texture* WR_bar_tex, SDL_Texture* crack_time_tex, SDL_Texture* WR_tex, SDL_Texture* progress_bar_tex,
 		SDL_Texture* cracked_rock_tex, int min_depth, int max_depth, int t, int NR, int NT_output, double output_every,
-		double r_p, double **Crack_depth, char* FontFile, SDL_Color axisTextColor, int itimetex, SDL_Texture* time_tex[itimetex],
+		double r_p, double **Crack_depth, char* FontFile, SDL_Color axisTextColor, int itimetex, SDL_Texture **time_tex,
 		SDL_Texture* surface_radius, SDL_Texture* seafloor_radius, SDL_Texture* cracked_radius, SDL_Texture* max_ratio_tex,
-		int idepthtex, SDL_Texture* depth_tex[idepthtex]);
+		int idepthtex, SDL_Texture **depth_tex);
 
 int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double output_every, double r_p, thermalout **thoutput,
 		int warnings, int msgout, SDL_Renderer* renderer, int* view, int* quit, char* FontFile, SDL_Color axisTextColor) {
@@ -67,15 +67,10 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double o
 	SDL_Texture* seafloor_radius = NULL;
 	SDL_Texture* cracked_radius = NULL;
 	SDL_Texture* max_ratio_tex = NULL;
-	SDL_Texture* time_tex[itimetex];
-	SDL_Texture* depth_tex[idepthtex];
-
-	for (i=0;i<itimetex;i++) {
-		time_tex[i] = NULL;
-	}
-	for (i=0;i<idepthtex;i++) {
-		depth_tex[i] = NULL;
-	}
+	SDL_Texture** time_tex = malloc(itimetex*sizeof(SDL_Texture*));
+	for (i=0;i<itimetex;i++) time_tex[i] = NULL;
+	SDL_Texture** depth_tex= malloc(idepthtex*sizeof(SDL_Texture*));
+	for (i=0;i<idepthtex;i++) depth_tex[i] = NULL;
 
 	//-------------------------------------------------------------------
 	//                       Read output from Crack
@@ -398,7 +393,9 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double o
 	SDL_DestroyTexture(cracked_radius);
 	SDL_DestroyTexture(max_ratio_tex);
 	for (i=0;i<itimetex;i++) SDL_DestroyTexture(time_tex[i]);
+	free(time_tex);
 	for (i=0;i<idepthtex;i++) SDL_DestroyTexture(depth_tex[i]);
+	free(depth_tex);
 
 	for (t=0;t<NT_output;t++) {
 		free (Crack[t]);
@@ -419,9 +416,9 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double o
 int UpdateDisplaysCrack(SDL_Renderer* renderer, SDL_Texture* background_tex, SDL_Surface* crack_time, SDL_Surface* WR,
 		SDL_Texture* WR_bar_tex, SDL_Texture* crack_time_tex, SDL_Texture* WR_tex, SDL_Texture* progress_bar_tex,
 		SDL_Texture* cracked_rock_tex, int min_depth, int max_depth, int t, int NR, int NT_output, double output_every,
-		double r_p, double **Crack_depth, char* FontFile, SDL_Color axisTextColor, int itimetex, SDL_Texture* time_tex[itimetex],
+		double r_p, double **Crack_depth, char* FontFile, SDL_Color axisTextColor, int itimetex, SDL_Texture **time_tex,
 		SDL_Texture* surface_radius, SDL_Texture* seafloor_radius, SDL_Texture* cracked_radius, SDL_Texture* max_ratio_tex,
-		int idepthtex, SDL_Texture* depth_tex[idepthtex]) {
+		int idepthtex, SDL_Texture **depth_tex) {
 
 	int i = 0;
 	double percent = 0.0;

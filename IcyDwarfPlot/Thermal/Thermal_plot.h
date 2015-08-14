@@ -31,7 +31,7 @@ int UpdateDisplaysThermal(SDL_Renderer* renderer, SDL_Texture* background_tex, c
 		int t, int NR, int NT_output, double output_every, int ircore, double Tmax, double kappamax,
 		SDL_Surface* value_time, SDL_Color axisTextColor, Uint32 alpha, SDL_Texture* DryRock_tex, SDL_Texture* Liquid_tex,
 		SDL_Texture* Ice_tex, SDL_Texture* Crust_tex, SDL_Texture* progress_bar_tex, int irad, int inumx,
-		SDL_Texture* xnum_tex[inumx], SDL_Texture* ynumber0_tex,
+		SDL_Texture **xnum_tex, SDL_Texture* ynumber0_tex,
 		SDL_Texture* temp_tex, SDL_Texture* hydr_tex, SDL_Texture* k_tex, SDL_Texture* grid_tex, SDL_Texture* structure_tex,
 		SDL_Texture* hold_tracks_tex, SDL_Texture* hydr_title_tex, SDL_Texture* k_title_tex, SDL_Texture* legend_tex);
 
@@ -77,8 +77,8 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 	SDL_Texture* prev_tex = NULL;
 	SDL_Texture* next_tex = NULL;
 	SDL_Texture* legend_tex = NULL;
-	SDL_Texture* xnum_tex[inumx];                // x-axis labels
 
+	SDL_Texture** xnum_tex = malloc(inumx*sizeof(SDL_Texture*));                // x-axis labels
 	for (i=0;i<inumx;i++) xnum_tex[i] = NULL;
 
 	double **TempK = (double**) malloc(NT_output*sizeof(double*));    // Temperature
@@ -309,14 +309,15 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 	SDL_DestroyTexture(prev_tex);
 	SDL_DestroyTexture(next_tex);
 	for (i=0;i<inumx;i++) SDL_DestroyTexture(xnum_tex[i]);
+	free(xnum_tex);
 
 	for (t=0;t<NT_output;t++) {
-		free (TempK[t]);
-		free (Hydr[t]);
-		free (Kappa[t]);
+		free(TempK[t]);
+		free(Hydr[t]);
+		free(Kappa[t]);
 	}
-	free (TempK);
-	free (Hydr);
+	free(TempK);
+	free(Hydr);
 	free(Kappa);
 
 	return 0;
@@ -442,7 +443,7 @@ int TwoAxisPlot (SDL_Renderer* renderer, char *FontFile, double **Values, int gr
 	int inumy = 11; // Number of y-axis labels
 
 	SDL_Texture* value_time_tex;
-	SDL_Texture* ynum_tex[inumy];
+	SDL_Texture** ynum_tex = malloc(inumy*sizeof(SDL_Texture*));
 	for (i=0;i<inumy;i++) ynum_tex[i] = NULL;
 
 	int T = 0;
@@ -514,6 +515,7 @@ int TwoAxisPlot (SDL_Renderer* renderer, char *FontFile, double **Values, int gr
 
 	SDL_DestroyTexture(value_time_tex);
 	for (i=0;i<inumy;i++) SDL_DestroyTexture(ynum_tex[i]);
+	free(ynum_tex);
 
 	return 0;
 }
@@ -527,7 +529,7 @@ int UpdateDisplaysThermal(SDL_Renderer* renderer, SDL_Texture* background_tex, c
 		int t, int NR, int NT_output, double output_every, int ircore, double Tmax, double kappamax,
 		SDL_Surface* value_time, SDL_Color axisTextColor, Uint32 alpha, SDL_Texture* DryRock_tex, SDL_Texture* Liquid_tex,
 		SDL_Texture* Ice_tex, SDL_Texture* Crust_tex, SDL_Texture* progress_bar_tex, int irad, int inumx,
-		SDL_Texture* xnum_tex[inumx], SDL_Texture* ynumber0_tex,
+		SDL_Texture **xnum_tex, SDL_Texture* ynumber0_tex,
 		SDL_Texture* temp_tex, SDL_Texture* hydr_tex, SDL_Texture* k_tex, SDL_Texture* grid_tex, SDL_Texture* structure_tex,
 		SDL_Texture* hold_tracks_tex, SDL_Texture* hydr_title_tex, SDL_Texture* k_title_tex, SDL_Texture* legend_tex) {
 
