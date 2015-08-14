@@ -197,9 +197,9 @@ int main(int argc, char *argv[]){
 	//-------------------------------------------------------------------
 
 	free(FontFile);
-	SDL_FreeSurface(IcyDwarfIcon);
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
+	SDL_FreeSurface(IcyDwarfIcon);
 	SDL_Quit();
 
 	for (r=0;r<NR;r++) {

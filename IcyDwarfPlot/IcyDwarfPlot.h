@@ -77,27 +77,6 @@ double calculate_mass_liquid (int NR, int NT, int t, thermalout **thoutput) {
 }
 
 //-------------------------------------------------------------------
-//                    Calculate the seafloor depth
-//-------------------------------------------------------------------
-
-int calculate_seafloor (thermalout **thoutput, int NR, int NT, int t) {
-
-	int r_seafloor = NR-1;
-	int r = NR-1;
-
-	if (t >= NT) printf("IcyDwarf: t>=NT\n");
-	while (r>=0) {
-		if (thoutput[r][t].mh2os + thoutput[r][t].mh2ol <= 0.0) {
-			r_seafloor = r-1; // Because the last layer is always only partially filled with rock
-			break;
-		}
-		r--;
-	}
-	if (r == NR) printf("IcyDwarf: Seafloor not found at t=%d\n",t);
-return r_seafloor;
-}
-
-//-------------------------------------------------------------------
 //                    Read IcyDwarfPlot input file
 //-------------------------------------------------------------------
 

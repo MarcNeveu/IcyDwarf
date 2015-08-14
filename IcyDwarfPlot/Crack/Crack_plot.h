@@ -180,12 +180,17 @@ int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double o
 			}
 		}
 	}
-	min_depth = calculate_seafloor (thoutput, NR, NT_output, NT_output-1);
-	max_depth = min_depth;
+	min_depth = 0;
+	max_depth = NR-1;
 	for (t=0;t<NT_output;t++) {
-		for (r=0;r<NR;r++) {
-			if (Crack[t][r] > 0.0 && r<=max_depth) {
+		for (r=0;r<NR-1;r++) {
+			if (Crack[t][r] > 0.0 && r<max_depth) {
 				max_depth = r;
+			}
+		}
+		for (r=NR-1;r>=0;r--) {
+			if (Crack[t][r] > 0.0 && r>min_depth) {
+				min_depth = r;
 			}
 		}
 	}
@@ -460,9 +465,9 @@ int UpdateDisplaysCrack(SDL_Renderer* renderer, SDL_Texture* background_tex, SDL
 
 	// Zoom on the subseafloor
 	cracked_rock_clip.x = 0, cracked_rock_clip.y = 0;
-	cracked_rock_clip.w = SCREEN_WIDTH, cracked_rock_clip.h = 2*floor((Crack_depth[t][1])/((min_depth-max_depth)*r_p/NR)*125.0);
+	cracked_rock_clip.w = SCREEN_WIDTH, cracked_rock_clip.h = 2*floor((Crack_depth[t][1])/((double)(min_depth-max_depth)/(double)NR*r_p)*125.0);
 	cracked_rock_dilation.x = 118, cracked_rock_dilation.y = 64;
-	cracked_rock_dilation.w = 319, cracked_rock_dilation.h = floor(Crack_depth[t][1]/((min_depth-max_depth)*r_p/NR)*125.0);
+	cracked_rock_dilation.w = 319, cracked_rock_dilation.h = floor(Crack_depth[t][1]/((double)(min_depth-max_depth)/(double)NR*r_p)*125.0);
 	SDL_RenderCopy(renderer, cracked_rock_tex, &cracked_rock_clip, &cracked_rock_dilation);
 
 	// Time elapsed
