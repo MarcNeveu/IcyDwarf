@@ -21,7 +21,7 @@ Subroutines
 -------------------------------
 Thermal plot
 	IcyDwarf output       Thermal.txt
-	Max temp (K; 0=auto)  1500
+	Max temp (K; 0=auto)  500
 Geochemistry plot
 	Temperature           0 250 50
 	Pressure              200 200 200

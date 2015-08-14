@@ -292,6 +292,28 @@ int UpdateDisplaysParamExploration (SDL_Renderer* renderer, SDL_Texture* backgro
 			renderTexture(Numbers[i+ntemp+npressure+npH+npe], renderer, x + i*d, y);
 		}
 	}
+	else { // P-T display
+		x = 83; y = 391; d = 52;
+		for (i=0;i<ntemp;i++) {
+			renderTexture(Numbers[i], renderer, x + i*d, y);
+		}
+		x = 40; y = 43; d = 52;
+		for (i=0;i<npressure;i++) {
+			renderTexture(Numbers[ntemp+npressure-i-1], renderer, x, y + i*d);
+		}
+		x = 578; y = 551; d = 26;
+		for (i=0;i<npH;i++) {
+			renderTexture(Numbers[i+ntemp+npressure], renderer, x + i*d, y);
+		}
+		x = 553; y = 342; d = 16;
+		for (i=0;i<npe;i++) {
+			renderTexture(Numbers[ntemp+npressure+npH+npe-i-1], renderer, x, y + i*d);
+		}
+		x = 580; y = 214; d = 63;
+		for (i=0;i<nWR;i++) {
+			renderTexture(Numbers[i+ntemp+npressure+npH+npe], renderer, x + i*d, y);
+		}
+	}
 
 	x = 405; y = 502; R = 50;
 
@@ -525,7 +547,7 @@ int PlotNumChem(int PT, int nparam, int ntemp, double Tmin, double Tstep, int np
 		SDL_Texture* (*Numbers)[nparam], char* FontFile) {
 
 	int i = 0;
-	char nb[10];
+	char nb[20];
 	SDL_Color black;
 	black.r = 0; black.g = 0; black.b = 0; black.a = 0;
 	SDL_Color white;

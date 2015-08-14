@@ -26,14 +26,12 @@ int TwoAxisPlot (SDL_Renderer* renderer, char *FontFile, double **Values, int gr
 		double Tmax, SDL_Surface* temp_time, SDL_Rect temp_time_clip, SDL_Rect* temp_time_dilation,
 		SDL_Color axisTextColor, Uint32 alpha);
 
-int UpdateDisplays (SDL_Renderer* renderer, SDL_Texture* background_tex, char* FontFile, thermalout **thoutput,
+int UpdateDisplaysThermal(SDL_Renderer* renderer, SDL_Texture* background_tex, char* FontFile, thermalout **thoutput,
 		double **TempK, double **Hydr, double **Kappa, int structure, int grid, int hold_tracks, int plot_switch,
 		int t, int NR, int NT_output, double output_every, int ircore, double Tmax, double kappamax,
 		SDL_Surface* value_time, SDL_Color axisTextColor, Uint32 alpha, SDL_Texture* DryRock_tex, SDL_Texture* Liquid_tex,
-		SDL_Texture* Ice_tex, SDL_Texture* Crust_tex, SDL_Texture* progress_bar_tex, int irad,
-		SDL_Texture* xnumber0_tex, SDL_Texture* xnumber1_tex, SDL_Texture* xnumber2_tex, SDL_Texture* xnumber3_tex,
-		SDL_Texture* xnumber4_tex, SDL_Texture* xnumber5_tex, SDL_Texture* xnumber6_tex, SDL_Texture* xnumber7_tex,
-		SDL_Texture* xnumber8_tex, SDL_Texture* xnumber9_tex, SDL_Texture* ynumber0_tex,
+		SDL_Texture* Ice_tex, SDL_Texture* Crust_tex, SDL_Texture* progress_bar_tex, int irad, int inumx,
+		SDL_Texture* xnum_tex[inumx], SDL_Texture* ynumber0_tex,
 		SDL_Texture* temp_tex, SDL_Texture* hydr_tex, SDL_Texture* k_tex, SDL_Texture* grid_tex, SDL_Texture* structure_tex,
 		SDL_Texture* hold_tracks_tex, SDL_Texture* hydr_title_tex, SDL_Texture* k_title_tex, SDL_Texture* legend_tex);
 
@@ -43,6 +41,7 @@ int handleClickThermal(SDL_Event e, int *t, int *t_init, int *grid, int *structu
 int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double output_every, double r_p, thermalout **thoutput,
 		int warnings, int msgout, SDL_Renderer* renderer, int* view, int* quit, char* FontFile, SDL_Color axisTextColor) {
 
+	int i = 0;
 	int r = 0;
 	int t = 0;
 	int irad = 0;
@@ -51,6 +50,7 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 	int structure = 0;
 	int hold_tracks = 0;
 	int plot_switch = 0;
+	int inumx = 10;                              // Number of x-axis labels
 	double Tmax = 0.0;                           // Max temperature ever encountered in any layer
 	double kappamax = 0.0;                       // Max thermal conductivity ever encountered in any layer
 	Uint32 *pixmem32;
@@ -60,16 +60,6 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 	SDL_Surface* progress_bar = NULL;
 	SDL_Surface* value_time = NULL;              // Value vs. time plot
 	SDL_Texture* ynumber0_tex = NULL;            // Axis numbers
-	SDL_Texture* xnumber0_tex = NULL;
-	SDL_Texture* xnumber1_tex = NULL;
-	SDL_Texture* xnumber2_tex = NULL;
-	SDL_Texture* xnumber3_tex = NULL;
-	SDL_Texture* xnumber4_tex = NULL;
-	SDL_Texture* xnumber5_tex = NULL;
-	SDL_Texture* xnumber6_tex = NULL;
-	SDL_Texture* xnumber7_tex = NULL;
-	SDL_Texture* xnumber8_tex = NULL;
-	SDL_Texture* xnumber9_tex = NULL;
 	SDL_Texture* DryRock_tex = NULL;
 	SDL_Texture* Liquid_tex = NULL;
 	SDL_Texture* Ice_tex = NULL;
@@ -87,6 +77,9 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 	SDL_Texture* prev_tex = NULL;
 	SDL_Texture* next_tex = NULL;
 	SDL_Texture* legend_tex = NULL;
+	SDL_Texture* xnum_tex[inumx];                // x-axis labels
+
+	for (i=0;i<inumx;i++) xnum_tex[i] = NULL;
 
 	double **TempK = (double**) malloc(NT_output*sizeof(double*));    // Temperature
 	if (TempK == NULL) printf("Thermal_plot: Not enough memory to create TempK[NT_output]\n");
@@ -162,27 +155,15 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 	ynumber0_tex = renderText("      0",FontFile, axisTextColor, 16, renderer);
 	char nb[10];
 
-	xnumber0_tex = renderText("0",FontFile, axisTextColor, 16, renderer);
+	xnum_tex[0] = renderText("0",FontFile, axisTextColor, 16, renderer);
 	for (irad=10;irad<2000;irad=irad+10) {
 		if (thoutput[NR-1][0].radius > (double) irad*5.0 && thoutput[NR-1][0].radius <= (double) irad*5.0+50.0) {
-			sprintf(nb, "%d", irad);         // No need to right-justify, center-justified by default
-			xnumber1_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			sprintf(nb, "%d", irad*2);
-			xnumber2_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			sprintf(nb, "%d", irad*3);
-			xnumber3_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			sprintf(nb, "%d", irad*4);
-			xnumber4_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			sprintf(nb, "%d", irad*5);
-			xnumber5_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			sprintf(nb, "%d", irad*6);
-			if ((double) irad*6.0 < thoutput[NR-1][0].radius) xnumber6_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			sprintf(nb, "%d", irad*7);
-			if ((double) irad*7.0 < thoutput[NR-1][0].radius) xnumber7_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			sprintf(nb, "%d", irad*8);
-			if ((double) irad*8.0 < thoutput[NR-1][0].radius) xnumber8_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			sprintf(nb, "%d", irad*9);
-			if ((double) irad*9.0 < thoutput[NR-1][0].radius) xnumber9_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
+			for (i=1;i<inumx;i++) {
+				if (i<6 || (double) irad*(double)i < thoutput[NR-1][0].radius) {
+					sprintf(nb, "%d", irad*i);         // No need to right-justify, center-justified by default
+					xnum_tex[i] = renderText(nb,FontFile, axisTextColor, 16, renderer);
+				}
+			}
 			break;
 		}
 	}
@@ -256,13 +237,11 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 									&t_memory, NT_output);
 						}
 						// Update displays
-						UpdateDisplays(renderer, background_tex, FontFile, thoutput, TempK, Hydr, Kappa, structure,
+						UpdateDisplaysThermal(renderer, background_tex, FontFile, thoutput, TempK, Hydr, Kappa, structure,
 								grid, hold_tracks, plot_switch, t, NR, NT_output, output_every, ircore, Tmax, kappamax,
-								value_time, axisTextColor, alpha, DryRock_tex, Liquid_tex, Ice_tex, Crust_tex,
-								progress_bar_tex, irad, xnumber0_tex, xnumber1_tex, xnumber2_tex, xnumber3_tex,
-								xnumber4_tex, xnumber5_tex, xnumber6_tex, xnumber7_tex, xnumber8_tex, xnumber9_tex,
-								ynumber0_tex, temp_tex, hydr_tex, k_tex, grid_tex, structure_tex, hold_tracks_tex,
-								hydr_title_tex, k_title_tex, legend_tex);
+								value_time, axisTextColor, alpha, DryRock_tex, Liquid_tex, Ice_tex, Crust_tex, progress_bar_tex,
+								irad, inumx, xnum_tex, ynumber0_tex, temp_tex, hydr_tex, k_tex, grid_tex, structure_tex,
+								hold_tracks_tex, hydr_title_tex, k_title_tex, legend_tex);
 					}
 					if (stop_clicked == 1) t = t_memory;
 					else t = NT_output-1, t_init = 0;
@@ -285,13 +264,11 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 							t = floor(((double) e.button.x + e.motion.xrel - 20.0)/(780.0-20.0)*NT_output);
 
 							// Update displays
-							UpdateDisplays(renderer, background_tex, FontFile, thoutput, TempK, Hydr, Kappa, structure,
+							UpdateDisplaysThermal(renderer, background_tex, FontFile, thoutput, TempK, Hydr, Kappa, structure,
 									grid, hold_tracks, plot_switch, t, NR, NT_output, output_every, ircore, Tmax, kappamax,
-									value_time, axisTextColor, alpha, DryRock_tex, Liquid_tex, Ice_tex, Crust_tex,
-									progress_bar_tex, irad, xnumber0_tex, xnumber1_tex, xnumber2_tex, xnumber3_tex,
-									xnumber4_tex, xnumber5_tex, xnumber6_tex, xnumber7_tex, xnumber8_tex, xnumber9_tex,
-									ynumber0_tex, temp_tex, hydr_tex, k_tex, grid_tex, structure_tex, hold_tracks_tex,
-									hydr_title_tex, k_title_tex, legend_tex);
+									value_time, axisTextColor, alpha, DryRock_tex, Liquid_tex, Ice_tex, Crust_tex, progress_bar_tex,
+									irad, inumx, xnum_tex, ynumber0_tex, temp_tex, hydr_tex, k_tex, grid_tex, structure_tex,
+									hold_tracks_tex, hydr_title_tex, k_title_tex, legend_tex);
 						}
 					}
 					t_init = t;  // To pick up the animation back where we're leaving off
@@ -300,13 +277,11 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 		}
 
 		// Update displays
-		UpdateDisplays(renderer, background_tex, FontFile, thoutput, TempK, Hydr, Kappa, structure,
+		UpdateDisplaysThermal(renderer, background_tex, FontFile, thoutput, TempK, Hydr, Kappa, structure,
 				grid, hold_tracks, plot_switch, t, NR, NT_output, output_every, ircore, Tmax, kappamax,
-				value_time, axisTextColor, alpha, DryRock_tex, Liquid_tex, Ice_tex, Crust_tex,
-				progress_bar_tex, irad, xnumber0_tex, xnumber1_tex, xnumber2_tex, xnumber3_tex,
-				xnumber4_tex, xnumber5_tex, xnumber6_tex, xnumber7_tex, xnumber8_tex, xnumber9_tex,
-				ynumber0_tex, temp_tex, hydr_tex, k_tex, grid_tex, structure_tex, hold_tracks_tex,
-				hydr_title_tex, k_title_tex, legend_tex);
+				value_time, axisTextColor, alpha, DryRock_tex, Liquid_tex, Ice_tex, Crust_tex, progress_bar_tex,
+				irad, inumx, xnum_tex, ynumber0_tex, temp_tex, hydr_tex, k_tex, grid_tex, structure_tex,
+				hold_tracks_tex, hydr_title_tex, k_title_tex, legend_tex);
 	}
 
 	//-------------------------------------------------------------------
@@ -317,16 +292,6 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 	SDL_DestroyTexture(progress_bar_tex);
 	SDL_FreeSurface(value_time);
 	SDL_DestroyTexture(ynumber0_tex);
-	SDL_DestroyTexture(xnumber0_tex);
-	SDL_DestroyTexture(xnumber1_tex);
-	SDL_DestroyTexture(xnumber2_tex);
-	SDL_DestroyTexture(xnumber3_tex);
-	SDL_DestroyTexture(xnumber4_tex);
-	SDL_DestroyTexture(xnumber5_tex);
-	SDL_DestroyTexture(xnumber6_tex);
-	SDL_DestroyTexture(xnumber7_tex);
-	SDL_DestroyTexture(xnumber8_tex);
-	SDL_DestroyTexture(xnumber9_tex);
 	SDL_DestroyTexture(DryRock_tex);
 	SDL_DestroyTexture(Liquid_tex);
 	SDL_DestroyTexture(Ice_tex);
@@ -343,6 +308,7 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 	SDL_DestroyTexture(stop_tex);
 	SDL_DestroyTexture(prev_tex);
 	SDL_DestroyTexture(next_tex);
+	for (i=0;i<inumx;i++) SDL_DestroyTexture(xnum_tex[i]);
 
 	for (t=0;t<NT_output;t++) {
 		free (TempK[t]);
@@ -355,6 +321,10 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 
 	return 0;
 }
+
+//-------------------------------------------------------------------
+//                Internal structure plotting subroutine
+//-------------------------------------------------------------------
 
 int StructurePlot (SDL_Renderer* renderer, thermalout **thoutput, int t, int NR,
 		SDL_Texture* DryRock_tex, SDL_Texture* Liquid_tex, SDL_Texture* Ice_tex, SDL_Texture* Crust_tex,
@@ -459,28 +429,26 @@ int StructurePlot (SDL_Renderer* renderer, thermalout **thoutput, int t, int NR,
 	return 0;
 }
 
+//-------------------------------------------------------------------
+//                        Two-axis plot subroutine
+//-------------------------------------------------------------------
+
 int TwoAxisPlot (SDL_Renderer* renderer, char *FontFile, double **Values, int grid, int hold_tracks, int t, int NR, int irmax,
 		int itempk_step, int itempk_max, double itempk_fold_min, double itempk_fold_max, double itempk_fold_step, int thickness,
 		double Tmax, SDL_Surface* value_time, SDL_Rect value_time_clip, SDL_Rect* value_time_dilation,
 		SDL_Color axisTextColor, Uint32 alpha) {
 
+	int i = 0;
+	int inumy = 11; // Number of y-axis labels
+
 	SDL_Texture* value_time_tex;
-	SDL_Texture* ynumber1_tex = NULL;
-	SDL_Texture* ynumber2_tex = NULL;
-	SDL_Texture* ynumber3_tex = NULL;
-	SDL_Texture* ynumber4_tex = NULL;
-	SDL_Texture* ynumber5_tex = NULL;
-	SDL_Texture* ynumber6_tex = NULL;
-	SDL_Texture* ynumber7_tex = NULL;
-	SDL_Texture* ynumber8_tex = NULL;
-	SDL_Texture* ynumber9_tex = NULL;
-	SDL_Texture* ynumber10_tex = NULL;
-	SDL_Texture* ynumber11_tex = NULL;
+	SDL_Texture* ynum_tex[inumy];
+	for (i=0;i<inumy;i++) ynum_tex[i] = NULL;
 
 	int T = 0;
 	int r = 0;
 	int itempk = 0;
-	char nb[10];
+	char nb[20];
 	Uint32 *pixmem32;
 	int Tmax_int = 0;
 	int xoffset = 0;
@@ -491,28 +459,12 @@ int TwoAxisPlot (SDL_Renderer* renderer, char *FontFile, double **Values, int gr
 	// y-axis numbers
 	for (itempk=itempk_step;itempk<itempk_max;itempk=itempk+itempk_step) {
 		if (Tmax > (double) itempk*itempk_fold_min && Tmax <= (double) itempk*itempk_fold_max+itempk_fold_step) {
-			scanNumber(&nb, (double) itempk);          // Right-justified
-			ynumber1_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			scanNumber(&nb, (double) itempk*2.0);
-			ynumber2_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			scanNumber(&nb, (double) itempk*3.0);
-			ynumber3_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			scanNumber(&nb, (double) itempk*4.0);
-			ynumber4_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			scanNumber(&nb, (double) itempk*5.0);
-			ynumber5_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			scanNumber(&nb, (double) itempk*6.0);
-			ynumber6_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			scanNumber(&nb, (double) itempk*7.0);
-			if ((double) itempk*7.0 < Tmax) ynumber7_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			scanNumber(&nb, (double) itempk*8.0);
-			if ((double) itempk*8.0 < Tmax) ynumber8_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			scanNumber(&nb, (double) itempk*9.0);
-			if ((double) itempk*9.0 < Tmax) ynumber9_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			scanNumber(&nb, (double) itempk*10.0);
-			if ((double) itempk*10.0 < Tmax) ynumber10_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
-			scanNumber(&nb, (double) itempk*11.0);
-			if ((double) itempk*11.0 < Tmax) ynumber11_tex = renderText(nb,FontFile, axisTextColor, 16, renderer);
+			for (i=0;i<inumy;i++) {
+				if (i<6 || (double)itempk*(1.0+(double)i) < Tmax){
+					scanNumber(&nb, (double) itempk*(1.0+(double)i));          // Right-justified
+					ynum_tex[i] = renderText(nb, FontFile, axisTextColor, 16, renderer);
+				}
+			}
 			break;
 		}
 	}
@@ -554,36 +506,14 @@ int TwoAxisPlot (SDL_Renderer* renderer, char *FontFile, double **Values, int gr
 	(*value_time_dilation).w = value_time->w, (*value_time_dilation).h = value_time->h;
 	SDL_RenderCopy(renderer, value_time_tex, &value_time_clip, &(*value_time_dilation));
 
-	renderTexture(ynumber1_tex, renderer, 50, -8 + (*value_time_dilation).y + floor((double) (*value_time_dilation).h-((double) itempk / Tmax*(double) (*value_time_dilation).h)));
-	renderTexture(ynumber2_tex, renderer, 50, -8 + (*value_time_dilation).y + floor((double) (*value_time_dilation).h-((double) itempk*2.0 / Tmax*(double) (*value_time_dilation).h)));
-	renderTexture(ynumber3_tex, renderer, 50, -8 + (*value_time_dilation).y + floor((double) (*value_time_dilation).h-((double) itempk*3.0 / Tmax*(double) (*value_time_dilation).h)));
-	renderTexture(ynumber4_tex, renderer, 50, -8 + (*value_time_dilation).y + floor((double) (*value_time_dilation).h-((double) itempk*4.0 / Tmax*(double) (*value_time_dilation).h)));
-	renderTexture(ynumber5_tex, renderer, 50, -8 + (*value_time_dilation).y + floor((double) (*value_time_dilation).h-((double) itempk*5.0 / Tmax*(double) (*value_time_dilation).h)));
-	renderTexture(ynumber6_tex, renderer, 50, -8 + (*value_time_dilation).y + floor((double) (*value_time_dilation).h-((double) itempk*6.0 / Tmax*(double) (*value_time_dilation).h)));
-	if ((double) itempk*7.0 < Tmax)
-		renderTexture(ynumber7_tex, renderer, 50, -8 + (*value_time_dilation).y + floor((double) (*value_time_dilation).h-((double) itempk*7.0 / Tmax*(double) (*value_time_dilation).h)));
-	if ((double) itempk*8.0 < Tmax)
-		renderTexture(ynumber8_tex, renderer, 50, -8 + (*value_time_dilation).y + floor((double) (*value_time_dilation).h-((double) itempk*8.0 / Tmax*(double) (*value_time_dilation).h)));
-	if ((double) itempk*9.0 < Tmax)
-		renderTexture(ynumber9_tex, renderer, 50, -8 + (*value_time_dilation).y + floor((double) (*value_time_dilation).h-((double) itempk*9.0 / Tmax*(double) (*value_time_dilation).h)));
-	if ((double) itempk*10.0 < Tmax)
-		renderTexture(ynumber10_tex, renderer, 50, -8 + (*value_time_dilation).y + floor((double) (*value_time_dilation).h-((double) itempk*10.0 / Tmax*(double) (*value_time_dilation).h)));
-	if ((double) itempk*11.0 < Tmax)
-		renderTexture(ynumber11_tex, renderer, 50, -8 + (*value_time_dilation).y + floor((double) (*value_time_dilation).h-((double) itempk*11.0 / Tmax*(double) (*value_time_dilation).h)));
+	for (i=0;i<inumy;i++) {
+		if (i<6 || (double)itempk*(1.0+(double)i) < Tmax){
+			renderTexture(ynum_tex[i], renderer, 50, -8 + (*value_time_dilation).y + floor((double) (*value_time_dilation).h-((double)itempk*(1.0+(double)i) / Tmax*(double) (*value_time_dilation).h)));
+		}
+	}
 
 	SDL_DestroyTexture(value_time_tex);
-
-	SDL_DestroyTexture(ynumber1_tex);
-	SDL_DestroyTexture(ynumber2_tex);
-	SDL_DestroyTexture(ynumber3_tex);
-	SDL_DestroyTexture(ynumber4_tex);
-	SDL_DestroyTexture(ynumber5_tex);
-	SDL_DestroyTexture(ynumber6_tex);
-	SDL_DestroyTexture(ynumber7_tex);
-	SDL_DestroyTexture(ynumber8_tex);
-	SDL_DestroyTexture(ynumber9_tex);
-	SDL_DestroyTexture(ynumber10_tex);
-	SDL_DestroyTexture(ynumber11_tex);
+	for (i=0;i<inumy;i++) SDL_DestroyTexture(ynum_tex[i]);
 
 	return 0;
 }
@@ -592,17 +522,16 @@ int TwoAxisPlot (SDL_Renderer* renderer, char *FontFile, double **Values, int gr
 //                         Update Displays
 //-------------------------------------------------------------------
 
-int UpdateDisplays (SDL_Renderer* renderer, SDL_Texture* background_tex, char* FontFile, thermalout **thoutput,
+int UpdateDisplaysThermal(SDL_Renderer* renderer, SDL_Texture* background_tex, char* FontFile, thermalout **thoutput,
 		double **TempK, double **Hydr, double **Kappa, int structure, int grid, int hold_tracks, int plot_switch,
 		int t, int NR, int NT_output, double output_every, int ircore, double Tmax, double kappamax,
 		SDL_Surface* value_time, SDL_Color axisTextColor, Uint32 alpha, SDL_Texture* DryRock_tex, SDL_Texture* Liquid_tex,
-		SDL_Texture* Ice_tex, SDL_Texture* Crust_tex, SDL_Texture* progress_bar_tex, int irad,
-		SDL_Texture* xnumber0_tex, SDL_Texture* xnumber1_tex, SDL_Texture* xnumber2_tex, SDL_Texture* xnumber3_tex,
-		SDL_Texture* xnumber4_tex, SDL_Texture* xnumber5_tex, SDL_Texture* xnumber6_tex, SDL_Texture* xnumber7_tex,
-		SDL_Texture* xnumber8_tex, SDL_Texture* xnumber9_tex, SDL_Texture* ynumber0_tex,
+		SDL_Texture* Ice_tex, SDL_Texture* Crust_tex, SDL_Texture* progress_bar_tex, int irad, int inumx,
+		SDL_Texture* xnum_tex[inumx], SDL_Texture* ynumber0_tex,
 		SDL_Texture* temp_tex, SDL_Texture* hydr_tex, SDL_Texture* k_tex, SDL_Texture* grid_tex, SDL_Texture* structure_tex,
 		SDL_Texture* hold_tracks_tex, SDL_Texture* hydr_title_tex, SDL_Texture* k_title_tex, SDL_Texture* legend_tex) {
 
+	int i = 0;
 	int r = 0;
 	double percent = 0.0; // % of history, 4.56 Gyr = 100%
 	char nb[10];
@@ -643,9 +572,7 @@ int UpdateDisplays (SDL_Renderer* renderer, SDL_Texture* background_tex, char* F
 	}
 
 	// Structure plot
-	if (structure == 1) {
-		StructurePlot(renderer, thoutput, t, NR, DryRock_tex, Liquid_tex, Ice_tex, Crust_tex, value_time_dilation);
-	}
+	if (structure == 1) StructurePlot(renderer, thoutput, t, NR, DryRock_tex, Liquid_tex, Ice_tex, Crust_tex, value_time_dilation);
 
 	// Unveil the progress bar
 	progress_bar_clip.x = 21, progress_bar_clip.y = 551;
@@ -688,16 +615,9 @@ int UpdateDisplays (SDL_Renderer* renderer, SDL_Texture* background_tex, char* F
 	// Other renderings
 	renderTexture(ynumber0_tex, renderer, 50, -8 + value_time_dilation.y + value_time_dilation.h);
 
-	renderTexture(xnumber0_tex, renderer, -5 + value_time_dilation.x, 445);
-	renderTexture(xnumber1_tex, renderer, -5 + value_time_dilation.x + floor((double) irad / thoutput[NR-1][0].radius*(double) value_time_dilation.w), 445);
-	renderTexture(xnumber2_tex, renderer, -5 + value_time_dilation.x + floor((double) irad*2.0 / thoutput[NR-1][0].radius*(double) value_time_dilation.w), 445);
-	renderTexture(xnumber3_tex, renderer, -5 + value_time_dilation.x + floor((double) irad*3.0 / thoutput[NR-1][0].radius*(double) value_time_dilation.w), 445);
-	renderTexture(xnumber4_tex, renderer, -5 + value_time_dilation.x + floor((double) irad*4.0 / thoutput[NR-1][0].radius*(double) value_time_dilation.w), 445);
-	renderTexture(xnumber5_tex, renderer, -5 + value_time_dilation.x + floor((double) irad*5.0 / thoutput[NR-1][0].radius*(double) value_time_dilation.w), 445);
-	renderTexture(xnumber6_tex, renderer, -5 + value_time_dilation.x + floor((double) irad*6.0 / thoutput[NR-1][0].radius*(double) value_time_dilation.w), 445);
-	renderTexture(xnumber7_tex, renderer, -5 + value_time_dilation.x + floor((double) irad*7.0 / thoutput[NR-1][0].radius*(double) value_time_dilation.w), 445);
-	renderTexture(xnumber8_tex, renderer, -5 + value_time_dilation.x + floor((double) irad*8.0 / thoutput[NR-1][0].radius*(double) value_time_dilation.w), 445);
-	renderTexture(xnumber9_tex, renderer, -5 + value_time_dilation.x + floor((double) irad*9.0 / thoutput[NR-1][0].radius*(double) value_time_dilation.w), 445);
+	for (i=0;i<inumx;i++) {
+		renderTexture(xnum_tex[i], renderer, -5 + value_time_dilation.x + floor((double) irad*(double)i / thoutput[NR-1][0].radius*(double) value_time_dilation.w), 445);
+	}
 
 	SDL_RenderPresent(renderer);
 
@@ -708,6 +628,10 @@ int UpdateDisplays (SDL_Renderer* renderer, SDL_Texture* background_tex, char* F
 
 	return 0;
 }
+
+//-------------------------------------------------------------------
+//                         Click Handling
+//-------------------------------------------------------------------
 
 int handleClickThermal(SDL_Event e, int *t, int *t_init, int *grid, int *structure, int *hold_tracks, int *plot_switch,
 		int *t_memory, int NT_output) {
@@ -741,15 +665,9 @@ int handleClickThermal(SDL_Event e, int *t, int *t_init, int *grid, int *structu
 	}
 
 	// Main plot switch
-	if (e.button.x >= 648 && e.button.x <= 679 && e.button.y >= 162 && e.button.y <= 227) {
-		(*plot_switch) = 0; // Temperature
-	}
-	if (e.button.x >= 691 && e.button.x <= 732 && e.button.y >= 162 && e.button.y <= 227) {
-		(*plot_switch) = 1; // Hydration
-	}
-	if (e.button.x >= 738 && e.button.x <= 778 && e.button.y >= 162 && e.button.y <= 227) {
-		(*plot_switch) = 2; // Thermal conductivity
-	}
+	if (e.button.x >= 648 && e.button.x <= 679 && e.button.y >= 162 && e.button.y <= 227) (*plot_switch) = 0; // Temperature
+	if (e.button.x >= 691 && e.button.x <= 732 && e.button.y >= 162 && e.button.y <= 227) (*plot_switch) = 1; // Hydration
+	if (e.button.x >= 738 && e.button.x <= 778 && e.button.y >= 162 && e.button.y <= 227) (*plot_switch) = 2; // Thermal conductivity
 
 	// If click on the bar
 	else if (e.button.x >= 20 && e.button.x <= 780 && e.button.y >= 550 && e.button.y <= 567) {
