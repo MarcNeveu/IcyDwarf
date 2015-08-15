@@ -193,6 +193,9 @@ int ParamExploration_plot (char path[1024],	int warnings, int msgout, SDL_Render
 	Angles (itopic, &pies, FontFile, ntemp, npressure, npH, npe, nWR, itemp, ipressure, ipH, ipe, iWR, pie_radius, simdata,
 			&nspecies, nleg, &leg_tex, chondrite, comet, PT);
 
+	PlotNumChem(PT, ntemp, Tmin, Tstep, npressure, Pmin, Pstep, npH, pHmin, pHstep, npe, pemin, pestep, nWR, WRmin,
+								WRstep, &Numbers, FontFile);
+
 	pies_tex = SDL_CreateTextureFromSurface(renderer, pies);
 
 	//-------------------------------------------------------------------
@@ -563,7 +566,7 @@ int PlotNumChem(int PT, int ntemp, double Tmin, double Tstep, int npressure, dou
 	white.r = 255; white.g = 255; white.b = 255; white.a = 0;
 
 	for (i=0;i<ntemp;i++) {
-		if (i == 0 && Tmin == 5) scanNumber(&nb, 0);          // Right-justified
+		if (i == 0 && Tmin == 0) scanNumber(&nb, 5);          // Right-justified
 		else scanNumber(&nb, Tmin + (double) i*Tstep);        // Right-justified
 		(*Numbers)[i] = renderText(nb, FontFile, black, 14, renderer);
 	}
@@ -978,10 +981,10 @@ int Angles (int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npres
 							angle[3] = 0.999*2.0*M_PI*simdata[isim][1058]/total_K;                       // K-feldspar
 						}
 						else if (itopic == 2) {
-							// Initial dissolved N + pyridine. Dissolved N, if specified in ppm in the input, depends on the mass of C, N, S.
+							// Initial dissolved N + pyridine. Dissolved N, if specified in ppm in the input, depends on the mass of C, N, S, Cl.
 							// That's too complicated to figure out analytically, just copy-paste from any PHREEQC speciation run of the template input.
 							double total_N = 0.0;
-							if (comet == 1) total_N = 1.879e+00*simdata[isim][6] + simdata[isim][1396]-simdata[isim][1397];
+							if (comet == 1) total_N = 1.110e+00*simdata[isim][6] + simdata[isim][1396]-simdata[isim][1397];
 							else total_N = simdata[isim][1396]-simdata[isim][1397];
 							angle[1] = 0.999*2.0*M_PI*simdata[isim][375]*mass_water/total_N; // NH3(aq)
 							angle[2] = 0.999*2.0*M_PI*simdata[isim][1306]/total_N;           // NH4-feldspar
@@ -1130,7 +1133,7 @@ int Angles (int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npres
 						// Initial dissolved N + pyridine. Dissolved N, if specified in ppm in the input, depends on the mass of C, N, S.
 						// That's too complicated to figure out analytically, just copy-paste from any PHREEQC speciation run of the template input.
 						double total_N = 0.0;
-						if (comet == 1) total_N = 1.879e+00*simdata[isim][6] + simdata[isim][1396]-simdata[isim][1397];
+						if (comet == 1) total_N = 1.110e+00*simdata[isim][6] + simdata[isim][1396]-simdata[isim][1397];
 						else total_N = simdata[isim][1396]-simdata[isim][1397];
 						angle[1] = 0.999*2.0*M_PI*simdata[isim][375]*mass_water/total_N; // NH3(aq)
 						angle[2] = 0.999*2.0*M_PI*simdata[isim][1306]/total_N;           // NH4-feldspar
