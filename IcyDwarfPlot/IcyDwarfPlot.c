@@ -65,8 +65,6 @@ int main(int argc, char *argv[]){
 	double WRmax = 0.0;			       // Max water:rock ratio by mass
 	double WRmin = 0.0;				   // Min water:rock ratio by mass
 	double WRstep = 0.0;			   // Step (multiplicative) in water:rock ratio
-
-	int r = 0;
 	int i = 0;
 
 	double *input = (double*) malloc(24*sizeof(double));
@@ -97,7 +95,7 @@ int main(int argc, char *argv[]){
 	else
 	    printf("IcyDwarf: Couldn't retrieve executable directory. Buffer too small; need size %u\n", size);
 
-	icy_dwarf_input (&input, &thermal_file, path);
+	icy_dwarf_input(&input, &thermal_file, path);
 
 	warnings = (int) input[0];
 	msgout = (int) input[1];
@@ -114,18 +112,6 @@ int main(int argc, char *argv[]){
 	WRmin = input[19]; WRmax = input[20]; WRstep = input[21];
 	chondrite = (int) input[22];
 	comet = (int) input[23];
-
-	//-------------------------------------------------------------------
-	// Read thermal output (currently kbo.dat, need to read Thermal.txt)
-	//-------------------------------------------------------------------
-
-	thermalout **thoutput = malloc(NR*sizeof(thermalout*));        // Thermal model output
-	if (thoutput == NULL) printf("IcyDwarf: Not enough memory to create the thoutput structure\n");
-	for (r=0;r<NR;r++) {
-		thoutput[r] = malloc(NT_output*sizeof(thermalout));
-		if (thoutput[r] == NULL) printf("IcyDwarf: Not enough memory to create the thoutput structure\n");
-	}
-	thoutput = read_thermal_output (thoutput, NR, NT_output, path, thermal_file);
 
 	//-------------------------------------------------------------------
 	// Launch Sample DirectMedia Layer (SDL) display
@@ -184,12 +170,14 @@ int main(int argc, char *argv[]){
 
 	while (!quit) {
 		if (view == 1) // Display thermal tab
-			Thermal_plot (path, TdisplayMax, NR, NT_output, output_every, r_p, thoutput, warnings, msgout, renderer, &view, &quit, FontFile, axisTextColor);
+			Thermal_plot (path, TdisplayMax, NR, NT_output, output_every, r_p, warnings, msgout, renderer, &view, &quit, FontFile,
+					axisTextColor, thermal_file);
 		if (view == 2) // Display crack tab
-			Crack_plot (path, NR, total_time, NT_output, output_every, r_p, thoutput, warnings, msgout, renderer, &view, &quit, FontFile, axisTextColor);
+			Crack_plot (path, NR, total_time, NT_output, output_every, r_p, warnings, msgout, renderer, &view, &quit, FontFile,
+					axisTextColor);
 		if (view == 3) // Display geochemistry tab
-			ParamExploration_plot (path, warnings, msgout, renderer, &view, &quit, FontFile, axisTextColor, Tmin, Tmax, Tstep, Pmin, Pmax, Pstep,
-				 pHmin, pHmax, pHstep, pemin, pemax, pestep, WRmin, WRmax, WRstep, chondrite, comet);
+			ParamExploration_plot (path, warnings, msgout, renderer, &view, &quit, FontFile, axisTextColor, Tmin, Tmax, Tstep, Pmin,
+					Pmax, Pstep, pHmin, pHmax, pHstep, pemin, pemax, pestep, WRmin, WRmax, WRstep, chondrite, comet);
 	}
 
 	//-------------------------------------------------------------------
@@ -201,11 +189,6 @@ int main(int argc, char *argv[]){
 	SDL_DestroyWindow(window);
 	SDL_FreeSurface(IcyDwarfIcon);
 	SDL_Quit();
-
-	for (r=0;r<NR;r++) {
-		free (thoutput[r]);
-	}
-	free (thoutput);
 	free (input);
 
 	printf("Exiting IcyDwarfPlot...\n");

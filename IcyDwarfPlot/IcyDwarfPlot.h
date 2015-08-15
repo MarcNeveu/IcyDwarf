@@ -56,7 +56,6 @@ typedef struct {
 
 int calculate_seafloor (thermalout **thoutput, int NR, int NT, int t);
 int icy_dwarf_input (double **input, char (*thermal_file)[1024], char path[1024]);
-thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char path[1024], char thermal_file[1024]);
 int read_input (int H, int L, double ***Input, char path[1024], char filename[1024]);
 int write_output (int H, int L, double **Output, char path[1024], const char filename[1024]);
 
@@ -236,54 +235,6 @@ int icy_dwarf_input (double **input, char (*thermal_file)[1024], char path[1024]
 	free (idi);
 
 	return 0;
-}
-
-//-------------------------------------------------------------------
-//                   Read output of the thermal code
-//-------------------------------------------------------------------
-
-thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char path[1024], char thermal_file[1024]) {
-
-	FILE *fid;
-	int r = 0;
-	int t = 0;
-
-	// Open thermal output file
-
-	// Turn working directory into full file path by moving up two directories
-	// to IcyDwarf (i.e., removing "Release/IcyDwarf" characters) and specifying
-	// the right path end.
-
-	char *thermal_txt = (char*)malloc(1024);       // Don't forget to free!
-	thermal_txt[0] = '\0';
-	if (v_release == 1) strncat(thermal_txt,path,strlen(path)-20);
-	else if (cmdline == 1) strncat(thermal_txt,path,strlen(path)-22);
-	strcat(thermal_txt,"Outputs/");
-	strcat(thermal_txt,thermal_file);
-
-	fid = fopen (thermal_txt,"r");
-	if (fid == NULL) {
-		printf("IcyDwarf: Missing Thermal.txt file.\n");
-	}
-	else {
-		for (t=0;t<NT;t++) {
-			for (r=0;r<NR;r++) {
-				int scan = fscanf(fid, "%lg %lg %lg %lg %lg %lg %lg %lg %lg", &thoutput[r][t].radius,
-							&thoutput[r][t].tempk, &thoutput[r][t].mrock, &thoutput[r][t].mh2os,
-							&thoutput[r][t].madhs, &thoutput[r][t].mh2ol, &thoutput[r][t].mnh3l,
-							&thoutput[r][t].nu, &thoutput[r][t].famor);
-				if (scan != 9) {                                                         // If scanning error
-					printf("Error scanning thermal output file at t = %d\n",t);
-					break;
-				}
-			}
-		}
-	}
-
-	fclose(fid);
-	free(thermal_txt);
-
-	return thoutput;
 }
 
 //-------------------------------------------------------------------

@@ -15,7 +15,7 @@
 
 #include "../Graphics/Plot.h"
 
-int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double output_every, double r_p, thermalout **thoutput,
+int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double output_every, double r_p,
 		int warnings, int msgout, SDL_Renderer* renderer, int* view, int* quit, char* FontFile, SDL_Color axisTextColor);
 
 int UpdateDisplaysCrack(SDL_Renderer* renderer, SDL_Texture* background_tex, SDL_Surface* crack_time, SDL_Surface* WR,
@@ -25,7 +25,7 @@ int UpdateDisplaysCrack(SDL_Renderer* renderer, SDL_Texture* background_tex, SDL
 		SDL_Texture* surface_radius, SDL_Texture* seafloor_radius, SDL_Texture* cracked_radius, SDL_Texture* max_ratio_tex,
 		int idepthtex, SDL_Texture **depth_tex);
 
-int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double output_every, double r_p, thermalout **thoutput,
+int Crack_plot (char path[1024], int NR, int total_time, int NT_output, double output_every, double r_p,
 		int warnings, int msgout, SDL_Renderer* renderer, int* view, int* quit, char* FontFile, SDL_Color axisTextColor) {
 
 	int i = 0;

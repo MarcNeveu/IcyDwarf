@@ -14,8 +14,8 @@
 
 #include "../Graphics/Plot.h"
 
-int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double output_every, double r_p, thermalout **thoutput,
-		int warnings, int msgout, SDL_Renderer* renderer, int* view, int* quit, char* FontFile, SDL_Color axisTextColor);
+int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double output_every, double r_p, int warnings, int msgout,
+		SDL_Renderer* renderer, int* view, int* quit, char* FontFile, SDL_Color axisTextColor, char thermal_file[1024]);
 
 int StructurePlot (SDL_Renderer* renderer, thermalout **thoutput, int t, int NR,
 		SDL_Texture* DryRock_tex, SDL_Texture* Liquid_tex, SDL_Texture* Ice_tex, SDL_Texture* Crust_tex,
@@ -38,8 +38,8 @@ int UpdateDisplaysThermal(SDL_Renderer* renderer, SDL_Texture* background_tex, c
 int handleClickThermal(SDL_Event e, int *t, int *t_init, int *grid, int *structure, int *hold_tracks, int *plot_switch,
 		int *t_memory, int NT_output);
 
-int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double output_every, double r_p, thermalout **thoutput,
-		int warnings, int msgout, SDL_Renderer* renderer, int* view, int* quit, char* FontFile, SDL_Color axisTextColor) {
+int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double output_every, double r_p, int warnings, int msgout,
+		SDL_Renderer* renderer, int* view, int* quit, char* FontFile, SDL_Color axisTextColor, char thermal_file[1024]) {
 
 	int i = 0;
 	int r = 0;
@@ -122,6 +122,45 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 	File2tex("Graphics/Thermal/legend.png", &legend_tex, path);
 	// Don't forget to destroy all window, renderers, and textures at the end.
 
+	thermalout **thoutput = malloc(NR*sizeof(thermalout*));        // Thermal model output
+	if (thoutput == NULL) printf("IcyDwarf: Not enough memory to create the thoutput structure\n");
+	for (r=0;r<NR;r++) {
+		thoutput[r] = malloc(NT_output*sizeof(thermalout));
+		if (thoutput[r] == NULL) printf("IcyDwarf: Not enough memory to create the thoutput structure\n");
+	}
+
+	FILE *fid;
+	char thermal_txt[1024];
+	thermal_txt[0] = '\0';
+	if (v_release == 1) strncat(thermal_txt,path,strlen(path)-20);
+	else if (cmdline == 1) strncat(thermal_txt,path,strlen(path)-22);
+	strcat(thermal_txt,"Outputs/");
+	strcat(thermal_txt,thermal_file);
+
+	int counter = 0;
+	fid = fopen (thermal_txt,"r");
+	if (fid == NULL) printf("IcyDwarf: Missing Thermal.txt file: %s !\n",thermal_txt);
+	else {
+		for (t=0;t<NT_output;t++) {
+			for (r=0;r<NR;r++) {
+				int scan = fscanf(fid, "%lg %lg %lg %lg %lg %lg %lg %lg %lg", &thoutput[r][t].radius,
+							&thoutput[r][t].tempk, &thoutput[r][t].mrock, &thoutput[r][t].mh2os,
+							&thoutput[r][t].madhs, &thoutput[r][t].mh2ol, &thoutput[r][t].mnh3l,
+							&thoutput[r][t].nu, &thoutput[r][t].famor);
+				if (scan != 9) {                                                         // If scanning error
+					printf("Error scanning thermal output file at t = %d\n",t);
+					break;
+				}
+			}
+			if (counter == 0) {
+				darkenscreen(&progress_bar, background_tex, FontFile, "LOADING THERMAL EVOLUTION RESULTS...\n", renderer, t, NT_output);
+			}
+			counter++;
+			if (counter>99) counter = 0;
+		}
+	}
+	fclose(fid);
+
 	for (t=0;t<NT_output;t++) {
 		for (r=0;r<NR;r++) {
 			TempK[t][r] = thoutput[r][t].tempk;
@@ -129,12 +168,11 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 			Kappa[t][r] = thoutput[r][t].nu;
 		}
 	}
-
 	alpha = SDL_MapRGBA(value_time->format, 255, 255, 255, 0);   // r,g,b,alpha 0 to 255. Alpha of 0 is transparent
 
-//-------------------------------------------------------------------
-//              Set static elements using thermal output
-//-------------------------------------------------------------------
+	//-------------------------------------------------------------------
+	//              Set static elements using thermal output
+	//-------------------------------------------------------------------
 
 	if (Tmax_input == 0) {
 		for (t=0;t<NT_output;t++) {
@@ -178,9 +216,9 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 	progress_bar_tex = SDL_CreateTextureFromSurface(renderer, progress_bar);
 	SDL_FreeSurface(progress_bar);
 
-//-------------------------------------------------------------------
-//                      Interactive display
-//-------------------------------------------------------------------
+	//-------------------------------------------------------------------
+	//                      Interactive display
+	//-------------------------------------------------------------------
 
 	SDL_Event e;
 	t = NT_output-1;          // Initialize at the end of the simulation
@@ -310,6 +348,9 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 	SDL_DestroyTexture(next_tex);
 	for (i=0;i<inumx;i++) SDL_DestroyTexture(xnum_tex[i]);
 	free(xnum_tex);
+
+	for (r=0;r<NR;r++) free (thoutput[r]);
+	free (thoutput);
 
 	for (t=0;t<NT_output;t++) {
 		free(TempK[t]);
