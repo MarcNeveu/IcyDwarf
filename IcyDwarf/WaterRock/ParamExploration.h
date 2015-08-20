@@ -36,7 +36,7 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 
 	int thread_id;
 	int phreeqc = 0;
-	int nvar = 2300;                                              // Number of variables stored in each PHREEQC simulation
+	int nvar = 1830;                                              // Number of variables stored in each PHREEQC simulation
 	int i = 0;
 	int j = 0;
 
