@@ -54,7 +54,7 @@
 // GENERAL PARAMETERS
 //-------------------------------------------------------------------
 
-#define rhoH2os 918.0                                      // Density of H2O(s) 935 at T<100 K, but 918 at 273 K (TEOS-10, Feistel and Wagner 2006)
+#define rhoH2os 935.0                                      // Density of H2O(s) 935 at T<100 K, but 918 at 273 K (TEOS-10, Feistel and Wagner 2006)
 #define rhoH2ol 1000.0                                     // Density of H2O(l)
 #define rhoAdhs 985.0                                      // Density of ADH(s)
 #define rhoNh3l 740.0                                      // Density of NH3(l)
