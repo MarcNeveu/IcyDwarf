@@ -85,7 +85,7 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 
 	for (i=0;i<npHiter+1;i++) {
 		simdata[i] = (double*) malloc(nvar*sizeof(double));
-		if (simdata[i] == NULL) printf("Thermal: Not enough memory to create simdata[npHiter][nvar]\n");
+		if (simdata[i] == NULL) printf("ParamExploration: Not enough memory to create simdata[npHiter][nvar]\n");
 	}
 	for (i=0;i<npHiter+1;i++) {
 		for (j=0;j<nvar;j++) {
