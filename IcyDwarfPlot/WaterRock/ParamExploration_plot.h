@@ -16,9 +16,9 @@ int ParamExploration_plot(char path[1024],	int warnings, int msgout, SDL_Rendere
 		double pHmin, double pHmax, double pHstep, double pemin, double pemax, double pestep, double WRmin, double WRmax, double WRstep,
 		int chondrite, int comet);
 
-int handleClickParamExploration(SDL_Event e, int *itemp, int *ipressure, int *ipH, int *ipe, int *itopic, int ntemp, int npressure,
-		int npH, int npe, SDL_Surface **pies, int *xstart, int *xend, int *ystart, int *yend, int *PT, double *massnotmol, int *iWR,
-		SDL_Texture **background_tex, double *pie_radius, char *path);
+int handleClickParamExploration(SDL_Event e, int *itemp, int *ipressure, int *ipH, int *ipe, int *iWR, int *itopic, int ntemp,
+		int npressure, int npH, int npe, int nWR, SDL_Surface **pies, int *xstart, int *xend, int *ystart, int *yend, int *PT,
+		double *massnotmol, SDL_Texture **background_tex, double *pie_radius, char *path, int nnum, SDL_Texture ***num_tex);
 
 int PlotNumChem(int PT, int ntemp, double Tmin, double Tstep, int npressure, double Pmin, double Pstep, int npH,
 		double pHmin, double pHstep, int npe, double pemin, double pestep, int nWR, double WRmin, double WRstep,
@@ -29,21 +29,24 @@ int FinditopicY(int itopic);
 int FindPTXY(int itemp, int ipressure, int *xstart, int *xend, int *ystart, int *yend);
 int FindpHpeXY(int ipH, int ipe, int *xstart, int *xend, int *ystart, int *yend);
 
-int UpdateDisplaysParamExploration(SDL_Renderer* renderer, SDL_Texture* background_tex, SDL_Texture* pies_tex, int nleg,
-		SDL_Texture **leg_tex, int nparam, SDL_Texture **Numbers, char* FontFile, int nspecies, int itopic, int PT,
-		int ntemp, int npressure, int npH, int npe, int nWR);
+int UpdateDisplaysParamExploration (SDL_Renderer* renderer, SDL_Texture* background_tex, SDL_Texture* pies_tex, int nleg,
+		SDL_Texture **leg_tex, int nparam, SDL_Texture **Numbers, SDL_Texture **num_tex, SDL_Texture **num_tex2, char* FontFile,
+		int nspecies, int itopic, int PT, int ntemp, int npressure, int npH, int npe, int nWR);
 
 int PieStyle(int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npressure, int npH, int npe, int nWR, int temp,
 		int pressure, int pH, int pe, int WR, double pie_radius, double **simdata, double **molmass, double **antifreezes,
-		int *nspecies, int nleg, SDL_Texture ***leg_tex, int chondrite, int comet, int PT, int blendpe, int naq, int nmingas,
-		int ngases, int nelts, double massnotmol, int naf);
+		int *nspecies, int nleg, SDL_Texture ***leg_tex, SDL_Texture ***num_tex, SDL_Texture ***num_tex2, int chondrite, int comet,
+		int PT, int blendpe, int naq, int nmingas, int ngases, int nelts, double massnotmol, int naf);
 
 int Angles(double **simdata, double **molmass, double **antifreezes, int isim, int PT, int nspecies, int itopic, int chondrite,
 		int comet, SDL_Color key, SDL_Color color[nspecies], SDL_Surface **pies, int itemp, int ipressure, int iWR, int ipH,
-		int ipe, double pie_radius, int naq, int nmingas, int ngases, int nelts, double massnotmol, int naf);
+		int ipe, double pie_radius, int naq, int nmingas, int ngases, int nelts, double massnotmol, int naf, SDL_Texture ***num_tex,
+		SDL_Texture ***num_tex2, int npH, int npe, int npressure, char *FontFile, SDL_Color black, SDL_Color white);
 
 int Pie(double angle, double angle_start, int iWR, int ipH, int ipe, double pie_radius, SDL_Surface **pies, SDL_Color color,
 		int square, int PT);
+
+int Freeze(double **simdata, double **antifreezes, int nelts, int naf, int isim, double *Tfreeze, int verbose);
 
 int ParamExploration_plot(char path[1024],	int warnings, int msgout, SDL_Renderer* renderer, int* view, int* quit, char* FontFile,
 		SDL_Color axisTextColor, double Tmin, double Tmax, double Tstep, double Pmin, double Pmax, double Pstep,
@@ -71,6 +74,7 @@ int ParamExploration_plot(char path[1024],	int warnings, int msgout, SDL_Rendere
 	int nWR = 0;                                                 // Number of different water:rock ratios in output file
 	int nparam = 0;                                              // Number of parameters
 	int nsim = 0;                                                // Number of simulations
+	int nnum = 0;                                                // Number of data pies displayed (if pH-pe mode, per W:R panel)
 	int itemp = 0;                                           	 // Rank of temperature in output file
 	int ipressure = 0;                                     	     // Rank of pressure in output file
 	int ipH = 0;                                              	 // Rank of pH in output file
@@ -99,9 +103,17 @@ int ParamExploration_plot(char path[1024],	int warnings, int msgout, SDL_Rendere
 
 	nparam = ntemp+npressure+npH+npe+nWR;
 	nsim = ntemp*npressure*npH*npe*nWR;
+	if (npH*npe*nWR > ntemp*npressure) nnum = npH*npe*nWR;
+	else nnum = ntemp*npressure;
 
 	SDL_Texture** Numbers = (SDL_Texture**) malloc(nparam*sizeof(SDL_Texture*));
 	for (i=0;i<nparam;i++) Numbers[i] = NULL;
+
+	SDL_Texture** num_tex = (SDL_Texture**) malloc(nnum*sizeof(SDL_Texture*));
+	for (i=0;i<nnum;i++) num_tex[i] = NULL;
+
+	SDL_Texture** num_tex2 = (SDL_Texture**) malloc(nnum*sizeof(SDL_Texture*));
+	for (i=0;i<nnum;i++) num_tex2[i] = NULL;
 
 	double **simdata = (double**) malloc(nsim*sizeof(double*));  // Compilation of data generated by multiple PHREEQC simulations
 	if (simdata == NULL) printf("ParamExploration_plot: Not enough memory to create simdata[nsim]\n");
@@ -312,12 +324,12 @@ int ParamExploration_plot(char path[1024],	int warnings, int msgout, SDL_Rendere
 	itopic = 13; // Orange shade the bottom right selector
 	FindPTXY(0, 0, &xstart, &xend, &ystart, &yend);
 
-	handleClickParamExploration(e, &itemp, &ipressure, &ipH, &ipe, &itopic, ntemp, npressure, npH, npe, &pies,
-			&xstart, &xend, &ystart, &yend, &PT, &massnotmol, &iWR, &background_tex, &pie_radius, path);
+	handleClickParamExploration(e, &itemp, &ipressure, &ipH, &ipe, &iWR, &itopic, ntemp, npressure, npH, npe, nWR, &pies,
+			&xstart, &xend, &ystart, &yend, &PT, &massnotmol, &background_tex, &pie_radius, path, nnum, &num_tex);
 
-	PieStyle(itopic, &pies, FontFile, ntemp, npressure, npH, npe, nWR, itemp, ipressure, ipH, ipe, iWR, pie_radius, simdata,
-			molmass, antifreezes, &nspecies, nleg, &leg_tex, chondrite, comet, PT, blendpe, naq, nmingas, ngases, nelts, massnotmol,
-			naf);
+	PieStyle(itopic, &pies, FontFile, ntemp, npressure, npH, npe, nWR, itemp, ipressure, ipH, ipe, iWR, pie_radius,
+			simdata, molmass, antifreezes, &nspecies, nleg, &leg_tex, &num_tex, &num_tex2, chondrite, comet, PT, blendpe,
+			naq, nmingas, ngases, nelts, massnotmol, naf);
 
 	PlotNumChem(PT, ntemp, Tmin, Tstep, npressure, Pmin, Pstep, npH, pHmin, pHstep, npe, pemin, pestep, nWR, WRmin,
 								WRstep, &Numbers, FontFile);
@@ -334,12 +346,12 @@ int ParamExploration_plot(char path[1024],	int warnings, int msgout, SDL_Rendere
 			if (e.type == SDL_QUIT) (*quit) = 1; // Close window
 			if (e.type == SDL_MOUSEBUTTONDOWN) {
 				// Handle click: switch temperature, pressure, or species
-				handleClickParamExploration(e, &itemp, &ipressure, &ipH, &ipe, &itopic, ntemp, npressure, npH, npe, &pies,
-						&xstart, &xend, &ystart, &yend, &PT, &massnotmol, &iWR, &background_tex, &pie_radius, path);
+				handleClickParamExploration(e, &itemp, &ipressure, &ipH, &ipe, &iWR, &itopic, ntemp, npressure, npH, npe, nWR, &pies,
+						&xstart, &xend, &ystart, &yend, &PT, &massnotmol, &background_tex, &pie_radius, path, nnum, &num_tex);
 
-				PieStyle(itopic, &pies, FontFile, ntemp, npressure, npH, npe, nWR, itemp, ipressure, ipH, ipe, iWR, pie_radius, simdata,
-						molmass, antifreezes, &nspecies, nleg, &leg_tex, chondrite, comet, PT, blendpe, naq, nmingas, ngases, nelts, massnotmol,
-						naf);
+				PieStyle(itopic, &pies, FontFile, ntemp, npressure, npH, npe, nWR, itemp, ipressure, ipH, ipe, iWR, pie_radius,
+						simdata, molmass, antifreezes, &nspecies, nleg, &leg_tex, &num_tex, &num_tex2, chondrite, comet, PT, blendpe,
+						naq, nmingas, ngases, nelts, massnotmol, naf);
 
 				pies_tex = SDL_CreateTextureFromSurface(renderer, pies);
 
@@ -368,8 +380,8 @@ int ParamExploration_plot(char path[1024],	int warnings, int msgout, SDL_Rendere
 			}
 		}
 		// Update displays
-		UpdateDisplaysParamExploration(renderer, background_tex, pies_tex, nleg, leg_tex, nparam, Numbers, FontFile, nspecies,
-				itopic, PT, ntemp, npressure, npH, npe, nWR);
+		UpdateDisplaysParamExploration(renderer, background_tex, pies_tex, nleg, leg_tex, nparam, Numbers, num_tex, num_tex2,
+				FontFile, nspecies, itopic, PT, ntemp, npressure, npH, npe, nWR);
 	}
 
 	//-------------------------------------------------------------------
@@ -381,6 +393,10 @@ int ParamExploration_plot(char path[1024],	int warnings, int msgout, SDL_Rendere
 	SDL_DestroyTexture(pies_tex);
 	for (i=0;i<nleg;i++) SDL_DestroyTexture(leg_tex[i]);
 	free(leg_tex);
+	for (i=0;i<nnum;i++) SDL_DestroyTexture(num_tex[i]);
+	free(num_tex);
+	for (i=0;i<nnum;i++) SDL_DestroyTexture(num_tex2[i]);
+	free(num_tex2);
 	for (i=0;i<nparam;i++) SDL_DestroyTexture(Numbers[i]);
 	free(Numbers);
 	for (i=0;i<nsim;i++) free(simdata[i]);
@@ -400,17 +416,20 @@ int ParamExploration_plot(char path[1024],	int warnings, int msgout, SDL_Rendere
 //-------------------------------------------------------------------
 
 int UpdateDisplaysParamExploration (SDL_Renderer* renderer, SDL_Texture* background_tex, SDL_Texture* pies_tex, int nleg,
-		SDL_Texture **leg_tex, int nparam, SDL_Texture **Numbers, char* FontFile, int nspecies, int itopic, int PT,
-		int ntemp, int npressure, int npH, int npe, int nWR) {
+		SDL_Texture **leg_tex, int nparam, SDL_Texture **Numbers, SDL_Texture **num_tex, SDL_Texture **num_tex2, char* FontFile,
+		int nspecies, int itopic, int PT, int ntemp, int npressure, int npH, int npe, int nWR) {
 
 	double theta_legend = 0.0;
 	int i = 0;
+	int j = 0;
+	int k = 0;
 	int x = 0; int y = 0; int d = 0; int dpanel = 260; int R = 0;
 
 	SDL_RenderClear(renderer);
 	ApplySurface(0, 0, background_tex, renderer, NULL);
 	ApplySurface(0, 0, pies_tex, renderer, NULL);
 
+	// Axes numbers
 	if (PT == 0) { // pH-pe display
 		x = 590; y = 551; d = 28;
 		for (i=0;i<ntemp;i++) {
@@ -420,7 +439,7 @@ int UpdateDisplaysParamExploration (SDL_Renderer* renderer, SDL_Texture* backgro
 		for (i=0;i<npressure;i++) {
 			renderTexture(Numbers[i+ntemp], renderer, x, y - i*d);
 		}
-		x = 60; y = 392; d = 25;
+		x = 56; y = 392; d = 25;
 		for (i=0;i<npH;i++) {
 			renderTexture(Numbers[i+ntemp+npressure], renderer, x + i*d, y);
 			renderTexture(Numbers[i+ntemp+npressure], renderer, x + dpanel + i*d, y);
@@ -460,6 +479,36 @@ int UpdateDisplaysParamExploration (SDL_Renderer* renderer, SDL_Texture* backgro
 		}
 	}
 
+	// Numbers
+	if (itopic == 13) {
+		if (PT == 0) {
+			x = 576; y = 372; d = 26;
+			for (i=0;i<nWR;i++) {
+				for (j=0;j<npH;j++) {
+					for (k=0;k<npe;k++) {
+						if (num_tex[i*npH*npe+j*npe+k] != NULL) {
+							renderTexture(num_tex2[i*npH*npe+j*npe+k], renderer, x + j*d + 1, y - k*d + 1);
+							renderTexture(num_tex[i*npH*npe+j*npe+k], renderer, x + j*d, y - k*d);
+						}
+					}
+				}
+				x = x - 260;
+			}
+		}
+		else {
+			x = 85; y=355; d=52;
+			for (j=0;j<ntemp;j++) {
+				for (k=0;k<npressure;k++) {
+					if (num_tex[j*npressure+k] != NULL) {
+						renderTexture(num_tex2[j*npressure+k], renderer, x + j*d + 1, y - k*d + 1);
+						renderTexture(num_tex[j*npressure+k], renderer, x + j*d, y - k*d);
+					}
+				}
+			}
+		}
+	}
+
+	// Legend
 	x = 405; y = 502; R = 50;
 
 	ApplySurface(348, 433, leg_tex[0], renderer, NULL);
@@ -475,7 +524,7 @@ int UpdateDisplaysParamExploration (SDL_Renderer* renderer, SDL_Texture* backgro
 		x = 415; R = 40;
 	}
 	if (itopic == 8) x = 413;
-	if (itopic == 9) x = 425;
+	if (itopic == 9 || itopic == 13) x = 425;
 	if (itopic == 11) {
 		x = 340; y = 540;
 	}
@@ -483,7 +532,7 @@ int UpdateDisplaysParamExploration (SDL_Renderer* renderer, SDL_Texture* backgro
 		x = 305; y = 500;
 	}
 
-	if (itopic < 11) {
+	if (itopic < 11 || itopic == 13) {
 		for (i=0;i<nleg-1;i++) {
 			theta_legend = 2.0*M_PI/(double)nspecies*((double)i+0.5);
 			ApplySurface(x + R*cos(theta_legend), y + R*sin(theta_legend), leg_tex[i+1], renderer, NULL);
@@ -506,10 +555,11 @@ int UpdateDisplaysParamExploration (SDL_Renderer* renderer, SDL_Texture* backgro
 //                      Click handling subroutine
 //-------------------------------------------------------------------
 
-int handleClickParamExploration(SDL_Event e, int *itemp, int *ipressure, int *ipH, int *ipe, int *itopic, int ntemp, int npressure,
-		int npH, int npe, SDL_Surface **pies, int *xstart, int *xend, int *ystart, int *yend, int *PT, double *massnotmol, int *iWR,
-		SDL_Texture **background_tex, double *pie_radius, char *path) {
+int handleClickParamExploration(SDL_Event e, int *itemp, int *ipressure, int *ipH, int *ipe, int *iWR, int *itopic, int ntemp,
+		int npressure, int npH, int npe, int nWR, SDL_Surface **pies, int *xstart, int *xend, int *ystart, int *yend, int *PT,
+		double *massnotmol, SDL_Texture **background_tex, double *pie_radius, char *path, int nnum, SDL_Texture ***num_tex) {
 
+	int i = 0;
 	int x = 0; int y = 0;
 	int xWR = 0; int yWR = 0;
 	int xtopic = 0; int ytopic = 0;
@@ -541,6 +591,7 @@ int handleClickParamExploration(SDL_Event e, int *itemp, int *ipressure, int *ip
 			*pixmem32 = SDL_MapRGBA((*pies)->format, 0, 0, 0, 0);
 		}
 	}
+	for (i=0;i<nnum;i++) (*num_tex)[i] = NULL;
 
 	if ((*PT) == 0) {
 		// Change temperature/pressure
@@ -572,6 +623,8 @@ int handleClickParamExploration(SDL_Event e, int *itemp, int *ipressure, int *ip
 		if (e.button.x >= 580 && e.button.x <= 634 && e.button.y >= 209 && e.button.y <= 238) (*iWR) = 2;
 		if (e.button.x >= 640 && e.button.x <= 694 && e.button.y >= 209 && e.button.y <= 238) (*iWR) = 1;
 		if (e.button.x >= 700 && e.button.x <= 754 && e.button.y >= 209 && e.button.y <= 238) (*iWR) = 0;
+
+		if ((*iWR) > nWR-1) (*iWR) = nWR - 1;
 
 		// Change pH/pe
 		if (e.button.x >= 578 && e.button.x <= 792 && e.button.y >= 342 && e.button.y <= 546) {
@@ -608,7 +661,7 @@ int handleClickParamExploration(SDL_Event e, int *itemp, int *ipressure, int *ip
 	if (e.button.x >= 4 && e.button.x <= 64 && e.button.y >= 444 && e.button.y <= 491) (*itopic) = 0;          // Potassium
 	else if (e.button.x >= 67 && e.button.x <= 86 && e.button.y >= 444 && e.button.y <= 491) (*itopic) = 1;    // Thorium
 	else if (e.button.x >= 90 && e.button.x <= 109 && e.button.y >= 444 && e.button.y <= 491) (*itopic) = 2;   // Uranium
-	else if (e.button.x >= 12 && e.button.x <= 110 && e.button.y >= 505 && e.button.y <= 562) (*itopic) = 3;   // NH3
+	else if (e.button.x >= 12 && e.button.x <= 110 && e.button.y >= 505 && e.button.y <= 532) (*itopic) = 3;   // NH3
 	else if (e.button.x >= 223 && e.button.x <= 321 && e.button.y >= 437 && e.button.y <= 463) (*itopic) = 4;  // Total gas
 	else if (e.button.x >= 223 && e.button.x <= 321 && e.button.y >= 468 && e.button.y <= 496) (*itopic) = 5;  // Gas makeup
 	else if (e.button.x >= 218 && e.button.x <= 321 && e.button.y >= 506 && e.button.y <= 532) (*itopic) = 6;  // Brucite / carbonates
@@ -617,6 +670,7 @@ int handleClickParamExploration(SDL_Event e, int *itemp, int *ipressure, int *ip
 	else if (e.button.x >= 115 && e.button.x <= 210 && e.button.y >= 468 && e.button.y <= 494) (*itopic) = 10; // Solution ionic strength
 	else if (e.button.x >= 145 && e.button.x <= 210 && e.button.y >= 506 && e.button.y <= 532) (*itopic) = 11; // Solution pH/pe
 	else if (e.button.x >= 145 && e.button.x <= 210 && e.button.y >= 537 && e.button.y <= 563) (*itopic) = 12; // Mass of H2O
+	else if (e.button.x >= 12 && e.button.x <= 110 && e.button.y >= 537 && e.button.y <= 563) (*itopic) = 13;  // Freezing temperature
 
 	// Orange shading of active buttons
 	if ((*xstart) > 0 && (*ystart) > 0) { // Bottom right selector
@@ -763,7 +817,7 @@ int PlotNumChem(int PT, int ntemp, double Tmin, double Tstep, int npressure, dou
 
 int FinditopicX(int itopic) {
 	int x = 0;
-	if (itopic == 0 || itopic == 3) x = 45;
+	if (itopic == 0 || itopic == 3 || itopic == 13) x = 45;
 	else if (itopic == 1) x = 67;
 	else if (itopic == 2) x = 90;
 	else if (itopic <= 8) x = 255;
@@ -773,11 +827,10 @@ int FinditopicX(int itopic) {
 int FinditopicY(int itopic) {
 	int y = 0;
 	if (itopic <= 2) y = 454;
-	else if (itopic == 3) y = 523;
 	else if (itopic == 4 || itopic == 9) y = 437;
 	else if (itopic == 5 || itopic == 10) y = 468;
-	else if (itopic == 6 || itopic == 11) y = 506;
-	else if (itopic == 8 || itopic == 12) y = 537;
+	else if (itopic == 3 || itopic == 6 || itopic == 11) y = 506;
+	else if (itopic == 8 || itopic == 12 || itopic == 13) y = 537;
 	return y;
 }
 int FindPTXY(int itemp, int ipressure, int *xstart, int *xend, int *ystart, int *yend) {
@@ -900,8 +953,8 @@ int FindpHpeXY(int ipH, int ipe, int *xstart, int *xend, int *ystart, int *yend)
 
 int PieStyle(int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npressure, int npH, int npe, int nWR, int temp,
 		int pressure, int pH, int pe, int WR, double pie_radius, double **simdata, double **molmass, double **antifreezes,
-		int *nspecies, int nleg, SDL_Texture ***leg_tex, int chondrite, int comet, int PT, int blendpe, int naq, int nmingas,
-		int ngases, int nelts, double massnotmol, int naf) {
+		int *nspecies, int nleg, SDL_Texture ***leg_tex, SDL_Texture ***num_tex, SDL_Texture ***num_tex2, int chondrite, int comet,
+		int PT, int blendpe, int naq, int nmingas, int ngases, int nelts, double massnotmol, int naf) {
 
 	int i = 0;
 	int itemp = 0; // Rank of temperature in output file
@@ -949,7 +1002,7 @@ int PieStyle(int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npre
 	else if (itopic == 5) (*nspecies) = 6;  // Gases
 	else if (itopic == 6) (*nspecies) = 7;  // Brucite / carbonates
 	else if (itopic == 8) (*nspecies) = 15; // Mineral makeup
-	else if (itopic == 9) (*nspecies) = 12; // Solution
+	else if (itopic == 9 || itopic == 13) (*nspecies) = 12; // Solution, freezing temp
 
 	SDL_Color color[(*nspecies)+1];
 	color[0] = black;
@@ -1040,7 +1093,7 @@ int PieStyle(int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npre
 		(*leg_tex)[14] = renderText("Troi+Pyr",FontFile, black, 16, renderer);
 		(*leg_tex)[15] = renderText("  C",FontFile, white, 16, renderer);
 	}
-	else if (itopic == 9) { // Solution
+	else if (itopic == 9 || itopic == 13) { // Solution, freezing temp
 		color[1] = gray; color[2] = black; color[3] = cyan; color[4] = red; color[5] = pink; color[6] = orange; color[7] = green;
 		color[8] = white; color[9] = purple; color[10] = yellow; color[11] = aqua; color[12] = gold;
 		(*leg_tex)[0] = renderText("mol per mol solutes",FontFile, black, 16, renderer);
@@ -1149,7 +1202,8 @@ int PieStyle(int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npre
 				for (ipH=0;ipH<npH;ipH++) {
 					isim = ipH + ipe*npH + iWR*npH*npe + itemp*npH*npe*nWR + ipressure*npH*npe*nWR*ntemp;
 					Angles(simdata, molmass, antifreezes, isim, PT, (*nspecies), itopic, chondrite, comet, key, color, &(*pies),
-							itemp, ipressure, iWR, ipH, ipe, pie_radius, naq, nmingas, ngases, nelts, massnotmol, naf);
+							itemp, ipressure, iWR, ipH, ipe, pie_radius, naq, nmingas, ngases, nelts, massnotmol, naf, &(*num_tex),
+							&(*num_tex2), npH, npe, npressure, FontFile, black, white);
 				}
 			}
 		}
@@ -1171,7 +1225,8 @@ int PieStyle(int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npre
 					}
 				}
 				Angles(simdata, molmass, antifreezes, isim, PT, (*nspecies), itopic, chondrite, comet, key, color, &(*pies),
-						itemp, ipressure, iWR, ipH, ipe, pie_radius, naq, nmingas, ngases, nelts, massnotmol, naf);
+						itemp, ipressure, iWR, ipH, ipe, pie_radius, naq, nmingas, ngases, nelts, massnotmol, naf, &(*num_tex),
+						&(*num_tex2), npH, npe, npressure, FontFile, black, white);
 			}
 		}
 	}
@@ -1184,10 +1239,12 @@ int PieStyle(int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npre
 
 int Angles(double **simdata, double **molmass, double **antifreezes, int isim, int PT, int nspecies, int itopic, int chondrite,
 		int comet, SDL_Color key, SDL_Color color[nspecies], SDL_Surface **pies, int itemp, int ipressure, int iWR, int ipH,
-		int ipe, double pie_radius, int naq, int nmingas, int ngases, int nelts, double massnotmol, int naf) {
+		int ipe, double pie_radius, int naq, int nmingas, int ngases, int nelts, double massnotmol, int naf, SDL_Texture ***num_tex,
+		SDL_Texture ***num_tex2, int npH, int npe, int npressure, char *FontFile, SDL_Color black, SDL_Color white) {
 
 	int i=0;
 	int ipie=0; int jpie=0; int kpie=0;
+	int njpie=0; int nkpie = 0;
 	double mass_water = 0.0; // Final mass of water
 	double total_Gas = 0.0;  // Final moles of gases
 	double total_Min = 0.0;  // Final moles of solids
@@ -1204,11 +1261,15 @@ int Angles(double **simdata, double **molmass, double **antifreezes, int isim, i
 		ipie = iWR;
 		jpie = ipH;
 		kpie = ipe;
+		njpie = npH;
+		nkpie = npe;
 	}
 	else {
 		ipie = 0;
 		jpie = itemp;
 		kpie = ipressure;
+		njpie = 0;
+		nkpie = npressure;
 	}
 
 	// Calculate angles
@@ -1358,7 +1419,7 @@ int Angles(double **simdata, double **molmass, double **antifreezes, int isim, i
 			          + simdata[isim][1092]*(1.0+massnotmol*(molmass[1092][2]*molmass[0][2]-1.0))
 			          + simdata[isim][1094]*(1.0+massnotmol*(molmass[1094][2]*molmass[0][2]-1.0)))/total_Min; // + aromatic S + aromatic O + pyridine (for init CM compo)
 		}
-		else if (itopic == 9) { // Solution
+		else if (itopic == 9 || itopic == 13) { // Solution, freezing temp
 			double total_Sol = 0.0; // Final mass of solution
 			for (i=12;i<40;i++) total_Sol = total_Sol + simdata[isim][i];
 			total_Sol = total_Sol + 2.0*simdata[isim][333]; // H2
@@ -1420,49 +1481,15 @@ int Angles(double **simdata, double **molmass, double **antifreezes, int isim, i
 			}
 			Pie(2.0*M_PI, 0.0, ipie, jpie, kpie, pie_radius, &(*pies), key, 0, PT);
 		}
-		else if (itopic == 13) {             // Roughly determine the freezing point of the solution
-			double *sol = (double*) malloc((nelts-3)*sizeof(double));
-			for (i=0;i<nelts-3;i++) sol[i] = 0.0;
-			double Tfreeze = 273;            // Start off with the freezing point of pure water
-			int j = 0;
-			int k = 0;
-			int notinsol = 0;
-			double stoich = 0.0; // Amount of stoichiometrically limiting element
-			for (i=0;i<nelts-3;i++) sol[i] = simdata[isim][i+12];
-			for (j=naf-1;j>=0;j--) { // Go through the list of antifreezes, starting with that of highest eutectic temperature
-				notinsol = 0;
-				printf("%d %d %g\n", isim, j, Tfreeze);
-				printf("Al %g C %g Ca %g Cl %g Fe %g K %g Mg %g N %g Na %g S %g\n", sol[0], sol[2], sol[3], sol[4], sol[9],
-						sol[11], sol[13], sol[16], sol[17], sol[20]);
-				// Is antifreeze j in solution?
-				for (k=0;k<nelts-3;k++)
-					if (antifreezes[j][k] > 0.0 && sol[k] <= 0.0) {
-						notinsol = 1;
-						printf("Antifreeze %d not in solution, moving on\n",j);
-					}
-				if (!notinsol) {
-					printf("Taking antifreeze %d out of solution...\n",j);
-					// If so, take that antifreeze out: first find the amount of stoichiometrically limiting element
-					for (k=0;k<nelts-3;k++) {
-						if (antifreezes[j][k] > 0.0 && sol[k] > 0.0 && (sol[k] < stoich || stoich == 0.0)) {
-							stoich = sol[k]/antifreezes[j][k];
-						}
-					}
-					printf("Stoich: %g\n",stoich);
-					// Subtract this amount stoichiometrically from all elements that form the antifreeze
-					// If there is still stuff in solution, lower Tfreeze
-					for (k=0;k<nelts-3;k++) {
-						if (antifreezes[j][k] > 0.0 && sol[k] > 0.0) sol[k] = sol[k] - antifreezes[j][k]*stoich;
-					}
-					Tfreeze = antifreezes[j][31];
-				}
-				// In any case, move on to the next antifreeze
-				stoich = 0.0;
-			}
-			free(sol);
-			if (isim == 0) exit(0);
-		}
 		else {
+			if (itopic == 13) { // Roughly determine the freezing point of the solution
+				char nb[20];
+				double Tfreeze = 273.0;
+				Freeze(simdata, antifreezes, nelts, naf, isim, &Tfreeze, 0);
+				scanNumber(&nb, Tfreeze);        // Right-justified
+				(*num_tex)[ipie*njpie*nkpie+jpie*nkpie+kpie] = renderText(nb, FontFile, black, 12, renderer);
+				(*num_tex2)[ipie*njpie*nkpie+jpie*nkpie+kpie] = renderText(nb, FontFile, white, 12, renderer);
+			}
 			for (i=0;i<nspecies;i++) {
 				if (angle[i+1] < 0.0 && angle[i+1] > -1.0e-4) angle[i+1] = 0.0;
 				else if (angle[i+1] > 0.0) Pie(0.999*2.0*M_PI*angle[i+1], 0.999*2.0*M_PI*angle[i], ipie, jpie, kpie, pie_radius, &(*pies), color[i+1], 0, PT);
@@ -1589,6 +1616,89 @@ int Pie (double angle, double angle_start, int iWR, int ipH, int ipe, double pie
 			}
 		}
 	}
+	return 0;
+}
+
+//-------------------------------------------------------------------
+// Freezing point determination subroutine (fractional crystallization)
+//-------------------------------------------------------------------
+
+int Freeze(double **simdata, double **antifreezes, int nelts, int naf, int isim, double *Tfreeze, int verbose) {
+	int i = 0;
+	int j = 0;
+	int notinsol = 0;
+	double stoich = 0.0;             // Amount of stoichiometrically limiting element
+	double Cred = 0.0;               // Dissolved reduced carbon
+	double Nred = 0.0;               // Dissolved reduced nitrogen
+	double Sred = 0.0;               // Dissolved reduced sulfur
+	double *sol = (double*) malloc((nelts-3)*sizeof(double)); // Solution composition, except in O and H which don't matter here
+	for (i=0;i<nelts-3;i++) sol[i] = 0.0;
+
+	// Initialize sol
+	for (i=0;i<nelts-3;i++) sol[i] = simdata[isim][i+12];
+
+	// Initialize Cred, Nred, and Sred
+	for (i=65;i<69;i++) Cred = Cred + simdata[isim][i]; // C2H4, C2H6, C3H8, CH4
+	Nred = simdata[isim][99]*2.0                                         // CO(NH2)2
+	     + simdata[isim][120] + simdata[isim][142]                       // NH4CH3COO complexes
+	     + simdata[isim][275] + simdata[isim][277]*2.0 + simdata[isim][278]*3.0; // Cu-NH3 complexes
+	for (i=375;i<379;i++) Nred = Nred + simdata[isim][i];                // Other metal-NH3/NH4 complexes
+	Nred = Nred + simdata[isim][379]*2.0 + simdata[isim][380]*2.0 + simdata[isim][381]*3.0 + simdata[isim][382]*4.0 + simdata[isim][383]*6.0;
+	Sred = simdata[isim][146] + simdata[isim][155]*2.0 + simdata[isim][160]*2.0 + simdata[isim][163] + simdata[isim][169]
+	     + simdata[isim][171]*4.0                           // SCN complexes
+	     + simdata[isim][245]*2.0 + simdata[isim][246]      // Metal-sulfide complexes
+	     + simdata[isim][442] + simdata[isim][443] + simdata[isim][444] + simdata[isim][445]*2.0 + simdata[isim][446]*3.0
+	     + simdata[isim][447]*4.0 + simdata[isim][448]*5.0; // Sulfide
+
+	// Go through the list of antifreezes from highest to lowest eutectic temperature
+	for (i=naf-1;i>=0;i--) {
+		notinsol = 0;
+		if (verbose == 1) printf("%d %d %g\n", isim, i, (*Tfreeze));
+		if (verbose == 1) printf("Al %g C %g Ca %g Cl %g Fe %g K %g Mg %g N %g Na %g S %g\n", sol[0], sol[2], sol[3], sol[4], sol[9],
+				sol[11], sol[13], sol[16], sol[17], sol[20]);
+		// Is antifreeze j in solution? Discriminate between oxidized and reduced C, N, and S
+		for (j=0;j<nelts-3;j++) {
+			if (antifreezes[i][j] > 0.0 &&
+					(sol[j] <= 0.0                                      // Antifreeze not in solution
+					|| (j==2 && Cred > 0.99*sol[j])                     // C is reduced
+					|| (i==21 && simdata[isim][117] < 1.0e-5*sol[i])    // Negligible CH2O (if not, case not well handled)
+				    || ((i==9 || i==16 || i==17) && j==16 && (1.0-Nred) < 1.0e-5*sol[j]) // Negligible oxidized N
+				    || (j==16 && Nred < 0.99*sol[j])                    // N is not overwhelmingly oxidized
+				    || (j==20 && Sred > 0.99*sol[j]))) {                // S is reduced
+				notinsol = 1;
+				if (verbose == 1 && antifreezes[i][j] > 0.0) {
+					if (sol[j] <= 0.0) printf("Antifreeze not in solution\n");
+					if (j==2 && Cred > 0.99*sol[j]) printf("C is reduced\n");
+					if (i==21 && simdata[isim][117] < 1.0e-5*sol[i]) printf("Negligible CH2O\n");
+					if ((i==9 || i==16 || i==17) && j==16 && (1.0-Nred) < 1.0e-5*sol[j]) printf("Negligible oxidized N\n");
+					if (j==16 && Nred < 0.99*sol[j]) printf("N is not overwhelmingly oxidized\n");
+					if (j==20 && Sred > 0.99*sol[j]) printf("S is reduced\n");
+				}
+				if (verbose == 1) printf("Antifreeze %d not in solution, moving on\n",i);
+				break;
+			}
+		}
+		if (!notinsol) {
+			if (verbose == 1) printf("Taking antifreeze %d out of solution...\n",i);
+			// If so, take that antifreeze out: first find the amount of stoichiometrically limiting element
+			for (j=0;j<nelts-3;j++) {
+				if (antifreezes[i][j] > 0.0 && sol[j] > 0.0 && (sol[j] < stoich || stoich == 0.0)) {
+					stoich = sol[j]/antifreezes[i][j];
+				}
+			}
+			if (verbose == 1) printf("Stoich: %g\n",stoich);
+			// Subtract this amount stoichiometrically from all elements that form the antifreeze
+			// If there is still stuff in solution, lower Tfreeze
+			for (j=0;j<nelts-3;j++) {
+				if (antifreezes[i][j] > 0.0 && sol[j] > 0.0) sol[j] = sol[j] - antifreezes[i][j]*stoich;
+			}
+			(*Tfreeze) = antifreezes[i][31];
+		}
+		// In any case, move on to the next antifreeze
+		stoich = 0.0;
+	}
+	free(sol);
+
 	return 0;
 }
 
