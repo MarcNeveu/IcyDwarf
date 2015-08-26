@@ -19,7 +19,7 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 
 int StructurePlot (SDL_Renderer* renderer, thermalout **thoutput, int t, int NR,
 		SDL_Texture* DryRock_tex, SDL_Texture* Liquid_tex, SDL_Texture* Ice_tex, SDL_Texture* Crust_tex,
-		SDL_Rect temp_time_dilation);
+		SDL_Rect temp_time_dilation, double **dM);
 
 int TwoAxisPlot (SDL_Renderer* renderer, char *FontFile, double **Values, int grid, int hold_tracks, int t, int NR, int irmax,
 		int itempk_step, int itempk_max, double itempk_fold_min, double itempk_fold_max, double itempk_fold_step, int thickness,
@@ -33,7 +33,7 @@ int UpdateDisplaysThermal(SDL_Renderer* renderer, SDL_Texture* background_tex, c
 		SDL_Texture* Ice_tex, SDL_Texture* Crust_tex, SDL_Texture* progress_bar_tex, int irad, int inumx,
 		SDL_Texture **xnum_tex, SDL_Texture* ynumber0_tex,
 		SDL_Texture* temp_tex, SDL_Texture* hydr_tex, SDL_Texture* k_tex, SDL_Texture* grid_tex, SDL_Texture* structure_tex,
-		SDL_Texture* hold_tracks_tex, SDL_Texture* hydr_title_tex, SDL_Texture* k_title_tex, SDL_Texture* legend_tex);
+		SDL_Texture* hold_tracks_tex, SDL_Texture* hydr_title_tex, SDL_Texture* k_title_tex, SDL_Texture* legend_tex, double **dM);
 
 int handleClickThermal(SDL_Event e, int *t, int *t_init, int *grid, int *structure, int *hold_tracks, int *plot_switch,
 		int *t_memory, int NT_output);
@@ -99,6 +99,12 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 		Kappa[t] = (double*) malloc(NR*sizeof(double));
 		if (Kappa[t] == NULL) printf("Thermal_plot: Not enough memory to create Kappa[NT_output][NR]\n");
 	}
+	double **dM = (double**) malloc(NT_output*sizeof(double*));    // Thermal conductivity
+	if (dM == NULL) printf("Thermal_plot: Not enough memory to create dM[NT_output]\n");
+	for (t=0;t<NT_output;t++) {
+		dM[t] = (double*) malloc(NR*sizeof(double));
+		if (dM[t] == NULL) printf("Thermal_plot: Not enough memory to create dM[NT_output][NR]\n");
+	}
 
 	//-------------------------------------------------------------------
 	//                     Initialize display elements
@@ -163,6 +169,7 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 
 	for (t=0;t<NT_output;t++) {
 		for (r=0;r<NR;r++) {
+			dM[t][r] = thoutput[r][t].mrock + thoutput[r][t].mh2os + thoutput[r][t].madhs + thoutput[r][t].mh2ol + thoutput[r][t].mnh3l;
 			TempK[t][r] = thoutput[r][t].tempk;
 			Hydr[t][r] = thoutput[r][t].famor*100.0;
 			Kappa[t][r] = thoutput[r][t].nu;
@@ -279,7 +286,7 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 								grid, hold_tracks, plot_switch, t, NR, NT_output, output_every, ircore, Tmax, kappamax,
 								value_time, axisTextColor, alpha, DryRock_tex, Liquid_tex, Ice_tex, Crust_tex, progress_bar_tex,
 								irad, inumx, xnum_tex, ynumber0_tex, temp_tex, hydr_tex, k_tex, grid_tex, structure_tex,
-								hold_tracks_tex, hydr_title_tex, k_title_tex, legend_tex);
+								hold_tracks_tex, hydr_title_tex, k_title_tex, legend_tex, dM);
 					}
 					if (stop_clicked == 1) t = t_memory;
 					else t = NT_output-1, t_init = 0;
@@ -306,7 +313,7 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 									grid, hold_tracks, plot_switch, t, NR, NT_output, output_every, ircore, Tmax, kappamax,
 									value_time, axisTextColor, alpha, DryRock_tex, Liquid_tex, Ice_tex, Crust_tex, progress_bar_tex,
 									irad, inumx, xnum_tex, ynumber0_tex, temp_tex, hydr_tex, k_tex, grid_tex, structure_tex,
-									hold_tracks_tex, hydr_title_tex, k_title_tex, legend_tex);
+									hold_tracks_tex, hydr_title_tex, k_title_tex, legend_tex, dM);
 						}
 					}
 					t_init = t;  // To pick up the animation back where we're leaving off
@@ -319,7 +326,7 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 				grid, hold_tracks, plot_switch, t, NR, NT_output, output_every, ircore, Tmax, kappamax,
 				value_time, axisTextColor, alpha, DryRock_tex, Liquid_tex, Ice_tex, Crust_tex, progress_bar_tex,
 				irad, inumx, xnum_tex, ynumber0_tex, temp_tex, hydr_tex, k_tex, grid_tex, structure_tex,
-				hold_tracks_tex, hydr_title_tex, k_title_tex, legend_tex);
+				hold_tracks_tex, hydr_title_tex, k_title_tex, legend_tex, dM);
 	}
 
 	//-------------------------------------------------------------------
@@ -353,10 +360,12 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 	free (thoutput);
 
 	for (t=0;t<NT_output;t++) {
+		free(dM[t]);
 		free(TempK[t]);
 		free(Hydr[t]);
 		free(Kappa[t]);
 	}
+	free(dM);
 	free(TempK);
 	free(Hydr);
 	free(Kappa);
@@ -370,7 +379,7 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 
 int StructurePlot (SDL_Renderer* renderer, thermalout **thoutput, int t, int NR,
 		SDL_Texture* DryRock_tex, SDL_Texture* Liquid_tex, SDL_Texture* Ice_tex, SDL_Texture* Crust_tex,
-		SDL_Rect temp_time_dilation) {
+		SDL_Rect temp_time_dilation, double **dM) {
 	int r = 0;
 
 	SDL_Rect DryRock_clip;
@@ -395,15 +404,13 @@ int StructurePlot (SDL_Renderer* renderer, thermalout **thoutput, int t, int NR,
 
 	// Dry rock
 	for (r=0;r<NR-2;r++) {
-		if (thoutput[r][t].mrock <= 0.0 && thoutput[r+1][t].mrock > 0.0 && thoutput[r+2][t].mh2os <= 0.0
-				&& thoutput[r+2][t].madhs <= 0.0 && thoutput[r+2][t].mh2ol <= 0.0 && thoutput[r+2][t].mnh3l <= 0.0) {
+		if  (thoutput[r][t].mrock > 0.9*dM[t][r]) {
 			DryRock_x = r;
 			break;
 		}
 	}
 	for (r=0;r<NR-2;r++) {
-		if (thoutput[r][t].mrock > 0.0 && thoutput[r+2][t].mrock <= 0.0 && thoutput[r][t].mh2os <= 0.0
-				&& thoutput[r][t].madhs <= 0.0 && thoutput[r][t].mh2ol <= 0.0 && thoutput[r][t].mnh3l <= 0.0) {
+		if (thoutput[r][t].mrock > 0.9*dM[t][r] && thoutput[r+1][t].mrock <= 0.9*dM[t][r]) {
 			DryRock_w = r - DryRock_x;
 			break;
 		}
@@ -415,13 +422,13 @@ int StructurePlot (SDL_Renderer* renderer, thermalout **thoutput, int t, int NR,
 	SDL_RenderCopy(renderer, DryRock_tex, &DryRock_clip, &DryRock_dest);
 
 	// Liquid
-	for (r=0;r<NR-1;r++) {
-		if (thoutput[r][t].mh2ol <= 0.0 && thoutput[r+1][t].mh2ol > 0.0) {
+	for (r=DryRock_x+DryRock_w;r<NR-1;r++) {
+		if (thoutput[r][t].mh2ol > 0.0) {
 			Liquid_x = r;
 			break;
 		}
 	}
-	for (r=0;r<NR-1;r++) {
+	for (r=DryRock_x+DryRock_w;r<NR-1;r++) {
 		if (thoutput[r][t].mh2ol > 0.0 && thoutput[r+1][t].mh2ol <= 0.0) {
 			Liquid_w = r - Liquid_x;
 			break;
@@ -434,27 +441,27 @@ int StructurePlot (SDL_Renderer* renderer, thermalout **thoutput, int t, int NR,
 	SDL_RenderCopy(renderer, Liquid_tex, &Liquid_clip, &Liquid_dest);
 
 	// Ice
-	for (r=0;r<NR-2;r++) {
-		if (thoutput[r][t].mh2os <= 0.0 && thoutput[r+1][t].mh2os > 0.0 && thoutput[r+2][t].mrock <= 0.0
-				&& thoutput[r+2][t].madhs <= 0.0 && thoutput[r+2][t].mh2ol <= 0.0 && thoutput[r+2][t].mnh3l <= 0.0) {
-			Ice_x = r + 1;
+	for (r=DryRock_x+DryRock_w-1;r<NR-1;r++) {
+		if (DryRock_w > 0 && thoutput[r-1][t].mh2os+thoutput[r-1][t].madhs == 0.0 && thoutput[r][t].mh2os+thoutput[r][t].madhs > 0.0) {
+			Ice_x = r;
 			break;
 		}
 	}
-	for (r=0;r<NR-1;r++) {
-		if (thoutput[r][t].mh2os > 0.0 && thoutput[r+1][t].mh2os <= thoutput[r][t].mh2os) {
-			Ice_w = r - Ice_x + 1;
+	for (r=DryRock_x+DryRock_w;r<NR-1;r++) {
+		if (thoutput[r][t].mh2os+thoutput[r][t].madhs > 0.2*dM[t][r]
+		    && thoutput[r+1][t].mh2os+thoutput[r+1][t].madhs <= thoutput[r][t].mh2os+thoutput[r][t].madhs) {
+			Ice_w = r - Ice_x;
 			break;
 		}
 	}
 	SDL_QueryTexture(Ice_tex, NULL, NULL, &Ice_clip.w, &Ice_clip.h);
 	Ice_clip.x = 0, Ice_clip.y = 0;
-	Ice_dest.x = temp_time_dilation.x + floor((double) Ice_x/(double) NR*(double) temp_time_dilation.w), Ice_dest.y = temp_time_dilation.y;
-	Ice_dest.w = floor((double) Ice_w/(double) NR*(double) temp_time_dilation.w), Ice_dest.h = temp_time_dilation.h;
+	Ice_dest.x = temp_time_dilation.x + floor((double) Ice_x/(double) NR*(double) temp_time_dilation.w)+2, Ice_dest.y = temp_time_dilation.y;
+	Ice_dest.w = floor((double) Ice_w/(double) NR*(double) temp_time_dilation.w)+1, Ice_dest.h = temp_time_dilation.h;
 	SDL_RenderCopy(renderer, Ice_tex, &Ice_clip, &Ice_dest);
 
 	// Crust
-	for (r=0;r<NR;r++) {
+	for (r=DryRock_x+DryRock_w;r<NR-1;r++) {
 		if (thoutput[r][t].mrock > 0.0 && thoutput[r][t].mh2os > 0.0 && thoutput[r][t].madhs > 0.0
 				&& thoutput[r][t].mh2ol <= 0.0 && thoutput[r][t].mnh3l <= 0.0) {
 			Crust_x = r;
@@ -572,7 +579,7 @@ int UpdateDisplaysThermal(SDL_Renderer* renderer, SDL_Texture* background_tex, c
 		SDL_Texture* Ice_tex, SDL_Texture* Crust_tex, SDL_Texture* progress_bar_tex, int irad, int inumx,
 		SDL_Texture **xnum_tex, SDL_Texture* ynumber0_tex,
 		SDL_Texture* temp_tex, SDL_Texture* hydr_tex, SDL_Texture* k_tex, SDL_Texture* grid_tex, SDL_Texture* structure_tex,
-		SDL_Texture* hold_tracks_tex, SDL_Texture* hydr_title_tex, SDL_Texture* k_title_tex, SDL_Texture* legend_tex) {
+		SDL_Texture* hold_tracks_tex, SDL_Texture* hydr_title_tex, SDL_Texture* k_title_tex, SDL_Texture* legend_tex, double **dM) {
 
 	int i = 0;
 	int r = 0;
@@ -615,7 +622,7 @@ int UpdateDisplaysThermal(SDL_Renderer* renderer, SDL_Texture* background_tex, c
 	}
 
 	// Structure plot
-	if (structure == 1) StructurePlot(renderer, thoutput, t, NR, DryRock_tex, Liquid_tex, Ice_tex, Crust_tex, value_time_dilation);
+	if (structure == 1) StructurePlot(renderer, thoutput, t, NR, DryRock_tex, Liquid_tex, Ice_tex, Crust_tex, value_time_dilation, dM);
 
 	// Unveil the progress bar
 	progress_bar_clip.x = 21, progress_bar_clip.y = 551;

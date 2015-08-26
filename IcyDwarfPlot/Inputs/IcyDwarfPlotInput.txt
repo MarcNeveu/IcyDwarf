@@ -14,7 +14,7 @@ Radius (km)                   475
 Grid
 -------------------------------
 Number of grid zones          200
-Total time of sim (Myr)       5000
+Total time of sim (Myr)       3560
 Output every (Myr)            10
 -------------------------------
 Subroutines
