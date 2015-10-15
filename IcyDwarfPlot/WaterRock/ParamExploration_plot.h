@@ -1006,7 +1006,7 @@ int PieStyle(int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npre
 	else if (itopic == 5) (*nspecies) = 6;  // Gases
 	else if (itopic == 6) (*nspecies) = 7;  // Brucite / carbonates
 	else if (itopic == 8) (*nspecies) = 15; // Mineral makeup
-	else if (itopic == 9 || itopic == 13) (*nspecies) = 13; // Solution, freezing temp
+	else if (itopic == 9 || itopic == 13) (*nspecies) = 14; // Solution, freezing temp
 
 	SDL_Color color[(*nspecies)+1];
 	color[0] = black;
@@ -1098,22 +1098,23 @@ int PieStyle(int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npre
 		(*leg_tex)[15] = renderText("  C",FontFile, white, 16, renderer);
 	}
 	else if (itopic == 9 || itopic == 13) { // Solution, freezing temp
-		color[1] = gray; color[2] = black; color[3] = cyan; color[4] = spindrift; color[5] = red; color[6] = pink; color[7] = orange;
-		color[8] = green; color[9] = white; color[10] = purple; color[11] = yellow; color[12] = aqua; color[13] = gold;
+		color[1] = gray; color[2] = light_green; color[3] = black; color[4] = cyan; color[5] = spindrift; color[6] = red; color[7] = pink;
+		color[8] = orange; color[9] = green; color[10] = white; color[11] = purple; color[12] = yellow; color[13] = aqua; color[14] = gold;
 		(*leg_tex)[0] = renderText("mol per mol solutes",FontFile, black, 16, renderer);
 		(*leg_tex)[1] = renderText("Al",FontFile, black, 16, renderer);
-		(*leg_tex)[2] = renderText("C",FontFile, white, 16, renderer);
-		(*leg_tex)[3] = renderText("Ca",FontFile, black, 16, renderer);
-		(*leg_tex)[4] = renderText("Cl",FontFile, black, 16, renderer);
-		(*leg_tex)[5] = renderText("P",FontFile, black, 16, renderer);
-		(*leg_tex)[6] = renderText("K",FontFile, black, 16, renderer);
-		(*leg_tex)[7] = renderText("Mg",FontFile, black, 16, renderer);
-		(*leg_tex)[8] = renderText("N",FontFile, black, 16, renderer);
-		(*leg_tex)[9] = renderText("Na",FontFile, black, 16, renderer);
-		(*leg_tex)[10] = renderText("Ni",FontFile, black, 16, renderer);
-		(*leg_tex)[11] = renderText("S",FontFile, black, 16, renderer);
-		(*leg_tex)[12] = renderText("Si",FontFile, black, 16, renderer);
-		(*leg_tex)[13] = renderText("H as H2",FontFile, black, 16, renderer);
+		(*leg_tex)[2] = renderText("C ox",FontFile, black, 16, renderer);
+		(*leg_tex)[3] = renderText("C red",FontFile, white, 16, renderer);
+		(*leg_tex)[4] = renderText("Ca",FontFile, black, 16, renderer);
+		(*leg_tex)[5] = renderText("Cl",FontFile, black, 16, renderer);
+		(*leg_tex)[6] = renderText("P",FontFile, black, 16, renderer);
+		(*leg_tex)[7] = renderText("K",FontFile, black, 16, renderer);
+		(*leg_tex)[8] = renderText("Mg",FontFile, black, 16, renderer);
+		(*leg_tex)[9] = renderText("N",FontFile, black, 16, renderer);
+		(*leg_tex)[10] = renderText("Na",FontFile, black, 16, renderer);
+		(*leg_tex)[11] = renderText("Ni",FontFile, black, 16, renderer);
+		(*leg_tex)[12] = renderText("S",FontFile, black, 16, renderer);
+		(*leg_tex)[13] = renderText("Si",FontFile, black, 16, renderer);
+		(*leg_tex)[14] = renderText("H as H2",FontFile, black, 16, renderer);
 	}
 	else if (itopic == 10) { // Ionic strength
 		(*leg_tex)[0] = renderText("mol per kg H2O",FontFile, black, 16, renderer);
@@ -1438,18 +1439,19 @@ int Angles(double **simdata, double **molmass, double **antifreezes, int isim, i
 			for (i=12;i<40;i++) total_Sol = total_Sol + simdata[isim][i];
 			total_Sol = total_Sol + 2.0*simdata[isim][333]; // H2
 			angle[1] = simdata[isim][12]/total_Sol;         // Al
-			angle[2] = simdata[isim][14]/total_Sol;         // C
-			angle[3] = simdata[isim][15]/total_Sol;         // Ca
-			angle[4] = simdata[isim][16]/total_Sol;         // Cl
-			angle[5] = simdata[isim][31]/total_Sol;         // P
-			angle[6] = simdata[isim][23]/total_Sol;         // K
-			angle[7] = simdata[isim][25]/total_Sol;         // Mg
-			angle[8] = simdata[isim][28]/total_Sol;         // N
-			angle[9] = simdata[isim][29]/total_Sol;         // Na
-			angle[10] = simdata[isim][30]/total_Sol;        // Ni
-			angle[11] = simdata[isim][32]/total_Sol;        // S
-			angle[12] = simdata[isim][34]/total_Sol;        // Si
-			angle[13] = 2.0*simdata[isim][333]/total_Sol;   // H = 2*H2
+			angle[2] = (simdata[isim][75]+simdata[isim][71]+simdata[isim][70])/total_Sol; // C ox = CO2 + HCO3- + CO3-2
+			angle[3] = simdata[isim][14]/total_Sol - angle[2]; // C red: all other C
+			angle[4] = simdata[isim][15]/total_Sol;         // Ca
+			angle[5] = simdata[isim][16]/total_Sol;         // Cl
+			angle[6] = simdata[isim][31]/total_Sol;         // P
+			angle[7] = simdata[isim][23]/total_Sol;         // K
+			angle[8] = simdata[isim][25]/total_Sol;         // Mg
+			angle[9] = simdata[isim][28]/total_Sol;         // N
+			angle[10] = simdata[isim][29]/total_Sol;         // Na
+			angle[11] = simdata[isim][30]/total_Sol;        // Ni
+			angle[12] = simdata[isim][32]/total_Sol;        // S
+			angle[13] = simdata[isim][34]/total_Sol;        // Si
+			angle[14] = 2.0*simdata[isim][333]/total_Sol;   // H = 2*H2
 		}
 
 		// Plot pies
