@@ -11,7 +11,7 @@ SOLUTION 1 Cometary fluid
 	 C		2.7754 #=5% mol/mol: 0.05/0.01801528
 	 N		1.11 #2% mol/mol: 0.02/0.01801528
 	 S		0.27754 #0.5% mol/mol: 0.005/0.01801528
-	 Cl             14.667e-6 # 680 ppm by mass (CI content) - 160 ppm by mass (CM content) assuming alteration at W:R=1 in CIs = 520 ug/kgw = 520/35.453 = 14.667 umol/kgw
+	 Cl             14.667e-3 # 680 ppm by mass (CI content) - 160 ppm by mass (CM content) assuming alteration at W:R=1 in CIs = 520 mg/kgw = 520/35.453 = 14.667 mmol/kgw
 
 GAS_PHASE 1 No initial gas, formation if sum (partial pressures)>pressure
 

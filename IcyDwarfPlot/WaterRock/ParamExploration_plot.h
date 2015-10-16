@@ -1478,7 +1478,8 @@ int Angles(double **simdata, double **molmass, double **antifreezes, int isim, i
 			key.r = 255; key.b = 0;
 			if (simdata[isim][7]/14.0 > 1.0) key.g = 0;
 			else key.g = (int) ((1.0-(simdata[isim][7]/7.0-1.0))*255.0);
-			Pie(2.0*M_PI, 0.0, ipie, jpie, kpie, 10.0+simdata[isim][5]+simdata[isim][8]-simdata[isim][3], &(*pies), key, 0, PT); // log = natural logarithm ln
+			// Equilibrium log fO2 = Init log fO2 + 4(pH_f + pe_f - pH_i - pe_i)
+			Pie(2.0*M_PI, 0.0, ipie, jpie, kpie, 10.0+simdata[isim][5]+4.0*(simdata[isim][7]+simdata[isim][8]-simdata[isim][2]-simdata[isim][3]), &(*pies), key, 0, PT); // log = natural logarithm ln
 		}
 		else if (itopic == 12) { // W:R
 			if (simdata[isim][11] < 0.01) {
