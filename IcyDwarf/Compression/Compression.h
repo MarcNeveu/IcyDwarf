@@ -370,9 +370,30 @@ int compression(int NR, int NT, thermalout **thoutput, int t, int dbincore, int 
 	}
 	else {
 		// Density and pressure profiles from this code
+		fprintf(fout, "Density (kg m-3) and pressure (MPa) profiles accounting for material compression\n");
+		fprintf(fout, "Radius (km) \t Density (kg/m3) \t Pressure (MPa)\n\n");
 		for (ir=1;ir<=NR;ir++) fprintf(fout, "%g \t %g \t %g\n",r[ir]/km,rho[ir],P[ir]/MPa);
 
+		// Text output from this code
+		fprintf(fout, "\nAfter %d iterations \n", iter);
+		fprintf(fout, "Convergence criterion = %g\n", delta);
+		fprintf(fout, "Planet mass = %g kg = %g MEarth\n", Mp, Mp/MEarth);
+		fprintf(fout, "Inner core mass = %g kg = %g MEarth\n", Mincore, Mincore/MEarth);
+		fprintf(fout, "Outer core mass = %g kg = %g MEarth\n", Moutcore, Moutcore/MEarth);
+		fprintf(fout, "Mantle mass = %g kg = %g MEarth\n", Mmantle, Mmantle/MEarth);
+		fprintf(fout, "Inner core radius = %g km = %g REarth\n", r[nic]/km, r[nic]/REarth);
+		fprintf(fout, "Outer core radius = %g km = %g REarth\n", r[noc]/km, r[noc]/REarth);
+		fprintf(fout, "Planet radius = %g km = %g REarth\n", Rp/km, Rp/REarth);
+		fprintf(fout, "Surface gravity = %g m/s2\n", g[NR]);
+		fprintf(fout, "Average density = %g kg/m3\n", rhoavg);
+		fprintf(fout, "Central density = %g kg/m3\n", rho[1]);
+		fprintf(fout, "Density near surface = %g kg/m3\n", rho[NR-1]);
+		fprintf(fout, "Central pressure = %g MPa\n", P[0]/MPa);
+		fprintf(fout, "Pressure at core-mantle boundary = %g MPa\n", P[noc]/MPa);
+
 		// Density and pressure profiles from the thermal code
+		fprintf(fout, "\nDensity (kg m-3) and pressure (MPa) profiles from the thermal code\n\n");
+		fprintf(fout, "Radius (km) \t Density (kg/m3) \t Pressure (MPa)\n");
 		double Mrock[NR];
 		double Mh2os[NR];
 		double Madhs[NR];
@@ -393,23 +414,6 @@ int compression(int NR, int NT, thermalout **thoutput, int t, int dbincore, int 
 					thoutput[ir-1][t].radius*thoutput[ir-1][t].radius*thoutput[ir-1][t].radius)*km*km*km);
 			fprintf(fout, "%g \t %g \t %g\n",thoutput[ir-1][t].radius,rho[ir],P[ir]/MPa);
 		}
-
-		// Text output from this code
-		fprintf(fout, "After %d iterations \n", iter);
-		fprintf(fout, "Convergence criterion = %g\n", delta);
-		fprintf(fout, "Planet mass = %g kg = %g MEarth\n", Mp, Mp/MEarth);
-		fprintf(fout, "Inner core mass = %g kg = %g MEarth\n", Mincore, Mincore/MEarth);
-		fprintf(fout, "Outer core mass = %g kg = %g MEarth\n", Moutcore, Moutcore/MEarth);
-		fprintf(fout, "Mantle mass = %g kg = %g MEarth\n", Mmantle, Mmantle/MEarth);
-		fprintf(fout, "Inner core radius = %g km = %g REarth\n", Rincore/km, Rincore/REarth);
-		fprintf(fout, "Outer core radius = %g km = %g REarth\n", Routcore/km, Routcore/REarth);
-		fprintf(fout, "Planet radius = %g km = %g REarth\n", Rp/km, Rp/REarth);
-		fprintf(fout, "Surface gravity = %g m/s2\n", g[NR]);
-		fprintf(fout, "Average density = %g kg/m3\n", rhoavg);
-		fprintf(fout, "Central density = %g kg/m3\n", rho[1]);
-		fprintf(fout, "Density near surface = %g kg/m3\n", rho[NR]);
-		fprintf(fout, "Central pressure = %g MPa\n", P[0]/MPa);
-		fprintf(fout, "Pressure at core-mantle boundary = %g MPa\n", P[noc]/MPa);
 	}
 	fclose (fout);
 	free (title);

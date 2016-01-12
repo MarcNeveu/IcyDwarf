@@ -58,6 +58,7 @@
 									<listOptionValue builtIn="false" value="/usr/local/include"/>
 									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Versions/3.0/Resources/include"/>
 									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Versions/3.0/Resources/library/RInside/include"/>
+									<listOptionValue builtIn="false" value="../opt/local/include"/>
 								</option>
 								<option id="gnu.c.compiler.option.misc.other.220446502" name="Other flags" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0 -arch x86_64" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.632314581" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
@@ -126,7 +127,6 @@
 								<option defaultValue="gnu.c.optimization.level.most" id="gnu.c.compiler.macosx.exe.release.option.optimization.level.1371150510" name="Optimization Level" superClass="gnu.c.compiler.macosx.exe.release.option.optimization.level" valueType="enumerated"/>
 								<option id="gnu.c.compiler.macosx.exe.release.option.debugging.level.864024125" name="Debug Level" superClass="gnu.c.compiler.macosx.exe.release.option.debugging.level" value="gnu.c.debugging.level.default" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.include.paths.1923154675" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="/usr/include"/>
 									<listOptionValue builtIn="false" value="/usr/local/lib/gcc/x86_64-apple-darwin14.0.0/5.0.0/include"/>
 									<listOptionValue builtIn="false" value="/usr/local/include"/>
 									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Versions/3.0/Resources/include"/>

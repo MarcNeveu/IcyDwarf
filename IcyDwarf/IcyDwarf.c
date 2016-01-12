@@ -107,7 +107,7 @@ int main(int argc, char *argv[]){
 
 	printf("\n");
 	printf("-------------------------------------------------------------------\n");
-	printf("IcyDwarf v15.8\n");
+	printf("IcyDwarf v16.1\n");
 	if (v_release == 1) printf("Release mode\n");
 	else if (cmdline == 1) printf("Command line mode\n");
 	printf("-------------------------------------------------------------------\n");
@@ -237,7 +237,7 @@ int main(int argc, char *argv[]){
 		thoutput = read_thermal_output (thoutput, NR, NT_output, path);
 		for (r=0;r<NR;r++) Xhydr[r] = thoutput[r][NT_output].famor;
 
-		compression(NR, NT_output, thoutput, NT_output-1, 202, 304, 403, 0, path, rhoHydrRock, rhoDryRock, Xhydr);
+		compression(NR, NT_output, thoutput, NT_output-1, 205, 302, 403, 0, path, rhoHydrRock, rhoDryRock, Xhydr);
 
 		for (r=0;r<NR;r++) {
 			free (thoutput[r]);
