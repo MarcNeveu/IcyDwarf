@@ -22,10 +22,6 @@
 #ifndef COMPRESSION_H_
 #define COMPRESSION_H_
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-
 #include "../IcyDwarf.h"
 
 int compression(int NR, int NT, thermalout **thoutput, int t, int dbincore, int dboutcore, int dbmantle, int specify,

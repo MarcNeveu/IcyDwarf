@@ -22,10 +22,6 @@
 #ifndef THERMAL_H_
 #define THERMAL_H_
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-
 #include "../IcyDwarf.h"
 
 int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p, double rhoHydr, double rhoDry,
@@ -127,6 +123,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double Vcracked = 0.0;               // Volume of cracked rock (cm3)
 	double fineMassFrac = 0.0;           // Mass fraction of fines (no dim)
 	double fineVolFrac = 0.0;            // Volume fraction of fines (no dim)
+	double fracKleached = 0.0;           // Fraction of K radionuclide leached (no dim)
 	double Crack_depth[2];				 // Crack_depth[2] (km), output
 	double WRratio[2];					 // WRratio[2] (by mass, no dim), output
 	double Heat[5];                      // Heat[4] (erg), output
@@ -782,6 +779,26 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			Phi = Phiold;
 
 		//-------------------------------------------------------------------
+		//                   Find % radionuclides leached
+		//-------------------------------------------------------------------
+
+		Mliq = 0.0;
+		for (ir=0;ir<NR;ir++) {
+			Mliq = Mliq + Mh2ol[ir] + Mnh3l[ir];
+		}
+		Mcracked_rock = 0.0;
+		for (ir=0;ir<NR;ir++) {
+			if (Crack[ir] > 0.0) {
+				Mcracked_rock = Mcracked_rock + Mrock[ir];
+			}
+		}
+
+		if (ircore > 0) ir = ircore-1; // Set ir at seafloor for now. TODO average T and P over cracked zone?
+		else ir = 0;
+
+//		WaterRock (path, T[ir], Pressure[ir], Mliq/Mcracked_rock, &fracKleached, chondr);
+
+		//-------------------------------------------------------------------
 		// Calculate heating from:
 		// - radioactive decay in rocky layers
 		// - gravitational potential energy release in differentiated layers
@@ -1081,16 +1098,6 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			// Water:rock ratio by mass in cracked layer
 			// Depends entirely on porosity! The W/R by volume is porosity. Here, we say W/R = Mliq/Mcracked_rock.
 			WRratio[0] = (double) itime*dtime/Gyr2sec;                   // t in Gyr
-			Mliq = 0.0;
-			for (ir=0;ir<NR;ir++) {
-				Mliq = Mliq + Mh2ol[ir] + Mnh3l[ir];
-			}
-			Mcracked_rock = 0.0;
-			for (ir=0;ir<NR;ir++) {
-				if (Crack[ir] > 0.0) {
-					Mcracked_rock = Mcracked_rock + Mrock[ir];
-				}
-			}
 			if (Mcracked_rock < 0.000001) WRratio[1] = 0.0;              // If Mcracked_rock is essentially 0, to avoid infinities
 			else WRratio[1] = Mliq/Mcracked_rock;
 			append_output(2, WRratio, path, "Outputs/Crack_WRratio.txt");

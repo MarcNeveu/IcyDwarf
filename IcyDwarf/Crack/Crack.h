@@ -39,10 +39,6 @@
 #ifndef CRACK_H_
 #define CRACK_H_
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-
 #include "../IcyDwarf.h"
 
 int crack(double T, double T_old, double Pressure, double *Crack,

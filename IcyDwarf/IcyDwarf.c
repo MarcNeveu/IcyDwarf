@@ -13,12 +13,6 @@
  *      2. Gas exsolution in icy shell cracks (gas-driven cryovolcanism)
  */
 
-#include <unistd.h>    // To check current working directory
-#include <stdio.h>
-#include <math.h>
-#include <string.h>
-#include "modifdyld.h" // Like mach-o/dyld.h but without the boolean DYLD_BOOL typedef
-                       // that conflicts with the R_boolean typedef
 #include "IcyDwarf.h"
 #include "Compression/Compression.h"
 #include "Crack/Crack.h"
@@ -211,7 +205,6 @@ int main(int argc, char *argv[]){
 	//-------------------------------------------------------------------
 
 	if (calculate_geochemistry == 1) {
-		// WaterRock(path);
 		printf("Running PHREEQC across the specified range of parameters...\n");
 		ParamExploration(path, Tmin, Tmax, Tstep,
 				Pmin, Pmax, Pstep,

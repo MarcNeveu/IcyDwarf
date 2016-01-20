@@ -13,6 +13,20 @@
 #ifndef ICYDWARF_H_
 #define ICYDWARF_H_
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <omp.h>                                           // Parallel processing
+#include <unistd.h>                                        // To check current working directory at IcyDwarf startup
+#include <R.h>                                             // To use the external R software package
+#include <Rdefines.h>
+#include <Rinternals.h>
+#include <Rembedded.h>
+#include <IPhreeqc.h>                                      // To use the external PHREEQC geochemical code
+#include "modifdyld.h"                                     // Like mach-o/dyld.h but without the boolean DYLD_BOOL typedef
+                                                           //   that conflicts with the R_boolean typedef
+
 //-------------------------------------------------------------------
 // FLAGS
 //-------------------------------------------------------------------

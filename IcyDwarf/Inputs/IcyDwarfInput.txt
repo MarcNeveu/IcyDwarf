@@ -30,7 +30,7 @@ Run thermal?                  1
 	Sim time step (yr)    50
 	Sim starts at (Myr)   2
 	Initial temp (K)      168
-	Degree of hydration   0
+	Degree of hydration   1
 	Fine rock fraction    0
 Core cracks
 	Calculate aTP?        0

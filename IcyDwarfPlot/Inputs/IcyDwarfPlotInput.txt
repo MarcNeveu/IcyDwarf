@@ -1,4 +1,4 @@
-ICY DWARF PLOT v15.x INPUT FILE
+ICY DWARF PLOT v16.x INPUT FILE
 
 1 for Yes, 0 for No
 -------------------------------
@@ -9,7 +9,7 @@ Messages?                     1
 -------------------------------
 Planet parameters
 -------------------------------
-Radius (km)                   475
+Radius (km)                   469.3
 -------------------------------
 Grid
 -------------------------------
@@ -23,11 +23,11 @@ Thermal plot
 	IcyDwarf output       Thermal.txt
 	Max temp (K; 0=auto)  800
 Geochemistry plot
-	Temperature           0 300 50
-	Pressure              200 3200 500
-	pH                    7 14 1
-	pe = FMQ + ...        -6 6 1
-	Water:rock mass ratio 0.1 10 10
+	Temperature           0 150 50
+	Pressure              200 1700 500
+	pH                    7 9 1
+	pe = FMQ + ...        0 24 2
+	Water:rock mass ratio 1 4 2
 	Rock type 0:OC def:CC 1
-	Fluid 1:comet def:H2O 1
+	Fluid 1:comet def:H2O 0
 

@@ -12,12 +12,6 @@
 #ifndef PARAMEXPLORATION_H_
 #define PARAMEXPLORATION_H_
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <IPhreeqc.h>
-#include <omp.h>
-
 #include "../IcyDwarf.h"
 
 int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, double Pmin, double Pmax, double Pstep,
@@ -36,7 +30,7 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 
 	int thread_id;
 	int phreeqc = 0;
-	int nvar = 1830;                                              // Number of variables stored in each PHREEQC simulation
+	int nvar = 1830;                                              // Number of geochemical variables stored in each PHREEQC simulation
 	int i = 0;
 	int j = 0;
 

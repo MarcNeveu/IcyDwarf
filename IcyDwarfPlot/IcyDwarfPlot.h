@@ -228,7 +228,7 @@ int icy_dwarf_input (double **input, char (*thermal_file)[1024], char path[1024]
 		printf("\t pH \t \t \t %g %g %g\n",(*input)[i],(*input)[i+1],(*input)[i+2]), i = i+3;
 		printf("\t pe = FMQ + ... \t %g %g %g\n",(*input)[i],(*input)[i+1],(*input)[i+2]), i = i+3;
 		printf("\t Water:rock mass ratio \t %g %g %g\n",(*input)[i],(*input)[i+1],(*input)[i+2]), i = i+3;
-		printf("\t Rock type 0:OC def:CC \t %g\n",(*input)[i]);
+		printf("\t Rock type 0:OC def:CC \t %g\n",(*input)[i]), i++;
 		printf("\t Fluid 1:comet def:H2O \t %g\n",(*input)[i]);
 		printf("\n");
 

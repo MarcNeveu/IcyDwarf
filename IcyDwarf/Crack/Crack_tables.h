@@ -25,17 +25,7 @@
 #ifndef ATP_H_
 #define ATP_H_
 
-#include <stdio.h>
-#include <math.h>
-#include <string.h>
-
-#include <R.h>
-#include <Rdefines.h>
-#include <Rinternals.h>
-#include <Rembedded.h>
-
 #include "../CHNOSZ_commands.h"
-
 #include "../IcyDwarf.h"
 
 int aTP(char path[1024], int warnings, int msgout);

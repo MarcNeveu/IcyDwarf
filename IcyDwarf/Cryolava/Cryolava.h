@@ -31,18 +31,8 @@
 #define NewtRaphThresh 1.5e10               // Threshold for the Bisection/Newton-Raphson loop
 #define x_sup 1.0e3                         // Upper bound of interval [0,x_sup] where root is searched
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-
 #include "../Crack/Crack.h"                 // For the densities
 #include "../IcyDwarf.h"
-
-#include <R.h>
-#include <Rdefines.h>
-#include <Rinternals.h>
-#include <Rembedded.h>
-
 #include "../CHNOSZ_commands.h"
 
 int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p, thermalout **thoutput, int t_cryolava,
