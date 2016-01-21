@@ -27,7 +27,7 @@
 int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p, double rhoHydr, double rhoDry,
 		int warnings, int msgout, double Xp, double Xsalt, double *Xhydr, double Xfines, double tzero, double Tsurf,
 		double Tinit, double dtime, double fulltime, double dtoutput, int *crack_input, int *crack_species, int chondr,
-		double aorb, double eorb, double Mprim);
+		int moon, double aorb, double eorb, double Mprim);
 
 int state (char path[1024], int itime, int ir, double E, double *frock, double *fh2os, double *fadhs, double *fh2ol, double *fnh3l,
 		double Xsalt, double *T);
@@ -57,7 +57,7 @@ double viscosity(double T, double Mh2ol, double Mnh3l);
 int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p, double rhoHydr, double rhoDry,
 		int warnings, int msgout, double Xp, double Xsalt, double *Xhydr, double Xfines, double tzero, double Tsurf,
 		double Tinit, double dtime, double fulltime, double dtoutput, int *crack_input, int *crack_species, int chondr,
-		double aorb, double eorb, double Mprim) {
+		int moon, double aorb, double eorb, double Mprim) {
 
 	//-------------------------------------------------------------------
 	//                 Declarations and initializations
@@ -129,13 +129,12 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double mu_rigid = 4.0e9/gram*cm;     // Average planet rigidity (g cm-1 s-2), Chen et al. 2014, Icarus 229, 11-30
 	double g_surf = Gcgs*4.0/3.0*PI_greek*r_p*km2cm*rho_p; // Surface gravity (cm s-2)
 	double k2tide = 1.5/(1.0+19.0*mu_rigid/(2.0*rho_p*g_surf*r_p*km2cm)); // Chen et al. 2014, Icarus 229, 11-30
-	double Qtide = 1000.0;                // Chen et al. 2014, Icarus 229, 11-30
-	double norb = norb = sqrt(Gcgs*Mprim/(aorb*aorb*aorb)); // Orbital mean motion = 2*pi/period = sqrt(GM/a3) (s-1)
-
+	double Qtide = 1000.0;               // Chen et al. 2014, Icarus 229, 11-30
+	double norb = 0.0;                   // Orbital mean motion = 2*pi/period = sqrt(GM/a3) (s-1)
 	double Heat_tide = 0.0;
 	double Crack_depth[2];				 // Crack_depth[2] (km), output
 	double WRratio[2];					 // WRratio[2] (by mass, no dim), output
-	double Heat[5];                      // Heat[4] (erg), output
+	double Heat[6];                      // Heat[6] (erg), output
 	double Thermal[9];					 // Thermal[9] (multiple units), output
 
 	int *dont_dehydrate = (int*) malloc((NR)*sizeof(int));    // Don't dehydrate a layer that just got hydrated
@@ -307,7 +306,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	// Zero all the arrays
 	Crack_depth[0] = 0.0, Crack_depth[1] = 0.0;
 	WRratio[0] = 0.0, WRratio[1] = 0.0;
-	Heat[0] = 0.0, 	Heat[1] = 0.0, 	Heat[2] = 0.0, Heat[3] = 0.0, Heat[4] = 0.0;
+	Heat[0] = 0.0, 	Heat[1] = 0.0, 	Heat[2] = 0.0, Heat[3] = 0.0, Heat[4] = 0.0; Heat[5] = 0.0;
 	for (i=0;i<9;i++) Thermal[i] = 0.0;
     for (ir=0;ir<NR;ir++) {
     	dVol[ir] = 0.0;
@@ -374,6 +373,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	thermal_mismatch = crack_input[0];
 	pore_water_expansion = crack_input[1];
 	dissolution_precipitation = crack_input[3];
+
+	if (moon) norb = sqrt(Gcgs*Mprim/(aorb*aorb*aorb));
 
     //-------------------------------------------------------------------
     //                     Initialize physical tables
@@ -507,7 +508,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	Heat[2] = Heat_grav;
 	Heat[3] = Heat_serp;
 	Heat[4] = Heat_dehydr;
-	append_output(5, Heat, path, "Outputs/Heats.txt");
+	Heat[5] = Heat_tide;
+	append_output(6, Heat, path, "Outputs/Heats.txt");
 
 	// Crack outputs
 	append_output(NR, Crack, path, "Outputs/Crack.txt");        // Crack type
@@ -659,7 +661,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	// Find the depth of the continuous cracked layer in contact with the ocean
     	ircrack = NR;
     	for (ir=ircore-1;ir>=0;ir--) {
-    		if (Crack[ir] > 0.0) ircrack = ir;
+    		if (Crack[ir] > 0.0 || (ir>0 && Crack[ir-1] > 0.0)) ircrack = ir; // Second condition to avoid single non-cracked layers
     		else break;
     	}
 
@@ -846,11 +848,12 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		}
 
 		// Tidal heating in ice. TODO Add tidal heating in ocean too.
-
-		for (ir=0;ir<NR;ir++) {
-			if (Mh2os[ir]>0.0) {
-				Qth[ir] = Qth[ir] + 11.5*k2tide/Qtide*Gcgs*Mprim*Mprim*norb*pow(r_p,5)*eorb*eorb/pow(aorb,6);
-				Heat_tide = Heat_tide + 11.5*k2tide/Qtide*Gcgs*Mprim*Mprim*norb*pow(r_p,5)*eorb*eorb/pow(aorb,6);
+		if (moon) {
+			for (ir=0;ir<NR;ir++) {
+				if (Mh2os[ir] > 0.0) {
+					Qth[ir] = Qth[ir] + 11.5*k2tide/Qtide*Gcgs*Mprim*Mprim*norb*pow(r_p,5)*eorb*eorb/pow(aorb,6);
+					Heat_tide = Heat_tide + 11.5*k2tide/Qtide*Gcgs*Mprim*Mprim*norb*pow(r_p,5)*eorb*eorb/pow(aorb,6);
+				}
 			}
 		}
 
@@ -883,6 +886,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			fineVolFrac = fineMassFrac*dM[ircore+1]/dVol[ircore+1]/(Xhydr[ircore+1]*rhoHydrth+(1.0-Xhydr[ircore+1])*rhoRockth);
 		}
 		Crack_size_avg = 0.0;
+
 		if (ircrack < ircore && Mh2ol[ircore] > 0.0 && fineVolFrac < 0.64) {
 			// Calculate Rayleigh number
 			for (ir=ircrack;ir<=ircore;ir++) {
@@ -1102,6 +1106,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			Heat[2] = Heat_grav;
 			Heat[3] = Heat_serp;
 			Heat[4] = Heat_dehydr;
+			Heat[5] = Heat_tide;
 			append_output(5, Heat, path, "Outputs/Heats.txt");
 
 			// Crack outputs

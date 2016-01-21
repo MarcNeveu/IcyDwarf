@@ -210,7 +210,7 @@ int main(int argc, char *argv[]){
 	if (calculate_thermal == 1) {
 		printf("Running thermal evolution code...\n");
 		Thermal(argc, argv, path, NR, r_p, rho_p, rhoHydrRock, rhoDryRock, warnings, msgout, nh3, salt, Xhydr, Xfines, tzero, Tsurf, Tinit,
-				timestep, total_time, output_every, crack_input, crack_species, chondr, aorb, eorb, Mprim);
+				timestep, total_time, output_every, crack_input, crack_species, chondr, moon, aorb, eorb, Mprim);
 		printf("\n");
 	}
 
