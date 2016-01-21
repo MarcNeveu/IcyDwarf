@@ -29,10 +29,14 @@ int main(int argc, char *argv[]){
 	int msgout = 0;                    // Display messages
 
 	// Planet inputs
-    double rho_p = 0.0;                // Planetary density
-    double rhoHydrRock = 0.0;              // Density of hydrated rock endmember
-    double rhoDryRock = 0.0;               // Density of dry rock endmember
-    double r_p = 0.0;                  // Planetary rdouble
+	int moon = 0;                      // Is the simulated planet a moon? If so, consider the following 3 parameters:
+	double aorb = 0.0;                 // Moon orbital semi-major axis (cm)
+	double eorb = 0.0;                 // Moon orbital eccentricity
+	double Mprim = 0.0;                // Mass of the primary (host planet) (g)
+    double rho_p = 0.0;                // Planetary density (g cm-3)
+    double rhoHydrRock = 0.0;              // Density of hydrated rock endmember (kg m-3)
+    double rhoDryRock = 0.0;               // Density of dry rock endmember (kg m-3)
+    double r_p = 0.0;                  // Planetary radius
     double nh3 = 0.0;                  // Ammonia w.r.t. water
     double salt = 0.0;                 // Salt w.r.t. water (3/30/2015: binary quantity)
     double Tsurf = 0.0;				   // Surface temperature
@@ -90,8 +94,9 @@ int main(int argc, char *argv[]){
                                        // Default: 235 K (Cryolava), 245 K (Crack, P>200 bar)
 	int r = 0;
 	int i = 0;
+	int j = 0;
 
-	double *input = (double*) malloc(50*sizeof(double));
+	double *input = (double*) malloc(54*sizeof(double));
 	if (input == NULL) printf("IcyDwarf: Not enough memory to create input[28]\n");
 	for (i=0;i<50;i++) input[i] = 0.0;
 
@@ -127,41 +132,50 @@ int main(int argc, char *argv[]){
 
 	input = icy_dwarf_input (input, path);
 
-	warnings = (int) input[0];
-	msgout = (int) input[1];
-	rho_p = input[2];
-	rhoHydrRock = input[3]*1000.0;
-	rhoDryRock = input[4]*1000.0;
-	chondr = input[5];
-	r_p = input[6];
-	nh3 = input[7];
-	salt = input[8];
-	Tsurf = input[9];
-	NR = input[10];
-	total_time = input[11];
-	output_every = input[12];
+	i = 0;
+	warnings = (int) input[i]; i++;
+	msgout = (int) input[i]; i++;
+	moon = (int) input[i]; i++;
+	aorb = input[i]*km2cm*input[i-1]; i++;          // Input-specified aorb if moon=1, 0 otherwise, cm
+	eorb = input[i]*input[i-2]; i++;                // Input-specified eorb if moon=1, 0 otherwise
+	Mprim = input[i]/gram*input[i-3]; i++;          // Input-specified Mprim if moon=1, 0 otherwise, g
+	rho_p = input[i]; i++;                          // g cm-3
+	rhoHydrRock = input[i]*gram/cm/cm/cm; i++;      // kg m-3
+	rhoDryRock = input[i]*gram/cm/cm/cm; i++;       // kg m-3
+	chondr = input[i]; i++;
+	r_p = input[i]; i++;
+	nh3 = input[i]; i++;
+	salt = input[i]; i++;
+	Tsurf = input[i]; i++;
+	NR = input[i]; i++;
+	total_time = input[i]; i++;
+	output_every = input[i]; i++;
 	NT_output = floor(total_time/output_every)+1;
-	calculate_thermal = (int) input[13];
-	timestep = input[14];  // yr
-	tzero = input[15];     // Myr
-	Tinit = input[16];
-	Hydr_init = input[17];
-	Xfines = input[18];
-	calculate_aTP = (int) input[19];
-	calculate_alpha_beta = (int) input[20];
-	calculate_crack_species = (int) input[21];
-	calculate_geochemistry = (int) input[22];
-	Tmin = input[23], Tmax = input[24], Tstep = input[25];
-	Pmin = input[26], Pmax = input[27], Pstep = input[28];
-	pHmin = input[29], pHmax = input[30], pHstep = input[31];
-	pemin = input[32], pemax = input[33], pestep = input[34];
-	WRmin = input[35], WRmax = input[36], WRstep = input[37];
-	calculate_compression = (int) input[38];
-	calculate_cryolava = (int) input[39];
-	t_cryolava = (int) input[40]/input[12];
-	CHNOSZ_T_MIN = input[41];
-	for (i=42;i<46;i++) crack_input[i-42] = (int) input[i];
-	for (i=46;i<49;i++) crack_species[i-46] = (int) input[i];
+	calculate_thermal = (int) input[i]; i++;
+	timestep = input[i]; i++;                       // yr
+	tzero = input[i]; i++;                          // Myr
+	Tinit = input[i]; i++;
+	Hydr_init = input[i]; i++;
+	Xfines = input[i]; i++;
+	calculate_aTP = (int) input[i]; i++;
+	calculate_alpha_beta = (int) input[i]; i++;
+	calculate_crack_species = (int) input[i]; i++;
+	calculate_geochemistry = (int) input[i]; i++;
+	Tmin = input[i]; i++; Tmax = input[i]; i++; Tstep = input[i]; i++;
+	Pmin = input[i]; i++; Pmax = input[i]; i++; Pstep = input[i]; i++;
+	pHmin = input[i]; i++; pHmax = input[i]; i++; pHstep = input[i]; i++;
+	pemin = input[i]; i++; pemax = input[i]; i++; pestep = input[i]; i++;
+	WRmin = input[i]; i++; WRmax = input[i]; i++; WRstep = input[i]; i++;
+	calculate_compression = (int) input[i]; i++;
+	calculate_cryolava = (int) input[i]; i++;
+	t_cryolava = (int) input[i]/input[i-28]; i++;
+	CHNOSZ_T_MIN = input[i]; i++;
+	for (j=0;j<4;j++) {
+		crack_input[j] = (int) input[i]; i++;
+	}
+	for (j=0;j<4;j++) {
+		crack_species[j] = (int) input[i]; i++;
+	}
 
 	//-------------------------------------------------------------------
 	// Cracking depth calculations
@@ -196,7 +210,7 @@ int main(int argc, char *argv[]){
 	if (calculate_thermal == 1) {
 		printf("Running thermal evolution code...\n");
 		Thermal(argc, argv, path, NR, r_p, rho_p, rhoHydrRock, rhoDryRock, warnings, msgout, nh3, salt, Xhydr, Xfines, tzero, Tsurf, Tinit,
-				timestep, total_time, output_every, crack_input, crack_species, chondr);
+				timestep, total_time, output_every, crack_input, crack_species, chondr, aorb, eorb, Mprim);
 		printf("\n");
 	}
 

@@ -9,6 +9,10 @@ Messages?                     0
 -------------------------------
 Planet parameters
 -------------------------------
+Moon?                         1
+	Orbital a (km)         185539
+	Orbital e              0.0196
+	Host planet mass (kg)  5.68e26
 Density (g cm-3)              2.170
 Hydr. rock density (g cm-3)   2.9
 Dry rock density (g cm-3)     3.8 
@@ -28,7 +32,7 @@ Subroutines
 -------------------------------
 Run thermal?                  1
 	Sim time step (yr)    50
-	Sim starts at (Myr)   2
+	Sim starts at (Myr)   3
 	Initial temp (K)      168
 	Degree of hydration   1
 	Fine rock fraction    0

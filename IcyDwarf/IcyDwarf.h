@@ -32,7 +32,7 @@
 //-------------------------------------------------------------------
 
 #define v_release 0                                        // 0 for Debug, 1 for Release
-#define cmdline 1										   // If execution from terminal as "./IcyDwarf",
+#define cmdline 0										   // If execution from terminal as "./IcyDwarf",
                                                            // overwritten by v_release.
 //-------------------------------------------------------------------
 // PHYSICAL AND MATHEMATICAL CONSTANTS
@@ -375,7 +375,23 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,111,SEEK_CUR);  // Density (g cm-3)
+			fseek(f,111,SEEK_CUR);  // Moon?
+			scan = fscanf(f, "%lg", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,24,SEEK_CUR);   // Orbital semi-major axis
+			scan = fscanf(f, "%lg", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,24,SEEK_CUR);   // Orbital eccentricity
+			scan = fscanf(f, "%lg", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,24,SEEK_CUR);   // Mass of primary (host planet) (kg)
+			scan = fscanf(f, "%lg", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,31,SEEK_CUR);   // Density (g cm-3)
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
@@ -575,6 +591,10 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 		printf("-------------------------------\n");
 		printf("Planet parameters\n");
 		printf("-------------------------------\n");
+		printf("Moon? \t \t \t \t %g\n",input[i]), i++;
+		printf("\t Orbital a (km) \t %g\n",input[i]), i++;
+		printf("\t Orbital e \t \t %g\n",input[i]), i++;
+		printf("\t Host planet mass (kg) \t %g\n",input[i]), i++;
 		printf("Density (g cm-3) \t \t %g\n",input[i]), i++;
 		printf("Hydr. rock density (g cm-3) \t %g\n",input[i]), i++;
 		printf("Dry rock density (g cm-3) \t %g\n",input[i]), i++;
