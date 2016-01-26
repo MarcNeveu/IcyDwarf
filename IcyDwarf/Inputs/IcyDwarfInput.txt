@@ -9,9 +9,9 @@ Messages?                     0
 -------------------------------
 Planet parameters
 -------------------------------
-Moon?                         0
-	Orbital a (km)        185539
-	Orbital e             0.0196
+Moon?                         1
+	Orbital a (km)        237948
+	Orbital e             0.0047
 	Host planet mass (kg) 5.68e26
 Density (g cm-3)              1.611
 Hydr. rock density (g cm-3)   2.9

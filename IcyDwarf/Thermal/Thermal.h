@@ -126,11 +126,11 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double fineMassFrac = 0.0;           // Mass fraction of fines (no dim)
 	double fineVolFrac = 0.0;            // Volume fraction of fines (no dim)
 	double fracKleached = 0.0;           // Fraction of K radionuclide leached (no dim)
-	double mu_rigid = 4.0e9/gram*cm;     // Average planet rigidity (g cm-1 s-2), Chen et al. 2014, Icarus 229, 11-30
+	double mu_rigid = 4.0e9/gram*cm;     // Ice rigidity = shear modulus (g cm-1 s-2)
 	double g_surf = Gcgs*4.0/3.0*PI_greek*r_p*km2cm*rho_p; // Surface gravity (cm s-2)
-	double k2tide = 1.5/(1.0+19.0*mu_rigid/(2.0*rho_p*g_surf*r_p*km2cm)); // Chen et al. 2014, Icarus 229, 11-30
-	double Qtide = 1000.0;               // Chen et al. 2014, Icarus 229, 11-30
 	double norb = 0.0;                   // Orbital mean motion = 2*pi/period = sqrt(GM/a3) (s-1)
+	double omega_tide = 0.0;             // Tidal frequency
+	double beta_tide = rho_p*g_surf*r_p*km2cm; // Gravitational stiffness (g cm-1 s-2)
 	double Heat_tide = 0.0;
 	double Crack_depth[2];				 // Crack_depth[2] (km), output
 	double WRratio[2];					 // WRratio[2] (by mass, no dim), output
@@ -248,6 +248,12 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double *fracOpen = (double*) malloc((NR)*sizeof(double)); // Fraction of crack that hasn't healed
 	if (fracOpen == NULL) printf("Thermal: Not enough memory to create fracOpen[NR]\n");
 
+	double *k2tide = (double*) malloc((NR)*sizeof(double)); // Tidal Love number of harmonic degree 2
+	if (k2tide == NULL) printf("Thermal: Not enough memory to create k2tide[NR]\n");
+
+	double *Qtide = (double*) malloc((NR)*sizeof(double)); // Tidal quality factor, = 1/(bulge lag angle)
+	if (Qtide == NULL) printf("Thermal: Not enough memory to create Qtide[NR]\n");
+
 	double **Stress = (double**) malloc((NR)*sizeof(double*)); // Stress[NR][12], output
 	if (Stress == NULL) printf("Thermal: Not enough memory to create Stress[NR]\n");
 	for (ir=0;ir<NR;ir++) {
@@ -344,6 +350,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	Brittle_strength[ir] = 0.0;
     	strain_rate[ir] = 0.0;
     	fracOpen[ir] = 0.0;
+    	k2tide[ir] = 0.0;
+    	Qtide[ir] = 0.0;
     	for (i=0;i<n_species_crack;i++) Act[ir][i] = 0.0;
     	for (i=0;i<12;i++) Stress[ir][i] = 0.0;
     }
@@ -851,8 +859,21 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		if (moon) {
 			for (ir=0;ir<NR;ir++) {
 				if (Mh2os[ir] > 0.0) {
-					Qth[ir] = Qth[ir] + 11.5*k2tide/Qtide*Gcgs*Mprim*Mprim*norb*pow(r_p,5)*eorb*eorb/pow(aorb,6);
-					Heat_tide = Heat_tide + 11.5*k2tide/Qtide*Gcgs*Mprim*Mprim*norb*pow(r_p,5)*eorb*eorb/pow(aorb,6);
+					// Basic elastic model (Henning et al. 2009, ApJ 707, 1000-1015; Chen et al. 2014, Icarus 229, 11-30; Storch & Lai 2015, MNRAS 450, 3952-3957)
+//					k2tide[ir] = 1.5/(1.0+19.0*mu_rigid/(2.0*beta_tide));
+//					Qtide[ir] = 1000.0;     // Arbitrary
+
+					// Maxwell viscoelastic model (Henning et al. 2009, ice viscosity from Desch et al. 2009)
+					fineVolFrac = 0.0;      // Assume no mud fines
+					mu1 = (1.0e15)*exp(25.0*(273.0/T[ir]-1.0))/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // Viscosity, 1.0e14 in SI
+					omega_tide = 2.0*norb;  // Two tides per orbit if tidally locked moon
+					k2tide[ir] = 57.0*mu1*omega_tide/(4.0*beta_tide*(1.0+(
+							(1.0+19.0*mu_rigid/(2.0*beta_tide))*(1.0+19.0*mu_rigid/(2.0*beta_tide))
+									*mu1*mu1*omega_tide*omega_tide/mu_rigid/mu_rigid)));
+					Qtide[ir] = mu1*omega_tide/mu_rigid;
+
+					Qth[ir] = Qth[ir] + 11.5*k2tide[ir]/Qtide[ir]*Gcgs*Mprim*Mprim*norb*pow(r_p,5)*eorb*eorb/pow(aorb,6);
+					Heat_tide = Heat_tide + 11.5*k2tide[ir]/Qtide[ir]*Gcgs*Mprim*Mprim*norb*pow(r_p,5)*eorb*eorb/pow(aorb,6);
 				}
 			}
 		}
@@ -1203,6 +1224,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	free (Brittle_strength);
 	free (strain_rate);
 	free (fracOpen);
+	free (k2tide);
+	free (Qtide);
 
 	return 0;
 }
