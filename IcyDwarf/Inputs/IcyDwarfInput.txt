@@ -10,17 +10,17 @@ Messages?                     0
 Planet parameters
 -------------------------------
 Moon?                         1
-	Orbital a (km)        237948
-	Orbital e             0.0047
+	Orbital a (km)        185539
+	Orbital e             0.0196
 	Host planet mass (kg) 5.68e26
-Density (g cm-3)              1.611
+Density (g cm-3)              1.149
 Hydr. rock density (g cm-3)   2.9
 Dry rock density (g cm-3)     3.8 
 Chondrite type? 1:CO, otw CI  0
-Radius (km)                   252.0
+Radius (km)                   198.2
 Ammonia w.r.t. water          0
 Briny liquid? y=1, n=0        0
-Surface temperature (K)       59
+Surface temperature (K)       76
 -------------------------------
 Grid
 -------------------------------

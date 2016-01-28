@@ -9,7 +9,7 @@ Messages?                     1
 -------------------------------
 Planet parameters
 -------------------------------
-Radius (km)                   469.3
+Radius (km)                   198.2
 -------------------------------
 Grid
 -------------------------------
@@ -23,8 +23,8 @@ Thermal plot
 	IcyDwarf output       Thermal.txt
 	Max temp (K; 0=auto)  800
 Geochemistry plot
-	Temperature           0 150 50
-	Pressure              200 1700 500
+	Temperature           0 90 15
+	Pressure              200 2000 300
 	pH                    7 9 1
 	pe = FMQ + ...        0 2 2
 	Water:rock mass ratio 1 4 2

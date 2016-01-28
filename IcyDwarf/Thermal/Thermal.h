@@ -870,6 +870,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 					k2tide[ir] = 57.0*mu1*omega_tide/(4.0*beta_tide*(1.0+(
 							(1.0+19.0*mu_rigid/(2.0*beta_tide))*(1.0+19.0*mu_rigid/(2.0*beta_tide))
 									*mu1*mu1*omega_tide*omega_tide/mu_rigid/mu_rigid)));
+					k2tide[ir] = k2tide[ir]*Mh2os[ir]/(Mrock[ir] + Mh2os[ir] + Madhs[ir] + Mh2ol[ir] + Mnh3l[ir]); // Scale heating for ice only, matters for partially melted layers
 					Qtide[ir] = mu1*omega_tide/mu_rigid;
 
 					Qth[ir] = Qth[ir] + 11.5*k2tide[ir]/Qtide[ir]*Gcgs*Mprim*Mprim*norb*pow(r_p,5)*eorb*eorb/pow(aorb,6);
@@ -1128,7 +1129,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			Heat[3] = Heat_serp;
 			Heat[4] = Heat_dehydr;
 			Heat[5] = Heat_tide;
-			append_output(5, Heat, path, "Outputs/Heats.txt");
+			append_output(6, Heat, path, "Outputs/Heats.txt");
 
 			// Crack outputs
 			append_output(NR, Crack, path, "Outputs/Crack.txt");        // Crack type
