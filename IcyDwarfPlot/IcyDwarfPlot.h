@@ -94,7 +94,7 @@ int icy_dwarf_input (double **input, char (*thermal_file)[1024], char path[1024]
 	i = 0;
 	f = fopen (idi,"r");
 		if (f == NULL) {
-			printf("IcyDwarf: Missing IcyDwarfInput.txt file.\n");
+			printf("IcyDwarf: Missing IcyDwarfPlotInput.txt file.\n");
 		}
 		else {
 			fseek(f,159,SEEK_SET);  // Warnings?
