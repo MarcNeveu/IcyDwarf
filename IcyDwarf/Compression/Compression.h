@@ -317,7 +317,7 @@ int compression(int NR, int NT, thermalout **thoutput, int t, int dbincore, int 
 								(b0[icomp[ir]] + b1[icomp[ir]]*(1.0-tanh(b2[icomp[ir]]*P[ir])));
 				rhoH2olComp[ir] = 1.0/rhoH2olComp[ir];
 
-				rhonew[ir] = thoutput[ir-1][t].mrock*(thoutput[ir-1][t].famor/rhoHydrComp[ir] + (1.0-thoutput[ir-1][t].famor)/rhoRockComp[ir]) +
+				rhonew[ir] = thoutput[ir-1][t].mrock*(thoutput[ir-1][t].xhydr/rhoHydrComp[ir] + (1.0-thoutput[ir-1][t].xhydr)/rhoRockComp[ir]) +
 						thoutput[ir-1][t].mh2os/rhoH2osComp[ir] +
 						thoutput[ir-1][t].madhs/rhoAdhsComp[ir] +
 						(thoutput[ir-1][t].mh2ol + thoutput[ir-1][t].mnh3l)/rhoH2olComp[ir];

@@ -47,6 +47,7 @@ int main(int argc, char *argv[]){
     double Xfines = 0.0;               // Mass or volume fraction of rock in fine grains that don't settle into a core (0=none, 1=all)
     int chondr = 0;                    // Nature of the chondritic material incorporated (3/30/2015: default=CI or 1=CO), matters
                                        // for radiogenic heating, see Thermal-state()
+    double porosity = 0.0;             // Bulk porosity
 
     // Grid inputs
 	int NR = 0;                        // Number of grid zones
@@ -96,9 +97,9 @@ int main(int argc, char *argv[]){
 	int i = 0;
 	int j = 0;
 
-	double *input = (double*) malloc(54*sizeof(double));
+	double *input = (double*) malloc(55*sizeof(double));
 	if (input == NULL) printf("IcyDwarf: Not enough memory to create input[28]\n");
-	for (i=0;i<50;i++) input[i] = 0.0;
+	for (i=0;i<55;i++) input[i] = 0.0;
 
 	//-------------------------------------------------------------------
 	// Startup
@@ -106,7 +107,7 @@ int main(int argc, char *argv[]){
 
 	printf("\n");
 	printf("-------------------------------------------------------------------\n");
-	printf("IcyDwarf v16.1\n");
+	printf("IcyDwarf v16.3\n");
 	if (v_release == 1) printf("Release mode\n");
 	else if (cmdline == 1) printf("Command line mode\n");
 	printf("-------------------------------------------------------------------\n");
@@ -140,6 +141,7 @@ int main(int argc, char *argv[]){
 	eorb = input[i]*input[i-2]; i++;                // Input-specified eorb if moon=1, 0 otherwise
 	Mprim = input[i]/gram*input[i-3]; i++;          // Input-specified Mprim if moon=1, 0 otherwise, g
 	rho_p = input[i]; i++;                          // g cm-3
+	porosity = input[i]; i++;
 	rhoHydrRock = input[i]*gram/cm/cm/cm; i++;      // kg m-3
 	rhoDryRock = input[i]*gram/cm/cm/cm; i++;       // kg m-3
 	chondr = input[i]; i++;
@@ -210,7 +212,7 @@ int main(int argc, char *argv[]){
 	if (calculate_thermal == 1) {
 		printf("Running thermal evolution code...\n");
 		Thermal(argc, argv, path, NR, r_p, rho_p, rhoHydrRock, rhoDryRock, warnings, msgout, nh3, salt, Xhydr, Xfines, tzero, Tsurf, Tinit,
-				timestep, total_time, output_every, crack_input, crack_species, chondr, moon, aorb, eorb, Mprim);
+				timestep, total_time, output_every, crack_input, crack_species, chondr, moon, aorb, eorb, Mprim, porosity);
 		printf("\n");
 	}
 

@@ -32,7 +32,7 @@
 //-------------------------------------------------------------------
 
 #define v_release 0                                        // 0 for Debug, 1 for Release
-#define cmdline 1										   // If execution from terminal as "./IcyDwarf",
+#define cmdline 0										   // If execution from terminal as "./IcyDwarf",
                                                            // overwritten by v_release.
 //-------------------------------------------------------------------
 // PHYSICAL AND MATHEMATICAL CONSTANTS
@@ -90,11 +90,11 @@
 #define cnh3l 4.7e7                                        // Heat capacity of liquid ammonia (cgs)
 #define ladh 1.319e9                                       // Latent heat of ADH melting (cgs)
 #define lh2o 3.335e9                                       // Latent heat of H2O melting (cgs)
-#define porosity 0.01                                      // Bulk porosity, dimensionless
 #define permeability 1.0e-9                                // Bulk permeability for D=1m cracks, scales as D^2, m^2
+#define crack_porosity 0.01                                // Porosity resulting from cracking (no dim)
 #define Tdiff 140.0                                        // Temperature at which differentiation proceeds (K)
-#define Tdehydr_min 700.0                                  // Temperature at which silicates are fully hydrated, K
-#define Tdehydr_max 850.0                                  // Temperature at which silicates are fully dehydrated, K
+#define Tdehydr_min 700.0                                  // Temperature at which silicates are fully hydrated (K)
+#define Tdehydr_max 850.0                                  // Temperature at which silicates are fully dehydrated (K)
 #define kap_hydro 100.0e5                                  // Effective thermal conductivity of layer undergoing hydrothermal circulation (cgs, 1e5 cgs = 1 W/m/K)
 #define kap_slush 400.0e5                                  // Effective thermal conductivity of convective slush layer
 #define kap_ice_cv 150.0e5                                 // Effective thermal conductivity of convective ice layer
@@ -107,7 +107,7 @@
 #define kapnh3l 0.022e5                                    // Thermal conductivity of liquid ammonia (cgs)
 #define Ra_cr 30.0                                         // Critical Rayleigh number for convection of aqueous fluid in a porous medium (Lapwood 1948)
 #define alfh2oavg 1.0e-3                                   // Average expansivity of water at relevant T and P (K-1)
-#define f_mem 0.75                                          // Memory of old hydration state, ideally 0, 1 = no change
+#define f_mem 0.75                                         // Memory of old hydration state, ideally 0, 1 = no change
 
 //-------------------------------------------------------------------
 // CRACKING PARAMETERS
@@ -124,7 +124,7 @@
 #define mu_f_Byerlee_loP 0.85                              // Friction coefficient for dry olivine rock brittle strength below 200 MPa (Byerlee 1978)
 #define mu_f_Byerlee_hiP 0.6                               // Friction coefficient for dry olivine rock brittle strength between 200 MPa and 1700 MPa (Byerlee 1978)
 #define C_f_Byerlee_hiP 50.0e6                             // Frictional cohesive strength for dry olivine rock between 200 MPa and 1700 MPa (Byerlee 1978)
-#define A_flow_law 4.17e5                                 // A of the antigorite flow law of Rutter and Brodie (1988), default 10^5.62 = 4.17e5 for sigma in MPa, Hilairet et al. 2007 1.0e-37
+#define A_flow_law 4.17e5                                  // A of the antigorite flow law of Rutter and Brodie (1988), default 10^5.62 = 4.17e5 for sigma in MPa, Hilairet et al. 2007 1.0e-37
 #define Ea_flow_law 240.0e3                                // Activation energy of the antigorite flow law of Rutter and Brodie (1988), default 240e3 J, Hilairet et al. 2007 8900 J
 #define V_flow_law 0.0                                     // Activation volume of Rutter and Brodie (1988), default 0 m3, Hilairet et al. 2007 3.2e-6 m3
 #define n_flow_law 1.0                                     // Stress in Pa exponent of Rutter and Brodie (1988), default 1.0 (diffusion creep), Hilairet et al. 2007 3.8 dislocation creep
@@ -197,6 +197,9 @@ typedef struct {
     double mnh3l;  // Mass of liquid ammonia in g
     double nu;     // Nusselt number for parameterized convection (dimensionless) (not used here)
     double famor;  // Fraction of ice that is amorphous (not used here)
+    double kappa;  // Thermal conductivity in W m-1 K-1
+    double xhydr;  // Degree of hydration
+    double pore;   // Porosity
 } thermalout;
 
 #include <stdio.h>
@@ -392,6 +395,10 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
 			fseek(f,31,SEEK_CUR);   // Density (g cm-3)
+			scan = fscanf(f, "%lg", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,31,SEEK_CUR);   // Porosity
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
@@ -595,7 +602,8 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 		printf("\t Orbital a (km) \t %g\n",input[i]), i++;
 		printf("\t Orbital e \t \t %g\n",input[i]), i++;
 		printf("\t Host planet mass (kg) \t %g\n",input[i]), i++;
-		printf("Density (g cm-3) \t \t %g\n",input[i]), i++;
+		printf("Density, 0 porosity (g cm-3) \t %g\n",input[i]), i++;
+		printf("Porosity \t \t \t %g\n",input[i]), i++;
 		printf("Hydr. rock density (g cm-3) \t %g\n",input[i]), i++;
 		printf("Dry rock density (g cm-3) \t %g\n",input[i]), i++;
 		printf("Chondrite type? 1:CO, otw CI \t %g\n",input[i]), i++;
@@ -677,11 +685,12 @@ thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char pa
 	else {
 		for (t=0;t<NT;t++) {
 			for (r=0;r<NR;r++) {
-				int scan = fscanf(fid, "%lg %lg %lg %lg %lg %lg %lg %lg %lg", &thoutput[r][t].radius,
+				int scan = fscanf(fid, "%lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg", &thoutput[r][t].radius,
 							&thoutput[r][t].tempk, &thoutput[r][t].mrock, &thoutput[r][t].mh2os,
 							&thoutput[r][t].madhs, &thoutput[r][t].mh2ol, &thoutput[r][t].mnh3l,
-							&thoutput[r][t].nu, &thoutput[r][t].famor);
-				if (scan != 9) {                                                         // If scanning error
+							&thoutput[r][t].nu, &thoutput[r][t].famor, &thoutput[r][t].kappa,
+							&thoutput[r][t].xhydr, &thoutput[r][t].pore);
+				if (scan != 12) {                                                         // If scanning error
 					printf("Error scanning thermal output file at t = %d\n",t);
 					break;
 				}

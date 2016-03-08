@@ -27,7 +27,7 @@
 int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p, double rhoHydr, double rhoDry,
 		int warnings, int msgout, double Xp, double Xsalt, double *Xhydr, double Xfines, double tzero, double Tsurf,
 		double Tinit, double dtime, double fulltime, double dtoutput, int *crack_input, int *crack_species, int chondr,
-		int moon, double aorb, double eorb, double Mprim);
+		int moon, double aorb, double eorb, double Mprim, double porosity);
 
 int state (char path[1024], int itime, int ir, double E, double *frock, double *fh2os, double *fadhs, double *fh2ol, double *fnh3l,
 		double Xsalt, double *T);
@@ -36,7 +36,7 @@ double heatRock (double T);
 
 int heatIce (double T, double X, double Xsalt, double *E, double *gh2os, double *gadhs, double *gh2ol, double *gnh3l);
 
-double kapcond(double T, double frock, double fh2os, double fadhs, double fh2ol, double dnh3l, double Xhydr);
+double kapcond(double T, double frock, double fh2os, double fadhs, double fh2ol, double dnh3l, double Xhydr, double porosity);
 
 int decay(double *t, double *tzero, double *S, int chondr);
 
@@ -57,7 +57,7 @@ double viscosity(double T, double Mh2ol, double Mnh3l);
 int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p, double rhoHydr, double rhoDry,
 		int warnings, int msgout, double Xp, double Xsalt, double *Xhydr, double Xfines, double tzero, double Tsurf,
 		double Tinit, double dtime, double fulltime, double dtoutput, int *crack_input, int *crack_species, int chondr,
-		int moon, double aorb, double eorb, double Mprim) {
+		int moon, double aorb, double eorb, double Mprim, double porosity) {
 
 	//-------------------------------------------------------------------
 	//                 Declarations and initializations
@@ -135,7 +135,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double Crack_depth[2];				 // Crack_depth[2] (km), output
 	double WRratio[2];					 // WRratio[2] (by mass, no dim), output
 	double Heat[6];                      // Heat[6] (erg), output
-	double Thermal[9];					 // Thermal[9] (multiple units), output
+	double Thermal[12];					 // Thermal[12] (multiple units), output
+	double creep_rate = 0.0;             // Strain rate in s-1 for ice, rock, or a mixture. Stress is hydrostatic pressure/(1-porosity)
 
 	int *dont_dehydrate = (int*) malloc((NR)*sizeof(int));    // Don't dehydrate a layer that just got hydrated
 	if (dont_dehydrate == NULL) printf("Thermal: Not enough memory to create dont_dehydrate[NR]\n");
@@ -146,7 +147,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double *r = (double*) malloc((NR+1)*sizeof(double));      // Radius (cm)
 	if (r == NULL) printf("Thermal: Not enough memory to create r[NR+1]\n");
 
-	double *dVol = (double*) malloc((NR)*sizeof(double));     // Total volume of a layer (cm^3)
+	double *dVol = (double*) malloc((NR)*sizeof(double));     // Total volume of a layer at zero porosity (cm^3)
 	if (dVol == NULL) printf("Thermal: Not enough memory to create dVol[NR]\n");
 
 	double *dM = (double*) malloc((NR)*sizeof(double));       // Mass of a layer (g)
@@ -242,7 +243,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double *Brittle_strength = (double*) malloc((NR)*sizeof(double)); // Brittle rock strength in Pa
 	if (Brittle_strength == NULL) printf("Thermal: Not enough memory to create Brittle_strength[NR]\n");
 
-	double *strain_rate = (double*) malloc((NR)*sizeof(double)); // Strain rate in s-1
+	double *strain_rate = (double*) malloc((NR)*sizeof(double)); // Strain rate in s-1 at which brittle and ductile strengths of rock are equal (the stress or ductile strength is set to the brittle strength)
 	if (strain_rate == NULL) printf("Thermal: Not enough memory to create strain_rate[NR]\n");
 
 	double *fracOpen = (double*) malloc((NR)*sizeof(double)); // Fraction of crack that hasn't healed
@@ -253,6 +254,9 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
 	double *Qtide = (double*) malloc((NR)*sizeof(double)); // Tidal quality factor, = 1/(bulge lag angle)
 	if (Qtide == NULL) printf("Thermal: Not enough memory to create Qtide[NR]\n");
+
+	double *pore = (double*) malloc((NR)*sizeof(double)); // Volume fraction of grid cell that is pores
+	if (pore == NULL) printf("Thermal: Not enough memory to create pore[NR]\n");
 
 	double **Stress = (double**) malloc((NR)*sizeof(double*)); // Stress[NR][12], output
 	if (Stress == NULL) printf("Thermal: Not enough memory to create Stress[NR]\n");
@@ -313,7 +317,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	Crack_depth[0] = 0.0, Crack_depth[1] = 0.0;
 	WRratio[0] = 0.0, WRratio[1] = 0.0;
 	Heat[0] = 0.0, 	Heat[1] = 0.0, 	Heat[2] = 0.0, Heat[3] = 0.0, Heat[4] = 0.0; Heat[5] = 0.0;
-	for (i=0;i<9;i++) Thermal[i] = 0.0;
+	for (i=0;i<12;i++) Thermal[i] = 0.0;
     for (ir=0;ir<NR;ir++) {
     	dVol[ir] = 0.0;
     	dM[ir] = 0.0;
@@ -352,6 +356,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	fracOpen[ir] = 0.0;
     	k2tide[ir] = 0.0;
     	Qtide[ir] = 0.0;
+    	pore[ir] = porosity;
     	for (i=0;i<n_species_crack;i++) Act[ir][i] = 0.0;
     	for (i=0;i<12;i++) Stress[ir][i] = 0.0;
     }
@@ -455,6 +460,9 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	dE[ir] = Erock[ir] + Eh2os[ir] + Eslush[ir];
     }
 
+	// Account for initial porosity
+    for (ir=0;ir<NR;ir++) r[ir+1] = r[ir] + dr_grid*pow(1.0-pore[ir],-1.0/3.0);
+
 	//-------------------------------------------------------------------
 	//                  Allow for chemical equilibrium
 	//-------------------------------------------------------------------
@@ -507,9 +515,12 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		Thermal[4] = Madhs[ir];
 		Thermal[5] = Mh2ol[ir];
 		Thermal[6] = Mnh3l[ir];
-		Thermal[7] = kappa[ir]/1.0e5;
-		Thermal[8] = Xhydr[ir];
-		append_output(9, Thermal, path, "Outputs/Thermal.txt");
+		Thermal[7] = Nu[ir];
+		Thermal[8] = 0.0; // Fraction of amorphous ice in the original code of Desch et al. (2009)
+		Thermal[9] = kappa[ir]/1.0e5;
+		Thermal[10] = Xhydr[ir];
+		Thermal[11] = pore[ir];
+		append_output(12, Thermal, path, "Outputs/Thermal.txt");
 	}
 	Heat[0] = 0.0;                     // t in Gyr
 	Heat[1] = Heat_radio;
@@ -603,14 +614,30 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	for (ir=0;ir<NR;ir++) dM_old[ir] = dM[ir];
 
     	//-------------------------------------------------------------------
-    	//     Calculate pressure everywhere. This takes time, so do that
-    	//          only if the structure has changed significantly
-    	//      (i.e., the mass of any layer has changed by more than 5%)
+    	// Calculate pressure everywhere. This takes time, so do that
+    	// only if the structure has changed significantly
+    	// (i.e., the mass of any layer has changed by more than 5%)
     	//-------------------------------------------------------------------
 
-    	if (i == 1) {
+    	if (itime == 0 || i == 1) {
     		Pressure = calculate_pressure(Pressure, NR, dM, Mrock, Mh2os, Madhs, Mh2ol, Mnh3l, r, rhoHydr, rhoDry, Xhydr);     // Pressure
     	}
+
+    	//-------------------------------------------------------------------
+    	// Calculate porosity everywhere
+    	// Neumann et al. 2014, doi 10.1051/0004-6361/201423648
+    	// Creep law of Rutter & Brodie (1988) for rock
+    	// This section is in SI since porosity is adimensional
+    	//-------------------------------------------------------------------
+
+    	for (ir=0; ir<NR;ir++) {
+    		creep(T[ir], Pressure[ir], &creep_rate, 1.0-Vrock[ir]/dVol[ir], pore[ir]);
+    		pore[ir] = pore[ir]-dtime*(1.0-pore[ir])*creep_rate;
+    		if (pore[ir] < 0.0) pore[ir] = 0.0;
+    		if (Mrock[ir] < 0.01 && Mh2ol[ir] > 0.01) pore[ir] = 0.0;
+    	}
+    	// Update radii
+    	for (ir=0;ir<NR;ir++) r[ir+1] = r[ir] + dr_grid*pow(1.0-pore[ir],-1.0/3.0);
 
     	//-------------------------------------------------------------------
     	//               Rock hydration & dehydration, cracking
@@ -621,7 +648,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	if (itime > 1) { // Don't run crack() at itime = 1, because temperature changes from the initial temp can be artificially strong
 			for (ir=0;ir<ircore;ir++) {
 				if (T[ir]<Tdehydr_max) {
-					strain(Pressure[ir], Xhydr[ir], T[ir], &strain_rate[ir], &Brittle_strength[ir]);
+					strain(Pressure[ir], Xhydr[ir], T[ir], &strain_rate[ir], &Brittle_strength[ir], pore[ir]);
 					if (fracOpen[ir] > 0.0) fracOpen[ir] = fracOpen[ir] - dtime*strain_rate[ir];
 					if (1.0/strain_rate[ir] > dtime) {
 						crack(T[ir], T_old[ir], Pressure[ir], &Crack[ir], &Crack_size[ir], Xhydr[ir], Xhydr_old[ir],
@@ -640,6 +667,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 						P_hydr[ir] = 0.0;
 					}
 					if (Crack[ir] > 0.0 && fracOpen[ir] == 0.0) fracOpen[ir] = 1.0;
+					if (Crack[ir] > 0.0 && pore[ir] < crack_porosity) pore[ir] = crack_porosity;
 				}
 				else { // Reset all the variables modified by crack() and strain()
 					fracOpen[ir] = 0.0;
@@ -647,9 +675,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 					Brittle_strength[ir] = 0.0;
 					Crack[ir] = 0.0;
 					Crack_size[ir] = 0.0;
-					for (i=0;i<n_species_crack;i++) {
-						Act[ir][i] = 0.0;
-					}
+					for (i=0;i<n_species_crack;i++) Act[ir][i] = 0.0;
 					for (i=0;i<12;i++) Stress[ir][i] = 0.0;
 					P_pore[ir] = 0.0;
 					P_hydr[ir] = 0.0;
@@ -657,9 +683,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 				if (fracOpen[ir] < 0.0 && Crack[ir] <= 0.0) {
 					fracOpen[ir] = 0.0;
 					Crack_size[ir] = 0.0;
-					for (i=0;i<n_species_crack;i++) {
-						Act[ir][i] = 0.0;
-					}
+					for (i=0;i<n_species_crack;i++) Act[ir][i] = 0.0;
 				}
 				Stress[ir][10] = fracOpen[ir];
 				Stress[ir][11] = Crack[ir];
@@ -890,7 +914,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			fh2ol = Vh2ol[ir] / dVol[ir];
 			fnh3l = Vnh3l[ir] / dVol[ir];
 
-			kappa[ir] = kapcond(T[ir], frock, fh2os, fadhs, fh2ol, fnh3l, Xhydr[ir]);
+			kappa[ir] = kapcond(T[ir], frock, fh2os, fadhs, fh2ol, fnh3l, Xhydr[ir], pore[ir]);
 		}
 
 		//-------------------------------------------------------------------
@@ -924,22 +948,18 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			g1 = Gcgs*M[jr]/(r[jr+1]*r[jr+1]);
 			Ra = alfh2oavg*g1*dT
 					*(permeability*Crack_size_avg*Crack_size_avg/cm/cm)*dr
-					*((1.0-fineMassFrac)*ch2ol + fineMassFrac*(heatRock(T[jr]+2.0)-heatRock(T[jr]-2.0))*0.25)                  // For rock, cp = d(energy)/d(temp), here taken over 4 K surrounding T[jr]                                        // Heat capacity
+					*((1.0-fineMassFrac)*ch2ol + fineMassFrac*(heatRock(T[jr]+2.0)-heatRock(T[jr]-2.0))*0.25)                  // For rock, cp = d(energy)/d(temp), here taken over 4 K surrounding T[jr]
 					*((1.0-fineMassFrac)*rhoH2olth + fineMassFrac*(Xhydr[ircore+1]*rhoHydrth+(1.0-Xhydr[ircore+1])*rhoRockth)) // Density
 					*((1.0-fineMassFrac)*rhoH2olth + fineMassFrac*(Xhydr[ircore+1]*rhoHydrth+(1.0-Xhydr[ircore+1])*rhoRockth)) // Squared
 					/ (kap1*mu1); // Phillips (1991)
 
 			if (Ra > Ra_cr) {
-				// Calculate volumes of liquid water and fractured rock
-				for (ir=ircrack;ir<ircore;ir++) {
-					Vcracked = Vcracked + dVol[ir];
-				}
-				for (ir=ircore;ir<irdiff;ir++) { // Check if there is enough liquid to circulate
-					Vliq = Vliq + Vh2ol[ir];
-				}
+				// Calculate volumes of liquid water and pore space to check if there is enough liquid to circulate
+				for (ir=ircrack;ir<ircore;ir++) Vcracked = Vcracked + dVol[ir]*pore[ir];
+				for (ir=ircore;ir<irdiff;ir++) Vliq = Vliq + Vh2ol[ir];
 
-				if (Vliq >= porosity*Vcracked) { // Circulation, modeled as enhanced effective thermal conductivity kap1
-					kap1 = rhoH2olth*ch2ol/porosity*(permeability*Crack_size_avg*Crack_size_avg/cm/cm)/mu1
+				if (Vliq >= Vcracked) { // Circulation, modeled as enhanced effective thermal conductivity kap1
+					kap1 = rhoH2olth*ch2ol/pore[ircore-1]*(permeability*Crack_size_avg*Crack_size_avg/cm/cm)/mu1
 										*(Pressure[ircrack]-Pressure[ircore])*Pa2ba;
 					for (ir=ircrack;ir<ircore;ir++) {  // Capped at kap_hydro for numerical stability
 						if (kap1 < kap_hydro) kappa[ir] = kap1;
@@ -1119,9 +1139,12 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 				Thermal[4] = Madhs[ir];
 				Thermal[5] = Mh2ol[ir];
 				Thermal[6] = Mnh3l[ir];
-				Thermal[7] = kappa[ir]/1.0e5;
-				Thermal[8] = Xhydr[ir];
-				append_output(9, Thermal, path, "Outputs/Thermal.txt");
+				Thermal[7] = Nu[ir];
+				Thermal[8] = 0.0; // Fraction of amorphous ice in the original code of Desch et al. (2009)
+				Thermal[9] = kappa[ir]/1.0e5;
+				Thermal[10] = Xhydr[ir];
+				Thermal[11] = pore[ir];
+				append_output(12, Thermal, path, "Outputs/Thermal.txt");
 			}
 			Heat[0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
 			Heat[1] = Heat_radio;
@@ -1227,6 +1250,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	free (fracOpen);
 	free (k2tide);
 	free (Qtide);
+	free (pore);
 
 	return 0;
 }
@@ -1674,7 +1698,7 @@ int heatIce (double T, double X, double Xsalt, double *E, double *gh2os, double 
  *
  *--------------------------------------------------------------------*/
 
-double kapcond(double T, double frock, double fh2os, double fadhs, double fh2ol, double fnh3l, double Xhydr) {
+double kapcond(double T, double frock, double fh2os, double fadhs, double fh2ol, double fnh3l, double Xhydr, double porosity) {
 
     double kaph2os = 5.67e7/T;  // Thermal conductivity of water ice (cgs) (Klinger 1980)
 
@@ -1684,8 +1708,12 @@ double kapcond(double T, double frock, double fh2os, double fadhs, double fh2ol,
 	double kap = 0.0;
 
 	// Combined conductivities (equations (7) and (8) of D09)
-	if (frock >= 1.0 - 1.0e-5) // frock can be different from 1 in rock at 1.0e-16 precision if separate() is not called.
+	if (frock >= 1.0 - 1.0e-5) {
+		// frock can be different from 1 in rock at 1.0e-16 precision if separate() is not called.
 		kap = Xhydr*kaphydr + (1.0-Xhydr)*kaprock;
+		// Scaling with porosity according to Krause et al. 2011 LPSC abstract 2696
+		kap = kap*pow(exp(-4.0*porosity/0.08)+exp(-4.4-4.0*porosity/0.17) , 0.25); // =1 if porosity=0
+	}
 	else {
 		// Geometric mean for ice phases (equation 7)
 		kapice = fh2os*log(kaph2os) + fadhs*log(kapadhs) + fh2ol*log(kaph2ol) + fnh3l*log(kapnh3l);
@@ -1695,6 +1723,8 @@ double kapcond(double T, double frock, double fh2os, double fadhs, double fh2ol,
 		b1 = -(Xhydr*kaphydr + (1.0-Xhydr)*kaprock)*(3.0*frock - 1.0) - kapice*(2.0 - 3.0*frock);
 		c1 = -(Xhydr*kaphydr + (1.0-Xhydr)*kaprock)*kapice;
 		kap = (-b1 + sqrt(b1*b1 - 8.0*c1)) / 4.0;
+		// Scaling with porosity according to the lower limit of Shoshani et al. 2002, doi:10.1006/icar.2002.6815 (eq. 15-16, n=1)
+		kap = kap*pow(1.0-porosity/0.7 , 4.1*porosity+0.22);
 	}
 
 	return kap;

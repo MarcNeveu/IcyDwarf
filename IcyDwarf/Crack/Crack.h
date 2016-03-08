@@ -47,7 +47,9 @@ int crack(double T, double T_old, double Pressure, double *Crack,
 		double **integral, double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite,
 		int circ, double **Output, double *P_pore, double *P_hydr, double Brittle_strength, double rhoHydr, double rhoRock);
 
-int strain (double Pressure, double Xhydr, double T, double *strain_rate, double *Brittle_strength);
+int strain (double Pressure, double Xhydr, double T, double *strain_rate, double *Brittle_strength, double porosity);
+
+int creep (double T, double P, double *creep_rate, double Xice, double porosity);
 
 int crack(double T, double T_old, double Pressure, double *Crack,
 		double *Crack_size, double Xhydr, double Xhydr_old, double dtime, double Mrock, double Mrock_init,
@@ -361,7 +363,7 @@ int crack(double T, double T_old, double Pressure, double *Crack,
 
 /*--------------------------------------------------------------------
  *
- * Subroutine strain_rate
+ * Subroutine strain
  *
  * Calculates the brittle strength in Pa and corresponding ductile
  * strain rate in s-1 of silicate rock.
@@ -372,11 +374,11 @@ int crack(double T, double T_old, double Pressure, double *Crack,
  * the brittle-ductile transition occurs in dehydrated rock (T>700 K)
  * even over long time scales.
  * The ductile strength is given by a flow law:
- * epsilon = A*sigma^n*d^-p*exp[(-Ea+P*V)/RT].
+ * d epsilon/dt = A*sigma^n*d^-p*exp[(-Ea+P*V)/RT].
  *
  *--------------------------------------------------------------------*/
 
-int strain (double Pressure, double Xhydr, double T, double *strain_rate, double *Brittle_strength) {
+int strain (double Pressure, double Xhydr, double T, double *strain_rate, double *Brittle_strength, double porosity) {
 
 	double Hydr_strength = 0.0;
 	double Dry_strength = 0.0;
@@ -385,11 +387,60 @@ int strain (double Pressure, double Xhydr, double T, double *strain_rate, double
 	if (Pressure <= 200.0e6) Dry_strength = mu_f_Byerlee_loP*Pressure;
 	else Dry_strength = mu_f_Byerlee_hiP*Pressure + C_f_Byerlee_hiP;
 	(*Brittle_strength) = Xhydr*Hydr_strength + (1.0-Xhydr)*Dry_strength;
+	(*Brittle_strength) = (*Brittle_strength)/(1.0-porosity);
 
 	if (T > 140.0)
 		(*strain_rate) = A_flow_law*pow((*Brittle_strength)/MPa,n_flow_law)*pow(d_flow_law,-p_flow_law)*exp((-Ea_flow_law + Pressure*V_flow_law)/(n_flow_law*R_G*T));
 	else // Set T at 140 K to calculate ductile strength so that it doesn't yield numbers too high to handle
 		(*strain_rate) = A_flow_law*pow((*Brittle_strength)/MPa,n_flow_law)*pow(d_flow_law,-p_flow_law)*exp((-Ea_flow_law + Pressure*V_flow_law)/(n_flow_law*R_G*140.0));
+
+	return 0;
+}
+
+/*--------------------------------------------------------------------
+ *
+ * Subroutine creep
+ *
+ * Calculates the creep rate in s-1 of ice, rock, or a mixture using
+ * flow laws from Goldsby & Kohlstedt (2001) for ice and Rutter &
+ * Brodie (1988) for rock (as for the strain() subroutine). Stresses
+ * are hydrostatic pressure/(1-porosity) (Neumann et al. 2014)
+ * Flow parameters scale with ice volume fraction Xice according to
+ * Roberts (2015).
+ *
+ *--------------------------------------------------------------------*/
+
+int creep (double T, double P, double *creep_rate, double Xice, double porosity) {
+
+	double creep_rate_rock = 0.0;
+	double creep_rate_ice = 0.0;
+
+	double eps_disl = 0.0;
+	double eps_basal = 0.0;
+	double eps_gbs = 0.0;
+	double eps_diff = 0.0;
+
+	if (T<258) eps_disl = 4.0e5*pow(P/MPa/(1.0-porosity),4.0)*exp(-60.0e3/(R_G*T));
+	else eps_disl = 6.0e28*pow(P/MPa/(1.0-porosity),4.0)*exp(-18.0e3/(R_G*T));
+	if (T<255) eps_basal = 3.9e-3*pow(P/MPa/(1.0-porosity),1.8)*pow(d_flow_law,-1.4)*exp(-49.0e3/(R_G*T));
+	else eps_basal = 3.0e26*pow(P/MPa/(1.0-porosity),1.8)*pow(d_flow_law,-1.4)*exp(-192.0e3/(R_G*T));
+	eps_gbs = 5.5e7*pow(P/MPa/(1.0-porosity),2.4)*exp(-60.0e3/(R_G*T));
+	eps_diff = 3.02e-14*pow(P/MPa/(1.0-porosity),1.0)*pow(d_flow_law,-2.0)*exp(-59.4e3/(R_G*T)); // Rubin et al. (2014)
+
+	creep_rate_ice = eps_diff + 1.0/(1.0/eps_basal+1.0/eps_gbs) + eps_disl;
+
+	if (Xice > 0.3) { // The rock fragments are barely in contact and deformation is controlled entirely by the ice
+		(*creep_rate) = creep_rate_ice;
+	}
+	else {            // Deformation is controlled by both rock and ice properties
+		if (T > 140.0)
+			creep_rate_rock = A_flow_law*pow(P/MPa/(1.0-porosity),n_flow_law)*pow(d_flow_law,-p_flow_law)*exp((-Ea_flow_law + P*V_flow_law)/(n_flow_law*R_G*T));
+		else // Set T at 140 K to calculate creep rate so that it doesn't yield numbers too high to handle
+			creep_rate_rock = A_flow_law*pow(P/MPa/(1.0-porosity),n_flow_law)*pow(d_flow_law,-p_flow_law)*exp((-Ea_flow_law + P*V_flow_law)/(n_flow_law*R_G*140.0));
+
+		// Scaling from Roberts (2015)
+		(*creep_rate) = exp(((0.3-Xice)*log(creep_rate_rock) + Xice*log(creep_rate_ice))/0.3);
+	}
 
 	return 0;
 }

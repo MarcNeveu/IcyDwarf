@@ -47,8 +47,11 @@ typedef struct {
     double madhs;  // Mass of solid ammonia dihydrate in g
     double mh2ol;  // Mass of liquid H2O in g
     double mnh3l;  // Mass of liquid ammonia in g
-    double nu;     // Nusselt number for parameterized convection (dimensionless) (not used here)
-    double famor;  // Fraction of ice that is amorphous (not used here)
+    double nu;     // Nusselt number for parameterized convection (dimensionless)
+    double famor;  // Fraction of ice that is amorphous
+    double kappa;  // Thermal conductivity in W m-1 K-1
+    double xhydr;  // Degree of hydration
+    double pore;   // Porosity
 } thermalout;
 
 #include <stdio.h>

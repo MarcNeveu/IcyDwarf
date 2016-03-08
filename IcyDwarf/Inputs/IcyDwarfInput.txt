@@ -13,7 +13,8 @@ Moon?                         1
 	Orbital a (km)        185539
 	Orbital e             0.0196
 	Host planet mass (kg) 5.68e26
-Density (g cm-3)              1.149
+Density, 0 porosity (g cm-3)  1.149
+Porosity                      0.4
 Hydr. rock density (g cm-3)   2.9
 Dry rock density (g cm-3)     3.8 
 Chondrite type? 1:CO, otw CI  0
@@ -26,14 +27,14 @@ Grid
 -------------------------------
 Number of grid zones          200
 Total time of sim (Myr)       5000
-Output every (Myr)            10
+Output every (Myr)            1
 -------------------------------
 Subroutines
 -------------------------------
 Run thermal?                  1
 	Sim time step (yr)    50
 	Sim starts at (Myr)   3
-	Initial temp (K)      200
+	Initial temp (K)      76
 	Degree of hydration   1
 	Fine rock fraction    0
 Core cracks

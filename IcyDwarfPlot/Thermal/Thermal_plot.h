@@ -149,11 +149,12 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 	else {
 		for (t=0;t<NT_output;t++) {
 			for (r=0;r<NR;r++) {
-				int scan = fscanf(fid, "%lg %lg %lg %lg %lg %lg %lg %lg %lg", &thoutput[r][t].radius,
+				int scan = fscanf(fid, "%lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg", &thoutput[r][t].radius,
 							&thoutput[r][t].tempk, &thoutput[r][t].mrock, &thoutput[r][t].mh2os,
 							&thoutput[r][t].madhs, &thoutput[r][t].mh2ol, &thoutput[r][t].mnh3l,
-							&thoutput[r][t].nu, &thoutput[r][t].famor);
-				if (scan != 9) {                                                         // If scanning error
+							&thoutput[r][t].nu, &thoutput[r][t].famor, &thoutput[r][t].kappa,
+							&thoutput[r][t].xhydr, &thoutput[r][t].pore);
+				if (scan != 12) {                                                         // If scanning error
 					printf("Error scanning thermal output file at t = %d\n",t);
 					break;
 				}
@@ -171,8 +172,8 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 		for (r=0;r<NR;r++) {
 			dM[t][r] = thoutput[r][t].mrock + thoutput[r][t].mh2os + thoutput[r][t].madhs + thoutput[r][t].mh2ol + thoutput[r][t].mnh3l;
 			TempK[t][r] = thoutput[r][t].tempk;
-			Hydr[t][r] = thoutput[r][t].famor*100.0;
-			Kappa[t][r] = thoutput[r][t].nu;
+			Hydr[t][r] = thoutput[r][t].xhydr*100.0;
+			Kappa[t][r] = thoutput[r][t].kappa;
 		}
 	}
 	alpha = SDL_MapRGBA(value_time->format, 255, 255, 255, 0);   // r,g,b,alpha 0 to 255. Alpha of 0 is transparent
@@ -192,7 +193,7 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 
 	for (t=0;t<NT_output;t++) {
 		for (r=0;r<NR;r++) {
-			if (thoutput[r][t].nu > kappamax) kappamax = thoutput[r][t].nu;
+			if (thoutput[r][t].kappa > kappamax) kappamax = thoutput[r][t].kappa;
 		}
 	}
 

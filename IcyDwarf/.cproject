@@ -100,11 +100,10 @@
 								<option id="macosx.c.link.option.paths.1132158293" name="Library search path (-L)" superClass="macosx.c.link.option.paths" valueType="libPaths">
 									<listOptionValue builtIn="false" value="/Users/marc/Documents/Research/2011-2016_ASU/2IcyDwarf/Git/IcyDwarf/IcyDwarf"/>
 									<listOptionValue builtIn="false" value="/usr/local/lib"/>
-									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Versions/3.0/Resources/lib"/>
+									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Versions/3.2/Resources/lib"/>
 								</option>
 								<option id="macosx.c.link.option.ldflags.1918427544" name="Linker flags" superClass="macosx.c.link.option.ldflags" value="-F/Library/Frameworks -arch x86_64 -lgomp" valueType="string"/>
 								<option id="macosx.c.link.option.userobjs.2145990486" name="Other objects" superClass="macosx.c.link.option.userobjs" valueType="userObjs">
-									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Resources/library/RInside/lib/x86_64/libRInside.a"/>
 									<listOptionValue builtIn="false" value="/usr/local/lib/libiphreeqc-3.1.7.dylib"/>
 									<listOptionValue builtIn="false" value="/usr/local/lib/libiphreeqc.dylib"/>
 									<listOptionValue builtIn="false" value="/usr/local/lib/libiphreeqc.a"/>
