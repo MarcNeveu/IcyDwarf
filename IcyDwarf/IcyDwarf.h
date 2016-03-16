@@ -32,7 +32,7 @@
 //-------------------------------------------------------------------
 
 #define v_release 0                                        // 0 for Debug, 1 for Release
-#define cmdline 0										   // If execution from terminal as "./IcyDwarf",
+#define cmdline 1										   // If execution from terminal as "./IcyDwarf",
                                                            // overwritten by v_release.
 //-------------------------------------------------------------------
 // PHYSICAL AND MATHEMATICAL CONSTANTS
@@ -184,8 +184,11 @@
 // WATER-ROCK PARAMETERS
 //-------------------------------------------------------------------
 
-#define n_elts 17     								   // Number of solute species (includes T, pe, pH, rho, alkalinity, NOT redox)
-#define n_phases 4                                     // Number of mineral species
+#define nvar 1830                                          // Number of geochemical variables stored in each PHREEQC simulation
+#define nelts 31                                           // 30 elements + 1 extra column in WaterRock/Molar_masses.txt
+#define naq 521                                            // Number of aqueous species (+ physical parameters)
+#define ngases 15                                          // Number of gaseous species
+#define nmingas 659                                        // Number of minerals and gases
 
 typedef struct {
     double radius; // Radius in km
@@ -466,6 +469,10 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
+			fseek(f,24,SEEK_CUR);   // Start differentiated?
+			scan = fscanf(f, "%lg", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
 			fseek(f,36,SEEK_CUR);   // Calculate aTP?
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
@@ -626,6 +633,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 		printf("\t Initial temp (K) \t %g\n",input[i]), i++;
 		printf("\t Degree of hydration \t %g\n",input[i]), i++;
 		printf("\t Fine rock fraction \t %g\n",input[i]), i++;
+		printf("\t Start differentiated? \t %g\n",input[i]), i++;
 		printf("Core cracks\n");
 		printf("\t Calculate aTP? \t %g\n",input[i]), i++;
 		printf("\t Water alpha beta? \t %g\n",input[i]), i++;

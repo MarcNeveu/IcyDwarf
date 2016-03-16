@@ -27,7 +27,7 @@
 int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p, double rhoHydr, double rhoDry,
 		int warnings, int msgout, double Xp, double Xsalt, double *Xhydr, double Xfines, double tzero, double Tsurf,
 		double Tinit, double dtime, double fulltime, double dtoutput, int *crack_input, int *crack_species, int chondr,
-		int moon, double aorb, double eorb, double Mprim, double porosity);
+		int moon, double aorb, double eorb, double Mprim, double porosity, int startdiff);
 
 int state (char path[1024], int itime, int ir, double E, double *frock, double *fh2os, double *fadhs, double *fh2ol, double *fnh3l,
 		double Xsalt, double *T);
@@ -38,7 +38,8 @@ int heatIce (double T, double X, double Xsalt, double *E, double *gh2os, double 
 
 double kapcond(double T, double frock, double fh2os, double fadhs, double fh2ol, double dnh3l, double Xhydr, double porosity);
 
-int decay(double *t, double *tzero, double *S, int chondr);
+int decay(double t, double tzero, double **Qth, int NR, int chondr, double fracKleached, double *Mrock, double *Mh2os,
+		double *Mh2ol, double *Xhydr, double rhoH2olth, double rhoRockth, double rhoHydrth);
 
 int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double **dM, double **dE, double **Mrock, double **Mh2os, double **Madhs,
 		double **Mh2ol, double **Mnh3l, double **Vrock, double **Vh2os, double **Vadhs, double **Vh2ol, double **Vnh3l, double **Erock,
@@ -57,7 +58,7 @@ double viscosity(double T, double Mh2ol, double Mnh3l);
 int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p, double rhoHydr, double rhoDry,
 		int warnings, int msgout, double Xp, double Xsalt, double *Xhydr, double Xfines, double tzero, double Tsurf,
 		double Tinit, double dtime, double fulltime, double dtoutput, int *crack_input, int *crack_species, int chondr,
-		int moon, double aorb, double eorb, double Mprim, double porosity) {
+		int moon, double aorb, double eorb, double Mprim, double porosity, int startdiff) {
 
 	//-------------------------------------------------------------------
 	//                 Declarations and initializations
@@ -95,7 +96,6 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double fnh3l = 0.0;                  // Liquid ammonia mass fraction
 	double temp1 = 0.0;                  // Temporary temperature (K)
 	double Xhydr_temp = 0.0;             // Temporary hydration index
-	double S = 0.0;                      // Radiogenic power, specific (erg/s/g)
 	double kap1 = 0.0;                   // Temporary thermal conductivity (erg/s/cm/K)
 	double dr = 0.0;                     // Physical thickness of ice convection zone (cm)
 	double dr_grid = 0.0;                // Physical thickness of a shell (cm)
@@ -341,7 +341,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	T_old[ir] = 0.0;
     	kappa[ir] = 0.0;
     	Qth[ir] = 0.0;
-    	Xhydr_old[ir] = 0.0;
+    	Xhydr_old[ir] = Xhydr[ir];
     	Pressure[ir] = 0.0;
     	Crack[ir] = 0.0;
     	Crack_size[ir] = 0.0;
@@ -504,6 +504,37 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     }
 
 	//-------------------------------------------------------------------
+	//      If simulation starts out differentiated, differentiate
+	//-------------------------------------------------------------------
+
+	if (startdiff == 1) {
+		irdiff = NR-1;
+		separate(NR, &irdiff, &ircore, &irice, dVol, &dM, &dE, &Mrock, &Mh2os, &Madhs, &Mh2ol, &Mnh3l,
+				 &Vrock, &Vh2os, &Vadhs, &Vh2ol, &Vnh3l, &Erock, &Eh2os, &Eslush, rhoAdhsth, rhoH2olth, rhoNh3lth, Xfines);
+	}
+
+	//-------------------------------------------------------------------
+	//                  Allow for chemical equilibrium
+	//-------------------------------------------------------------------
+
+    for (ir=0;ir<NR;ir++) {
+    	e1 = dE[ir] / dM[ir];
+    	frock = Mrock[ir] / dM[ir];
+    	fh2os = Mh2os[ir] / dM[ir];
+    	fadhs = Madhs[ir] / dM[ir];
+    	fh2ol = Mh2ol[ir] / dM[ir];
+    	fnh3l = Mnh3l[ir] / dM[ir];
+		state (path, itime, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, Xsalt, &temp1);
+    	T[ir] = temp1;
+    	Mrock[ir] = dM[ir]*frock;
+    	Mh2os[ir] = dM[ir]*fh2os;
+    	Madhs[ir] = dM[ir]*fadhs;
+    	Mh2ol[ir] = dM[ir]*fh2ol;
+    	Mnh3l[ir] = dM[ir]*fnh3l;
+    }
+    for (ir=0;ir<NR;ir++) dM_old[ir] = dM[ir];
+
+	//-------------------------------------------------------------------
 	//                      Output initial configuration
 	//-------------------------------------------------------------------
 
@@ -565,27 +596,6 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		Stress[ir][0] = r[ir+1]/km2cm;
 		append_output(12, Stress[ir], path, "Outputs/Crack_stresses.txt");
 	}
-
-	//-------------------------------------------------------------------
-	//                  Allow for chemical equilibrium
-	//-------------------------------------------------------------------
-
-    for (ir=0;ir<NR;ir++) {
-    	e1 = dE[ir] / dM[ir];
-    	frock = Mrock[ir] / dM[ir];
-    	fh2os = Mh2os[ir] / dM[ir];
-    	fadhs = Madhs[ir] / dM[ir];
-    	fh2ol = Mh2ol[ir] / dM[ir];
-    	fnh3l = Mnh3l[ir] / dM[ir];
-		state (path, itime, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, Xsalt, &temp1);
-    	T[ir] = temp1;
-    	Mrock[ir] = dM[ir]*frock;
-    	Mh2os[ir] = dM[ir]*fh2os;
-    	Madhs[ir] = dM[ir]*fadhs;
-    	Mh2ol[ir] = dM[ir]*fh2ol;
-    	Mnh3l[ir] = dM[ir]*fnh3l;
-    }
-    for (ir=0;ir<NR;ir++) dM_old[ir] = dM[ir];
 
 	//-------------------------------------------------------------------
 	//                       Initialize time loop
@@ -667,7 +677,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 						P_hydr[ir] = 0.0;
 					}
 					if (Crack[ir] > 0.0 && fracOpen[ir] == 0.0) fracOpen[ir] = 1.0;
-					if (Crack[ir] > 0.0 && pore[ir] < crack_porosity) pore[ir] = crack_porosity;
+					 // if (Crack[ir] > 0.0 && pore[ir] < crack_porosity) pore[ir] = crack_porosity; TODO uncomment
 				}
 				else { // Reset all the variables modified by crack() and strain()
 					fracOpen[ir] = 0.0;
@@ -822,24 +832,24 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			Phi = Phiold;
 
 		//-------------------------------------------------------------------
-		//                   Find % radionuclides leached
+		//                   Find % radionuclides leached TODO Don't do this at every step! Every time T, P, or WR change substantially?
 		//-------------------------------------------------------------------
 
 		Mliq = 0.0;
-		for (ir=0;ir<NR;ir++) {
-			Mliq = Mliq + Mh2ol[ir] + Mnh3l[ir];
-		}
+		for (ir=0;ir<NR;ir++) Mliq = Mliq + Mh2ol[ir];
+
 		Mcracked_rock = 0.0;
 		for (ir=0;ir<NR;ir++) {
-			if (Crack[ir] > 0.0) {
-				Mcracked_rock = Mcracked_rock + Mrock[ir];
-			}
+			if (Crack[ir] > 0.0) Mcracked_rock = Mcracked_rock + Mrock[ir];
 		}
 
 		if (ircore > 0) ir = ircore-1; // Set ir at seafloor for now. TODO average T and P over cracked zone?
 		else ir = 0;
 
-//		WaterRock (path, T[ir], Pressure[ir], Mliq/Mcracked_rock, &fracKleached, chondr);
+//		if (Mliq > 0.0 && Mcracked_rock > 0.0)
+//			WaterRock (path, T[ir], Pressure[ir]/bar, Mliq/Mcracked_rock, &fracKleached, chondr);
+//
+//		printf("%d %g %g %g\n",itime,Mliq,Mcracked_rock,fracKleached);
 
 		//-------------------------------------------------------------------
 		// Calculate heating from:
@@ -850,13 +860,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		//-------------------------------------------------------------------
 
 		// Radioactive decay
-		decay(&realtime, &tzero, &S, chondr);
-		for (ir=0;ir<NR;ir++) {
-			Qth[ir] = (Mrock[ir] - rhoH2olth*(Mrock[ir]/(Xhydr[ir]*rhoHydrth+(1.0-Xhydr[ir])*rhoRockth) - Mrock[ir]/rhoRockth))
-			                *S; // Scaled for hydration, because hydrated rock has more mass (i.e. mass of -OH) but no extra radionuclides
-			                    // See hydrate() subroutine for origin of scaling expression
-			Heat_radio = Heat_radio + Qth[ir];
-		}
+		decay(realtime, tzero, &Qth, NR, chondr, fracKleached, Mrock, Mh2os, Mh2ol, Xhydr, rhoH2olth, rhoRockth, rhoHydrth);
+		for (ir=0;ir<NR;ir++) Heat_radio = Heat_radio + Qth[ir];
 
 		// Gravitational heat release in differentiation
 		if (irdiff > 0) {
@@ -1104,11 +1109,17 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		// Surface boundary condition (applied when phases found)
 		// Unnecessary since all parameters are already set to the values specified? The boundary condition is
     	// really given by looking for Tdiff and updating the energies only up to NR-2, so NR-1 is always left unchanged.
-    	Mrock[NR-1] = dM[NR-1]*frockp;
-		Mh2os[NR-1] = dM[NR-1]*(1.0-frockp)*(1.0-Xp/Xc);
-		Madhs[NR-1] = dM[NR-1]*(1.0-frockp)*Xp/Xc;
-		Mh2ol[NR-1] = 0.0;
-		Mnh3l[NR-1] = 0.0;
+//    	Mrock[NR-1] = dM[NR-1]*frockp;
+//    	if (startdiff == 1) {
+//			Mh2os[NR-1] = dM[NR-1]*(1.0-frockp);
+//			Madhs[NR-1] = 0.0;
+//    	}
+//    	else {
+//			Mh2os[NR-1] = dM[NR-1]*(1.0-frockp)*(1.0-Xp/Xc);
+//			Madhs[NR-1] = dM[NR-1]*(1.0-frockp)*Xp/Xc;
+//    	}
+//		Mh2ol[NR-1] = 0.0;
+//		Mnh3l[NR-1] = 0.0;
 		Erock[NR-1] = Mrock[NR-1]*heatRock(Tsurf);
 		Eh2os[NR-1] = Mh2os[NR-1]*qh2o*Tsurf*Tsurf/2.0;
 		Eslush[NR-1] = Madhs[NR-1]*qadh*Tsurf*Tsurf/2.0;
@@ -1739,9 +1750,17 @@ double kapcond(double T, double frock, double fh2os, double fadhs, double fh2ol,
  *
  *--------------------------------------------------------------------*/
 
-int decay(double *t, double *tzero, double *S, int chondr) {
+int decay(double t, double tzero, double **Qth, int NR, int chondr, double fracKleached, double *Mrock, double *Mh2os,
+		double *Mh2ol, double *Xhydr, double rhoH2olth, double rhoRockth, double rhoHydrth) {
 
+	int ir = 0;
+	int irh2ol = NR;                              // First grid point from center with liquid water
+	int irh2os = NR;                              // First grid point from center with water ice
+	double S = 0.0;                               // Specific radiogenic power for all radionuclides except K (erg/s/g)
+	double S_K = 0.0;                             // Specific radiogenic power for K (erg/s/g)
 	double si = 1.0 / (1.0e6 * 1.67e-24 * 151.0); // Grams^-1 / # of Si atoms: 1e6 atoms * nucleon mass in grams * avg. molar mass of rock
+	double Mliq = 0.0;                            // Total mass of liquid water
+	double Q_Kleached = 0.0;                      // Total radiogenic power for K
 
 	/* The rate of radiogenic heating due to an isotope x with half-life t1/2, per mass of that isotope,
 	 * is (DeltaE)_x (ln 2/t1/2)/m_x, with m_x = mass of an atom of x and DeltaE_x = heat energy per decay.
@@ -1763,21 +1782,44 @@ int decay(double *t, double *tzero, double *S, int chondr) {
 
 	// Long-lived radionuclides (DeltaE for Th and U is given as parent-daughter minus 1 MeV per emitted nucleon)
 	if (chondr == 1) { // CO abundances
-		(*S) = 2.219   * 0.6087      / 1.265 * exp(-((*t)+(*tzero))*0.6931/(1.265*Gyr2sec))  // 40 K
-			 + 0.00619 * (46.74-4.0) / 0.704 * exp(-((*t)+(*tzero))*0.6931/(0.704*Gyr2sec))  // 235 U
-			 + 0.01942 * (52.07-6.0) / 4.47  * exp(-((*t)+(*tzero))*0.6931/(4.47 *Gyr2sec))  // 238 U
-			 + 0.04293 * (42.96-4.0) / 14.0  * exp(-((*t)+(*tzero))*0.6931/(14.0 *Gyr2sec)); // 232 Th
+		S = 0.00619 * (46.74-4.0) / 0.704 * exp(-(t+tzero)*0.6931/(0.704*Gyr2sec))  // 235 U
+		  + 0.01942 * (52.07-6.0) / 4.47  * exp(-(t+tzero)*0.6931/(4.47 *Gyr2sec))  // 238 U
+	      + 0.04293 * (42.96-4.0) / 14.0  * exp(-(t+tzero)*0.6931/(14.0 *Gyr2sec)); // 232 Th
 	}
 	else {             // Default: CI abundances
-		(*S) = 5.244   * 0.6087      / 1.265 * exp(-((*t)+(*tzero))*0.6931/(1.265*Gyr2sec))  // 40 K
-			 + 0.00592 * (46.74-4.0) / 0.704 * exp(-((*t)+(*tzero))*0.6931/(0.704*Gyr2sec))  // 235 U
-			 + 0.01871 * (52.07-6.0) / 4.47  * exp(-((*t)+(*tzero))*0.6931/(4.47 *Gyr2sec))  // 238 U
-			 + 0.04399 * (42.96-4.0) / 14.0  * exp(-((*t)+(*tzero))*0.6931/(14.0 *Gyr2sec)); // 232 Th
+		S = 0.00592 * (46.74-4.0) / 0.704 * exp(-(t+tzero)*0.6931/(0.704*Gyr2sec))  // 235 U
+		  + 0.01871 * (52.07-6.0) / 4.47  * exp(-(t+tzero)*0.6931/(4.47 *Gyr2sec))  // 238 U
+		  + 0.04399 * (42.96-4.0) / 14.0  * exp(-(t+tzero)*0.6931/(14.0 *Gyr2sec)); // 232 Th
 	}
+	// Potassium 40
+	if (chondr == 1) S_K = 2.219 * 0.6087 / 1.265 * exp(-(t+tzero)*0.6931/(1.265*Gyr2sec)); // CO abundances
+	else             S_K = 5.244 * 0.6087 / 1.265 * exp(-(t+tzero)*0.6931/(1.265*Gyr2sec)); // CI abundances
 	// Short-lived radionuclides
-	(*S) = (*S) + (5.0e-5*8.410e4) * 3.117 / 0.000716 * exp(-((*t)+(*tzero))*0.6931/(0.000716*Gyr2sec)); // 26 Al
+	S = S + (5.0e-5*8.410e4) * 3.117 / 0.000716 * exp(-(t+tzero)*0.6931/(0.000716*Gyr2sec)); // 26 Al
 
-	(*S) = (*S) * si*MeV2erg/Gyr2sec*0.6931;
+	S = S * si*MeV2erg/Gyr2sec*0.6931;
+	S_K = S_K * si*MeV2erg/Gyr2sec*0.6931;
+
+	for (ir=NR-1;ir>=0;ir--) {
+		if (Mh2os[ir] >= 0.0) irh2os = ir;    // Find innermost layer with water ice
+		if (Mh2ol[ir] >= 0.0) irh2ol = ir;    // Find innermost layer with liquid water
+		Mliq = Mliq + Mh2ol[ir];              // total mass of liquid water
+	}
+	for (ir=0;ir<NR;ir++) {
+		// Radiogenic heating in rock
+		// Scaled for hydration, because hydrated rock has more mass (i.e. mass of -OH) but no extra radionuclides
+		(*Qth)[ir] = (Mrock[ir] - rhoH2olth*(Mrock[ir]/(Xhydr[ir]*rhoHydrth+(1.0-Xhydr[ir])*rhoRockth) - Mrock[ir]/rhoRockth))
+		                *(S + (1.0-fracKleached)*S_K);
+		// Total radiogenic heating that doesn't take place in rock
+		Q_Kleached = Q_Kleached + (Mrock[ir] - rhoH2olth*(Mrock[ir]/(Xhydr[ir]*rhoHydrth+(1.0-Xhydr[ir])*rhoRockth) - Mrock[ir]/rhoRockth))
+				        *fracKleached*S_K;
+	}
+	for (ir=0;ir<NR;ir++) {
+		// Distribute heat from leached radionuclides among layers containing liquid water, proportional to the mass of liquid
+		if (Mliq > 0.0) (*Qth)[ir] = (*Qth)[ir] + Q_Kleached*Mh2ol[ir]/Mliq;
+		else (*Qth)[irh2os] = (*Qth)[irh2os] + Q_Kleached; // If all the liquid has frozen, put all heat in innermost ice layer
+	}
+
 	return 0;
 }
 

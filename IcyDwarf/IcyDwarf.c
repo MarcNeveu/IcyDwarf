@@ -18,9 +18,9 @@
 #include "Crack/Crack.h"
 #include "Crack/Crack_tables.h"
 #include "Cryolava/Cryolava.h"
-#include "Thermal/Thermal.h"
 #include "WaterRock/WaterRock.h"
 #include "WaterRock/ParamExploration.h"
+#include "Thermal/Thermal.h"
 
 int main(int argc, char *argv[]){
 
@@ -48,6 +48,7 @@ int main(int argc, char *argv[]){
     int chondr = 0;                    // Nature of the chondritic material incorporated (3/30/2015: default=CI or 1=CO), matters
                                        // for radiogenic heating, see Thermal-state()
     double porosity = 0.0;             // Bulk porosity
+    int startdiff = 0;                 // Start differentiated?
 
     // Grid inputs
 	int NR = 0;                        // Number of grid zones
@@ -97,9 +98,9 @@ int main(int argc, char *argv[]){
 	int i = 0;
 	int j = 0;
 
-	double *input = (double*) malloc(55*sizeof(double));
+	double *input = (double*) malloc(56*sizeof(double));
 	if (input == NULL) printf("IcyDwarf: Not enough memory to create input[28]\n");
-	for (i=0;i<55;i++) input[i] = 0.0;
+	for (i=0;i<56;i++) input[i] = 0.0;
 
 	//-------------------------------------------------------------------
 	// Startup
@@ -159,6 +160,7 @@ int main(int argc, char *argv[]){
 	Tinit = input[i]; i++;
 	Hydr_init = input[i]; i++;
 	Xfines = input[i]; i++;
+	startdiff = input[i]; i++;
 	calculate_aTP = (int) input[i]; i++;
 	calculate_alpha_beta = (int) input[i]; i++;
 	calculate_crack_species = (int) input[i]; i++;
@@ -212,7 +214,7 @@ int main(int argc, char *argv[]){
 	if (calculate_thermal == 1) {
 		printf("Running thermal evolution code...\n");
 		Thermal(argc, argv, path, NR, r_p, rho_p, rhoHydrRock, rhoDryRock, warnings, msgout, nh3, salt, Xhydr, Xfines, tzero, Tsurf, Tinit,
-				timestep, total_time, output_every, crack_input, crack_species, chondr, moon, aorb, eorb, Mprim, porosity);
+				timestep, total_time, output_every, crack_input, crack_species, chondr, moon, aorb, eorb, Mprim, porosity, startdiff);
 		printf("\n");
 	}
 

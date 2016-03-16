@@ -19,7 +19,7 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 
 int EHandler(int phreeqc);
 
-int ExtractWrite(int instance, int nvar, double** data);
+int ExtractWrite(int instance, double** data);
 
 const char* ConCat(const char *str1, const char *str2);
 
@@ -30,7 +30,6 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 
 	int thread_id;
 	int phreeqc = 0;
-	int nvar = 1830;                                              // Number of geochemical variables stored in each PHREEQC simulation
 	int i = 0;
 	int j = 0;
 
@@ -163,7 +162,7 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 						simdata[ipH][1] = P;
 						simdata[ipH][4] = FMQ;
 						simdata[ipH][5] = pe*4.0;
-						ExtractWrite(phreeqc, nvar, &simdata[ipH]);
+						ExtractWrite(phreeqc, &simdata[ipH]);
 
 						++nloops;
 						if (DestroyIPhreeqc(phreeqc) != IPQ_OK) OutputErrorString(phreeqc);
@@ -215,7 +214,7 @@ int EHandler(int instance) {
  * Write selected output from PHREEQC
  *
  *--------------------------------------------------------------------*/
-int ExtractWrite(int instance, int nvar, double** data) {
+int ExtractWrite(int instance, double** data) {
 	VAR v;
 	int i = 0;
 	VarInit(&v);
@@ -257,7 +256,7 @@ const char* ConCat(const char *str1, const char *str2) {
 
 /*--------------------------------------------------------------------
  *
- * Subroutine ChangePHREEQCInput
+ * Subroutine WritePHREEQCInput
  *
  * Generate input file from a template.
  * Modifies P, T, pH, pe, W:R
