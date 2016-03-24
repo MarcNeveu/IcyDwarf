@@ -893,13 +893,27 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 //					Qtide[ir] = 1000.0;     // Arbitrary
 
 					// Maxwell viscoelastic model (Henning et al. 2009, ice viscosity from Desch et al. 2009)
-					fineVolFrac = 0.0;      // Assume no mud fines
+					fineVolFrac = 0.0;      // Assume no mud fines (recalculated below)
 					mu1 = (1.0e15)*exp(25.0*(273.0/T[ir]-1.0))/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // Viscosity, 1.0e14 in SI
+					// If there is ammonia in partially melted layers, decrease viscosity according to Fig. 6 of Arakawa & Maeno (1994)
+					if (Mnh3l[ir] > 0.05*Mh2ol[ir]) {
+						if (T[ir] < 176.0)
+							mu1 = mu1*1.0e-3;
+						else if (T[ir] < 230.0)
+							mu1 = mu1*1.0e-8;
+						else mu1 = mu1*1.0e-15;
+					}
+
 					omega_tide = 2.0*norb;  // Two tides per orbit if tidally locked moon
 					k2tide[ir] = 57.0*mu1*omega_tide/(4.0*beta_tide*(1.0+(
 							(1.0+19.0*mu_rigid/(2.0*beta_tide))*(1.0+19.0*mu_rigid/(2.0*beta_tide))
 									*mu1*mu1*omega_tide*omega_tide/mu_rigid/mu_rigid)));
-					k2tide[ir] = k2tide[ir]*Mh2os[ir]/(Mrock[ir] + Mh2os[ir] + Madhs[ir] + Mh2ol[ir] + Mnh3l[ir]); // Scale heating for ice only, matters for partially melted layers
+
+					// Scale heating in partially melted layers
+					if (Mnh3l[ir] > 0.05*Mh2ol[ir])
+						k2tide[ir] = k2tide[ir]*(Mh2os[ir] + Madhs[ir] + Mh2ol[ir] + Mnh3l[ir])/(Mrock[ir] + Mh2os[ir] + Madhs[ir] + Mh2ol[ir] + Mnh3l[ir]);
+					else
+						k2tide[ir] = k2tide[ir]*Mh2os[ir]/(Mrock[ir] + Mh2os[ir] + Madhs[ir] + Mh2ol[ir] + Mnh3l[ir]);
 					Qtide[ir] = mu1*omega_tide/mu_rigid;
 
 					Qth[ir] = Qth[ir] + 11.5*k2tide[ir]/Qtide[ir]*Gcgs*Mprim*Mprim*norb*pow(r_p,5)*eorb*eorb/pow(aorb,6);

@@ -1517,35 +1517,35 @@ int Angles(double **simdata, double **molmass, double **antifreezes, int isim, i
 			double total_Sol = 0.0; // Final mass of solution
 			for (i=12;i<40;i++) total_Sol = total_Sol + simdata[isim][i];
 			total_Sol = total_Sol + 2.0*simdata[isim][333]; // H2
-			angle[1] = simdata[isim][12]/total_Sol;         // Al
-			angle[2] = (simdata[isim][75]+simdata[isim][71]+simdata[isim][70])/total_Sol; // C ox = CO2 + HCO3- + CO3-2
-			angle[3] = simdata[isim][14]/total_Sol - angle[2]; // C red: all other C
-			angle[4] = simdata[isim][15]/total_Sol;         // Ca
-			angle[5] = simdata[isim][16]/total_Sol;         // Cl
-			angle[6] = simdata[isim][31]/total_Sol;         // P
-			angle[7] = simdata[isim][23]/total_Sol;         // K
-			angle[8] = simdata[isim][25]/total_Sol;         // Mg
-			angle[9] = simdata[isim][28]/total_Sol;         // N
-			angle[10] = simdata[isim][29]/total_Sol;         // Na
-			angle[11] = simdata[isim][30]/total_Sol;        // Ni
-			angle[12] = simdata[isim][32]/total_Sol;        // S
-			angle[13] = simdata[isim][34]/total_Sol;        // Si
-			angle[14] = 2.0*simdata[isim][333]/total_Sol;   // H = 2*H2
 //			angle[1] = simdata[isim][12]/total_Sol;         // Al
-//			angle[2] = (simdata[isim][75]+simdata[isim][71]+simdata[isim][70]+simdata[isim][72]+simdata[isim][80]+simdata[isim][73]+simdata[isim][74])
-//					/total_Sol; // C ox = CO2 + HCO3- + CO3-2 + CaCO3 + MgCO3 + NaCO3- + NaHCO3
-//			angle[3] = (simdata[isim][68]+2.0*simdata[isim][66]+3.0*simdata[isim][67])/total_Sol; // CH4 + C2H6 + C3H8
+//			angle[2] = (simdata[isim][75]+simdata[isim][71]+simdata[isim][70])/total_Sol; // C ox = CO2 + HCO3- + CO3-2
+//			angle[3] = simdata[isim][14]/total_Sol - angle[2]; // C red: all other C
 //			angle[4] = simdata[isim][15]/total_Sol;         // Ca
 //			angle[5] = simdata[isim][16]/total_Sol;         // Cl
 //			angle[6] = simdata[isim][31]/total_Sol;         // P
-//			angle[7] = simdata[isim][335]/total_Sol;         // K+
-//			angle[8] = simdata[isim][375]/total_Sol;         // NH3
-//			angle[9] = simdata[isim][376]/total_Sol;         // NH4+
-//			angle[10] = simdata[isim][396]/total_Sol;         // Na+
-//			angle[11] = 2.0*simdata[isim][384]/total_Sol;        // N2
-//			angle[12] = simdata[isim][442]/total_Sol;        // S-2
-//			angle[13] = simdata[isim][444]/total_Sol;        // H2S
+//			angle[7] = simdata[isim][23]/total_Sol;         // K
+//			angle[8] = simdata[isim][25]/total_Sol;         // Mg
+//			angle[9] = simdata[isim][28]/total_Sol;         // N
+//			angle[10] = simdata[isim][29]/total_Sol;         // Na
+//			angle[11] = simdata[isim][30]/total_Sol;        // Ni
+//			angle[12] = simdata[isim][32]/total_Sol;        // S
+//			angle[13] = simdata[isim][34]/total_Sol;        // Si
 //			angle[14] = 2.0*simdata[isim][333]/total_Sol;   // H = 2*H2
+			angle[1] = simdata[isim][12]/total_Sol;         // Al
+			angle[2] = (simdata[isim][75]+simdata[isim][71]+simdata[isim][70]+simdata[isim][72]+simdata[isim][80]+simdata[isim][73]+simdata[isim][74])
+					/total_Sol; // C ox = CO2 + HCO3- + CO3-2 + CaCO3 + MgCO3 + NaCO3- + NaHCO3
+			angle[3] = (simdata[isim][68]+2.0*simdata[isim][66]+3.0*simdata[isim][67])/total_Sol; // CH4 + C2H6 + C3H8
+			angle[4] = simdata[isim][15]/total_Sol;         // Ca
+			angle[5] = simdata[isim][16]/total_Sol;         // Cl
+			angle[6] = simdata[isim][31]/total_Sol;         // P
+			angle[7] = simdata[isim][335]/total_Sol;         // K+
+			angle[8] = simdata[isim][375]/total_Sol;         // NH3
+			angle[9] = simdata[isim][376]/total_Sol;         // NH4+
+			angle[10] = simdata[isim][396]/total_Sol;         // Na+
+			angle[11] = 2.0*simdata[isim][384]/total_Sol;        // N2
+			angle[12] = simdata[isim][442]/total_Sol;        // S-2
+			angle[13] = simdata[isim][444]/total_Sol;        // H2S
+			angle[14] = 2.0*simdata[isim][333]/total_Sol;   // H = 2*H2
 		}
 
 		// Plot pies

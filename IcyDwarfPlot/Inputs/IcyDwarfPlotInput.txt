@@ -14,7 +14,7 @@ Radius (km)                   198.2
 Grid
 -------------------------------
 Number of grid zones          200
-Total time of sim (Myr)       100
+Total time of sim (Myr)       5000
 Output every (Myr)            10
 -------------------------------
 Subroutines
@@ -27,7 +27,7 @@ Geochemistry plot
 	Pressure              200 1700 500
 	pH                    7 9 1
 	pe = FMQ + ...        0 8 2
-	Water:rock mass ratio 1 10 10
+	Water:rock mass ratio 1 4 2
 	Rock type 0:OC def:CC 1
 	Fluid 1:comet def:H2O 0
 

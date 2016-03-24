@@ -34,7 +34,7 @@ Subroutines
 Run thermal?                  1
 	Sim time step (yr)    50
 	Sim starts at (Myr)   5
-	Initial temp (K)      40
+	Initial temp (K)      76
 	Degree of hydration   0
 	Fine rock fraction    0.58
 	Start differentiated? 0
