@@ -884,7 +884,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			}
 		}
 
-		// Tidal heating in ice. TODO Add tidal heating in ocean too.
+		// Tidal heating in ice
 		if (moon) {
 			for (ir=0;ir<NR;ir++) {
 				if (Mh2os[ir] > 0.0) {
@@ -896,13 +896,12 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 					fineVolFrac = 0.0;      // Assume no mud fines (recalculated below)
 					mu1 = (1.0e15)*exp(25.0*(273.0/T[ir]-1.0))/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // Viscosity, 1.0e14 in SI
 					// If there is ammonia in partially melted layers, decrease viscosity according to Fig. 6 of Arakawa & Maeno (1994)
-					if (Mnh3l[ir] > 0.05*Mh2ol[ir]) {
-						if (T[ir] < 176.0)
-							mu1 = mu1*1.0e-3;
-						else if (T[ir] < 230.0)
-							mu1 = mu1*1.0e-8;
-						else mu1 = mu1*1.0e-15;
-					}
+					// TODO As of 3/24/2016, this results in viscosities so high that the model blows up. Need to decrease the rigidity with NH3 content?
+					//					if (Mnh3l[ir] > 0.05*Mh2ol[ir]) {
+//						if (T[ir] < 176.0)
+//							mu1 = mu1*1.0e-3;
+//						else mu1 = mu1*1.0e-8;
+//					}
 
 					omega_tide = 2.0*norb;  // Two tides per orbit if tidally locked moon
 					k2tide[ir] = 57.0*mu1*omega_tide/(4.0*beta_tide*(1.0+(
@@ -910,9 +909,9 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 									*mu1*mu1*omega_tide*omega_tide/mu_rigid/mu_rigid)));
 
 					// Scale heating in partially melted layers
-					if (Mnh3l[ir] > 0.05*Mh2ol[ir])
-						k2tide[ir] = k2tide[ir]*(Mh2os[ir] + Madhs[ir] + Mh2ol[ir] + Mnh3l[ir])/(Mrock[ir] + Mh2os[ir] + Madhs[ir] + Mh2ol[ir] + Mnh3l[ir]);
-					else
+//					if (Mnh3l[ir] > 0.05*Mh2ol[ir])
+//						k2tide[ir] = k2tide[ir]*(Mh2os[ir] + Mnh3l[ir])/(Mrock[ir] + Mh2os[ir] + Madhs[ir] + Mh2ol[ir] + Mnh3l[ir]);
+//					else
 						k2tide[ir] = k2tide[ir]*Mh2os[ir]/(Mrock[ir] + Mh2os[ir] + Madhs[ir] + Mh2ol[ir] + Mnh3l[ir]);
 					Qtide[ir] = mu1*omega_tide/mu_rigid;
 
