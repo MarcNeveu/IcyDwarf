@@ -45,7 +45,7 @@ int crack(double T, double T_old, double Pressure, double *Crack,
 		double *Crack_size, double Xhydr, double Xhydr_old, double dtime, double Mrock, double Mrock_init,
 		double **Act, int warnings, int *crack_input, int *crack_species, double **aTP,
 		double **integral, double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite,
-		int circ, double **Output, double *P_pore, double *P_hydr, double Brittle_strength, double rhoHydr, double rhoRock);
+		int circ, double **Output, double *P_pore, double *P_hydr, double Brittle_strength, double rhoHydr, double rhoRock, int ir);
 
 int strain (double Pressure, double Xhydr, double T, double *strain_rate, double *Brittle_strength, double porosity);
 
@@ -55,7 +55,7 @@ int crack(double T, double T_old, double Pressure, double *Crack,
 		double *Crack_size, double Xhydr, double Xhydr_old, double dtime, double Mrock, double Mrock_init,
 		double **Act, int warnings, int *crack_input, int *crack_species, double **aTP,
 		double **integral, double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite,
-		int circ, double **Output, double *P_pore, double *P_hydr, double Brittle_strength, double rhoHydr, double rhoRock) {
+		int circ, double **Output, double *P_pore, double *P_hydr, double Brittle_strength, double rhoHydr, double rhoRock, int ir) {
 
 	//-------------------------------------------------------------------
 	//                 Declarations and initializations
@@ -217,11 +217,10 @@ int crack(double T, double T_old, double Pressure, double *Crack,
 		// For now, let's say the pores are at lithostatic pressure (should not be too different from hydrostatic pressure,
 		// as long there are only a few layers of cracks). Also let pressure evolve with temperature.
 
-		if (Xhydr >= 0.1 && T > T_old) {
+		if (Xhydr >= 0.09 && T > T_old) {
 			// Look up the right value of alpha and beta, given P and T
 			tempk_int = look_up (T, (double) tempk_min, delta_tempk, sizeaTP, warnings);
 			P_int = look_up (Pressure/bar, (double) P_bar_min, delta_P_bar, sizeaTP, warnings);
-
 			// Calculate fluid overpressure from heating, including geometric effects (Le Ravalec & Guéguen 1994)
 			(*P_pore) = (*P_pore) + (1.0+2.0*aspect_ratio) * alpha[tempk_int][P_int] * (T-T_old)
 								/ (beta[tempk_int][P_int]/bar + aspect_ratio*3.0*(1.0-2.0*nu_Poisson)/E_Young);

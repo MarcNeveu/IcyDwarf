@@ -74,6 +74,8 @@ The output file of the thermal evolution code is *Thermal.txt*. It lists, for a 
 - mass of ammonia dihydrate (g)
 - mass of liquid water (g)
 - mass of liquid ammonia (g)
+- Nusselt number in the ice shell (if >1, the shell convects)
+- fraction of amorphous ice (currently set to 0)
 - thermal conductivity (W/m/K)
 - degree of hydration (0: fully dry, 1: fully hydrated)
 
@@ -105,17 +107,17 @@ If you wish to modify the code, set up your compiler and linker so that all the 
 
 ## Compiler setup (*gcc* on Mac OS 10.10 Yosemite)
 
-My compiling instructions look like this (I listed each include as a new line for clarity, instead of separating them by a space:
+My compiling instructions look like this:
 
 For IcyDwarf:
-
-	gcc -I/usr/include -I/usr/local/lib/gcc/x86_64-apple-darwin14.0.0/5.0.0/include -I/usr/local/include -I/Library/Frameworks/R.framework/Versions/3.0/Resources/include -I/Library/Frameworks/R.framework/Versions/3.0/Resources/library/RInside/include -O3 -g -Wall -c -fmessage-length=0 -arch x86_64 -fopenmp -o IcyDwarf.o ../IcyDwarf.c 
-	gcc -L/Users/marc/Documents/Research/2011-2016_ASU/2IcyDwarf/Git/IcyDwarf/IcyDwarf -L/usr/local/lib -L/Library/Frameworks/R.framework/Versions/3.0/Resources/lib -F/Library/Frameworks -arch x86_64 -lgomp -o IcyDwarf IcyDwarf.o /Library/Frameworks/R.framework/Resources/library/RInside/lib/x86_64/libRInside.a /usr/local/lib/libiphreeqc-3.1.7.dylib /usr/local/lib/libiphreeqc.dylib /usr/local/lib/libiphreeqc.a -lR 
+ 
+    gcc -I/usr/local/lib/gcc/x86_64-apple-darwin14.0.0/5.0.0/include -I/usr/local/include -I/Library/Frameworks/R.framework/Versions/3.0/Resources/include -I/Library/Frameworks/R.framework/Versions/3.0/Resources/library/RInside/include -O3 -g -Wall -c -fmessage-length=0 -arch x86_64 -fopenmp -o IcyDwarf.o ../IcyDwarf.c
+    gcc -L/Users/marc/Documents/Research/2011-2016_ASU/2IcyDwarf/Git/IcyDwarf/IcyDwarf -L/usr/local/lib -L/Library/Frameworks/R.framework/Versions/3.2/Resources/lib -o IcyDwarf IcyDwarf.o /usr/local/lib/libiphreeqc-3.1.7.dylib /usr/local/lib/libiphreeqc.dylib /usr/local/lib/libiphreeqc.a -lgomp -lR
 
 For IcyDwarfPlot:
 
-	gcc -I/usr/include -I/Library/Frameworks/SDL2.framework/Versions/A/Headers -I/Library/Frameworks/SDL2_image.framework/Versions/A/Headers -I/Library/Frameworks/SDL2_ttf.framework/Versions/A/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/GLUT.framework/Versions/A/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/OpenGL.framework/Versions/A/Headers -O3 -Wall -c -fmessage-length=0 -o IcyDwarfPlot.o ../IcyDwarfPlot.c 
-	gcc -L/Users/marc/Documents/Research/2011-2016_ASU/2IcyDwarf/Git/IcyDwarf/IcyDwarfPlot -F/Library/Frameworks -arch x86_64 -framework openGL -framework Cocoa -framework GLUT -framework SDL2 -framework SDL2_image -framework SDL2_ttf -o IcyDwarfPlot IcyDwarfPlot.o
+    gcc -I/usr/include -I/Library/Frameworks/SDL2.framework/Versions/A/Headers -I/Library/Frameworks/SDL2_image.framework/Versions/A/Headers -I/Library/Frameworks/SDL2_ttf.framework/Versions/A/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/GLUT.framework/Versions/A/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/OpenGL.framework/Versions/A/Headers -O3 -Wall -c -fmessage-length=0 -o IcyDwarfPlot.o ../IcyDwarfPlot.c 
+    gcc -L/Users/marc/Documents/Research/2011-2016_ASU/2IcyDwarf/Git/IcyDwarf/IcyDwarfPlot -F/Library/Frameworks -arch x86_64 -framework openGL -framework Cocoa -framework GLUT -framework SDL2 -framework SDL2_image -framework SDL2_ttf -o IcyDwarfPlot IcyDwarfPlot.o 
 
 Email me if you have any issues.
 
@@ -123,6 +125,8 @@ Email me if you have any issues.
 
 If you communicate or publish scientific results using this code, please acknowledge one of the following references. Thanks!
 
-Neveu M., Desch S., Castillo-Rogez J. (2015) Core cracking and hydrothermal circulation profoundly affect Ceres' geophysical evolution. Journal of Geophysical Research: Planets, in press. http://dx.doi.org/10.1002/2014JE004714.
+Neveu M., Desch S. (2015) Geochemistry, thermal evolution, and cryovolcanism on Ceres with a muddy ice mantle. Geophysical Research Letters 42, 10197-10206. http://dx.doi.org/10.1002/2015GL066375.
+
+Neveu M., Desch S., Castillo-Rogez J. (2015) Core cracking and hydrothermal circulation profoundly affect Ceres' geophysical evolution. Journal of Geophysical Research: Planets 120, 123-154. http://dx.doi.org/10.1002/2014JE004714.
 
 Neveu M., Desch S., Shock E., Glein C. (2015) Prerequisites for explosive cryovolcanism on dwarf planet-class Kuiper belt objects. Icarus 246, 48-64. http://dx.doi.org/10.1016/j.icarus.2014.03.043.

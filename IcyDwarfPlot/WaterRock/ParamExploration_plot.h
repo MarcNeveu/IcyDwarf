@@ -308,6 +308,7 @@ int ParamExploration_plot(char path[1024],	int warnings, int msgout, SDL_Rendere
 	//-------------------------------------------------------------------
 
 	SDL_Event e;
+	SDL_PollEvent(&e);
 
 	pie_radius = 13.0;
 	itopic = 13; // Orange shade the bottom right selector

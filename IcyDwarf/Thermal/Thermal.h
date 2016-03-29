@@ -664,7 +664,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 						crack(T[ir], T_old[ir], Pressure[ir], &Crack[ir], &Crack_size[ir], Xhydr[ir], Xhydr_old[ir],
 								dtime, Mrock[ir], Mrock_init[ir], &Act[ir], warnings, crack_input, crack_species,
 								aTP, integral, alpha, beta, silica, chrysotile, magnesite, circ[ir], &Stress[ir],
-								&P_pore[ir], &P_hydr[ir], Brittle_strength[ir], rhoHydrth, rhoRockth);
+								&P_pore[ir], &P_hydr[ir], Brittle_strength[ir], rhoHydrth, rhoRockth, ir);
 					}
 					else { // Reset all the variables modified by crack()
 						Crack[ir] = 0.0;
@@ -1767,7 +1767,6 @@ int decay(double t, double tzero, double **Qth, int NR, int chondr, double fracK
 		double *Mh2ol, double *Xhydr, double rhoH2olth, double rhoRockth, double rhoHydrth) {
 
 	int ir = 0;
-	int irh2ol = NR;                              // First grid point from center with liquid water
 	int irh2os = NR;                              // First grid point from center with water ice
 	double S = 0.0;                               // Specific radiogenic power for all radionuclides except K (erg/s/g)
 	double S_K = 0.0;                             // Specific radiogenic power for K (erg/s/g)
@@ -1815,7 +1814,6 @@ int decay(double t, double tzero, double **Qth, int NR, int chondr, double fracK
 
 	for (ir=NR-1;ir>=0;ir--) {
 		if (Mh2os[ir] >= 0.0) irh2os = ir;    // Find innermost layer with water ice
-		if (Mh2ol[ir] >= 0.0) irh2ol = ir;    // Find innermost layer with liquid water
 		Mliq = Mliq + Mh2ol[ir];              // total mass of liquid water
 	}
 	for (ir=0;ir<NR;ir++) {

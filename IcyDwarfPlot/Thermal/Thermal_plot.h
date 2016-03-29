@@ -23,7 +23,7 @@ int StructurePlot (SDL_Renderer* renderer, thermalout **thoutput, int t, int NR,
 
 int TwoAxisPlot (SDL_Renderer* renderer, char *FontFile, double **Values, int grid, int hold_tracks, int t, int NR, int irmax,
 		int itempk_step, int itempk_max, double itempk_fold_min, double itempk_fold_max, double itempk_fold_step, int thickness,
-		double Tmax, SDL_Surface* temp_time, SDL_Rect temp_time_clip, SDL_Rect* temp_time_dilation,
+		double Tmax, SDL_Surface* value_time, SDL_Rect* value_time_clip, SDL_Rect* value_time_dilation,
 		SDL_Color axisTextColor, Uint32 alpha);
 
 int UpdateDisplaysThermal(SDL_Renderer* renderer, SDL_Texture* background_tex, char* FontFile, thermalout **thoutput,
@@ -485,7 +485,7 @@ int StructurePlot (SDL_Renderer* renderer, thermalout **thoutput, int t, int NR,
 
 int TwoAxisPlot (SDL_Renderer* renderer, char *FontFile, double **Values, int grid, int hold_tracks, int t, int NR, int irmax,
 		int itempk_step, int itempk_max, double itempk_fold_min, double itempk_fold_max, double itempk_fold_step, int thickness,
-		double Tmax, SDL_Surface* value_time, SDL_Rect value_time_clip, SDL_Rect* value_time_dilation,
+		double Tmax, SDL_Surface* value_time, SDL_Rect* value_time_clip, SDL_Rect* value_time_dilation,
 		SDL_Color axisTextColor, Uint32 alpha) {
 
 	int i = 0;
@@ -550,11 +550,11 @@ int TwoAxisPlot (SDL_Renderer* renderer, char *FontFile, double **Values, int gr
 	}
 	value_time_tex = SDL_CreateTextureFromSurface(renderer, value_time);
 
-	value_time_clip.x = 0, value_time_clip.y = 0;
-	value_time_clip.w = value_time->w, value_time_clip.h = value_time->h;
+	(*value_time_clip).x = 0, (*value_time_clip).y = 0;
+	(*value_time_clip).w = value_time->w, (*value_time_clip).h = value_time->h;
 	(*value_time_dilation).x = 90, (*value_time_dilation).y = 87;
 	(*value_time_dilation).w = value_time->w, (*value_time_dilation).h = value_time->h;
-	SDL_RenderCopy(renderer, value_time_tex, &value_time_clip, &(*value_time_dilation));
+	SDL_RenderCopy(renderer, value_time_tex, &(*value_time_clip), &(*value_time_dilation));
 
 	for (i=0;i<inumy;i++) {
 		if (i<6 || (double)itempk*(1.0+(double)i) < Tmax){
@@ -606,19 +606,19 @@ int UpdateDisplaysThermal(SDL_Renderer* renderer, SDL_Texture* background_tex, c
 		}
 		TwoAxisPlot(renderer, FontFile, Hydr, grid, hold_tracks, t, NR, ircore,
 				10, 11, 9.0, 9.0, 20.0, 1,
-				101, value_time, value_time_clip, &value_time_dilation,
+				101, value_time, &value_time_clip, &value_time_dilation,
 				axisTextColor, alpha);
 		break;
 	case 2:  // Thermal conductivity-time plot
 		TwoAxisPlot(renderer, FontFile, Kappa, grid, hold_tracks, t, NR, NR,
 				1, 1000, 1.0, 6.0, 6.0, 0,
-				kappamax, value_time, value_time_clip, &value_time_dilation,
+				kappamax, value_time, &value_time_clip, &value_time_dilation,
 				axisTextColor, alpha);
 		break;
 	default: // Temperature-time plot
 		TwoAxisPlot(renderer, FontFile, TempK, grid, hold_tracks, t, NR, NR,
 				50, 1500, 6.0, 6.0, 300.0, 4,
-				Tmax, value_time, value_time_clip, &value_time_dilation,
+				Tmax, value_time, &value_time_clip, &value_time_dilation,
 				axisTextColor, alpha);
 	}
 

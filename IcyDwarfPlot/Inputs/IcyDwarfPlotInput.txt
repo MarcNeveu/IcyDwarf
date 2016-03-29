@@ -9,19 +9,19 @@ Messages?                     1
 -------------------------------
 Planet parameters
 -------------------------------
-Radius (km)                   198.2
+Radius (km)                   252
 -------------------------------
 Grid
 -------------------------------
 Number of grid zones          200
-Total time of sim (Myr)       5000
+Total time of sim (Myr)       30
 Output every (Myr)            10
 -------------------------------
 Subroutines
 -------------------------------
 Thermal plot
 	IcyDwarf output       Thermal.txt
-	Max temp (K; 0=auto)  800
+	Max temp (K; 0=auto)  500
 Geochemistry plot
 	Temperature           0 150 50
 	Pressure              200 1700 500
