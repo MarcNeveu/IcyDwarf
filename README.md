@@ -1,6 +1,6 @@
 IcyDwarf
 ========
-*IcyDwarf* calculates the coupled physical-chemical evolution of an icy dwarf planet. As of version 15.3, the code calculates:
+*IcyDwarf* calculates the coupled physical-chemical evolution of an icy dwarf planet. As of version 16.3, the code calculates:
 - The thermal evolution of an icy dwarf planet, with no chemistry, but with rock hydration, dehydration, hydrothermal circulation, and core cracking. The depth of cracking and a bulk water:rock ratio by mass in the rocky core are also computed.
 - Whether cryovolcanism is possible by the exsolution of volatiles from cryolavas.
 - Equilibrium fluid and rock chemistries resulting from water-rock interaction in subsurface oceans in contact with a rocky core.
@@ -15,7 +15,7 @@ The two codes can run independently of each other, so it's not necessary to inst
 
 # Installation
 
-The installation steps outlined below are valid for Mac (preferably OS 10.10). *IcyDwarf* and *IcyDwarfPlot* could also run on Windows and Linux, but compilation instructions are not set up and external I/O handling needs to be modified in the source code. 
+The installation steps outlined below are valid for Mac OS 10.9+. *IcyDwarf* and *IcyDwarfPlot* could also run on Windows and Linux, but compilation instructions are not set up and external I/O handling needs to be modified in the source code. 
 
 ## Install *R*
 *R* is needed only for *IcyDwarf*, to run the geochemistry package *CHNOSZ*.
@@ -105,7 +105,7 @@ This routine outputs a file that looks much like the PHREEQC selected output spe
 
 If you wish to modify the code, set up your compiler and linker so that all the relevant flags are added. 
 
-## Compiler setup (*gcc* on Mac OS 10.10 Yosemite)
+## Compiler setup (*gcc* on Mac OS 10.11 El Capitan)
 
 My compiling instructions look like this:
 

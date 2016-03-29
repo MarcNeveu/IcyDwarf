@@ -664,7 +664,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 						crack(T[ir], T_old[ir], Pressure[ir], &Crack[ir], &Crack_size[ir], Xhydr[ir], Xhydr_old[ir],
 								dtime, Mrock[ir], Mrock_init[ir], &Act[ir], warnings, crack_input, crack_species,
 								aTP, integral, alpha, beta, silica, chrysotile, magnesite, circ[ir], &Stress[ir],
-								&P_pore[ir], &P_hydr[ir], Brittle_strength[ir], rhoHydrth, rhoRockth, ir);
+								&P_pore[ir], &P_hydr[ir], Brittle_strength[ir], rhoHydrth, rhoRockth);
 					}
 					else { // Reset all the variables modified by crack()
 						Crack[ir] = 0.0;
