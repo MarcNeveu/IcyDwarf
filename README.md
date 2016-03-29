@@ -42,6 +42,13 @@ The *IPHREEQC* library is a module that allows the *PHREEQC* application to be e
 
 ## Install *gcc 5.0*
 In recent Mac versions (OS 10.8+), the Mac compiler *clang* has replaced the compiler *gcc*, which is needed to take advantage of the parallel computing capabilities of the *ParamExploration()* routine of *IcyDwarf*. Go to http://hpc.sourceforge.net and follow the instructions there to download and install *gcc 5.0*.
+Once *gcc 5.0* is installed, you might need to break the symbolic link between the command 
+
+    gcc 
+
+and *clang* by typing:
+
+    alias gcc=/usr/local/bin/gcc
 
 ## Install *SDL2*
 *SDL2* is a graphic library, needed only for *IcyDwarfPlot*. Go to http://www.libsdl.org/projects. Download and install *SDL2*, *SDL2_image*, and *SDL2_ttf*. *SDL2_mixer* is not needed as the code doesn't play music for you yet.
