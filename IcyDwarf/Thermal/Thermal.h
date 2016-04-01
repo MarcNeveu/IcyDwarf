@@ -27,7 +27,7 @@
 int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p, double rhoHydr, double rhoDry,
 		int warnings, int msgout, double Xp, double Xsalt, double *Xhydr, double Xfines, double tzero, double Tsurf,
 		double Tinit, double dtime, double fulltime, double dtoutput, int *crack_input, int *crack_species, int chondr,
-		int moon, double aorb, double eorb, double Mprim, double porosity, int startdiff);
+		int moon, double aorb_init, double eorb_init, double Mprim, double porosity, int startdiff);
 
 int state (char path[1024], int itime, int ir, double E, double *frock, double *fh2os, double *fadhs, double *fh2ol, double *fnh3l,
 		double Xsalt, double *T);
@@ -58,7 +58,7 @@ double viscosity(double T, double Mh2ol, double Mnh3l);
 int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p, double rhoHydr, double rhoDry,
 		int warnings, int msgout, double Xp, double Xsalt, double *Xhydr, double Xfines, double tzero, double Tsurf,
 		double Tinit, double dtime, double fulltime, double dtoutput, int *crack_input, int *crack_species, int chondr,
-		int moon, double aorb, double eorb, double Mprim, double porosity, int startdiff) {
+		int moon, double aorb_init, double eorb_init, double Mprim, double porosity, int startdiff) {
 
 	//-------------------------------------------------------------------
 	//                 Declarations and initializations
@@ -132,11 +132,17 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double omega_tide = 0.0;             // Tidal frequency
 	double beta_tide = rho_p*g_surf*r_p*km2cm; // Gravitational stiffness (g cm-1 s-2)
 	double Heat_tide = 0.0;
+	double creep_rate = 0.0;             // Strain rate in s-1 for ice, rock, or a mixture. Stress is hydrostatic pressure/(1-porosity)
+	double Wtide_tot = 0.0;              // Tidal heating rate in all of the ice (erg s-1)
+	double Wtide = 0.0;                  // Tidal heating rate in a given layer (erg s-1)
+	double t_circularization = 0.0;      // Tidal circularization timescale (s)
+	double aorb = aorb_init;             // Moon orbital semi-major axis (cm)
+	double eorb = eorb_init;             // Moon orbital eccentricity
 	double Crack_depth[2];				 // Crack_depth[2] (km), output
 	double WRratio[2];					 // WRratio[2] (by mass, no dim), output
 	double Heat[6];                      // Heat[6] (erg), output
 	double Thermal[12];					 // Thermal[12] (multiple units), output
-	double creep_rate = 0.0;             // Strain rate in s-1 for ice, rock, or a mixture. Stress is hydrostatic pressure/(1-porosity)
+	double Orbit[3];                     // Orbit[3] (multiple units), output
 
 	int *dont_dehydrate = (int*) malloc((NR)*sizeof(int));    // Don't dehydrate a layer that just got hydrated
 	if (dont_dehydrate == NULL) printf("Thermal: Not enough memory to create dont_dehydrate[NR]\n");
@@ -428,6 +434,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	create_output(path, "Outputs/Crack_depth.txt");
 	create_output(path, "Outputs/Crack_WRratio.txt");
 	create_output(path, "Outputs/Crack_stresses.txt");
+	create_output(path, "Outputs/Orbit.txt");
 
     r_p = r_p*km2cm;                                                     // Convert planet radius to cm
     tzero = tzero*Myr2sec;                                               // Convert tzero to s
@@ -596,6 +603,12 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		Stress[ir][0] = r[ir+1]/km2cm;
 		append_output(12, Stress[ir], path, "Outputs/Crack_stresses.txt");
 	}
+
+	// Orbital parameters
+	Orbit[0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
+	Orbit[1] = aorb/km2cm;
+	Orbit[2] = eorb;
+	append_output(3, Orbit, path, "Outputs/Orbit.txt");
 
 	//-------------------------------------------------------------------
 	//                       Initialize time loop
@@ -885,7 +898,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		}
 
 		// Tidal heating in ice
-		if (moon) {
+		if (moon && eorb > 0.0) {
+			Wtide_tot = 0.0;
 			for (ir=0;ir<NR;ir++) {
 				if (Mh2os[ir] > 0.0) {
 					// Basic elastic model (Henning et al. 2009, ApJ 707, 1000-1015; Chen et al. 2014, Icarus 229, 11-30; Storch & Lai 2015, MNRAS 450, 3952-3957)
@@ -897,11 +911,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 					mu1 = (1.0e15)*exp(25.0*(273.0/T[ir]-1.0))/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // Viscosity, 1.0e14 in SI
 					// If there is ammonia in partially melted layers, decrease viscosity according to Fig. 6 of Arakawa & Maeno (1994)
 					// TODO As of 3/24/2016, this results in viscosities so high that the model blows up. Need to decrease the rigidity with NH3 content?
-					//					if (Mnh3l[ir] > 0.05*Mh2ol[ir]) {
-//						if (T[ir] < 176.0)
-//							mu1 = mu1*1.0e-3;
-//						else mu1 = mu1*1.0e-8;
-//					}
+					if (Mnh3l[ir]+Madhs[ir] >= 0.01*Mh2os[ir]) mu1 = mu1*1.0e-3;
 
 					omega_tide = 2.0*norb;  // Two tides per orbit if tidally locked moon
 					k2tide[ir] = 57.0*mu1*omega_tide/(4.0*beta_tide*(1.0+(
@@ -909,15 +919,25 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 									*mu1*mu1*omega_tide*omega_tide/mu_rigid/mu_rigid)));
 
 					// Scale heating in partially melted layers
-//					if (Mnh3l[ir] > 0.05*Mh2ol[ir])
-//						k2tide[ir] = k2tide[ir]*(Mh2os[ir] + Mnh3l[ir])/(Mrock[ir] + Mh2os[ir] + Madhs[ir] + Mh2ol[ir] + Mnh3l[ir]);
-//					else
+					if (Mnh3l[ir]+Madhs[ir] >= 0.01*Mh2os[ir])
+						k2tide[ir] = k2tide[ir]*(Mh2os[ir] + Mnh3l[ir] + Madhs[ir])/(Mrock[ir] + Mh2os[ir] + Madhs[ir] + Mh2ol[ir] + Mnh3l[ir]);
+					else
 						k2tide[ir] = k2tide[ir]*Mh2os[ir]/(Mrock[ir] + Mh2os[ir] + Madhs[ir] + Mh2ol[ir] + Mnh3l[ir]);
 					Qtide[ir] = mu1*omega_tide/mu_rigid;
 
-					Qth[ir] = Qth[ir] + 11.5*k2tide[ir]/Qtide[ir]*Gcgs*Mprim*Mprim*norb*pow(r_p,5)*eorb*eorb/pow(aorb,6);
-					Heat_tide = Heat_tide + 11.5*k2tide[ir]/Qtide[ir]*Gcgs*Mprim*Mprim*norb*pow(r_p,5)*eorb*eorb/pow(aorb,6);
+					Wtide = 11.5*k2tide[ir]/Qtide[ir]*Gcgs*Mprim*Mprim*norb*pow(r_p,5)*eorb*eorb/pow(aorb,6);
+					Qth[ir] = Qth[ir] + Wtide;
+					Heat_tide = Heat_tide + Wtide;
+					Wtide_tot = Wtide_tot + Wtide;
+					Wtide = 0.0;
 				}
+			}
+			// Update orbital parameters using circularization timescale from Henning & Hurford (2014, doi 10.1088/0004-637X/789/1/30) equation 2:
+			if (Wtide_tot > 0.0) {
+				t_circularization = Gcgs*Mprim*rho_p*4.0/3.0*PI_greek*r_p*r_p*r_p*eorb*eorb/((1.0-eorb*eorb)*aorb*Wtide_tot); // Wtide_tot propto eorb, so t_circularization independent of eorb
+				eorb = eorb*(1.0 - dtime/t_circularization);
+				// aorb = aorb*(1.0 + dtime/t_circularization*0.42); // daorb/deorb = 0.42*aorb/eorb, Balbus & Brecher 1975 ApJ 203, 202-205, equation 4
+				// norb = sqrt(Gcgs*Mprim/(aorb*aorb*aorb));
 			}
 		}
 
@@ -1171,11 +1191,11 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 				append_output(12, Thermal, path, "Outputs/Thermal.txt");
 			}
 			Heat[0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
-			Heat[1] = Heat_radio;
-			Heat[2] = Heat_grav;
-			Heat[3] = Heat_serp;
-			Heat[4] = Heat_dehydr;
-			Heat[5] = Heat_tide;
+			Heat[1] = Heat_radio*dtime;
+			Heat[2] = Heat_grav*dtime;
+			Heat[3] = Heat_serp*dtime;
+			Heat[4] = Heat_dehydr*dtime;
+			Heat[5] = Heat_tide*dtime;
 			append_output(6, Heat, path, "Outputs/Heats.txt");
 
 			// Crack outputs
@@ -1202,6 +1222,12 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 				Stress[ir][0] = r[ir+1]/km2cm;
 				append_output(12, Stress[ir], path, "Outputs/Crack_stresses.txt");
 			}
+
+			// Orbital parameters
+			Orbit[0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
+			Orbit[1] = aorb/km2cm;
+			Orbit[2] = eorb;
+			append_output(3, Orbit, path, "Outputs/Orbit.txt");
 		}
     }
 

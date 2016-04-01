@@ -1,7 +1,7 @@
 IcyDwarf
 ========
-*IcyDwarf* calculates the coupled physical-chemical evolution of an icy dwarf planet. As of version 16.3, the code calculates:
-- The thermal evolution of an icy dwarf planet, with no chemistry, but with rock hydration, dehydration, hydrothermal circulation, and core cracking. The depth of cracking and a bulk water:rock ratio by mass in the rocky core are also computed.
+*IcyDwarf* calculates the coupled physical-chemical evolution of an icy dwarf planet or moon. As of version 16.3, the code calculates:
+- The thermal evolution of an icy dwarf planet, with no chemistry, but with rock hydration, dehydration, hydrothermal circulation, core cracking, tidal heating, and porosity. The depth of cracking and a bulk water:rock ratio by mass in the rocky core are also computed.
 - Whether cryovolcanism is possible by the exsolution of volatiles from cryolavas.
 - Equilibrium fluid and rock chemistries resulting from water-rock interaction in subsurface oceans in contact with a rocky core.
 
