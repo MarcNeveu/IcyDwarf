@@ -32,10 +32,11 @@ int main(int argc, char *argv[]){
 	int moon = 0;                      // Is the simulated planet a moon? If so, consider the following 3 parameters:
 	double aorb = 0.0;                 // Moon orbital semi-major axis (cm)
 	double eorb = 0.0;                 // Moon orbital eccentricity
+	int eccdecay = 0;                  // Eccentricity decay?
 	double Mprim = 0.0;                // Mass of the primary (host planet) (g)
     double rho_p = 0.0;                // Planetary density (g cm-3)
-    double rhoHydrRock = 0.0;              // Density of hydrated rock endmember (kg m-3)
-    double rhoDryRock = 0.0;               // Density of dry rock endmember (kg m-3)
+    double rhoHydrRock = 0.0;          // Density of hydrated rock endmember (kg m-3)
+    double rhoDryRock = 0.0;           // Density of dry rock endmember (kg m-3)
     double r_p = 0.0;                  // Planetary radius
     double nh3 = 0.0;                  // Ammonia w.r.t. water
     double salt = 0.0;                 // Salt w.r.t. water (3/30/2015: binary quantity)
@@ -98,9 +99,9 @@ int main(int argc, char *argv[]){
 	int i = 0;
 	int j = 0;
 
-	double *input = (double*) malloc(56*sizeof(double));
+	double *input = (double*) malloc(57*sizeof(double));
 	if (input == NULL) printf("IcyDwarf: Not enough memory to create input[28]\n");
-	for (i=0;i<56;i++) input[i] = 0.0;
+	for (i=0;i<57;i++) input[i] = 0.0;
 
 	//-------------------------------------------------------------------
 	// Startup
@@ -108,7 +109,7 @@ int main(int argc, char *argv[]){
 
 	printf("\n");
 	printf("-------------------------------------------------------------------\n");
-	printf("IcyDwarf v16.3\n");
+	printf("IcyDwarf v16.4\n");
 	if (v_release == 1) printf("Release mode\n");
 	else if (cmdline == 1) printf("Command line mode\n");
 	printf("-------------------------------------------------------------------\n");
@@ -140,6 +141,7 @@ int main(int argc, char *argv[]){
 	moon = (int) input[i]; i++;
 	aorb = input[i]*km2cm*input[i-1]; i++;          // Input-specified aorb if moon=1, 0 otherwise, cm
 	eorb = input[i]*input[i-2]; i++;                // Input-specified eorb if moon=1, 0 otherwise
+	eccdecay = input[i]; i++;
 	Mprim = input[i]/gram*input[i-3]; i++;          // Input-specified Mprim if moon=1, 0 otherwise, g
 	rho_p = input[i]; i++;                          // g cm-3
 	porosity = input[i]; i++;
@@ -213,8 +215,9 @@ int main(int argc, char *argv[]){
 
 	if (calculate_thermal == 1) {
 		printf("Running thermal evolution code...\n");
-		Thermal(argc, argv, path, NR, r_p, rho_p, rhoHydrRock, rhoDryRock, warnings, msgout, nh3, salt, Xhydr, Xfines, tzero, Tsurf, Tinit,
-				timestep, total_time, output_every, crack_input, crack_species, chondr, moon, aorb, eorb, Mprim, porosity, startdiff);
+		Thermal(argc, argv, path, NR, r_p, rho_p, rhoHydrRock, rhoDryRock, warnings, msgout, nh3, salt, Xhydr, Xfines, tzero, Tsurf,
+				Tinit, timestep, total_time, output_every, crack_input, crack_species, chondr, moon, aorb, eorb, Mprim, porosity,
+				startdiff, eccdecay);
 		printf("\n");
 	}
 

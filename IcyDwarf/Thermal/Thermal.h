@@ -27,7 +27,7 @@
 int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p, double rhoHydr, double rhoDry,
 		int warnings, int msgout, double Xp, double Xsalt, double *Xhydr, double Xfines, double tzero, double Tsurf,
 		double Tinit, double dtime, double fulltime, double dtoutput, int *crack_input, int *crack_species, int chondr,
-		int moon, double aorb_init, double eorb_init, double Mprim, double porosity, int startdiff);
+		int moon, double aorb_init, double eorb_init, double Mprim, double porosity, int startdiff, int eccdecay);
 
 int state (char path[1024], int itime, int ir, double E, double *frock, double *fh2os, double *fadhs, double *fh2ol, double *fnh3l,
 		double Xsalt, double *T);
@@ -58,7 +58,7 @@ double viscosity(double T, double Mh2ol, double Mnh3l);
 int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p, double rhoHydr, double rhoDry,
 		int warnings, int msgout, double Xp, double Xsalt, double *Xhydr, double Xfines, double tzero, double Tsurf,
 		double Tinit, double dtime, double fulltime, double dtoutput, int *crack_input, int *crack_species, int chondr,
-		int moon, double aorb_init, double eorb_init, double Mprim, double porosity, int startdiff) {
+		int moon, double aorb_init, double eorb_init, double Mprim, double porosity, int startdiff, int eccdecay) {
 
 	//-------------------------------------------------------------------
 	//                 Declarations and initializations
@@ -911,7 +911,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 					mu1 = (1.0e15)*exp(25.0*(273.0/T[ir]-1.0))/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // Viscosity, 1.0e14 in SI
 					// If there is ammonia in partially melted layers, decrease viscosity according to Fig. 6 of Arakawa & Maeno (1994)
 					// TODO As of 3/24/2016, this results in viscosities so high that the model blows up. Need to decrease the rigidity with NH3 content?
-					if (Mnh3l[ir]+Madhs[ir] >= 0.01*Mh2os[ir]) mu1 = mu1*1.0e-3;
+//					if (Mnh3l[ir]+Madhs[ir] >= 0.01*Mh2os[ir]) mu1 = mu1*1.0e-3;
 
 					omega_tide = 2.0*norb;  // Two tides per orbit if tidally locked moon
 					k2tide[ir] = 57.0*mu1*omega_tide/(4.0*beta_tide*(1.0+(
@@ -919,9 +919,9 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 									*mu1*mu1*omega_tide*omega_tide/mu_rigid/mu_rigid)));
 
 					// Scale heating in partially melted layers
-					if (Mnh3l[ir]+Madhs[ir] >= 0.01*Mh2os[ir])
-						k2tide[ir] = k2tide[ir]*(Mh2os[ir] + Mnh3l[ir] + Madhs[ir])/(Mrock[ir] + Mh2os[ir] + Madhs[ir] + Mh2ol[ir] + Mnh3l[ir]);
-					else
+//					if (Mnh3l[ir]+Madhs[ir] >= 0.01*Mh2os[ir])
+//						k2tide[ir] = k2tide[ir]*(Mh2os[ir] + Mnh3l[ir] + Madhs[ir])/(Mrock[ir] + Mh2os[ir] + Madhs[ir] + Mh2ol[ir] + Mnh3l[ir]);
+//					else
 						k2tide[ir] = k2tide[ir]*Mh2os[ir]/(Mrock[ir] + Mh2os[ir] + Madhs[ir] + Mh2ol[ir] + Mnh3l[ir]);
 					Qtide[ir] = mu1*omega_tide/mu_rigid;
 
@@ -933,7 +933,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 				}
 			}
 			// Update orbital parameters using circularization timescale from Henning & Hurford (2014, doi 10.1088/0004-637X/789/1/30) equation 2:
-			if (Wtide_tot > 0.0) {
+			if (eccdecay == 1 && Wtide_tot > 0.0) {
 				t_circularization = Gcgs*Mprim*rho_p*4.0/3.0*PI_greek*r_p*r_p*r_p*eorb*eorb/((1.0-eorb*eorb)*aorb*Wtide_tot); // Wtide_tot propto eorb, so t_circularization independent of eorb
 				eorb = eorb*(1.0 - dtime/t_circularization);
 				// aorb = aorb*(1.0 + dtime/t_circularization*0.42); // daorb/deorb = 0.42*aorb/eorb, Balbus & Brecher 1975 ApJ 203, 202-205, equation 4

@@ -12,6 +12,7 @@ Planet parameters
 Moon?                         1
 	Orbital a (km)        237948
 	Orbital e             0.0196
+	Orbital e decay?      1
 	Host planet mass (kg) 5.68e26
 Density, 0 porosity (g cm-3)  1.611
 Porosity                      0
@@ -27,17 +28,17 @@ Grid
 -------------------------------
 Number of grid zones          200
 Total time of sim (Myr)       5000
-Output every (Myr)            1
+Output every (Myr)            0.00005
 -------------------------------
 Subroutines
 -------------------------------
 Run thermal?                  1
 	Sim time step (yr)    50
-	Sim starts at (Myr)   100
-	Initial temp (K)      250
-	Degree of hydration   0.1
+	Sim starts at (Myr)   3
+	Initial temp (K)      200
+	Degree of hydration   1
 	Fine rock fraction    0
-	Start differentiated? 1
+	Start differentiated? 0
 Core cracks
 	Calculate aTP?        0
 	Water alpha beta?     0

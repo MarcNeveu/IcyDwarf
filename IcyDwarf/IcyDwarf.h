@@ -32,7 +32,7 @@
 //-------------------------------------------------------------------
 
 #define v_release 0                                        // 0 for Debug, 1 for Release
-#define cmdline 1										   // If execution from terminal as "./IcyDwarf",
+#define cmdline 0										   // If execution from terminal as "./IcyDwarf",
                                                            // overwritten by v_release.
 //-------------------------------------------------------------------
 // PHYSICAL AND MATHEMATICAL CONSTANTS
@@ -393,6 +393,10 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
+			fseek(f,24,SEEK_CUR);   // Eccentricity decay
+			scan = fscanf(f, "%lg", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
 			fseek(f,24,SEEK_CUR);   // Mass of primary (host planet) (kg)
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
@@ -608,6 +612,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 		printf("Moon? \t \t \t \t %g\n",input[i]), i++;
 		printf("\t Orbital a (km) \t %g\n",input[i]), i++;
 		printf("\t Orbital e \t \t %g\n",input[i]), i++;
+		printf("\t Orbital e decay? \t %g\n",input[i]), i++;
 		printf("\t Host planet mass (kg) \t %g\n",input[i]), i++;
 		printf("Density, 0 porosity (g cm-3) \t %g\n",input[i]), i++;
 		printf("Porosity \t \t \t %g\n",input[i]), i++;
