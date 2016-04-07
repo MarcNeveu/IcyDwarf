@@ -28,7 +28,7 @@ Grid
 -------------------------------
 Number of grid zones          200
 Total time of sim (Myr)       5000
-Output every (Myr)            0.00005
+Output every (Myr)            1
 -------------------------------
 Subroutines
 -------------------------------

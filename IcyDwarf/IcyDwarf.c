@@ -139,10 +139,10 @@ int main(int argc, char *argv[]){
 	warnings = (int) input[i]; i++;
 	msgout = (int) input[i]; i++;
 	moon = (int) input[i]; i++;
-	aorb = input[i]*km2cm*input[i-1]; i++;          // Input-specified aorb if moon=1, 0 otherwise, cm
+	aorb = input[i]*km2cm*input[i-1]; i++;          // Input-specified aorb if moon=1, 0 otherwise, cm !! TODO Change i-x if an input is added!
 	eorb = input[i]*input[i-2]; i++;                // Input-specified eorb if moon=1, 0 otherwise
 	eccdecay = input[i]; i++;
-	Mprim = input[i]/gram*input[i-3]; i++;          // Input-specified Mprim if moon=1, 0 otherwise, g
+	Mprim = input[i]/gram*input[i-4]; i++;          // Input-specified Mprim if moon=1, 0 otherwise, g
 	rho_p = input[i]; i++;                          // g cm-3
 	porosity = input[i]; i++;
 	rhoHydrRock = input[i]*gram/cm/cm/cm; i++;      // kg m-3
