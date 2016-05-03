@@ -27,7 +27,8 @@
 int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p, double rhoHydr, double rhoDry,
 		int warnings, int msgout, double Xp, double Xsalt, double *Xhydr, double Xfines, double tzero, double Tsurf,
 		double Tinit, double dtime, double fulltime, double dtoutput, int *crack_input, int *crack_species, int chondr,
-		int moon, double aorb_init, double eorb_init, double Mprim, double porosity, int startdiff, int eccdecay);
+		int moon, double aorb_init, double eorb_init, double Mprim, double Rprim, double Qprim, double porosity, int startdiff,
+		int eccdecay, int tidalmodel, int tidetimesten);
 
 int state (char path[1024], int itime, int ir, double E, double *frock, double *fh2os, double *fadhs, double *fh2ol, double *fnh3l,
 		double Xsalt, double *T);
@@ -58,7 +59,8 @@ double viscosity(double T, double Mh2ol, double Mnh3l);
 int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p, double rhoHydr, double rhoDry,
 		int warnings, int msgout, double Xp, double Xsalt, double *Xhydr, double Xfines, double tzero, double Tsurf,
 		double Tinit, double dtime, double fulltime, double dtoutput, int *crack_input, int *crack_species, int chondr,
-		int moon, double aorb_init, double eorb_init, double Mprim, double porosity, int startdiff, int eccdecay) {
+		int moon, double aorb_init, double eorb_init, double Mprim, double Rprim, double Qprim, double porosity, int startdiff,
+		int eccdecay, int tidalmodel, int tidetimesten) {
 
 	//-------------------------------------------------------------------
 	//                 Declarations and initializations
@@ -130,7 +132,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double g_surf = Gcgs*4.0/3.0*PI_greek*r_p*km2cm*rho_p; // Surface gravity (cm s-2)
 	double norb = 0.0;                   // Orbital mean motion = 2*pi/period = sqrt(GM/a3) (s-1)
 	double omega_tide = 0.0;             // Tidal frequency
-	double beta_tide = rho_p*g_surf*r_p*km2cm; // Gravitational stiffness (g cm-1 s-2)
+	double beta_tide = rho_p*g_surf*r_p*km2cm; // Gravitational stiffness (g cm-1 s-2; i.e. pressure unit)
 	double Heat_tide = 0.0;
 	double creep_rate = 0.0;             // Strain rate in s-1 for ice, rock, or a mixture. Stress is hydrostatic pressure/(1-porosity)
 	double Wtide_tot = 0.0;              // Tidal heating rate in all of the ice (erg s-1)
@@ -138,6 +140,20 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double t_circularization = 0.0;      // Tidal circularization timescale (s)
 	double aorb = aorb_init;             // Moon orbital semi-major axis (cm)
 	double eorb = eorb_init;             // Moon orbital eccentricity
+	double mu_rigid_A = 0.0;             // Frequency-dependent complex rigidity term, real part (g cm-1 s-2)
+	double mu_rigid_B = 0.0;             // Frequency-dependent complex rigidity term, imaginary part (g cm-1 s-2)
+	double mu_rigid_1 = 0.0;             // Burgers viscoelastic model, steady-state rigidity (g cm-1 s-2)
+	double mu_rigid_2 = 0.0;			 // Burgers viscoelastic model, transient rigidity (g cm-1 s-2)
+	double C1 = 0.0;                     // Burgers viscoelastic model, C1 term (Henning et al. 2009)
+	double C2 = 0.0;                     // Burgers viscoelastic model, C2 term (Henning et al. 2009)
+	double mu2 = 0.0;                    // Burgers viscoelastic model, transient viscosity (Shoji et al. 2013)
+	double D_Burgers = 0.0;				 // Rigidity sub-term in Burgers model equations
+	double alpha_Andrade = 0.3;          // Andrade viscoelastic model, alpha term (default 0.2 to 0.5)
+	double beta_Andrade = 0.0;           // Andrade viscoelastic model, beta term = 1/(mu_rigid*Andrade_time^alpha)
+	double gamma_Andrade = 0.0;          // Andrade viscoelastic model, Gamma(alpha+1) where Gamma is the Gamma function
+	double A_Andrade = 0.0;              // Rigidity sub-terms in Andrade model equations
+	double B_Andrade = 0.0;
+	double D_Andrade = 0.0;
 	double Crack_depth[2];				 // Crack_depth[2] (km), output
 	double WRratio[2];					 // WRratio[2] (by mass, no dim), output
 	double Heat[6];                      // Heat[6] (erg), output
@@ -897,35 +913,91 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			}
 		}
 
+// Tidal heating plots in viscosity-rigidity space (also comment out mu1 15 lines below)
+//int j = 0;
+//for (i=0;i<50;i++) {
+//	mu_rigid = pow(10.0,5.0+(double)i*(11.0-5.0)/50.0);
+//	mu_rigid = mu_rigid*10.0; // SI to cgs
+//	for (j=0;j<50;j++) {
+//		mu1 = pow(10.0,5.0+(double)j*(22.0-5.0)/50.0);
+//		mu1 = mu1*10.0; // SI to cgs
+
 		// Tidal heating in ice
 		if (moon && eorb > 0.0) {
 			Wtide_tot = 0.0;
 			for (ir=0;ir<NR;ir++) {
 				if (Mh2os[ir] > 0.0) {
-					// Basic elastic model (Henning et al. 2009, ApJ 707, 1000-1015; Chen et al. 2014, Icarus 229, 11-30; Storch & Lai 2015, MNRAS 450, 3952-3957)
-//					k2tide[ir] = 1.5/(1.0+19.0*mu_rigid/(2.0*beta_tide));
-//					Qtide[ir] = 1000.0;     // Arbitrary
+					// Calculate "gravitational rigidity" (Henning et al. 2009) in each layer: beta = rho*g*r
+					beta_tide = (Mrock[ir] + Mh2os[ir] + Madhs[ir] + Mh2ol[ir] + Mnh3l[ir])/dVol[ir] * Gcgs*M[ir]/r[ir+1]; // /r*r
 
-					// Maxwell viscoelastic model (Henning et al. 2009, ice viscosity from Desch et al. 2009)
-					fineVolFrac = 0.0;      // Assume no mud fines (recalculated below)
-					mu1 = (1.0e15)*exp(25.0*(273.0/T[ir]-1.0))/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // Viscosity, 1.0e14 in SI
-					// If there is ammonia in partially melted layers, decrease viscosity according to Fig. 6 of Arakawa & Maeno (1994)
-					// TODO As of 3/24/2016, this results in viscosities so high that the model blows up. Need to decrease the rigidity with NH3 content?
-//					if (Mnh3l[ir]+Madhs[ir] >= 0.01*Mh2os[ir]) mu1 = mu1*1.0e-3;
+					// Calculate steady-state viscosity for viscoelastic models (Thomas et al. LPSC 1987; Desch et al. 2009)
+					if (tidalmodel > 1) {
+						fineVolFrac = 0.0; // Assume no mud fines (recalculated below)
+						mu1 = (1.0e15)*exp(25.0*(273.0/T[ir]-1.0))/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // Viscosity, 1.0e14 in SI
+						// If there is ammonia in partially melted layers, decrease viscosity according to Fig. 6 of Arakawa & Maeno (1994)
+						// TODO As of 3/24/2016, this results in viscosities so high that the model blows up. Need to decrease the rigidity with NH3 content?
+//						if (Mnh3l[ir]+Madhs[ir] >= 0.01*Mh2os[ir]) mu1 = mu1*1.0e-3;
+					}
 
-					omega_tide = 2.0*norb;  // Two tides per orbit if tidally locked moon
-					k2tide[ir] = 57.0*mu1*omega_tide/(4.0*beta_tide*(1.0+(
-							(1.0+19.0*mu_rigid/(2.0*beta_tide))*(1.0+19.0*mu_rigid/(2.0*beta_tide))
-									*mu1*mu1*omega_tide*omega_tide/mu_rigid/mu_rigid)));
+					// Tidal frequency: two tides per orbit if tidally locked moon
+					omega_tide = 2.0*norb;
+
+					switch(tidalmodel) {
+					case 1: // Basic elastic model (Henning et al. 2009, ApJ 707, 1000-1015; Chen et al. 2014, Icarus 229, 11-30; Storch & Lai 2015, MNRAS 450, 3952-3957)
+						k2tide[ir] = 1.5/(1.0+19.0*mu_rigid/(2.0*beta_tide));
+						Qtide[ir] = 1000.0; // Arbitrary
+					break;
+
+					case 2: // Maxwell viscoelastic model (Henning et al. 2009), assumes steady-state response
+						mu_rigid_A = mu_rigid*omega_tide*omega_tide*mu1*mu1 / (mu_rigid*mu_rigid + omega_tide*omega_tide*mu1*mu1);
+						mu_rigid_B = mu_rigid*mu_rigid*omega_tide*mu1 / (mu_rigid*mu_rigid + omega_tide*omega_tide*mu1*mu1);
+					break;
+
+					case 3: // Burgers viscoelastic model (Henning et al. 2009; Shoji et al. 2013), assumes superposition of steady-state and transient responses
+						mu_rigid_1 = mu_rigid; // Steady-state shear modulus
+						mu_rigid_2 = mu_rigid; // Transient shear modulus
+						mu2 = 50.0*mu1;        // mu2: transient viscosity; mu2/mu1 = 17 to 50 (Shoji et al. 2013)
+						C1 = 1.0/mu_rigid_1 + mu1/(mu_rigid_1*mu2) + 1.0/mu_rigid_2;
+						C2 = 1.0/mu2 - mu1*omega_tide*omega_tide/(mu_rigid_1*mu_rigid_2);
+						D_Burgers = (pow(C2,2) + pow(omega_tide,2)*pow(C1,2));
+						mu_rigid_A = omega_tide*omega_tide*(C1 - mu1*C2/mu_rigid_1) / D_Burgers;
+						mu_rigid_B = omega_tide*(C2 + mu1*omega_tide*omega_tide*C1/mu_rigid_1) / D_Burgers;
+					break;
+
+					case 4: // Andrade viscoelastic model (Shoji et al. 2013)
+						// Evaluate Gamma(alpha_Andrade + 1.0); Gamma is the gamma function. alpha_Andrade can vary from 0.2 to 0.5 (Shoji et al. 2013; Castillo-Rogez et al. 2011)
+						if (alpha_Andrade == 0.2) gamma_Andrade = 0.918169;
+						else if (alpha_Andrade == 0.3) gamma_Andrade = 0.897471;
+						else if (alpha_Andrade == 0.4) gamma_Andrade = 0.887264;
+						else if (alpha_Andrade == 0.5) gamma_Andrade = 0.886227;
+						else {
+							printf ("IcyDwarf: Thermal: alpha_Andrade must be equal to 0.2, 0.3, 0.4, or 0.5 (see Castillo-Rogez et al. 2011, doi 10.1029/2010JE003664)\n");
+							exit(0);
+						}
+						beta_Andrade = 1.0/(mu_rigid*pow(mu1/mu_rigid,alpha_Andrade)); // Castillo-Rogez et al. (2011)
+						A_Andrade = 1.0/mu_rigid + pow(omega_tide,-alpha_Andrade)*beta_Andrade*cos(alpha_Andrade*PI_greek/2.0)*gamma_Andrade;
+						B_Andrade = 1.0/(mu1*omega_tide) + pow(omega_tide,-alpha_Andrade)*beta_Andrade*sin(alpha_Andrade*PI_greek/2.0)*gamma_Andrade;
+						D_Andrade = pow(A_Andrade,2) + pow(B_Andrade,2);
+						mu_rigid_A = A_Andrade/D_Andrade;
+						mu_rigid_B = B_Andrade/D_Andrade;
+					break;
+					}
 
 					// Scale heating in partially melted layers
-//					if (Mnh3l[ir]+Madhs[ir] >= 0.01*Mh2os[ir])
-//						k2tide[ir] = k2tide[ir]*(Mh2os[ir] + Mnh3l[ir] + Madhs[ir])/(Mrock[ir] + Mh2os[ir] + Madhs[ir] + Mh2ol[ir] + Mnh3l[ir]);
-//					else
-						k2tide[ir] = k2tide[ir]*Mh2os[ir]/(Mrock[ir] + Mh2os[ir] + Madhs[ir] + Mh2ol[ir] + Mnh3l[ir]);
-					Qtide[ir] = mu1*omega_tide/mu_rigid;
+					k2tide[ir] = k2tide[ir]*Mh2os[ir]/(Mrock[ir] + Mh2os[ir] + Madhs[ir] + Mh2ol[ir] + Mnh3l[ir]);
 
-					Wtide = 11.5*k2tide[ir]/Qtide[ir]*Gcgs*Mprim*Mprim*norb*pow(r_p,5)*eorb*eorb/pow(aorb,6);
+					// Calculate heating rate
+					if (tidalmodel == 1)
+						Wtide = 11.5*k2tide[ir]/Qtide[ir]*Gcgs*Mprim*Mprim*norb*pow(r_p,5)*eorb*eorb/pow(aorb,6);
+					else {
+						// Imaginary part of the tidal Love number k2, replaces k2/Q to account for the frequency dependence of the materialÕs response to loading (Henning et al. 2009)
+						k2tide[ir] = 57.0/(4.0*beta_tide)*mu_rigid_B
+							/ ( (1.0+19.0/(2.0*beta_tide)*mu_rigid_A)*(1.0+19.0/(2.0*beta_tide)*mu_rigid_A)
+							  + (19.0/(2.0*beta_tide)*mu_rigid_B)*(19.0/(2.0*beta_tide)*mu_rigid_B) );
+						if (tidetimesten)
+							k2tide[ir] = 10.0*k2tide[ir];
+						Wtide = 11.5*k2tide[ir]*Gcgs*Mprim*Mprim*norb*pow(r_p,5)*eorb*eorb/pow(aorb,6);
+					}
 					Qth[ir] = Qth[ir] + Wtide;
 					Heat_tide = Heat_tide + Wtide;
 					Wtide_tot = Wtide_tot + Wtide;
@@ -934,12 +1006,22 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			}
 			// Update orbital parameters using circularization timescale from Henning & Hurford (2014, doi 10.1088/0004-637X/789/1/30) equation 2:
 			if (eccdecay == 1 && Wtide_tot > 0.0) {
-				t_circularization = Gcgs*Mprim*rho_p*4.0/3.0*PI_greek*r_p*r_p*r_p*eorb*eorb/((1.0-eorb*eorb)*aorb*Wtide_tot); // Wtide_tot propto eorb, so t_circularization independent of eorb
-				eorb = eorb*(1.0 - dtime/t_circularization);
+				// t_circularization = Gcgs*Mprim*rho_p*4.0/3.0*PI_greek*r_p*r_p*r_p*eorb*eorb/((1.0-eorb*eorb)*aorb*Wtide_tot); // Wtide_tot propto eorb, so t_circularization independent of eorb
+				// eorb = eorb*(1.0 - dtime/t_circularization);
 				// aorb = aorb*(1.0 + dtime/t_circularization*0.42); // daorb/deorb = 0.42*aorb/eorb, Balbus & Brecher 1975 ApJ 203, 202-205, equation 4
-				// norb = sqrt(Gcgs*Mprim/(aorb*aorb*aorb));
+				double m_p = rho_p*4.0/3.0*PI_greek*r_p*r_p*r_p;
+				eorb = eorb - dtime*(Wtide_tot / (Gcgs*Mprim*m_p*eorb) - 171.0/16.0*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p/Qprim*pow(aorb,-6.5)*eorb);
+				aorb = aorb - dtime*(2.0*Wtide_tot / (Gcgs*Mprim*m_p) + 4.5*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p/Qprim*pow(aorb,-5.5));
+				norb = sqrt(Gcgs*Mprim/(aorb*aorb*aorb));
 			}
 		}
+
+// End plots in viscosity-rigidity space
+//		printf("%g \t",log(Wtide_tot/1.0e7)/log(10.0));
+//	}
+//	printf("\n");
+//}
+//exit(0);
 
 		//-------------------------------------------------------------------
 		//                     Calculate conductive fluxes

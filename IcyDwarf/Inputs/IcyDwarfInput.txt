@@ -11,9 +11,11 @@ Planet parameters
 -------------------------------
 Moon?                         1
 	Orbital a (km)        237948
-	Orbital e             0.0196
-	Orbital e decay?      1
+	Orbital e             0.0047
+	Orbital e decay?      0
 	Host planet mass (kg) 5.68e26
+	Planet radius (km)    58232
+	Host planet tidal Q   2452.8
 Density, 0 porosity (g cm-3)  1.611
 Porosity                      0
 Hydr. rock density (g cm-3)   2.9
@@ -38,7 +40,9 @@ Run thermal?                  1
 	Initial temp (K)      200
 	Degree of hydration   1
 	Fine rock fraction    0
-	Start differentiated? 0
+	Start differentiated? 1
+	Tidal rhe 1E 2M 3B 4A 4
+	Tidal heating x10?    0
 Core cracks
 	Calculate aTP?        0
 	Water alpha beta?     0

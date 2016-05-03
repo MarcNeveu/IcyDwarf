@@ -34,6 +34,8 @@ int main(int argc, char *argv[]){
 	double eorb = 0.0;                 // Moon orbital eccentricity
 	int eccdecay = 0;                  // Eccentricity decay?
 	double Mprim = 0.0;                // Mass of the primary (host planet) (g)
+	double Rprim = 0.0;				   // Radius of the primary (host planet) (g)
+	double Qprim = 0.0;				   // Tidal Q of the primary (host planet). For Saturn, = 2452.8, range 1570.8-4870.6 (Lainey et al. 2016)
     double rho_p = 0.0;                // Planetary density (g cm-3)
     double rhoHydrRock = 0.0;          // Density of hydrated rock endmember (kg m-3)
     double rhoDryRock = 0.0;           // Density of dry rock endmember (kg m-3)
@@ -56,6 +58,10 @@ int main(int argc, char *argv[]){
 	double total_time = 0;             // Total time of sim
 	double output_every = 0;           // Output frequency
     int NT_output = 0;                 // Time step for writing output
+
+    // Tidal model inputs
+    int tidalmodel = 3;                // 1: Elastic model; 2: Maxwell model; 3: Burgers model; 4: Andrade model
+    int tidetimesten = 0;              // Multiply tidal dissipation by 10 (McCarthy & Cooper 2016)
 
     // Call specific subroutines
     int calculate_thermal = 0;         // Run thermal code
@@ -99,9 +105,11 @@ int main(int argc, char *argv[]){
 	int i = 0;
 	int j = 0;
 
-	double *input = (double*) malloc(57*sizeof(double));
+	int n_inputs = 61;
+
+	double *input = (double*) malloc(n_inputs*sizeof(double));
 	if (input == NULL) printf("IcyDwarf: Not enough memory to create input[28]\n");
-	for (i=0;i<57;i++) input[i] = 0.0;
+	for (i=0;i<n_inputs;i++) input[i] = 0.0;
 
 	//-------------------------------------------------------------------
 	// Startup
@@ -109,7 +117,7 @@ int main(int argc, char *argv[]){
 
 	printf("\n");
 	printf("-------------------------------------------------------------------\n");
-	printf("IcyDwarf v16.4\n");
+	printf("IcyDwarf v16.5\n");
 	if (v_release == 1) printf("Release mode\n");
 	else if (cmdline == 1) printf("Command line mode\n");
 	printf("-------------------------------------------------------------------\n");
@@ -139,10 +147,12 @@ int main(int argc, char *argv[]){
 	warnings = (int) input[i]; i++;
 	msgout = (int) input[i]; i++;
 	moon = (int) input[i]; i++;
-	aorb = input[i]*km2cm*input[i-1]; i++;          // Input-specified aorb if moon=1, 0 otherwise, cm !! TODO Change i-x if an input is added!
-	eorb = input[i]*input[i-2]; i++;                // Input-specified eorb if moon=1, 0 otherwise
+	aorb = input[i]*km2cm*moon; i++;          // Input-specified aorb if moon=1, 0 otherwise, cm
+	eorb = input[i]*moon; i++;                // Input-specified eorb if moon=1, 0 otherwise
 	eccdecay = input[i]; i++;
-	Mprim = input[i]/gram*input[i-4]; i++;          // Input-specified Mprim if moon=1, 0 otherwise, g
+	Mprim = input[i]/gram*moon; i++;          // Input-specified Mprim if moon=1, 0 otherwise, g
+	Rprim = input[i]*km2cm; i++;
+	Qprim = input[i]; i++;
 	rho_p = input[i]; i++;                          // g cm-3
 	porosity = input[i]; i++;
 	rhoHydrRock = input[i]*gram/cm/cm/cm; i++;      // kg m-3
@@ -163,6 +173,8 @@ int main(int argc, char *argv[]){
 	Hydr_init = input[i]; i++;
 	Xfines = input[i]; i++;
 	startdiff = input[i]; i++;
+	tidalmodel = input[i]; i++;
+	tidetimesten = input[i]; i++;
 	calculate_aTP = (int) input[i]; i++;
 	calculate_alpha_beta = (int) input[i]; i++;
 	calculate_crack_species = (int) input[i]; i++;
@@ -216,8 +228,8 @@ int main(int argc, char *argv[]){
 	if (calculate_thermal == 1) {
 		printf("Running thermal evolution code...\n");
 		Thermal(argc, argv, path, NR, r_p, rho_p, rhoHydrRock, rhoDryRock, warnings, msgout, nh3, salt, Xhydr, Xfines, tzero, Tsurf,
-				Tinit, timestep, total_time, output_every, crack_input, crack_species, chondr, moon, aorb, eorb, Mprim, porosity,
-				startdiff, eccdecay);
+				Tinit, timestep, total_time, output_every, crack_input, crack_species, chondr, moon, aorb, eorb, Mprim, Rprim, Qprim,
+				porosity, startdiff, eccdecay, tidalmodel, tidetimesten);
 		printf("\n");
 	}
 

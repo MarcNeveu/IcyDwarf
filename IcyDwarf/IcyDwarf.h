@@ -32,7 +32,7 @@
 //-------------------------------------------------------------------
 
 #define v_release 0                                        // 0 for Debug, 1 for Release
-#define cmdline 1										   // If execution from terminal as "./IcyDwarf",
+#define cmdline 0										   // If execution from terminal as "./IcyDwarf",
                                                            // overwritten by v_release.
 //-------------------------------------------------------------------
 // PHYSICAL AND MATHEMATICAL CONSTANTS
@@ -401,6 +401,14 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
+			fseek(f,24,SEEK_CUR);   // Radius of primary (host planet) (km)
+			scan = fscanf(f, "%lg", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,24,SEEK_CUR);   // Tidal Q of primary (host planet)
+			scan = fscanf(f, "%lg", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
 			fseek(f,31,SEEK_CUR);   // Density (g cm-3)
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
@@ -474,6 +482,14 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
 			fseek(f,24,SEEK_CUR);   // Start differentiated?
+			scan = fscanf(f, "%lg", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,24,SEEK_CUR);   // Tidal model? 1: Elastic, 2: Maxwell, 3: Burgers, 4: Andrade
+			scan = fscanf(f, "%lg", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,24,SEEK_CUR);   // Tides x10? (McCarthy & Cooper 2016)
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
@@ -614,6 +630,8 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 		printf("\t Orbital e \t \t %g\n",input[i]), i++;
 		printf("\t Orbital e decay? \t %g\n",input[i]), i++;
 		printf("\t Host planet mass (kg) \t %g\n",input[i]), i++;
+		printf("\t Planet radius (km) \t %g\n",input[i]), i++;
+		printf("\t Host planet tidal Q \t %g\n",input[i]), i++;
 		printf("Density, 0 porosity (g cm-3) \t %g\n",input[i]), i++;
 		printf("Porosity \t \t \t %g\n",input[i]), i++;
 		printf("Hydr. rock density (g cm-3) \t %g\n",input[i]), i++;
@@ -639,6 +657,8 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 		printf("\t Degree of hydration \t %g\n",input[i]), i++;
 		printf("\t Fine rock fraction \t %g\n",input[i]), i++;
 		printf("\t Start differentiated? \t %g\n",input[i]), i++;
+		printf("\t Tidal rhe 1E 2M 3B 4A \t %g\n",input[i]), i++;
+		printf("\t Tidal heating x10? \t %g\n",input[i]), i++;
 		printf("Core cracks\n");
 		printf("\t Calculate aTP? \t %g\n",input[i]), i++;
 		printf("\t Water alpha beta? \t %g\n",input[i]), i++;

@@ -113,7 +113,7 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 		for (itemp=0;itemp<=nTempIter;itemp++) {
 			T = Tmin + Tstep*(double) itemp;
 
-			if (T == 0.0) T = 5.0; // PHREEQC crashes at 0 celsius
+			if (T == 0.0) T = 0.01; // PHREEQC crashes at 0 celsius
 
 			// Use CHNOSZ to get log fO2 for F-M-Q buffer at given T and P
 			logfO2 = -3.0*CHNOSZ_logK("quartz", "cr", T, P, "SUPCRT92")
