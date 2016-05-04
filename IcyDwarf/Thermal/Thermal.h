@@ -706,7 +706,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 						P_hydr[ir] = 0.0;
 					}
 					if (Crack[ir] > 0.0 && fracOpen[ir] == 0.0) fracOpen[ir] = 1.0;
-					 // if (Crack[ir] > 0.0 && pore[ir] < crack_porosity) pore[ir] = crack_porosity; TODO uncomment
+					if (Crack[ir] > 0.0 && pore[ir] < crack_porosity) pore[ir] = crack_porosity;
 				}
 				else { // Reset all the variables modified by crack() and strain()
 					fracOpen[ir] = 0.0;
@@ -1010,8 +1010,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 				// eorb = eorb*(1.0 - dtime/t_circularization);
 				// aorb = aorb*(1.0 + dtime/t_circularization*0.42); // daorb/deorb = 0.42*aorb/eorb, Balbus & Brecher 1975 ApJ 203, 202-205, equation 4
 				double m_p = rho_p*4.0/3.0*PI_greek*r_p*r_p*r_p;
-				eorb = eorb - dtime*(Wtide_tot / (Gcgs*Mprim*m_p*eorb) - 171.0/16.0*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p/Qprim*pow(aorb,-6.5)*eorb);
-				aorb = aorb - dtime*(2.0*Wtide_tot / (Gcgs*Mprim*m_p) + 4.5*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p/Qprim*pow(aorb,-5.5));
+				eorb = eorb - dtime*(Wtide_tot*aorb / (Gcgs*Mprim*m_p*eorb) - 171.0/16.0*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p/Qprim*pow(aorb,-6.5)*eorb);
+				aorb = aorb - dtime*(2.0*Wtide_tot*aorb*aorb / (Gcgs*Mprim*m_p) - 4.5*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p/Qprim*pow(aorb,-5.5));
 				norb = sqrt(Gcgs*Mprim/(aorb*aorb*aorb));
 			}
 		}
