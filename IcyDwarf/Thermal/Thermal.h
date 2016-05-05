@@ -914,13 +914,13 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		}
 
 // Tidal heating plots in viscosity-rigidity space (also comment out mu1 15 lines below)
-//int j = 0;
-//for (i=0;i<50;i++) {
-//	mu_rigid = pow(10.0,5.0+(double)i*(11.0-5.0)/50.0);
-//	mu_rigid = mu_rigid*10.0; // SI to cgs
-//	for (j=0;j<50;j++) {
-//		mu1 = pow(10.0,5.0+(double)j*(22.0-5.0)/50.0);
-//		mu1 = mu1*10.0; // SI to cgs
+int j = 0;
+for (i=0;i<50;i++) {
+	mu_rigid = pow(10.0,5.0+(double)i*(11.0-5.0)/50.0);
+	mu_rigid = mu_rigid*10.0; // SI to cgs
+	for (j=0;j<50;j++) {
+		mu1 = pow(10.0,5.0+(double)j*(22.0-5.0)/50.0);
+		mu1 = mu1*10.0; // SI to cgs
 
 		// Tidal heating in ice
 		if (moon && eorb > 0.0) {
@@ -933,7 +933,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 					// Calculate steady-state viscosity for viscoelastic models (Thomas et al. LPSC 1987; Desch et al. 2009)
 					if (tidalmodel > 1) {
 						fineVolFrac = 0.0; // Assume no mud fines (recalculated below)
-						mu1 = (1.0e15)*exp(25.0*(273.0/T[ir]-1.0))/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // Viscosity, 1.0e14 in SI
+//						mu1 = (1.0e15)*exp(25.0*(273.0/T[ir]-1.0))/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // Viscosity, 1.0e14 in SI
 						// If there is ammonia in partially melted layers, decrease viscosity according to Fig. 6 of Arakawa & Maeno (1994)
 						// TODO As of 3/24/2016, this results in viscosities so high that the model blows up. Need to decrease the rigidity with NH3 content?
 //						if (Mnh3l[ir]+Madhs[ir] >= 0.01*Mh2os[ir]) mu1 = mu1*1.0e-3;
@@ -956,12 +956,12 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 					case 3: // Burgers viscoelastic model (Henning et al. 2009; Shoji et al. 2013), assumes superposition of steady-state and transient responses
 						mu_rigid_1 = mu_rigid; // Steady-state shear modulus
 						mu_rigid_2 = mu_rigid; // Transient shear modulus
-						mu2 = 50.0*mu1;        // mu2: transient viscosity; mu2/mu1 = 17 to 50 (Shoji et al. 2013)
-						C1 = 1.0/mu_rigid_1 + mu1/(mu_rigid_1*mu2) + 1.0/mu_rigid_2;
-						C2 = 1.0/mu2 - mu1*omega_tide*omega_tide/(mu_rigid_1*mu_rigid_2);
+						mu2 = 0.02*mu1;        // mu2: transient viscosity; mu1/mu2 = 17 to 50 (Shoji et al. 2013) !! mu1 and mu2 are flipped compared to the equations of Shoji et al. (2013)
+						C1 = 1.0/mu_rigid_1 + mu2/(mu_rigid_1*mu1) + 1.0/mu_rigid_2;
+						C2 = 1.0/mu1 - mu2*omega_tide*omega_tide/(mu_rigid_1*mu_rigid_2);
 						D_Burgers = (pow(C2,2) + pow(omega_tide,2)*pow(C1,2));
-						mu_rigid_A = omega_tide*omega_tide*(C1 - mu1*C2/mu_rigid_1) / D_Burgers;
-						mu_rigid_B = omega_tide*(C2 + mu1*omega_tide*omega_tide*C1/mu_rigid_1) / D_Burgers;
+						mu_rigid_A = omega_tide*omega_tide*(C1 - mu2*C2/mu_rigid_1) / D_Burgers;
+						mu_rigid_B = omega_tide*(C2 + mu2*omega_tide*omega_tide*C1/mu_rigid_1) / D_Burgers;
 					break;
 
 					case 4: // Andrade viscoelastic model (Shoji et al. 2013)
@@ -1017,11 +1017,11 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		}
 
 // End plots in viscosity-rigidity space
-//		printf("%g \t",log(Wtide_tot/1.0e7)/log(10.0));
-//	}
-//	printf("\n");
-//}
-//exit(0);
+		printf("%g \t",log(Wtide_tot/1.0e7)/log(10.0));
+	}
+	printf("\n");
+}
+exit(0);
 
 		//-------------------------------------------------------------------
 		//                     Calculate conductive fluxes
