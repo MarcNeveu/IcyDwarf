@@ -32,7 +32,7 @@
 //-------------------------------------------------------------------
 
 #define v_release 0                                        // 0 for Debug, 1 for Release
-#define cmdline 0										   // If execution from terminal as "./IcyDwarf",
+#define cmdline 1										   // If execution from terminal as "./IcyDwarf",
                                                            // overwritten by v_release.
 //-------------------------------------------------------------------
 // PHYSICAL AND MATHEMATICAL CONSTANTS
@@ -477,6 +477,10 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
+			fseek(f,24,SEEK_CUR);   // Allow degree of hydration to change?
+			scan = fscanf(f, "%lg", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
 			fseek(f,24,SEEK_CUR);   // Fine rock fraction
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
@@ -655,6 +659,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 		printf("\t Sim starts at (Myr) \t %g\n",input[i]), i++;
 		printf("\t Initial temp (K) \t %g\n",input[i]), i++;
 		printf("\t Degree of hydration \t %g\n",input[i]), i++;
+		printf("\t Hydrate/dehydrate? \t %g\n",input[i]), i++;
 		printf("\t Fine rock fraction \t %g\n",input[i]), i++;
 		printf("\t Start differentiated? \t %g\n",input[i]), i++;
 		printf("\t Tidal rhe 1E 2M 3B 4A \t %g\n",input[i]), i++;

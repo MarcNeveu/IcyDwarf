@@ -28,7 +28,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		int warnings, int msgout, double Xp, double Xsalt, double *Xhydr, double Xfines, double tzero, double Tsurf,
 		double Tinit, double dtime, double fulltime, double dtoutput, int *crack_input, int *crack_species, int chondr,
 		int moon, double aorb_init, double eorb_init, double Mprim, double Rprim, double Qprim, double porosity, int startdiff,
-		int eccdecay, int tidalmodel, int tidetimesten);
+		int eccdecay, int tidalmodel, int tidetimesten, int hy);
 
 int state (char path[1024], int itime, int ir, double E, double *frock, double *fh2os, double *fadhs, double *fh2ol, double *fnh3l,
 		double Xsalt, double *T);
@@ -60,7 +60,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		int warnings, int msgout, double Xp, double Xsalt, double *Xhydr, double Xfines, double tzero, double Tsurf,
 		double Tinit, double dtime, double fulltime, double dtoutput, int *crack_input, int *crack_species, int chondr,
 		int moon, double aorb_init, double eorb_init, double Mprim, double Rprim, double Qprim, double porosity, int startdiff,
-		int eccdecay, int tidalmodel, int tidetimesten) {
+		int eccdecay, int tidalmodel, int tidetimesten, int hy) {
 
 	//-------------------------------------------------------------------
 	//                 Declarations and initializations
@@ -743,7 +743,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     		if (Mh2ol[ir] > 0.0) irice = ir;
     	}
 
-    	if (Xfines == 0.0) {
+    	if (hy) {
 			for (ir=ircore-1;ir>=ircrack;ir--) { // From the ocean downwards -- irice-1 if fines?
 				if (T[ir] < Tdehydr_max && Xhydr[ir] <= 0.99 && structure_changed == 0) {
 					Xhydr_temp = Xhydr[ir];
@@ -753,14 +753,14 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 					if (Xhydr[ir] >= (1.0+1.0e-10)*Xhydr_temp) dont_dehydrate[ir] = 1; // +epsilon to beat machine error
 				}
 			}
-    	}
-		for (ir=0;ir<ircore;ir++) { // irice if fines?
-			if (T[ir] > Tdehydr_min && Xhydr[ir] >= 0.01 && dont_dehydrate[ir] == 0) {
-				dehydrate(T[ir], dM[ir], dVol[ir], &Mrock[ir], &Mh2ol[ir], &Vrock[ir], &Vh2ol[ir], rhoRockth, rhoHydrth, rhoH2olth,
-						&Xhydr[ir]);
-				structure_changed = 1;
+			for (ir=0;ir<ircore;ir++) { // irice if fines?
+				if (T[ir] > Tdehydr_min && Xhydr[ir] >= 0.01 && dont_dehydrate[ir] == 0) {
+					dehydrate(T[ir], dM[ir], dVol[ir], &Mrock[ir], &Mh2ol[ir], &Vrock[ir], &Vh2ol[ir], rhoRockth, rhoHydrth, rhoH2olth,
+							&Xhydr[ir]);
+					structure_changed = 1;
+				}
 			}
-		}
+    	}
 
 		//-------------------------------------------------------------------
 		//               Allow for chemical equilibrium again
@@ -914,13 +914,13 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		}
 
 // Tidal heating plots in viscosity-rigidity space (also comment out mu1 15 lines below)
-int j = 0;
-for (i=0;i<50;i++) {
-	mu_rigid = pow(10.0,5.0+(double)i*(11.0-5.0)/50.0);
-	mu_rigid = mu_rigid*10.0; // SI to cgs
-	for (j=0;j<50;j++) {
-		mu1 = pow(10.0,5.0+(double)j*(22.0-5.0)/50.0);
-		mu1 = mu1*10.0; // SI to cgs
+//int j = 0;
+//for (i=0;i<50;i++) {
+//	mu_rigid = pow(10.0,5.0+(double)i*(11.0-5.0)/50.0);
+//	mu_rigid = mu_rigid*10.0; // SI to cgs
+//	for (j=0;j<50;j++) {
+//		mu1 = pow(10.0,5.0+(double)j*(22.0-5.0)/50.0);
+//		mu1 = mu1*10.0; // SI to cgs
 
 		// Tidal heating in ice
 		if (moon && eorb > 0.0) {
@@ -933,7 +933,7 @@ for (i=0;i<50;i++) {
 					// Calculate steady-state viscosity for viscoelastic models (Thomas et al. LPSC 1987; Desch et al. 2009)
 					if (tidalmodel > 1) {
 						fineVolFrac = 0.0; // Assume no mud fines (recalculated below)
-//						mu1 = (1.0e15)*exp(25.0*(273.0/T[ir]-1.0))/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // Viscosity, 1.0e14 in SI
+						mu1 = (1.0e15)*exp(25.0*(273.0/T[ir]-1.0))/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // Viscosity, 1.0e14 in SI
 						// If there is ammonia in partially melted layers, decrease viscosity according to Fig. 6 of Arakawa & Maeno (1994)
 						// TODO As of 3/24/2016, this results in viscosities so high that the model blows up. Need to decrease the rigidity with NH3 content?
 //						if (Mnh3l[ir]+Madhs[ir] >= 0.01*Mh2os[ir]) mu1 = mu1*1.0e-3;
@@ -1017,11 +1017,11 @@ for (i=0;i<50;i++) {
 		}
 
 // End plots in viscosity-rigidity space
-		printf("%g \t",log(Wtide_tot/1.0e7)/log(10.0));
-	}
-	printf("\n");
-}
-exit(0);
+//		printf("%g \t",log(Wtide_tot/1.0e7)/log(10.0));
+//	}
+//	printf("\n");
+//}
+//exit(0);
 
 		//-------------------------------------------------------------------
 		//                     Calculate conductive fluxes

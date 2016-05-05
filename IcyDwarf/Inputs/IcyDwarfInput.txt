@@ -39,6 +39,7 @@ Run thermal?                  1
 	Sim starts at (Myr)   3
 	Initial temp (K)      200
 	Degree of hydration   1
+	Hydrate/dehydrate?    0
 	Fine rock fraction    0
 	Start differentiated? 1
 	Tidal rhe 1E 2M 3B 4A 3

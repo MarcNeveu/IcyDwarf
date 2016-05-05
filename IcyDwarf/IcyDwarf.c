@@ -52,6 +52,7 @@ int main(int argc, char *argv[]){
                                        // for radiogenic heating, see Thermal-state()
     double porosity = 0.0;             // Bulk porosity
     int startdiff = 0;                 // Start differentiated?
+    int hy = 0;						   // Allow for rock hydration/dehydration?
 
     // Grid inputs
 	int NR = 0;                        // Number of grid zones
@@ -105,7 +106,7 @@ int main(int argc, char *argv[]){
 	int i = 0;
 	int j = 0;
 
-	int n_inputs = 61;
+	int n_inputs = 62;
 
 	double *input = (double*) malloc(n_inputs*sizeof(double));
 	if (input == NULL) printf("IcyDwarf: Not enough memory to create input[28]\n");
@@ -171,6 +172,7 @@ int main(int argc, char *argv[]){
 	tzero = input[i]; i++;                          // Myr
 	Tinit = input[i]; i++;
 	Hydr_init = input[i]; i++;
+	hy = input[i]; i++;
 	Xfines = input[i]; i++;
 	startdiff = input[i]; i++;
 	tidalmodel = input[i]; i++;
@@ -229,7 +231,7 @@ int main(int argc, char *argv[]){
 		printf("Running thermal evolution code...\n");
 		Thermal(argc, argv, path, NR, r_p, rho_p, rhoHydrRock, rhoDryRock, warnings, msgout, nh3, salt, Xhydr, Xfines, tzero, Tsurf,
 				Tinit, timestep, total_time, output_every, crack_input, crack_species, chondr, moon, aorb, eorb, Mprim, Rprim, Qprim,
-				porosity, startdiff, eccdecay, tidalmodel, tidetimesten);
+				porosity, startdiff, eccdecay, tidalmodel, tidetimesten, hy);
 		printf("\n");
 	}
 
