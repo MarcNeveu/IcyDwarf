@@ -56,6 +56,12 @@ int hydrate(double T, double **dM, double *dVol, double **Mrock, double **Mh2os,
 
 double viscosity(double T, double Mh2ol, double Mnh3l);
 
+int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, double r_p, double **Qth, int NR, double dtime,
+		double *Wtide_tot, double *Mrock, double *Mh2os, double *Madhs, double *Mh2ol, double *Mnh3l, double *M, double *dVol,
+		double *r, double *T, double fineVolFrac);
+
+int GaussJordan(complex double ***M, complex double ***b, int n, int m);
+
 int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p, double rhoHydr, double rhoDry,
 		int warnings, int msgout, double Xp, double Xsalt, double *Xhydr, double Xfines, double tzero, double Tsurf,
 		double Tinit, double dtime, double fulltime, double dtoutput, int *crack_input, int *crack_species, int chondr,
@@ -128,32 +134,14 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double fineMassFrac = 0.0;           // Mass fraction of fines (no dim)
 	double fineVolFrac = 0.0;            // Volume fraction of fines (no dim)
 	double fracKleached = 0.0;           // Fraction of K radionuclide leached (no dim)
-	double mu_rigid = 4.0e9/gram*cm;     // Ice rigidity = shear modulus (g cm-1 s-2)
-	double g_surf = Gcgs*4.0/3.0*PI_greek*r_p*km2cm*rho_p; // Surface gravity (cm s-2)
 	double norb = 0.0;                   // Orbital mean motion = 2*pi/period = sqrt(GM/a3) (s-1)
 	double omega_tide = 0.0;             // Tidal frequency
-	double beta_tide = rho_p*g_surf*r_p*km2cm; // Gravitational stiffness (g cm-1 s-2; i.e. pressure unit)
 	double Heat_tide = 0.0;
 	double creep_rate = 0.0;             // Strain rate in s-1 for ice, rock, or a mixture. Stress is hydrostatic pressure/(1-porosity)
 	double Wtide_tot = 0.0;              // Tidal heating rate in all of the ice (erg s-1)
-	double Wtide = 0.0;                  // Tidal heating rate in a given layer (erg s-1)
-	double t_circularization = 0.0;      // Tidal circularization timescale (s)
 	double aorb = aorb_init;             // Moon orbital semi-major axis (cm)
 	double eorb = eorb_init;             // Moon orbital eccentricity
-	double mu_rigid_A = 0.0;             // Frequency-dependent complex rigidity term, real part (g cm-1 s-2)
-	double mu_rigid_B = 0.0;             // Frequency-dependent complex rigidity term, imaginary part (g cm-1 s-2)
-	double mu_rigid_1 = 0.0;             // Burgers viscoelastic model, steady-state rigidity (g cm-1 s-2)
-	double mu_rigid_2 = 0.0;			 // Burgers viscoelastic model, transient rigidity (g cm-1 s-2)
-	double C1 = 0.0;                     // Burgers viscoelastic model, C1 term (Henning et al. 2009)
-	double C2 = 0.0;                     // Burgers viscoelastic model, C2 term (Henning et al. 2009)
-	double mu2 = 0.0;                    // Burgers viscoelastic model, transient viscosity (Shoji et al. 2013)
-	double D_Burgers = 0.0;				 // Rigidity sub-term in Burgers model equations
-	double alpha_Andrade = 0.3;          // Andrade viscoelastic model, alpha term (default 0.2 to 0.5)
-	double beta_Andrade = 0.0;           // Andrade viscoelastic model, beta term = 1/(mu_rigid*Andrade_time^alpha)
-	double gamma_Andrade = 0.0;          // Andrade viscoelastic model, Gamma(alpha+1) where Gamma is the Gamma function
-	double A_Andrade = 0.0;              // Rigidity sub-terms in Andrade model equations
-	double B_Andrade = 0.0;
-	double D_Andrade = 0.0;
+	double m_p = rho_p*4.0/3.0*PI_greek*r_p*r_p*r_p;
 	double Crack_depth[2];				 // Crack_depth[2] (km), output
 	double WRratio[2];					 // WRratio[2] (by mass, no dim), output
 	double Heat[6];                      // Heat[6] (erg), output
@@ -271,12 +259,6 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double *fracOpen = (double*) malloc((NR)*sizeof(double)); // Fraction of crack that hasn't healed
 	if (fracOpen == NULL) printf("Thermal: Not enough memory to create fracOpen[NR]\n");
 
-	double *k2tide = (double*) malloc((NR)*sizeof(double)); // Tidal Love number of harmonic degree 2
-	if (k2tide == NULL) printf("Thermal: Not enough memory to create k2tide[NR]\n");
-
-	double *Qtide = (double*) malloc((NR)*sizeof(double)); // Tidal quality factor, = 1/(bulge lag angle)
-	if (Qtide == NULL) printf("Thermal: Not enough memory to create Qtide[NR]\n");
-
 	double *pore = (double*) malloc((NR)*sizeof(double)); // Volume fraction of grid cell that is pores
 	if (pore == NULL) printf("Thermal: Not enough memory to create pore[NR]\n");
 
@@ -293,46 +275,46 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		if (Act[ir] == NULL) printf("Thermal: Not enough memory to create Act[NR][n_species_crack]\n");
 	}
 	double **aTP = (double**) malloc((sizeaTP)*sizeof(double*)); // a[sizeaTP][sizeaTP], table of flaw sizes a that maximize the stress K_I
-	if (aTP == NULL) printf("aTP: Not enough memory to create a[sizeaTP][sizeaTP]\n");
+	if (aTP == NULL) printf("Thermal: Not enough memory to create a[sizeaTP][sizeaTP]\n");
 	for (i=0;i<sizeaTP;i++) {
 		aTP[i] = (double*) malloc((sizeaTP)*sizeof(double));
-		if (aTP[i] == NULL) printf("Crack: Not enough memory to create a[sizeaTP][sizeaTP]\n");
+		if (aTP[i] == NULL) printf("Thermal: Not enough memory to create a[sizeaTP][sizeaTP]\n");
 	}
 	double **integral = (double**) malloc(int_size*sizeof(double*)); // integral[int_size][2], used for K_I calculation
-	if (integral == NULL) printf("Crack: Not enough memory to create integral[int_size][2]\n");
+	if (integral == NULL) printf("Thermal: Not enough memory to create integral[int_size][2]\n");
 	for (i=0;i<int_size;i++) {
 		integral[i] = (double*) malloc(2*sizeof(double));
-		if (integral[i] == NULL) printf("Crack: Not enough memory to create integral[int_size][2]\n");
+		if (integral[i] == NULL) printf("Thermal: Not enough memory to create integral[int_size][2]\n");
 	}
 	double **alpha = (double**) malloc(sizeaTP*sizeof(double*)); // Thermal expansivity of water (T,P) in K-1
-	if (alpha == NULL) printf("Crack: Not enough memory to create alpha[sizeaTP][sizeaTP]\n");
+	if (alpha == NULL) printf("Thermal: Not enough memory to create alpha[sizeaTP][sizeaTP]\n");
 	for (i=0;i<sizeaTP;i++) {
 		alpha[i] = (double*) malloc(sizeaTP*sizeof(double));
-		if (alpha[i] == NULL) printf("Crack: Not enough memory to create alpha[sizeaTP][sizeaTP]\n");
+		if (alpha[i] == NULL) printf("Thermal: Not enough memory to create alpha[sizeaTP][sizeaTP]\n");
 	}
 	double **beta = (double**) malloc(sizeaTP*sizeof(double*)); // Compressibility of water (T,P) in bar-1
-	if (beta == NULL) printf("Crack: Not enough memory to create beta[sizeaTP][sizeaTP]\n");
+	if (beta == NULL) printf("Thermal: Not enough memory to create beta[sizeaTP][sizeaTP]\n");
 	for (i=0;i<sizeaTP;i++) {
 		beta[i] = (double*) malloc(sizeaTP*sizeof(double));
-		if (beta[i] == NULL) printf("Crack: Not enough memory to create beta[sizeaTP][sizeaTP]\n");
+		if (beta[i] == NULL) printf("Thermal: Not enough memory to create beta[sizeaTP][sizeaTP]\n");
 	}
 	double **silica = (double**) malloc(sizeaTP*sizeof(double*)); // log K of silica dissolution
-	if (silica == NULL) printf("Crack: Not enough memory to create silica[sizeaTP][sizeaTP]\n");
+	if (silica == NULL) printf("Thermal: Not enough memory to create silica[sizeaTP][sizeaTP]\n");
 	for (i=0;i<sizeaTP;i++) {
 		silica[i] = (double*) malloc(sizeaTP*sizeof(double));
-		if (silica[i] == NULL) printf("Crack: Not enough memory to create silica[sizeaTP][sizeaTP]\n");
+		if (silica[i] == NULL) printf("Thermal: Not enough memory to create silica[sizeaTP][sizeaTP]\n");
 	}
 	double **chrysotile = (double**) malloc(sizeaTP*sizeof(double*)); // log K of chrysotile dissolution
-	if (chrysotile == NULL) printf("Crack: Not enough memory to create chrysotile[sizeaTP][sizeaTP]\n");
+	if (chrysotile == NULL) printf("Thermal: Not enough memory to create chrysotile[sizeaTP][sizeaTP]\n");
 	for (i=0;i<sizeaTP;i++) {
 		chrysotile[i] = (double*) malloc(sizeaTP*sizeof(double));
-		if (chrysotile[i] == NULL) printf("Crack: Not enough memory to create chrysotile[sizeaTP][sizeaTP]\n");
+		if (chrysotile[i] == NULL) printf("Thermal: Not enough memory to create chrysotile[sizeaTP][sizeaTP]\n");
 	}
 	double **magnesite = (double**) malloc(sizeaTP*sizeof(double*)); // log K of magnesite dissolution
-	if (magnesite == NULL) printf("Crack: Not enough memory to create magnesite[sizeaTP][sizeaTP]\n");
+	if (magnesite == NULL) printf("Thermal: Not enough memory to create magnesite[sizeaTP][sizeaTP]\n");
 	for (i=0;i<sizeaTP;i++) {
 		magnesite[i] = (double*) malloc(sizeaTP*sizeof(double));
-		if (magnesite[i] == NULL) printf("Crack: Not enough memory to create magnesite[sizeaTP][sizeaTP]\n");
+		if (magnesite[i] == NULL) printf("Thermal: Not enough memory to create magnesite[sizeaTP][sizeaTP]\n");
 	}
 
 	// Zero all the arrays
@@ -376,8 +358,6 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	Brittle_strength[ir] = 0.0;
     	strain_rate[ir] = 0.0;
     	fracOpen[ir] = 0.0;
-    	k2tide[ir] = 0.0;
-    	Qtide[ir] = 0.0;
     	pore[ir] = porosity;
     	for (i=0;i<n_species_crack;i++) Act[ir][i] = 0.0;
     	for (i=0;i<12;i++) Stress[ir][i] = 0.0;
@@ -410,6 +390,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	dissolution_precipitation = crack_input[3];
 
 	if (moon) norb = sqrt(Gcgs*Mprim/(aorb*aorb*aorb));
+	// Tidal frequency: once per orbit if tidally locked moon
+	omega_tide = norb;
 
     //-------------------------------------------------------------------
     //                     Initialize physical tables
@@ -762,25 +744,26 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			}
     	}
 
-		//-------------------------------------------------------------------
-		//               Allow for chemical equilibrium again
-		//-------------------------------------------------------------------
-
-		for (ir=0;ir<NR;ir++) {
-			e1 = dE[ir] / dM[ir];
-			frock = Mrock[ir] / dM[ir];
-			fh2os = Mh2os[ir] / dM[ir];
-			fadhs = Madhs[ir] / dM[ir];
-			fh2ol = Mh2ol[ir] / dM[ir];
-			fnh3l = Mnh3l[ir] / dM[ir];
-			state (path, itime, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, Xsalt, &temp1);
-			T[ir] = temp1;
-			Mrock[ir] = dM[ir]*frock;
-			Mh2os[ir] = dM[ir]*fh2os;
-			Madhs[ir] = dM[ir]*fadhs;
-			Mh2ol[ir] = dM[ir]*fh2ol;
-			Mnh3l[ir] = dM[ir]*fnh3l;
-		}
+//		//-------------------------------------------------------------------
+//		//               Allow for chemical equilibrium again
+    	// TODO disabled to avoid artificial cooling upon dehydration. Put back?
+//		//-------------------------------------------------------------------
+//
+//		for (ir=0;ir<NR;ir++) {
+//			e1 = dE[ir] / dM[ir];
+//			frock = Mrock[ir] / dM[ir];
+//			fh2os = Mh2os[ir] / dM[ir];
+//			fadhs = Madhs[ir] / dM[ir];
+//			fh2ol = Mh2ol[ir] / dM[ir];
+//			fnh3l = Mnh3l[ir] / dM[ir];
+//			state (path, itime, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, Xsalt, &temp1);
+//			T[ir] = temp1;
+//			Mrock[ir] = dM[ir]*frock;
+//			Mh2os[ir] = dM[ir]*fh2os;
+//			Madhs[ir] = dM[ir]*fadhs;
+//			Mh2ol[ir] = dM[ir]*fh2ol;
+//			Mnh3l[ir] = dM[ir]*fnh3l;
+//		}
 
     	//-------------------------------------------------------------------
     	//           Differentiate the rock, liquids, and H2O ice
@@ -885,7 +868,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		// - radioactive decay in rocky layers
 		// - gravitational potential energy release in differentiated layers
 		// - hydration / dehydration (cooling)
-		// - tidal heating in ice (elastic formulation)
+		// - tidal heating
 		//-------------------------------------------------------------------
 
 		// Radioactive decay
@@ -913,115 +896,20 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			}
 		}
 
-// Tidal heating plots in viscosity-rigidity space (also comment out mu1 15 lines below)
-//int j = 0;
-//for (i=0;i<50;i++) {
-//	mu_rigid = pow(10.0,5.0+(double)i*(11.0-5.0)/50.0);
-//	mu_rigid = mu_rigid*10.0; // SI to cgs
-//	for (j=0;j<50;j++) {
-//		mu1 = pow(10.0,5.0+(double)j*(22.0-5.0)/50.0);
-//		mu1 = mu1*10.0; // SI to cgs
-
-		// Tidal heating in ice
+		// Tidal heating
 		if (moon && eorb > 0.0) {
-			Wtide_tot = 0.0;
-			for (ir=0;ir<NR;ir++) {
-				if (Mh2os[ir] > 0.0) {
-					// Calculate "gravitational rigidity" (Henning et al. 2009) in each layer: beta = rho*g*r
-					beta_tide = (Mrock[ir] + Mh2os[ir] + Madhs[ir] + Mh2ol[ir] + Mnh3l[ir])/dVol[ir] * Gcgs*M[ir]/r[ir+1]; // /r*r
+			tide(tidalmodel, tidetimesten, eorb, omega_tide, r_p, &Qth, NR, dtime, &Wtide_tot, Mrock, Mh2os, Madhs, Mh2ol, Mnh3l,
+					M, dVol, r, T, fineVolFrac);
+			Heat_tide = Heat_tide + Wtide_tot;
 
-					// Calculate steady-state viscosity for viscoelastic models (Thomas et al. LPSC 1987; Desch et al. 2009)
-					if (tidalmodel > 1) {
-						fineVolFrac = 0.0; // Assume no mud fines (recalculated below)
-						mu1 = (1.0e15)*exp(25.0*(273.0/T[ir]-1.0))/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // Viscosity, 1.0e14 in SI
-						// If there is ammonia in partially melted layers, decrease viscosity according to Fig. 6 of Arakawa & Maeno (1994)
-						// TODO As of 3/24/2016, this results in viscosities so high that the model blows up. Need to decrease the rigidity with NH3 content?
-//						if (Mnh3l[ir]+Madhs[ir] >= 0.01*Mh2os[ir]) mu1 = mu1*1.0e-3;
-					}
-
-					// Tidal frequency: two tides per orbit if tidally locked moon
-					omega_tide = 2.0*norb;
-
-					switch(tidalmodel) {
-					case 1: // Basic elastic model (Henning et al. 2009, ApJ 707, 1000-1015; Chen et al. 2014, Icarus 229, 11-30; Storch & Lai 2015, MNRAS 450, 3952-3957)
-						k2tide[ir] = 1.5/(1.0+19.0*mu_rigid/(2.0*beta_tide));
-						Qtide[ir] = 1000.0; // Arbitrary
-					break;
-
-					case 2: // Maxwell viscoelastic model (Henning et al. 2009), assumes steady-state response
-						mu_rigid_A = mu_rigid*omega_tide*omega_tide*mu1*mu1 / (mu_rigid*mu_rigid + omega_tide*omega_tide*mu1*mu1);
-						mu_rigid_B = mu_rigid*mu_rigid*omega_tide*mu1 / (mu_rigid*mu_rigid + omega_tide*omega_tide*mu1*mu1);
-					break;
-
-					case 3: // Burgers viscoelastic model (Henning et al. 2009; Shoji et al. 2013), assumes superposition of steady-state and transient responses
-						mu_rigid_1 = mu_rigid; // Steady-state shear modulus
-						mu_rigid_2 = mu_rigid; // Transient shear modulus
-						mu2 = 0.02*mu1;        // mu2: transient viscosity; mu1/mu2 = 17 to 50 (Shoji et al. 2013) !! mu1 and mu2 are flipped compared to the equations of Shoji et al. (2013)
-						C1 = 1.0/mu_rigid_1 + mu2/(mu_rigid_1*mu1) + 1.0/mu_rigid_2;
-						C2 = 1.0/mu1 - mu2*omega_tide*omega_tide/(mu_rigid_1*mu_rigid_2);
-						D_Burgers = (pow(C2,2) + pow(omega_tide,2)*pow(C1,2));
-						mu_rigid_A = omega_tide*omega_tide*(C1 - mu2*C2/mu_rigid_1) / D_Burgers;
-						mu_rigid_B = omega_tide*(C2 + mu2*omega_tide*omega_tide*C1/mu_rigid_1) / D_Burgers;
-					break;
-
-					case 4: // Andrade viscoelastic model (Shoji et al. 2013)
-						// Evaluate Gamma(alpha_Andrade + 1.0); Gamma is the gamma function. alpha_Andrade can vary from 0.2 to 0.5 (Shoji et al. 2013; Castillo-Rogez et al. 2011)
-						if (alpha_Andrade == 0.2) gamma_Andrade = 0.918169;
-						else if (alpha_Andrade == 0.3) gamma_Andrade = 0.897471;
-						else if (alpha_Andrade == 0.4) gamma_Andrade = 0.887264;
-						else if (alpha_Andrade == 0.5) gamma_Andrade = 0.886227;
-						else {
-							printf ("IcyDwarf: Thermal: alpha_Andrade must be equal to 0.2, 0.3, 0.4, or 0.5 (see Castillo-Rogez et al. 2011, doi 10.1029/2010JE003664)\n");
-							exit(0);
-						}
-						beta_Andrade = 1.0/(mu_rigid*pow(mu1/mu_rigid,alpha_Andrade)); // Castillo-Rogez et al. (2011)
-						A_Andrade = 1.0/mu_rigid + pow(omega_tide,-alpha_Andrade)*beta_Andrade*cos(alpha_Andrade*PI_greek/2.0)*gamma_Andrade;
-						B_Andrade = 1.0/(mu1*omega_tide) + pow(omega_tide,-alpha_Andrade)*beta_Andrade*sin(alpha_Andrade*PI_greek/2.0)*gamma_Andrade;
-						D_Andrade = pow(A_Andrade,2) + pow(B_Andrade,2);
-						mu_rigid_A = A_Andrade/D_Andrade;
-						mu_rigid_B = B_Andrade/D_Andrade;
-					break;
-					}
-
-					// Scale heating in partially melted layers
-					k2tide[ir] = k2tide[ir]*Mh2os[ir]/(Mrock[ir] + Mh2os[ir] + Madhs[ir] + Mh2ol[ir] + Mnh3l[ir]);
-
-					// Calculate heating rate
-					if (tidalmodel == 1)
-						Wtide = 11.5*k2tide[ir]/Qtide[ir]*Gcgs*Mprim*Mprim*norb*pow(r_p,5)*eorb*eorb/pow(aorb,6);
-					else {
-						// Imaginary part of the tidal Love number k2, replaces k2/Q to account for the frequency dependence of the materialÕs response to loading (Henning et al. 2009)
-						k2tide[ir] = 57.0/(4.0*beta_tide)*mu_rigid_B
-							/ ( (1.0+19.0/(2.0*beta_tide)*mu_rigid_A)*(1.0+19.0/(2.0*beta_tide)*mu_rigid_A)
-							  + (19.0/(2.0*beta_tide)*mu_rigid_B)*(19.0/(2.0*beta_tide)*mu_rigid_B) );
-						if (tidetimesten)
-							k2tide[ir] = 10.0*k2tide[ir];
-						Wtide = 11.5*k2tide[ir]*Gcgs*Mprim*Mprim*norb*pow(r_p,5)*eorb*eorb/pow(aorb,6);
-					}
-					Qth[ir] = Qth[ir] + Wtide;
-					Heat_tide = Heat_tide + Wtide;
-					Wtide_tot = Wtide_tot + Wtide;
-					Wtide = 0.0;
-				}
-			}
-			// Update orbital parameters using circularization timescale from Henning & Hurford (2014, doi 10.1088/0004-637X/789/1/30) equation 2:
+			// Update orbital parameters (Barnes et al. 2008):
 			if (eccdecay == 1 && Wtide_tot > 0.0) {
-				// t_circularization = Gcgs*Mprim*rho_p*4.0/3.0*PI_greek*r_p*r_p*r_p*eorb*eorb/((1.0-eorb*eorb)*aorb*Wtide_tot); // Wtide_tot propto eorb, so t_circularization independent of eorb
-				// eorb = eorb*(1.0 - dtime/t_circularization);
-				// aorb = aorb*(1.0 + dtime/t_circularization*0.42); // daorb/deorb = 0.42*aorb/eorb, Balbus & Brecher 1975 ApJ 203, 202-205, equation 4
-				double m_p = rho_p*4.0/3.0*PI_greek*r_p*r_p*r_p;
 				eorb = eorb - dtime*(Wtide_tot*aorb / (Gcgs*Mprim*m_p*eorb) - 171.0/16.0*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p/Qprim*pow(aorb,-6.5)*eorb);
 				aorb = aorb - dtime*(2.0*Wtide_tot*aorb*aorb / (Gcgs*Mprim*m_p) - 4.5*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p/Qprim*pow(aorb,-5.5));
 				norb = sqrt(Gcgs*Mprim/(aorb*aorb*aorb));
+				omega_tide = norb;
 			}
 		}
-
-// End plots in viscosity-rigidity space
-//		printf("%g \t",log(Wtide_tot/1.0e7)/log(10.0));
-//	}
-//	printf("\n");
-//}
-//exit(0);
 
 		//-------------------------------------------------------------------
 		//                     Calculate conductive fluxes
@@ -1317,9 +1205,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	//                           Free mallocs
 	//-------------------------------------------------------------------
 
-	for (i=0;i<int_size;i++) {
-		free (integral[i]);
-	}
+	for (i=0;i<int_size;i++) free (integral[i]);
 	for (i=0;i<sizeaTP;i++) {
 		free (aTP[i]);
 		free (alpha[i]);
@@ -1328,12 +1214,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		free (chrysotile[i]);
 		free (magnesite[i]);
 	}
-	for (i=0;i<12;i++) {
-		free (Stress[i]);
-	}
-	for (ir=0;ir<NR;ir++) {
-		free (Act[ir]);
-	}
+	for (i=0;i<12;i++) free (Stress[i]);
+	for (ir=0;ir<NR;ir++) free (Act[ir]);
 	free (r);
 	free (dVol);
 	free (dM);
@@ -1380,8 +1262,6 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	free (Brittle_strength);
 	free (strain_rate);
 	free (fracOpen);
-	free (k2tide);
-	free (Qtide);
 	free (pore);
 
 	return 0;
@@ -2293,7 +2173,7 @@ int dehydrate(double T, double dM, double dVol, double *Mrock, double *Mh2ol, do
 	else (*Xhydr) = 0.0;
 
 	(*Xhydr) = f_mem*Xhydr_old + (1.0-f_mem)*(*Xhydr); // Smooth out transition to avoid code crashing.
-                                                       // Needs to be the same as in hydrate()
+
 	if ((*Xhydr) > Xhydr_old) {
 		(*Xhydr) = Xhydr_old;
 		return 1; // Get out
@@ -2474,6 +2354,568 @@ double viscosity(double T, double Mh2ol, double Mnh3l) {
 	visc = exp(A+B/T);
 
 	return visc;
+}
+
+/*--------------------------------------------------------------------
+ *
+ * Subroutine tide
+ *
+ * Calculates tidal heating.
+ *
+ *--------------------------------------------------------------------*/
+
+int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, double r_p, double **Qth, int NR, double dtime,
+		double *Wtide_tot, double *Mrock, double *Mh2os, double *Madhs, double *Mh2ol, double *Mnh3l, double *dM, double *dVol,
+		double *r, double *T, double fineVolFrac) {
+
+	int ir = 0;                          // Counters
+	int i = 0;
+	int j = 0;
+	int k = 0;
+
+//	double mu_rigid = 4.0e9/gram*cm;     // Ice rigidity = shear modulus (g cm-1 s-2)
+	double mu_rigid = 3500.0*4500.0*4500.0/gram*cm;     // Debug
+//	double K = 10.7e9/gram*cm;                // Ice bulk modulus (g cm-2 s-2)
+	double K = 3500.0*8000.0*8000.0/gram*cm-4.0/3.0*mu_rigid; // Bulk modulus (g cm-2 s-2)
+	double mu1 = 0.0;                    // Ice viscosity (g cm-1 s-1)
+	double Wtide = 0.0;                  // Tidal heating rate in a given layer (erg s-1)
+	double mu_rigid_1 = 0.0;             // Burgers viscoelastic model, steady-state rigidity (g cm-1 s-2)
+	double mu_rigid_2 = 0.0;			 // Burgers viscoelastic model, transient rigidity (g cm-1 s-2)
+	double C1 = 0.0;                     // Burgers viscoelastic model, C1 term (Henning et al. 2009)
+	double C2 = 0.0;                     // Burgers viscoelastic model, C2 term (Henning et al. 2009)
+	double mu2 = 0.0;                    // Burgers viscoelastic model, transient viscosity (Shoji et al. 2013)
+	double D_Burgers = 0.0;				 // Rigidity sub-term in Burgers model equations
+	double alpha_Andrade = 0.3;          // Andrade viscoelastic model, alpha term (default 0.2 to 0.5)
+	double beta_Andrade = 0.0;           // Andrade viscoelastic model, beta term = 1/(mu_rigid*Andrade_time^alpha)
+	double gamma_Andrade = 0.0;          // Andrade viscoelastic model, Gamma(alpha+1) where Gamma is the Gamma function
+	double A_Andrade = 0.0;              // Rigidity sub-terms in Andrade model equations
+	double B_Andrade = 0.0;
+	double D_Andrade = 0.0;
+	double H_mu = 0.0;    				 // Sensitivity of the radial strain energy integral to the shear modulus mu
+
+	double *rho = (double*) malloc((NR)*sizeof(double)); // Mean layer density (g cm-3)
+	if (rho == NULL) printf("Thermal: Not enough memory to create rho[NR]\n");
+
+	double *g = (double*) malloc((NR)*sizeof(double)); // Mean gravity in layer (cm s-2)
+	if (g == NULL) printf("Thermal: Not enough memory to create g[NR]\n");
+
+	complex double *shearmod = (complex double*) malloc((NR)*sizeof(complex double)); // Frequency-dependent complex rigidity (g cm-1 s-2)
+	if (shearmod == NULL) printf("Thermal: Not enough memory to create shearmod[NR]\n");
+
+	/* Vector of 6 radial functions (Sabadini & Vermeersen 2004; Roberts & Nimmo 2008; Henning & Hurford 2014):
+	 *  y1: radial displacement (index 0)
+	 *  y2: tangential displacement (index 1)
+	 *  y3: radial stress (index 2)
+	 *  y4: tangential stress (index 3)
+	 *  y5: gravitational potential (index 4)
+	 *  y6: potential stress or continuity (index 5)
+	*/
+	complex double **ytide = (complex double**) malloc(NR*sizeof(complex double*));
+	if (ytide == NULL) printf("Thermal: Not enough memory to create ytide[NR][6]\n");
+	for (ir=0;ir<NR;ir++) {
+		ytide[ir] = (complex double*) malloc(6*sizeof(complex double));
+		if (ytide[ir] == NULL) printf("Thermal: Not enough memory to create ytide[NR][6]\n");
+	}
+	// Btemp: temporary storage matrix used in the calculation of Bpropmtx
+	complex double **Btemp = (complex double**) malloc(6*sizeof(complex double*));
+	if (Btemp == NULL) printf("Thermal: Not enough memory to create Btemp[6][6]\n");
+	for (i=0;i<6;i++) {
+		Btemp[i] = (complex double*) malloc(6*sizeof(complex double));
+		if (Btemp[i] == NULL) printf("Thermal: Not enough memory to create btemp[6][6]\n");
+	}
+	// Mbc: 3x3 subset of Bpropmtx[NR-1] used in applying the 6 surface and central boundary conditions to find csol = ytide[0]
+	complex double **Mbc = (complex double**) malloc(3*sizeof(complex double*));
+	if (Mbc == NULL) printf("Thermal: Not enough memory to create Mbc[3][3]\n");
+	for (i=0;i<3;i++) {
+		Mbc[i] = (complex double*) malloc(3*sizeof(complex double));
+		if (Mbc[i] == NULL) printf("Thermal: Not enough memory to create Mbc[3][3]\n");
+	}
+	// bsurf: surface boundary condition, defined as a 3x1 array for compatibility with GaussJordan()
+	complex double **bsurf = (complex double**) malloc(3*sizeof(complex double*));
+	if (bsurf == NULL) printf("Thermal: Not enough memory to create bsurf[3][1]\n");
+	for (i=0;i<3;i++) {
+		bsurf[i] = (complex double*) malloc(1*sizeof(complex double));
+		if (bsurf[i] == NULL) printf("Thermal: Not enough memory to create bsurf[3][1]\n");
+	}
+	// Ypropmtx: propagator matrix (Sabadini & Vermeersen 2004; Roberts & Nimmo 2008; Henning & Hurford 2014)
+	complex double ***Ypropmtx = (complex double***) malloc(NR*sizeof(complex double**));
+	if (Ypropmtx == NULL) printf("Thermal: Not enough memory to create Ypropmtx[NR][6][6]\n");
+	for (ir=0;ir<NR;ir++) {
+		Ypropmtx[ir] = (complex double**) malloc(6*sizeof(complex double*));
+		if (Ypropmtx[ir] == NULL) printf("Thermal: Not enough memory to create Ypropmtx[NR][6][6]\n");
+		for (i=0;i<6;i++) {
+			Ypropmtx[ir][i] = (complex double*) malloc(6*sizeof(complex double));
+			if (Ypropmtx[ir][i] == NULL) printf("Thermal: Not enough memory to create Ypropmtx[NR][6][6]\n");
+		}
+	}
+	// Ypropbar: when multiplied by Diagprop, this is the analytical inverse of Ypropmtx
+	complex double ***Ypropbar = (complex double***) malloc(NR*sizeof(complex double**));
+	if (Ypropbar == NULL) printf("Thermal: Not enough memory to create Ypropbar[NR][6][6]\n");
+	for (ir=0;ir<NR;ir++) {
+		Ypropbar[ir] = (complex double**) malloc(6*sizeof(complex double*));
+		if (Ypropbar[ir] == NULL) printf("Thermal: Not enough memory to create Ypropbar[NR][6][6]\n");
+		for (i=0;i<6;i++) {
+			Ypropbar[ir][i] = (complex double*) malloc(6*sizeof(complex double));
+			if (Ypropbar[ir][i] == NULL) printf("Thermal: Not enough memory to create Ypropbar[NR][6][6]\n");
+		}
+	}
+	// Bpropmtx: compound matrix, = Y[ir]*Y[ir-1]^-1*Bpropmtx[ir-1]
+	complex double ***Bpropmtx = (complex double***) malloc(NR*sizeof(complex double**));
+	if (Bpropmtx == NULL) printf("Thermal: Not enough memory to create Bpropmtx[NR][6][6]\n");
+	for (ir=0;ir<NR;ir++) {
+		Bpropmtx[ir] = (complex double**) malloc(6*sizeof(complex double*));
+		if (Bpropmtx[ir] == NULL) printf("Thermal: Not enough memory to create Bpropmtx[NR][6][6]\n");
+		for (i=0;i<6;i++) {
+			Bpropmtx[ir][i] = (complex double*) malloc(6*sizeof(complex double));
+			if (Bpropmtx[ir][i] == NULL) printf("Thermal: Not enough memory to create Bpropmtx[NR][6][6]\n");
+		}
+	}
+	// Diagprop: multiplies Ypropbar to yield the analytical inverse of Ypropmtx
+	complex double ***Diagprop = (complex double***) malloc(NR*sizeof(complex double**)); // TODO could be only a [NR][6]
+	if (Diagprop == NULL) printf("Thermal: Not enough memory to create Diagprop[NR][6][6]\n");
+	for (ir=0;ir<NR;ir++) {
+		Diagprop[ir] = (complex double**) malloc(6*sizeof(complex double*));
+		if (Diagprop[ir] == NULL) printf("Thermal: Not enough memory to create Diagprop[NR][6][6]\n");
+		for (i=0;i<6;i++) {
+			Diagprop[ir][i] = (complex double*) malloc(6*sizeof(complex double));
+			if (Diagprop[ir][i] == NULL) printf("Thermal: Not enough memory to create Diagprop[NR][6][6]\n");
+		}
+	}
+
+	// Zero all the arrays
+	for (ir=0;ir<NR;ir++) {
+		rho[ir] = 0.0;
+		g[ir] = 0.0;
+		shearmod[ir] = 0.0 + 0.0*I;
+    	for (i=0;i<6;i++) {
+    		ytide[ir][i] = 0.0 + 0.0*I;
+    		for (j=0;j<6;j++) {
+    			Ypropmtx[ir][i][j] = 0.0 + 0.0*I;
+    			Ypropbar[ir][i][j] = 0.0 + 0.0*I;
+    			Diagprop[ir][i][j] = 0.0 + 0.0*I;
+    			Bpropmtx[ir][i][j] = 0.0 + 0.0*I;
+    		}
+    	}
+	}
+    for (i=0;i<6;i++) {
+    	for (j=0;j<6;j++) Btemp[i][j] = 0.0 + 0.0*I;
+    }
+    for (i=0;i<3;i++) {
+    	for (j=0;j<3;j++) Mbc[i][j] = 0.0 + 0.0*I;
+    }
+	// Surface boundary condition
+	bsurf[0][0] = 0.0 + 0.0*I;
+	bsurf[1][0] = 0.0 + 0.0*I;
+	bsurf[2][0] = -5.0/r_p + 0.0*I;
+
+	(*Wtide_tot) = 0.0;
+
+// Tidal heating plots in viscosity-rigidity space (also comment out mu1 15 lines below)
+//int j = 0;
+//for (i=0;i<50;i++) {
+//	mu_rigid = pow(10.0,5.0+(double)i*(11.0-5.0)/50.0);
+//	mu_rigid = mu_rigid*10.0; // SI to cgs
+//	for (j=0;j<50;j++) {
+//		mu1 = pow(10.0,5.0+(double)j*(22.0-5.0)/50.0);
+//		mu1 = mu1*10.0; // SI to cgs
+
+	// Calculate shear modulus (rigidity) everywhere
+	for (ir=0;ir<NR;ir++) {
+		// if (Mh2os[ir] > 0.0) { // TODO: Include mu and eta for rock and water as well
+
+			// Calculate steady-state viscosity for viscoelastic models (Thomas et al. LPSC 1987; Desch et al. 2009)
+			if (tidalmodel > 1) {
+				fineVolFrac = 0.0; // Assume no mud fines (recalculated below)
+				mu1 = (1.0e15)*exp(25.0*(273.0/T[ir]-1.0))/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // Viscosity, 1.0e14 in SI
+				// If there is ammonia in partially melted layers, decrease viscosity according to Fig. 6 of Arakawa & Maeno (1994)
+				// TODO As of 3/24/2016, this results in viscosities so high that the model blows up. Need to decrease the rigidity with NH3 content?
+//						if (Mnh3l[ir]+Madhs[ir] >= 0.01*Mh2os[ir]) mu1 = mu1*1.0e-3;
+			}
+
+			mu1 = 1.0e21; // Debug, 1.0e20 in SI
+
+			switch(tidalmodel) {
+
+			case 2: // Maxwell viscoelastic model (Henning et al. 2009), assumes steady-state response
+				shearmod[ir] = mu_rigid*omega_tide*omega_tide*mu1*mu1 / (mu_rigid*mu_rigid + omega_tide*omega_tide*mu1*mu1)
+							 + mu_rigid*mu_rigid*omega_tide*mu1 / (mu_rigid*mu_rigid + omega_tide*omega_tide*mu1*mu1) * I;
+			break;
+
+			case 3: // Burgers viscoelastic model (Henning et al. 2009; Shoji et al. 2013), assumes superposition of steady-state and transient responses
+				mu_rigid_1 = mu_rigid; // Steady-state shear modulus
+				mu_rigid_2 = mu_rigid; // Transient shear modulus
+				mu2 = 0.02*mu1;        // mu2: transient viscosity; mu1/mu2 = 17 to 50 (Shoji et al. 2013) !! mu1 and mu2 are flipped compared to the equations of Shoji et al. (2013)
+				C1 = 1.0/mu_rigid_1 + mu2/(mu_rigid_1*mu1) + 1.0/mu_rigid_2;
+				C2 = 1.0/mu1 - mu2*omega_tide*omega_tide/(mu_rigid_1*mu_rigid_2);
+				D_Burgers = (pow(C2,2) + pow(omega_tide,2)*pow(C1,2));
+				shearmod[ir] = omega_tide*omega_tide*(C1 - mu2*C2/mu_rigid_1) / D_Burgers
+							 + omega_tide*(C2 + mu2*omega_tide*omega_tide*C1/mu_rigid_1) / D_Burgers * I;
+			break;
+
+			case 4: // Andrade viscoelastic model (Shoji et al. 2013)
+				// Evaluate Gamma(alpha_Andrade + 1.0); Gamma is the gamma function. alpha_Andrade can vary from 0.2 to 0.5 (Shoji et al. 2013; Castillo-Rogez et al. 2011)
+				if (alpha_Andrade == 0.2) gamma_Andrade = 0.918169;
+				else if (alpha_Andrade == 0.3) gamma_Andrade = 0.897471;
+				else if (alpha_Andrade == 0.4) gamma_Andrade = 0.887264;
+				else if (alpha_Andrade == 0.5) gamma_Andrade = 0.886227;
+				else {
+					printf ("IcyDwarf: Thermal: alpha_Andrade must be equal to 0.2, 0.3, 0.4, or 0.5 (see Castillo-Rogez et al. 2011, doi 10.1029/2010JE003664)\n");
+					exit(0);
+				}
+				beta_Andrade = 1.0/(mu_rigid*pow(mu1/mu_rigid,alpha_Andrade)); // Castillo-Rogez et al. (2011)
+				A_Andrade = 1.0/mu_rigid + pow(omega_tide,-alpha_Andrade)*beta_Andrade*cos(alpha_Andrade*PI_greek/2.0)*gamma_Andrade;
+				B_Andrade = 1.0/(mu1*omega_tide) + pow(omega_tide,-alpha_Andrade)*beta_Andrade*sin(alpha_Andrade*PI_greek/2.0)*gamma_Andrade;
+				D_Andrade = pow(A_Andrade,2) + pow(B_Andrade,2);
+				shearmod[ir] = A_Andrade/D_Andrade
+							 + B_Andrade/D_Andrade * I;
+			break;
+			}
+		//}
+		// else shearmod[ir] = 1.0e5 + 1.0e5 * I; // Arbitrarily low shear modulus in rock and water layers
+	}
+
+	// Calculate density and gravity everywhere
+	for (ir=0;ir<NR;ir++) {
+//		rho[ir] = dM[ir]/dVol[ir];
+		rho[ir] = 3.5; // Debug
+		g[ir] = 4.0/3.0*PI_greek*Gcgs*rho[ir]*r[ir+1];
+	}
+
+    //-------------------------------------------------------------------
+    // Calculate ytide in each layer using the propagator matrix method
+	// (Sabadini & Vermeersen 2004; Roberts & Nimmo 2008; Henning &
+	// Hurford 2014)
+    //-------------------------------------------------------------------
+
+	for (ir=0;ir<NR;ir++) {
+
+		// Compute Ypropmtx, the propagator matrix
+		Ypropmtx[ir][0][0] = pow(r[ir+1],3)/7.0;
+		Ypropmtx[ir][1][0] = 5.0*pow(r[ir+1],3)/42.0;
+		Ypropmtx[ir][2][0] = (rho[ir]*g[ir]*r[ir+1]-shearmod[ir])*pow(r[ir+1],2)/7.0;
+		Ypropmtx[ir][3][0] = 8.0*shearmod[ir]*pow(r[ir+1],2)/21.0;
+		Ypropmtx[ir][4][0] = 0.0;
+		Ypropmtx[ir][5][0] = 4.0*PI_greek*Gcgs*rho[ir]*pow(r[ir+1],3)/7.0;
+
+		Ypropmtx[ir][0][1] = r[ir+1];
+		Ypropmtx[ir][1][1] = r[ir+1]/2.0;
+		Ypropmtx[ir][2][1] = rho[ir]*g[ir]*r[ir+1] + 2.0*shearmod[ir];
+		Ypropmtx[ir][3][1] = shearmod[ir];
+		Ypropmtx[ir][4][1] = 0.0;
+		Ypropmtx[ir][5][1] = 4.0*PI_greek*Gcgs*rho[ir]*r[ir+1];
+
+		Ypropmtx[ir][0][2] = 0.0;
+		Ypropmtx[ir][1][2] = 0.0;
+		Ypropmtx[ir][2][2] = -rho[ir]*pow(r[ir+1],2);
+		Ypropmtx[ir][3][2] = 0.0;
+		Ypropmtx[ir][4][2] = -pow(r[ir+1],2);
+		Ypropmtx[ir][5][2] = -5.0*r[ir+1];
+
+		Ypropmtx[ir][0][3] = 1.0/(2.0*pow(r[ir+1],2));
+		Ypropmtx[ir][1][3] = 0.0;
+		Ypropmtx[ir][2][3] = (rho[ir]*g[ir]*r[ir+1] - 6.0*shearmod[ir])/(2.0*pow(r[ir+1],3));
+		Ypropmtx[ir][3][3] = shearmod[ir]/(2.0*pow(r[ir+1],3));
+		Ypropmtx[ir][4][3] = 0.0;
+		Ypropmtx[ir][5][3] = 2.0*PI_greek*Gcgs*rho[ir]/pow(r[ir+1],2);
+
+		Ypropmtx[ir][0][4] = 1.0/pow(r[ir+1],4);
+		Ypropmtx[ir][1][4] = -1.0/(3.0*pow(r[ir+1],4));
+		Ypropmtx[ir][2][4] = (rho[ir]*g[ir]*r[ir+1] - 8.0*shearmod[ir])/pow(r[ir+1],5);
+		Ypropmtx[ir][3][4] = 8.0*shearmod[ir]/(3.0*pow(r[ir+1],5));
+		Ypropmtx[ir][4][4] = 0.0;
+		Ypropmtx[ir][5][4] = 4.0*PI_greek*Gcgs*rho[ir]/pow(r[ir+1],4);
+
+		Ypropmtx[ir][0][5] = 0.0;
+		Ypropmtx[ir][1][5] = 0.0;
+		Ypropmtx[ir][2][5] = -rho[ir]/pow(r[ir+1],3);
+		Ypropmtx[ir][3][5] = 0.0;
+		Ypropmtx[ir][4][5] = -1.0/pow(r[ir+1],3);
+		Ypropmtx[ir][5][5] = 0.0;
+
+		// Compute Diagprop, the coefficient in front of the inverse of Ypropmtx the propagator matrix
+		Diagprop[ir][0][0] = 3.0/(5.0*pow(r[ir+1],3));
+		Diagprop[ir][1][1] = 1.0/(5.0*r[ir+1]);
+		Diagprop[ir][2][2] = 1.0/(5.0*r[ir+1]);
+		Diagprop[ir][3][3] = 2.0*pow(r[ir+1],2)/5.0;
+		Diagprop[ir][4][4] = 3.0*pow(r[ir+1],4)/35.0;
+		Diagprop[ir][5][5] = -pow(r[ir+1],3)/5.0;
+
+		// Compute Ypropbar, which multiplied by Diagprop is the analytical inverse of Ypropmtx
+		Ypropbar[ir][0][0] = rho[ir]*g[ir]*r[ir+1]/shearmod[ir] - 8.0;
+		Ypropbar[ir][1][0] = -rho[ir]*g[ir]*r[ir+1]/shearmod[ir] + 6.0;
+		Ypropbar[ir][2][0] = 4.0*PI_greek*Gcgs*rho[ir];
+		Ypropbar[ir][3][0] = rho[ir]*g[ir]*r[ir+1]/shearmod[ir] + 2.0;
+		Ypropbar[ir][4][0] = -rho[ir]*g[ir]*r[ir+1]/shearmod[ir] + 1.0;
+		Ypropbar[ir][5][0] = 4.0*PI_greek*Gcgs*rho[ir]*r[ir+1];
+
+		Ypropbar[ir][0][1] = 16.0;
+		Ypropbar[ir][1][1] = -6.0;
+		Ypropbar[ir][2][1] = 0.0;
+		Ypropbar[ir][3][1] = 6.0;
+		Ypropbar[ir][4][1] = -16.0;
+		Ypropbar[ir][5][1] = 0.0;
+
+		Ypropbar[ir][0][2] = -r[ir+1]/shearmod[ir];
+		Ypropbar[ir][1][2] = r[ir+1]/shearmod[ir];
+		Ypropbar[ir][2][2] = 0.0;
+		Ypropbar[ir][3][2] = -r[ir+1]/shearmod[ir];
+		Ypropbar[ir][4][2] = r[ir+1]/shearmod[ir];
+		Ypropbar[ir][5][2] = 0.0;
+
+		Ypropbar[ir][0][3] = 2.0*r[ir+1]/shearmod[ir];
+		Ypropbar[ir][1][3] = 0.0;
+		Ypropbar[ir][2][3] = 0.0;
+		Ypropbar[ir][3][3] = -3.0*r[ir+1]/shearmod[ir];
+		Ypropbar[ir][4][3] = 5.0*r[ir+1]/shearmod[ir];
+		Ypropbar[ir][5][3] = 0.0;
+
+		Ypropbar[ir][0][4] = rho[ir]*r[ir+1]/shearmod[ir];
+		Ypropbar[ir][1][4] = -rho[ir]*r[ir+1]/shearmod[ir];
+		Ypropbar[ir][2][4] = 0.0;
+		Ypropbar[ir][3][4] = rho[ir]*r[ir+1]/shearmod[ir];
+		Ypropbar[ir][4][4] = -rho[ir]*r[ir+1]/shearmod[ir];
+		Ypropbar[ir][5][4] = 5.0;
+
+		Ypropbar[ir][0][5] = 0.0;
+		Ypropbar[ir][1][5] = 0.0;
+		Ypropbar[ir][2][5] = -1.0;
+		Ypropbar[ir][3][5] = 0.0;
+		Ypropbar[ir][4][5] = 0.0;
+		Ypropbar[ir][5][5] = -r[ir+1];
+	}
+
+	// Calculate compound matrices Bpropmtx[ir]
+	for (i=0;i<6;i++) {
+		for (j=0;j<6;j++) Bpropmtx[0][i][j] = Ypropmtx[0][i][j];
+	}
+	for (ir=1;ir<NR;ir++) {
+		for (i=0;i<6;i++) {
+			for (j=0;j<6;j++) Btemp[i][j] = 0.0 + 0.0*I;
+		}
+		for (i=0;i<6;i++) {
+			for (j=0;j<6;j++) {
+				for (k=0;k<6;k++) Btemp[i][j] = Btemp[i][j] + Diagprop[ir-1][i][k]*Ypropbar[ir-1][k][j];
+				// Btemp[i][j] = Btemp[i][j] + Diagprop[ir][i][k]*Ypropbar[ir][k][j]; // Debug: Bpropmtx[ir] should be the identity matrix at all ir
+			}
+		}
+		for (i=0;i<6;i++) {
+			for (j=0;j<6;j++) {
+				for (k=0;k<6;k++) Bpropmtx[ir][i][j] = Bpropmtx[ir][i][j] + Ypropmtx[ir][i][k]*Btemp[k][j];
+			}
+		}
+	}
+
+	// Central and surface boundary conditions (3 each)
+	// Initialize Bpropmtx at the center, using the boundary conditions of zero displacement and zero gravitational potential.
+	// These boundary conditions assume the innermost zone is liquid, but this (false) assumption is inconsequential (Roberts & Nimmo 2008, Appendix A)
+	// So, here Bpropmtx[0] = Ypropmtx[0] columns 3, 4, and 6
+	// Alternatively, Bpropmtx[0] could be defined as Ypropmtx[0] columns 1, 2, 3: nonzero displacement at the innermost (thus solid) layer (Henning & Hurford 2014)
+
+	// Define Mbc = 3x3 matrix, intersection of columns 3, 4, 6 and rows 3, 4, 6 of Bpropmtx[NR-1]
+//	Mbc[0][0] = Bpropmtx[NR-1][2][2];	Mbc[0][1] = Bpropmtx[NR-1][2][3];	Mbc[0][2] = Bpropmtx[NR-1][2][5];
+//	Mbc[1][0] = Bpropmtx[NR-1][3][2];	Mbc[1][1] = Bpropmtx[NR-1][3][3];	Mbc[1][2] = Bpropmtx[NR-1][3][5];
+//	Mbc[2][0] = Bpropmtx[NR-1][5][2];	Mbc[2][1] = Bpropmtx[NR-1][5][3];	Mbc[2][2] = Bpropmtx[NR-1][5][5];
+
+	// Alternative central boundary condition of Henning & Hurford (2014)
+	Mbc[0][0] = Bpropmtx[NR-1][2][0];	Mbc[0][1] = Bpropmtx[NR-1][2][1];	Mbc[0][2] = Bpropmtx[NR-1][2][2];
+	Mbc[1][0] = Bpropmtx[NR-1][3][0];	Mbc[1][1] = Bpropmtx[NR-1][3][1];	Mbc[1][2] = Bpropmtx[NR-1][3][2];
+	Mbc[2][0] = Bpropmtx[NR-1][5][0];	Mbc[2][1] = Bpropmtx[NR-1][5][1];	Mbc[2][2] = Bpropmtx[NR-1][5][2];
+
+	// Invert Mbc and get solution bsurf using Gauss-Jordan elimination with full pivoting (Numerical Recipes C, chap. 3.1)
+	GaussJordan(&Mbc, &bsurf, 3, 1);
+
+	//	Debug
+	for (ir=0;ir<NR;ir++) {
+		printf("%d\n",ir);
+		for (i=0;i<6;i++) {
+			for (j=0;j<6;j++) {
+				printf("%g \t",creal(Bpropmtx[ir][i][j]));
+			}
+			printf("\n");
+		}
+		printf("\n");
+	}
+	printf("\n");
+
+	// Calculate ytide
+	for (ir=0;ir<NR;ir++) {
+		for (i=0;i<6;i++) {
+//			ytide[ir][i] = ytide[ir][i] + Bpropmtx[ir][i][2]*bsurf[0][0] // Which columns of Bpropmtx depend on the *central* boundary condition
+//			                            + Bpropmtx[ir][i][3]*bsurf[1][0] // This is for Roberts & Nimmo (2008)
+//			                            + Bpropmtx[ir][i][5]*bsurf[2][0];
+			ytide[ir][i] = ytide[ir][i] + Bpropmtx[ir][i][0]*bsurf[0][0] // Central boundary condition of Henning & Hurford (2014)
+			                            + Bpropmtx[ir][i][1]*bsurf[1][0]
+			                            + Bpropmtx[ir][i][2]*bsurf[2][0];
+		}
+	}
+
+	// Debug
+	for (ir=0;ir<NR;ir++) {
+		printf ("%g \t %g \t %g \t %g \t %g \t %g \t %g\n", r[ir]/km2cm, creal(ytide[ir][0])/cm, creal(ytide[ir][1])/cm,
+				creal(ytide[ir][2])*gram/cm/cm/cm, creal(ytide[ir][3])*gram/cm/cm/cm,creal(ytide[ir][4]),-creal(ytide[ir][5])/5.0*r_p);
+	}
+	exit(0);
+
+    //-------------------------------------------------------------------
+    // Calculate H_mu, the sensitivity of the radial strain energy
+	// integral to the shear modulus mu
+	//
+	// Then find tidal heating rate
+    //-------------------------------------------------------------------
+
+	for (ir=1;ir<NR;ir++) {
+		// Tobie et al. 2005, doi:10.1016/j.icarus.2005.04.006, equation 33. Assume bulk modulus K = 0 (incompressible)
+		H_mu = 4.0/3.0 * (r[ir+1]*r[ir+1]/pow(cabs(K + 4.0/3.0*shearmod[ir]),2))
+			 * pow( cabs( ytide[ir][1] - (K-2.0/3.0*shearmod[ir])/r[ir+1] * (2.0*ytide[ir][0]-6.0*ytide[ir][2]) ) ,2)
+			 - 4.0/3.0 * r[ir+1] * creal( (conj(ytide[ir][0])-conj(ytide[ir-1][0]))/(r[ir+1]-r[ir]) * (2.0*ytide[ir][0]-6.0*ytide[ir][2]) )
+			 + 1.0/3.0 * pow( cabs(2.0*ytide[ir][0]-6.0*ytide[ir][2]) ,2) + 6.0*r[ir+1]*r[ir+1]*pow(cabs(ytide[ir][3]),2)/pow(cabs(shearmod[ir]),2)
+			 + 24.0 * pow(cabs(ytide[ir][2]),2);
+
+		// Calculate volumetric heating rate, multiply by layer volume (Tobie et al. 2005, equation 37)
+		Wtide = dVol[ir] * (-2.1*pow(omega_tide,5)*pow(r_p,4)*eorb*eorb/r[ir+1]/r[ir+1]*H_mu*cimag(shearmod[ir]));
+		if (tidetimesten) Wtide = 10.0*Wtide;
+		(*Qth)[ir] = (*Qth)[ir] + Wtide;
+		(*Wtide_tot) = (*Wtide_tot) + Wtide;
+		Wtide = 0.0;
+	}
+
+// End plots in viscosity-rigidity space
+//		printf("%g \t",log(Wtide_tot/1.0e7)/log(10.0));
+//	}
+//	printf("\n");
+//}
+//exit(0);
+
+	for (ir=0;ir<NR;ir++) {
+		free (ytide[ir]);
+		for (i=0;i<6;i++) {
+			free (Ypropmtx[ir][i]);
+			free (Ypropbar[ir][i]);
+			free (Bpropmtx[ir][i]);
+			free (Diagprop[ir][i]);
+		}
+		free (Ypropmtx[ir]);
+		free (Ypropbar[ir]);
+		free (Bpropmtx[ir]);
+		free (Diagprop[ir]);
+	}
+	for (i=0;i<6;i++) free (Btemp[i]);
+	for (i=0;i<3;i++) {
+		free (Mbc[i]);
+		free (bsurf[i]);
+	}
+	free (shearmod);
+	free (rho);
+	free (g);
+	free (ytide);
+	free (Ypropmtx);
+	free (Ypropbar);
+	free (Bpropmtx);
+	free (Diagprop);
+	free (Btemp);
+	free (bsurf);
+	free (Mbc);
+
+	return 0;
+}
+
+/*--------------------------------------------------------------------
+ *
+ * Subroutine GaussJordan
+ *
+ * Returns the solution to a set of linear equations, as well as the
+ * inverse matrix. Full-pivoting algorithm after Numerical Recipes C,
+ * chap. 3.1.
+ *
+ * M: initial matrix input; inverted matrix output (size n x n)
+ * b: initial right-hand-side input; solution vector output (size n x m)
+ *
+ *--------------------------------------------------------------------*/
+
+int GaussJordan(complex double ***M, complex double ***b, int n, int m) {
+    int i = 0;
+    int j = 0;
+    int k = 0;
+    int l = 0;
+	int irow = 0;
+    int icol = 0;
+    int ll = 1;
+
+    double big = 0.0;
+    complex double dum = 0.0 + 0.0*I;
+    complex double pivinv = 0.0 + 0.0*I;
+    complex double temp = 0.0 + 0.0*I;
+
+    int indxc[n]; //Used for bookkeeping on the pivoting
+    int indxr[n];
+    int ipiv[n];
+
+    for (i=0;i<n;i++) {
+    	indxc[i] = 0;
+    	indxr[i] = 0;
+    	ipiv[i] = 0;
+    }
+
+    for (i=0;i<n;i++) { // Loop over columns
+        big = 0.0;
+        for (j=0;j<n;j++) { // Search for a pivot element, "big"
+            if (ipiv[j] != 1) {
+                for (k=0;k<n;k++) {
+                    if (ipiv[k] == 0) { // Find the biggest coefficient (usually safe to select as pivot element)
+                        if (cabs((*M)[j][k]) >= big) {
+                            big = cabs((*M)[j][k]);
+                            irow = j;
+                            icol = k;
+                        }
+                    }
+                }
+            }
+        }
+        (ipiv[icol])++;
+        if (irow != icol) { //Put the pivot element on the diagonal
+            for (l=0;l<n;l++) { //Swap in Mbc
+            	temp = (*M)[irow][l];
+            	(*M)[irow][l] = (*M)[icol][l];
+            	(*M)[icol][l] = temp;
+            }
+            for (l=0;l<m;l++) { //Swap in invMbc
+                temp = (*b)[irow][l];
+                (*b)[irow][l] = (*b)[icol][l];
+                (*b)[icol][l] = temp;
+            }
+        }
+        indxr[i] = irow; // Divide the pivot row by the pivot element, located at irow and icol.
+        indxc[i] = icol;
+        if ((*M)[icol][icol] == 0.0) {
+            printf("Thermal: Singular matrix in gaussJordan");
+            exit(0);
+        }
+        pivinv = 1.0/(*M)[icol][icol];
+        (*M)[icol][icol] = 1.0;
+        for (l=0;l<n;l++) (*M)[icol][l] = (*M)[icol][l]*pivinv;
+        for (l=0;l<m;l++) (*b)[icol][l] = (*b)[icol][l]*pivinv;
+        for (ll=0;ll<n;ll++) {
+            if (ll != icol) { //Set the rest of the pivot row to 0
+                dum = (*M)[ll][icol];
+                (*M)[ll][icol] = 0.0;
+                for (l=0;l<n;l++) (*M)[ll][l] = (*M)[ll][l] - (*M)[icol][l]*dum;
+                for (l=0;l<m;l++) (*b)[ll][l] = (*b)[ll][l] - (*b)[icol][l]*dum;
+            }
+        }
+    } //End of the main loop over the columns of the reduction
+
+    // Now, unscramble M by swapping columns in the reverse order that the permutation was built up
+    for (l=n-1;l>=0;l--) {
+        if (indxr[l] != indxc[l]) {
+            for (k=0;k<n;k++) { //Swap
+                temp = (*M)[k][indxr[l]];
+                (*M)[k][indxr[l]] = (*M)[k][indxc[l]];
+                (*M)[k][indxc[l]] = temp;
+            }
+        }
+    }
+
+    return 0;
 }
 
 #endif /* THERMAL_H_ */
