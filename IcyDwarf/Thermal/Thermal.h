@@ -57,8 +57,8 @@ int hydrate(double T, double **dM, double *dVol, double **Mrock, double **Mh2os,
 double viscosity(double T, double Mh2ol, double Mnh3l);
 
 int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, double r_p, double **Qth, int NR, double dtime,
-		double *Wtide_tot, double *Mrock, double *Mh2os, double *Madhs, double *Mh2ol, double *Mnh3l, double *M, double *dVol,
-		double *r, double *T, double fineVolFrac);
+		double *Wtide_tot, double *Mrock, double *Mh2os, double *Madhs, double *Mh2ol, double *Mnh3l, double *dM, double *dVol,
+		double *r, double *T, double fineVolFrac, double *Brittle_strength, double *Xhydr);
 
 int GaussJordan(complex double ***M, complex double ***b, int n, int m);
 
@@ -898,9 +898,10 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
 		// Tidal heating
 		if (moon && eorb > 0.0) {
+			for (ir=0;ir<NR;ir++) strain(Pressure[ir], Xhydr[ir], T[ir], &strain_rate[ir], &Brittle_strength[ir], pore[ir]);
 			Wtide_tot = 0.0;
 			tide(tidalmodel, tidetimesten, eorb, omega_tide, r_p, &Qth, NR, dtime, &Wtide_tot, Mrock, Mh2os, Madhs, Mh2ol, Mnh3l,
-					M, dVol, r, T, fineVolFrac);
+					dM, dVol, r, T, fineVolFrac, Brittle_strength, Xhydr);
 			Heat_tide = Heat_tide + Wtide_tot;
 
 			// Update orbital parameters (Barnes et al. 2008):
@@ -2367,16 +2368,22 @@ double viscosity(double T, double Mh2ol, double Mnh3l) {
 
 int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, double r_p, double **Qth, int NR, double dtime,
 		double *Wtide_tot, double *Mrock, double *Mh2os, double *Madhs, double *Mh2ol, double *Mnh3l, double *dM, double *dVol,
-		double *r, double *T, double fineVolFrac) {
+		double *r, double *T, double fineVolFrac, double *Brittle_strength, double *Xhydr) {
 
 	int ir = 0;                          // Counters
 	int i = 0;
 	int j = 0;
 	int k = 0;
 
-	double mu_rigid = 4.0e9/gram*cm;     // Ice rigidity = shear modulus (g cm-1 s-2)
-	double K = 10.7e9/gram*cm;           // Ice bulk modulus (g cm-2 s-2)
-	double mu1 = 0.0;                    // Ice viscosity (g cm-1 s-1)
+	double mu_rigid = 0.0;               // Rigidity = shear modulus (g cm-1 s-2)
+	double mu_rigid_ice = 0.0;           // Ice rigidity = shear modulus (g cm-1 s-2)
+	double mu_rigid_rock = 0.0;          // Rock rigidity = shear modulus (g cm-1 s-2) (Tobie et al. 2005)
+	double K = 0.0;                      // Bulk modulus (g cm-2 s-2)
+	double K_ice = 10.7e9/gram*cm;       // Ice bulk modulus (g cm-2 s-2) (Tobie et al. 2005)
+	double K_rock = 3300.0*(8000.0*8000.0-4.0/3.0*4500.0*4500.0)/gram*cm; // Rock bulk modulus (g cm-2 s-2) (Tobie et al. 2005)
+	double mu_visc = 0.0;                // Viscosity (g cm-1 s-1)
+	double mu_visc_ice = 0.0;            // Ice viscosity (g cm-1 s-1)
+	double mu_visc_rock = 0.0;           // Rock viscosity (g cm-1 s-1)
 	double Wtide = 0.0;                  // Tidal heating rate in a given layer (erg s-1)
 	double mu_rigid_1 = 0.0;             // Burgers viscoelastic model, steady-state rigidity (g cm-1 s-2)
 	double mu_rigid_2 = 0.0;			 // Burgers viscoelastic model, transient rigidity (g cm-1 s-2)
@@ -2492,83 +2499,91 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
     }
 
 // Benchmark against Shoji et al. (2013): Tidal heating plots in viscosity-rigidity space (also comment out mu1 15 lines below)
-//int j = 0;
-//for (i=0;i<50;i++) {
-//	mu_rigid = pow(10.0,5.0+(double)i*(11.0-5.0)/50.0);
+//int p = 0;
+//int q = 0;
+//for (p=0;p<50;p++) {
+//	mu_rigid = pow(10.0,5.0+(double)p*(11.0-5.0)/50.0);
 //	mu_rigid = mu_rigid*10.0; // SI to cgs
-//	for (j=0;j<50;j++) {
-//		mu1 = pow(10.0,5.0+(double)j*(22.0-5.0)/50.0);
-//		mu1 = mu1*10.0; // SI to cgs
+//	for (q=0;q<50;q++) {
+//		mu_visc = pow(10.0,5.0+(double)q*(22.0-5.0)/50.0);
+//		mu_visc = mu_visc*10.0; // SI to cgs
 
     //-------------------------------------------------------------------
     //      Calculate density, gravity, and shear modulus (rigidity)
     //-------------------------------------------------------------------
 
 	for (ir=0;ir<NR;ir++) {
-//		rho[ir] = dM[ir]/dVol[ir];
-
-		// Debug
-//		rho[ir] = 3.5;
-		if (r[ir]<760.0*km2cm) rho[ir] = 5.15;
-		else rho[ir] = 3.3;
-//		mu_rigid = 3500.0*4500.0*4500.0/gram*cm;
-		mu_rigid = 3300.0*4500.0*4500.0/gram*cm;
-		if (r[ir]<760.0*km2cm) mu_rigid = mu_rigid*1.0e-6;
-
+		rho[ir] = dM[ir]/dVol[ir];
 		g[ir] = 4.0/3.0*PI_greek*Gcgs*rho[ir]*r[ir+1];
-		// if (Mh2os[ir] > 0.0) { // TODO: Include mu and eta for rock and water as well
 
-			// Calculate steady-state viscosity for viscoelastic models (Thomas et al. LPSC 1987; Desch et al. 2009)
-			if (tidalmodel > 1) {
-				fineVolFrac = 0.0; // Assume no mud fines (recalculated below)
-				mu1 = (1.0e15)*exp(25.0*(273.0/T[ir]-1.0))/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // Viscosity, 1.0e14 in SI
-				// If there is ammonia in partially melted layers, decrease viscosity according to Fig. 6 of Arakawa & Maeno (1994)
-				// TODO As of 3/24/2016, this results in viscosities so high that the model blows up. Need to decrease the rigidity with NH3 content?
-//						if (Mnh3l[ir]+Madhs[ir] >= 0.01*Mh2os[ir]) mu1 = mu1*1.0e-3;
+		// Steady-state viscosity and shear modulus
+		mu_visc_ice = (1.0e15)*exp(25.0*(273.0/T[ir]-1.0))/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // 1.0e14 in SI (Thomas et al. LPSC 1987; Desch et al. 2009)
+		mu_visc_ice = 1.0e14/gram*cm; // Roberts (2015)
+
+		mu_rigid_ice = 4.0e9/gram*cm;
+
+		mu_visc_rock = 6.0e7/cm/cm/(4800.0/gram*cm*cm*cm)*exp(3.0e5/(R_G*T[ir])); // Driscoll & Barnes (2015)
+//		mu_visc_rock = 1.0e20/gram*cm; // Tobie et al. (2005), reached at 1570 K by Driscoll & Barnes (2015)
+//		mu_visc_rock = 1.0e20/gram*cm; // Roberts (2015)
+
+		mu_rigid_rock =     (Xhydr[ir] *E_Young_serp/(2.0*(1.0+nu_Poisson_serp))
+				      + (1.0-Xhydr[ir])*E_Young_oliv/(2.0*(1.0+nu_Poisson_oliv)))/gram*cm; // mu = E/(2*(1+nu))
+//		mu_rigid_rock = 6.24e4/gram*cm*exp(2.0e5/(R_G*T[ir])); // Driscoll & Barnes (2015)
+//		mu_rigid_rock = 3300.0*4500.0*4500.0/gram*cm; // Tobie et al. (2005), reached at 1730 K by Driscoll & Barnes (2015)
+//		mu_rigid_rock = 70.0e9/gram*cm; // Roberts (2015)
+
+		if (Mh2os[ir]+Madhs[ir]+Mh2ol[ir]+Mnh3l[ir] > 0.0) {
+			mu_visc = (Mrock[ir]*mu_visc_rock + (Mh2os[ir]+Madhs[ir]+Mh2ol[ir]+Mnh3l[ir])*mu_visc_ice)/dM[ir];
+			mu_rigid = (Mrock[ir]*mu_rigid_rock + (Mh2os[ir]+Madhs[ir]+Mh2ol[ir]+Mnh3l[ir])*mu_rigid_ice)/dM[ir];
+		}
+		else {
+			mu_visc = mu_visc_rock;
+			mu_rigid = mu_rigid_rock;
+		}
+		if (Mh2ol[ir] + Mnh3l[ir] > 0.02*dM[ir]) { // In the ocean, sufficiently low rigidity and viscosity, far from Maxwell time
+			mu_visc = 1.0e3;
+			mu_rigid = 1.0e4;
+		}
+		// If there is ammonia in partially melted layers, decrease viscosity according to Fig. 6 of Arakawa & Maeno (1994)
+		// TODO As of 3/24/2016, this results in viscosities so low that the model blows up. Need to decrease the rigidity with NH3 content?
+//		if (Mnh3l[ir]+Madhs[ir] >= 0.01*Mh2os[ir]) mu1 = mu1*1.0e-3;
+
+		switch(tidalmodel) {
+
+		case 2: // Maxwell viscoelastic model (Henning et al. 2009), assumes steady-state response
+			shearmod[ir] = mu_rigid*omega_tide*omega_tide*mu_visc*mu_visc / (mu_rigid*mu_rigid + omega_tide*omega_tide*mu_visc*mu_visc)
+						 + mu_rigid*mu_rigid*omega_tide*mu_visc / (mu_rigid*mu_rigid + omega_tide*omega_tide*mu_visc*mu_visc) * I;
+		break;
+
+		case 3: // Burgers viscoelastic model (Henning et al. 2009; Shoji et al. 2013), assumes superposition of steady-state and transient responses
+			mu_rigid_1 = mu_rigid; // Steady-state shear modulus
+			mu_rigid_2 = mu_rigid; // Transient shear modulus
+			mu2 = 0.02*mu_visc;    // mu2: transient viscosity; mu_visc/mu2 = 17 to 50 (Shoji et al. 2013) !! mu1 and mu2 are flipped compared to the equations of Shoji et al. (2013)
+			C1 = 1.0/mu_rigid_1 + mu2/(mu_rigid_1*mu_visc) + 1.0/mu_rigid_2;
+			C2 = 1.0/mu_visc - mu2*omega_tide*omega_tide/(mu_rigid_1*mu_rigid_2);
+			D_Burgers = (pow(C2,2) + pow(omega_tide,2)*pow(C1,2));
+			shearmod[ir] = omega_tide*omega_tide*(C1 - mu2*C2/mu_rigid_1) / D_Burgers
+						 + omega_tide*(C2 + mu2*omega_tide*omega_tide*C1/mu_rigid_1) / D_Burgers * I;
+		break;
+
+		case 4: // Andrade viscoelastic model (Shoji et al. 2013)
+			// Evaluate Gamma(alpha_Andrade + 1.0); Gamma is the gamma function. alpha_Andrade can vary from 0.2 to 0.5 (Shoji et al. 2013; Castillo-Rogez et al. 2011)
+			if (alpha_Andrade == 0.2) gamma_Andrade = 0.918169;
+			else if (alpha_Andrade == 0.3) gamma_Andrade = 0.897471;
+			else if (alpha_Andrade == 0.4) gamma_Andrade = 0.887264;
+			else if (alpha_Andrade == 0.5) gamma_Andrade = 0.886227;
+			else {
+				printf ("IcyDwarf: Thermal: alpha_Andrade must be equal to 0.2, 0.3, 0.4, or 0.5 (see Castillo-Rogez et al. 2011, doi 10.1029/2010JE003664)\n");
+				exit(0);
 			}
-
-			// Debug
-			mu1 = 1.0e21;
-			if (r[ir]<760.0*km2cm) mu1 = mu1*1.0e-9; // Roberts & Nimmo 2008
-
-			switch(tidalmodel) {
-
-			case 2: // Maxwell viscoelastic model (Henning et al. 2009), assumes steady-state response
-				shearmod[ir] = mu_rigid*omega_tide*omega_tide*mu1*mu1 / (mu_rigid*mu_rigid + omega_tide*omega_tide*mu1*mu1)
-							 + mu_rigid*mu_rigid*omega_tide*mu1 / (mu_rigid*mu_rigid + omega_tide*omega_tide*mu1*mu1) * I;
-			break;
-
-			case 3: // Burgers viscoelastic model (Henning et al. 2009; Shoji et al. 2013), assumes superposition of steady-state and transient responses
-				mu_rigid_1 = mu_rigid; // Steady-state shear modulus
-				mu_rigid_2 = mu_rigid; // Transient shear modulus
-				mu2 = 0.02*mu1;        // mu2: transient viscosity; mu1/mu2 = 17 to 50 (Shoji et al. 2013) !! mu1 and mu2 are flipped compared to the equations of Shoji et al. (2013)
-				C1 = 1.0/mu_rigid_1 + mu2/(mu_rigid_1*mu1) + 1.0/mu_rigid_2;
-				C2 = 1.0/mu1 - mu2*omega_tide*omega_tide/(mu_rigid_1*mu_rigid_2);
-				D_Burgers = (pow(C2,2) + pow(omega_tide,2)*pow(C1,2));
-				shearmod[ir] = omega_tide*omega_tide*(C1 - mu2*C2/mu_rigid_1) / D_Burgers
-							 + omega_tide*(C2 + mu2*omega_tide*omega_tide*C1/mu_rigid_1) / D_Burgers * I;
-			break;
-
-			case 4: // Andrade viscoelastic model (Shoji et al. 2013)
-				// Evaluate Gamma(alpha_Andrade + 1.0); Gamma is the gamma function. alpha_Andrade can vary from 0.2 to 0.5 (Shoji et al. 2013; Castillo-Rogez et al. 2011)
-				if (alpha_Andrade == 0.2) gamma_Andrade = 0.918169;
-				else if (alpha_Andrade == 0.3) gamma_Andrade = 0.897471;
-				else if (alpha_Andrade == 0.4) gamma_Andrade = 0.887264;
-				else if (alpha_Andrade == 0.5) gamma_Andrade = 0.886227;
-				else {
-					printf ("IcyDwarf: Thermal: alpha_Andrade must be equal to 0.2, 0.3, 0.4, or 0.5 (see Castillo-Rogez et al. 2011, doi 10.1029/2010JE003664)\n");
-					exit(0);
-				}
-				beta_Andrade = 1.0/(mu_rigid*pow(mu1/mu_rigid,alpha_Andrade)); // Castillo-Rogez et al. (2011)
-				A_Andrade = 1.0/mu_rigid + pow(omega_tide,-alpha_Andrade)*beta_Andrade*cos(alpha_Andrade*PI_greek/2.0)*gamma_Andrade;
-				B_Andrade = 1.0/(mu1*omega_tide) + pow(omega_tide,-alpha_Andrade)*beta_Andrade*sin(alpha_Andrade*PI_greek/2.0)*gamma_Andrade;
-				D_Andrade = pow(A_Andrade,2) + pow(B_Andrade,2);
-				shearmod[ir] = A_Andrade/D_Andrade
-							 + B_Andrade/D_Andrade * I;
-			break;
-			}
-		//}
-		// else shearmod[ir] = 1.0e5 + 1.0e5 * I; // Arbitrarily low shear modulus in rock and water layers
+			beta_Andrade = 1.0/(mu_rigid*pow(mu_visc/mu_rigid,alpha_Andrade)); // Castillo-Rogez et al. (2011)
+			A_Andrade = 1.0/mu_rigid + pow(omega_tide,-alpha_Andrade)*beta_Andrade*cos(alpha_Andrade*PI_greek/2.0)*gamma_Andrade;
+			B_Andrade = 1.0/(mu_visc*omega_tide) + pow(omega_tide,-alpha_Andrade)*beta_Andrade*sin(alpha_Andrade*PI_greek/2.0)*gamma_Andrade;
+			D_Andrade = pow(A_Andrade,2) + pow(B_Andrade,2);
+			shearmod[ir] = A_Andrade/D_Andrade
+						 + B_Andrade/D_Andrade * I;
+		break;
+		}
 	}
 
     //-------------------------------------------------------------------
@@ -2725,17 +2740,13 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 //		printf ("%g \t %g \t %g \t %g \t %g \n", r[ir]/km2cm, cabs(ytide[ir][0])/cm, cabs(ytide[ir][1])/cm,
 //				cabs(ytide[ir][2])*gram/cm/cm/cm, cabs(ytide[ir][3])*gram/cm/cm/cm);
 //	}
-//	exit(0);
 
     //-------------------------------------------------------------------
     //      Find H_mu, then tidal heating rate (Tobie et al. 2005)
     //-------------------------------------------------------------------
 
 	for (ir=1;ir<NR;ir++) {
-		// Debug
-//		K = 3500.0*(8000.0*8000.0-4.0/3.0*4500.0*4500.0)/gram*cm;
-		if (r[ir]<760.0*km2cm) K = 5150.0*(6000.0*6000.0-4.0/3.0*0.0)/gram*cm;
-		else K = 3300.0*(8000.0*8000.0-4.0/3.0*4500.0*4500.0)/gram*cm;
+		K = (Mrock[ir]*K_rock + (Mh2os[ir]+Madhs[ir]+Mh2ol[ir]+Mnh3l[ir])*K_ice)/dM[ir];
 
 		// Tobie et al. 2005, doi:10.1016/j.icarus.2005.04.006, equation 33. Note y2 and y3 are inverted here.
 		H_mu = 4.0/3.0 * (r[ir+1]*r[ir+1]/pow(cabs(K + 4.0/3.0*shearmod[ir]),2))
@@ -2745,17 +2756,28 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 			 + 6.0*r[ir+1]*r[ir+1]*pow(cabs(ytide[ir][3]),2)/pow(cabs(shearmod[ir]),2)
 			 + 24.0 * pow(cabs(ytide[ir][1]),2);
 
-		// Calculate volumetric heating rate, multiply by layer volume (Tobie et al. 2005, equation 37)
-		Wtide = dVol[ir] * (-2.1*pow(omega_tide,5)*pow(r_p,4)*eorb*eorb/r[ir+1]/r[ir+1]*H_mu*cimag(shearmod[ir]));
+		// Calculate volumetric heating rate, multiply by layer volume (Tobie et al. 2005, equation 37).
+		// Note Im(k2) = -Im(y5) (Henning & Hurford 2014 eq. A9), the opposite convention of Tobie et al. (2005, eqs. 9 & 36).
+		Wtide = dVol[ir] * 2.1*pow(omega_tide,5)*pow(r_p,4)*eorb*eorb/r[ir+1]/r[ir+1]*H_mu*cimag(shearmod[ir]);
 		if (tidetimesten) Wtide = 10.0*Wtide;
 		(*Qth)[ir] = (*Qth)[ir] + Wtide;
 		(*Wtide_tot) = (*Wtide_tot) + Wtide;
+
+		// Benchmark against Roberts (2015)
+//		printf("%g \t %g \n", r[ir]/km2cm, Wtide/dVol[ir]/cm/cm/cm/1.0e7);
+
 		Wtide = 0.0;
 	}
-	exit(0);
 
 // End plots in viscosity-rigidity space
-//		printf("%g \t",log(Wtide_tot/1.0e7)/log(10.0));
+//		printf("%g \t",log((*Wtide_tot)/1.0e7)/log(10.0));
+//		(*Wtide_tot) = 0.0;
+//		for (ir=0;ir<NR;ir++) {
+//			for (i=0;i<6;i++) {
+//				ytide[ir][i] = 0.0;
+//				for (j=0;j<3;j++) Bpropmtx[ir][i][j] = 0.0;
+//			}
+//		}
 //	}
 //	printf("\n");
 //}
