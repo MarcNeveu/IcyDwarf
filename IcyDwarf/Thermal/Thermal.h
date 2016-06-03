@@ -2377,10 +2377,10 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 
 	double mu_rigid = 0.0;               // Rigidity = shear modulus (g cm-1 s-2)
 	double mu_rigid_ice = 0.0;           // Ice rigidity = shear modulus (g cm-1 s-2)
-	double mu_rigid_rock = 0.0;          // Rock rigidity = shear modulus (g cm-1 s-2) (Tobie et al. 2005)
+	double mu_rigid_rock = 0.0;          // Rock rigidity = shear modulus (g cm-1 s-2)
 	double K = 0.0;                      // Bulk modulus (g cm-2 s-2)
-	double K_ice = 10.7e9/gram*cm;       // Ice bulk modulus (g cm-2 s-2) (Tobie et al. 2005)
-	double K_rock = 3300.0*(8000.0*8000.0-4.0/3.0*4500.0*4500.0)/gram*cm; // Rock bulk modulus (g cm-2 s-2) (Tobie et al. 2005)
+	double K_ice = 0.0;                  // Ice bulk modulus (g cm-2 s-2)
+	double K_rock = 0.0;                 // Rock bulk modulus (g cm-2 s-2)
 	double mu_visc = 0.0;                // Viscosity (g cm-1 s-1)
 	double mu_visc_ice = 0.0;            // Ice viscosity (g cm-1 s-1)
 	double mu_visc_rock = 0.0;           // Rock viscosity (g cm-1 s-1)
@@ -2746,6 +2746,10 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
     //-------------------------------------------------------------------
 
 	for (ir=1;ir<NR;ir++) {
+		K_ice = 10.7e9/gram*cm;
+		K_rock =     (Xhydr[ir] *E_Young_serp/(3.0*(1.0-2.0*nu_Poisson_serp))
+			   + (1.0-Xhydr[ir])*E_Young_oliv/(3.0*(1.0-2.0*nu_Poisson_oliv)))/gram*cm; // K = E/(3*(1-2*nu))
+
 		K = (Mrock[ir]*K_rock + (Mh2os[ir]+Madhs[ir]+Mh2ol[ir]+Mnh3l[ir])*K_ice)/dM[ir];
 
 		// Tobie et al. 2005, doi:10.1016/j.icarus.2005.04.006, equation 33. Note y2 and y3 are inverted here.

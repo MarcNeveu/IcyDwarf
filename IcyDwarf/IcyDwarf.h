@@ -663,7 +663,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 		printf("\t Hydrate/dehydrate? \t %g\n",input[i]), i++;
 		printf("\t Fine rock fraction \t %g\n",input[i]), i++;
 		printf("\t Start differentiated? \t %g\n",input[i]), i++;
-		printf("\t Tidal rhe 1E 2M 3B 4A \t %g\n",input[i]), i++;
+		printf("\t Tidal rhe 2Ma 3Bu 4An \t %g\n",input[i]), i++;
 		printf("\t Tidal heating x10? \t %g\n",input[i]), i++;
 		printf("Core cracks\n");
 		printf("\t Calculate aTP? \t %g\n",input[i]), i++;
