@@ -57,8 +57,8 @@ int hydrate(double T, double **dM, double *dVol, double **Mrock, double **Mh2os,
 double viscosity(double T, double Mh2ol, double Mnh3l);
 
 int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, double r_p, double **Qth, int NR, double dtime,
-		double *Wtide_tot, double *Mrock, double *Mh2os, double *Madhs, double *Mh2ol, double *Mnh3l, double *dM, double *dVol,
-		double *r, double *T, double fineVolFrac, double *Brittle_strength, double *Xhydr);
+		double *Wtide_tot, double *Mrock, double *Mh2os, double *Madhs, double *Mh2ol, double *Mnh3l, double *dM,  double *Vrock,
+		double *dVol, double *r, double *T, double fineVolFrac, double *Brittle_strength, double *Xhydr);
 
 int GaussJordan(complex double ***M, complex double ***b, int n, int m);
 
@@ -901,7 +901,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			for (ir=0;ir<NR;ir++) strain(Pressure[ir], Xhydr[ir], T[ir], &strain_rate[ir], &Brittle_strength[ir], pore[ir]);
 			Wtide_tot = 0.0;
 			tide(tidalmodel, tidetimesten, eorb, omega_tide, r_p, &Qth, NR, dtime, &Wtide_tot, Mrock, Mh2os, Madhs, Mh2ol, Mnh3l,
-					dM, dVol, r, T, fineVolFrac, Brittle_strength, Xhydr);
+					dM, Vrock, dVol, r, T, fineVolFrac, Brittle_strength, Xhydr);
 			Heat_tide = Heat_tide + Wtide_tot;
 
 			// Update orbital parameters (Barnes et al. 2008):
@@ -2367,14 +2367,16 @@ double viscosity(double T, double Mh2ol, double Mnh3l) {
  *--------------------------------------------------------------------*/
 
 int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, double r_p, double **Qth, int NR, double dtime,
-		double *Wtide_tot, double *Mrock, double *Mh2os, double *Madhs, double *Mh2ol, double *Mnh3l, double *dM, double *dVol,
-		double *r, double *T, double fineVolFrac, double *Brittle_strength, double *Xhydr) {
+		double *Wtide_tot, double *Mrock, double *Mh2os, double *Madhs, double *Mh2ol, double *Mnh3l, double *dM,  double *Vrock,
+		double *dVol, double *r, double *T, double fineVolFrac, double *Brittle_strength, double *Xhydr) {
 
 	int ir = 0;                          // Counters
 	int i = 0;
 	int j = 0;
 	int k = 0;
 
+	double frock = 0.0;                  // Volume fraction of rock (dimensionless)
+	double phi = 0.0;                    // Ice volume fraction (dimensionless)
 	double mu_rigid = 0.0;               // Rigidity = shear modulus (g cm-1 s-2)
 	double mu_rigid_ice = 0.0;           // Ice rigidity = shear modulus (g cm-1 s-2)
 	double mu_rigid_rock = 0.0;          // Rock rigidity = shear modulus (g cm-1 s-2)
@@ -2512,13 +2514,19 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
     //      Calculate density, gravity, and shear modulus (rigidity)
     //-------------------------------------------------------------------
 
+    // Debug
+//	int water = 0;
+//	for (ir=0;ir<NR;ir++) {
+//		if (Mh2ol[ir] > 0.9*dM[ir]) water++;
+//	}
+
 	for (ir=0;ir<NR;ir++) {
 		rho[ir] = dM[ir]/dVol[ir];
 		g[ir] = 4.0/3.0*PI_greek*Gcgs*rho[ir]*r[ir+1];
 
 		// Steady-state viscosity and shear modulus
 		mu_visc_ice = (1.0e15)*exp(25.0*(273.0/T[ir]-1.0))/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // 1.0e14 in SI (Thomas et al. LPSC 1987; Desch et al. 2009)
-		mu_visc_ice = 1.0e14/gram*cm; // Roberts (2015)
+//		mu_visc_ice = 1.0e14/gram*cm; // Roberts (2015)
 
 		mu_rigid_ice = 4.0e9/gram*cm;
 
@@ -2532,16 +2540,24 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 //		mu_rigid_rock = 3300.0*4500.0*4500.0/gram*cm; // Tobie et al. (2005), reached at 1730 K by Driscoll & Barnes (2015)
 //		mu_rigid_rock = 70.0e9/gram*cm; // Roberts (2015)
 
-		if (Mh2os[ir]+Madhs[ir]+Mh2ol[ir]+Mnh3l[ir] > 0.0) {
-			mu_visc = (Mrock[ir]*mu_visc_rock + (Mh2os[ir]+Madhs[ir]+Mh2ol[ir]+Mnh3l[ir])*mu_visc_ice)/dM[ir];
-			mu_rigid = (Mrock[ir]*mu_rigid_rock + (Mh2os[ir]+Madhs[ir]+Mh2ol[ir]+Mnh3l[ir])*mu_rigid_ice)/dM[ir];
+		if (Mh2os[ir]+Madhs[ir]+Mh2ol[ir]+Mnh3l[ir] > 0.0) { // Scaling of Roberts (2015)
+			frock = Vrock[ir]/dVol[ir];
+			phi = 1.0-frock;
+			if (phi < 0.3) {
+				mu_visc = ((0.3-phi)*mu_visc_rock + phi*mu_visc_ice)/0.3;
+				mu_rigid = ((0.3-phi)*mu_rigid_rock + phi*mu_rigid_ice)/0.3;
+			}
+			else {
+				mu_visc = mu_visc_ice;
+				mu_rigid = mu_rigid_ice;
+			}
 		}
 		else {
 			mu_visc = mu_visc_rock;
 			mu_rigid = mu_rigid_rock;
 		}
 		if (Mh2ol[ir] + Mnh3l[ir] > 0.02*dM[ir]) { // In the ocean, sufficiently low rigidity and viscosity, far from Maxwell time
-			mu_visc = 1.0e3;
+			mu_visc = 1.0e3; // TODO Implement propagator matrix through liquid
 			mu_rigid = 1.0e4;
 		}
 		// If there is ammonia in partially melted layers, decrease viscosity according to Fig. 6 of Arakawa & Maeno (1994)
@@ -2736,9 +2752,11 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 	}
 
 	// Benchmark against Tobie et al. (2005) and Roberts & Nimmo (2008) TODO try with a compressible propagator matrix
-//	for (ir=0;ir<NR;ir++) {
-//		printf ("%g \t %g \t %g \t %g \t %g \n", r[ir]/km2cm, cabs(ytide[ir][0])/cm, cabs(ytide[ir][1])/cm,
-//				cabs(ytide[ir][2])*gram/cm/cm/cm, cabs(ytide[ir][3])*gram/cm/cm/cm);
+//	if (water > 20) {
+//		for (ir=0;ir<NR;ir++) {
+//			printf ("%g \t %g \t %g \t %g \t %g \n", r[ir]/km2cm, cabs(ytide[ir][0])/cm, cabs(ytide[ir][1])/cm,
+//					cabs(ytide[ir][2])*gram/cm/cm/cm, cabs(ytide[ir][3])*gram/cm/cm/cm);
+//		}
 //	}
 
     //-------------------------------------------------------------------

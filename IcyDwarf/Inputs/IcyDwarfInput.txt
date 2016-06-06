@@ -18,7 +18,7 @@ Moon?                         1
 	Host planet tidal Q   2452.8
 Density, 0 porosity (g cm-3)  1.611
 Porosity                      0
-Hydr. rock density (g cm-3)   2.17
+Hydr. rock density (g cm-3)   2.9
 Dry rock density (g cm-3)     3.8 
 Chondrite type? 1:CO, otw CI  0
 Radius (km)                   252
@@ -36,12 +36,12 @@ Subroutines
 -------------------------------
 Run thermal?                  1
 	Sim time step (yr)    50
-	Sim starts at (Myr)   100
+	Sim starts at (Myr)   2
 	Initial temp (K)      200
 	Degree of hydration   1
 	Hydrate/dehydrate?    0
 	Fine rock fraction    0
-	Start differentiated? 1
+	Start differentiated? 0
 	Tidal rhe 2Ma 3Bu 4An 4
 	Tidal heating x10?    0
 Core cracks
