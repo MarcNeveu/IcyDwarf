@@ -721,13 +721,14 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	iriceold = irice;
     	irice = ircore;
     	for (ir=ircore;ir<NR;ir++) {
-    		Xhydr_old[ir] = Xhydr[ir];
     		if (Mh2ol[ir] > 0.0) irice = ir;
     	}
 
+    	for (ir=0;ir<NR;ir++) Xhydr_old[ir] = Xhydr[ir];
+
     	if (hy) {
 			for (ir=ircore-1;ir>=ircrack;ir--) { // From the ocean downwards -- irice-1 if fines?
-				if (T[ir] < Tdehydr_max && Xhydr[ir] <= 0.99 && structure_changed == 0) {
+				if (circ[ir] == 1 && T[ir] < Tdehydr_max && Xhydr[ir] <= 0.99 && structure_changed == 0) {
 					Xhydr_temp = Xhydr[ir];
 					hydrate(T[ir], &dM, dVol, &Mrock, &Mh2os, Madhs, &Mh2ol, &Mnh3l, &Vrock, &Vh2os, &Vh2ol, &Vnh3l,
 						rhoRockth, rhoHydrth, rhoH2osth, rhoH2olth, rhoNh3lth, &Xhydr, ir, ircore, irice, NR);
@@ -746,7 +747,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
 //		//-------------------------------------------------------------------
 //		//               Allow for chemical equilibrium again
-    	// TODO disabled to avoid artificial cooling upon dehydration. Put back?
+//    	// TODO disabled to avoid artificial cooling upon dehydration. Put back?
+//    	// 160610: Unnecessary since no energy is transferred in hydrating/dehydrating?
 //		//-------------------------------------------------------------------
 //
 //		for (ir=0;ir<NR;ir++) {
@@ -770,11 +772,11 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	//-------------------------------------------------------------------
 
 		// Recalculate irice in case some small amount of liquid was refrozen in the above chemical equilibrium calculation
-    	irice = ircore;
-    	for (ir=ircore;ir<NR;ir++) {
-    		Xhydr_old[ir] = Xhydr[ir];
-    		if (Mh2ol[ir] > 0.0) irice = ir;
-    	}
+//    	irice = ircore;
+//    	for (ir=ircore;ir<NR;ir++) {
+//    		Xhydr_old[ir] = Xhydr[ir];
+//    		if (Mh2ol[ir] > 0.0) irice = ir;
+//    	}
 
     	irdiffold = irdiff;
     	if (Xp >= 1.0e-2) Tliq = 174.0; // Differentiation occurs at the solidus (first melt). We set 174 K instead of 176 K for consistency with the heatIce() subroutine.
@@ -806,25 +808,26 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			if (Xhydr[ir] > 1.0-1.0e-10) Xhydr[ir] = 1.0;
     	}
 
-		//-------------------------------------------------------------------
-		//               Allow for chemical equilibrium again
-		//-------------------------------------------------------------------
-
-		for (ir=0;ir<NR;ir++) {
-			e1 = dE[ir] / dM[ir];
-			frock = Mrock[ir] / dM[ir];
-			fh2os = Mh2os[ir] / dM[ir];
-			fadhs = Madhs[ir] / dM[ir];
-			fh2ol = Mh2ol[ir] / dM[ir];
-			fnh3l = Mnh3l[ir] / dM[ir];
-			state (path, itime, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, Xsalt, &temp1);
-			T[ir] = temp1;
-			Mrock[ir] = dM[ir]*frock;
-			Mh2os[ir] = dM[ir]*fh2os;
-			Madhs[ir] = dM[ir]*fadhs;
-			Mh2ol[ir] = dM[ir]*fh2ol;
-			Mnh3l[ir] = dM[ir]*fnh3l;
-		}
+//		//-------------------------------------------------------------------
+//		//               Allow for chemical equilibrium again
+//    	// 160610: Not really necessary any more since we'r not moving energies around when differentiating, just mass
+//		//-------------------------------------------------------------------
+//
+//		for (ir=0;ir<NR;ir++) {
+//			e1 = dE[ir] / dM[ir];
+//			frock = Mrock[ir] / dM[ir];
+//			fh2os = Mh2os[ir] / dM[ir];
+//			fadhs = Madhs[ir] / dM[ir];
+//			fh2ol = Mh2ol[ir] / dM[ir];
+//			fnh3l = Mnh3l[ir] / dM[ir];
+//			state (path, itime, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, Xsalt, &temp1);
+//			T[ir] = temp1;
+//			Mrock[ir] = dM[ir]*frock;
+//			Mh2os[ir] = dM[ir]*fh2os;
+//			Madhs[ir] = dM[ir]*fadhs;
+//			Mh2ol[ir] = dM[ir]*fh2ol;
+//			Mnh3l[ir] = dM[ir]*fnh3l;
+//		}
 
 		//-------------------------------------------------------------------
 		//                    Find gravitational energy
@@ -1081,7 +1084,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
 		// Heat equation
 		for (ir=0;ir<NR-1;ir++) {
-			dE[ir] = dE[ir] + dtime*Qth[ir] + 4*PI_greek*dtime*(RRflux[ir]-RRflux[ir+1]);
+			dE[ir] = dE[ir] + dtime*Qth[ir] + 4.0*PI_greek*dtime*(RRflux[ir]-RRflux[ir+1]);
 		}
 
 		// Chemical equilibrium
