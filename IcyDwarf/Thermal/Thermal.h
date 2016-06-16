@@ -2740,7 +2740,7 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 	 * (1) getting an analytical inverse would require thousands of calculations by hand;
 	 * (2) Numerical inversion by Gauss-Jordan elimination with full pivoting yields rounding errors of order 10^30 or more
 	 *     because the order-of-magnitude differences between matrix elements far exceed the computational precision of 10^-16
-	 * (3) For the same reason, partial elimination with back-substitution also fails
+	 * (3) For the same reason, scaled partial elimination with back-substitution also fails
 	 * (4) Singular value decomposition provides a diagnosis for where inversion algorithms fail and an opportunity to zero out
 	 *     coefficients responsible for the largest order of mag variations among matrix elements, but to no avail.
 	 *
@@ -2909,11 +2909,11 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 
 		// Tobie et al. 2005, doi:10.1016/j.icarus.2005.04.006, equation 33. Note y2 and y3 are inverted here.
 		H_mu = 4.0/3.0 * (r[ir+1]*r[ir+1]/pow(cabs(K + 4.0/3.0*shearmod[ir]),2))
-			 * pow( cabsl( ytide[ir][2] - (K-2.0/3.0*shearmod[ir])/r[ir+1] * (2.0*ytide[ir][0]-6.0*ytide[ir][1]) ) ,2)
+			 * pow( cabs( ytide[ir][2] - (K-2.0/3.0*shearmod[ir])/r[ir+1] * (2.0*ytide[ir][0]-6.0*ytide[ir][1]) ) ,2)
 			 - 4.0/3.0 * r[ir+1] * creal( (conj(ytide[ir][0])-conj(ytide[ir-1][0]))/(r[ir+1]-r[ir]) * (2.0*ytide[ir][0]-6.0*ytide[ir][1]) )
-			 + 1.0/3.0 * pow( cabsl(2.0*ytide[ir][0]-6.0*ytide[ir][1]) ,2)
-			 + 6.0*r[ir+1]*r[ir+1]*pow(cabsl(ytide[ir][3]),2)/pow(cabsl(shearmod[ir]),2)
-			 + 24.0 * pow(cabsl(ytide[ir][1]),2);
+			 + 1.0/3.0 * pow( cabs(2.0*ytide[ir][0]-6.0*ytide[ir][1]) ,2)
+			 + 6.0*r[ir+1]*r[ir+1]*pow(cabs(ytide[ir][3]),2)/pow(cabs(shearmod[ir]),2)
+			 + 24.0 * pow(cabs(ytide[ir][1]),2);
 
 		// Calculate volumetric heating rate, multiply by layer volume (Tobie et al. 2005, equation 37).
 		// Note Im(k2) = -Im(y5) (Henning & Hurford 2014 eq. A9), the opposite convention of Tobie et al. (2005, eqs. 9 & 36).
@@ -3015,18 +3015,17 @@ int GaussJordan(double complex ***M, double complex ***b, int n, int m) {
 
     for (i=0;i<n;i++) { // Loop over columns
         big = 0.0;
-        for (j=n-1;j>=0;j--) { // Search for a pivot element, "big". Loop over rows
+        for (j=0;j<n;j++) { // Search for a pivot element, "big". Loop over rows
             if (ipiv[j] != 1) {
-                for (k=n-1;k>=0;k--) { // Loop over columns
+                for (k=0;k<n;k++) { // Loop over columns
                     if (ipiv[k] == 0) { // Find the biggest coefficient (usually safe to select as pivot element)
-                        if (cabsl((*M)[j][k]) >= big) {
-                            big = cabsl((*M)[j][k]);
+                        if (cabs((*M)[j][k]) >= big) {
+                            big = cabs((*M)[j][k]);
                             irow = j;
                             icol = k;
                         }
                     }
                 }
-                if (i==0 && j==n-1) break;
             }
         }
         (ipiv[icol])++;
