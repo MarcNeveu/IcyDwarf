@@ -60,7 +60,18 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 		double *Wtide_tot, double *Mrock, double *Mh2os, double *Madhs, double *Mh2ol, double *Mnh3l, double *dM,  double *Vrock,
 		double *dVol, double *r, double *T, double fineVolFrac, double *Brittle_strength, double *Xhydr);
 
-int GaussJordan(complex double ***M, complex double ***b, int n, int m);
+int GaussJordan(double complex ***M, double complex ***b, int n, int m);
+int ScaledGaussJordan(long double complex ***M, int n);
+int SVdcmp(long double ***M, int m, int n, long double **w, long double ***v);
+
+double pythag(long double a, long double b);
+
+long double complex j2(long double complex x, int mod);
+long double complex j2p(long double complex x, int mod);
+long double complex j2pp(long double complex x, int mod);
+long double complex y2(long double complex x, int mod);
+long double complex y2p(long double complex x, int mod);
+long double complex y2pp(long double complex x, int mod);
 
 int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p, double rhoHydr, double rhoDry,
 		int warnings, int msgout, double Xp, double Xsalt, double *Xhydr, double Xfines, double tzero, double Tsurf,
@@ -2410,8 +2421,15 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 	double *g = (double*) malloc((NR)*sizeof(double)); // Mean gravity in layer (cm s-2)
 	if (g == NULL) printf("Thermal: Not enough memory to create g[NR]\n");
 
-	complex double *shearmod = (complex double*) malloc((NR)*sizeof(complex double)); // Frequency-dependent complex rigidity (g cm-1 s-2)
+	double complex *shearmod = (complex double*) malloc((NR)*sizeof(double complex)); // Frequency-dependent complex rigidity (g cm-1 s-2)
 	if (shearmod == NULL) printf("Thermal: Not enough memory to create shearmod[NR]\n");
+
+	double complex **dum = (double complex**) malloc(6*sizeof(double complex*)); // Dummy right-hand vector for Gauss-Jordan inversion of compressible propagator matrix
+	if (dum == NULL) printf("Thermal: Not enough memory to create dum[6][1]\n");
+	for (i=0;i<6;i++) {
+		dum[i] = (double complex*) malloc(1*sizeof(double complex));
+		if (dum[i] == NULL) printf("Thermal: Not enough memory to create dum[6][1]\n");
+	}
 
 	/* Vector of 6 radial functions (Sabadini & Vermeersen 2004; Roberts & Nimmo 2008; Henning & Hurford 2014):
 	 *  y1: radial displacement (index 0)
@@ -2421,63 +2439,63 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 	 *  y5: gravitational potential (index 4)
 	 *  y6: potential stress or continuity (index 5)
 	*/
-	complex double **ytide = (complex double**) malloc(NR*sizeof(complex double*));
+	double complex **ytide = (double complex**) malloc(NR*sizeof(double complex*));
 	if (ytide == NULL) printf("Thermal: Not enough memory to create ytide[NR][6]\n");
 	for (ir=0;ir<NR;ir++) {
-		ytide[ir] = (complex double*) malloc(6*sizeof(complex double));
+		ytide[ir] = (double complex*) malloc(6*sizeof(double complex));
 		if (ytide[ir] == NULL) printf("Thermal: Not enough memory to create ytide[NR][6]\n");
 	}
 	// Btemp: temporary storage matrix used in the calculation of Bpropmtx
-	complex double **Btemp = (complex double**) malloc(6*sizeof(complex double*));
+	double complex **Btemp = (double complex**) malloc(6*sizeof(double complex*));
 	if (Btemp == NULL) printf("Thermal: Not enough memory to create Btemp[6][3]\n");
 	for (i=0;i<6;i++) {
-		Btemp[i] = (complex double*) malloc(3*sizeof(complex double));
+		Btemp[i] = (double complex*) malloc(3*sizeof(double complex));
 		if (Btemp[i] == NULL) printf("Thermal: Not enough memory to create Btemp[6][3]\n");
 	}
 	// Mbc: 3x3 subset of Bpropmtx[NR-1] used in applying the 6 surface and central boundary conditions to find csol = ytide[0]
-	complex double **Mbc = (complex double**) malloc(3*sizeof(complex double*));
+	double complex **Mbc = (double complex**) malloc(3*sizeof(double complex*));
 	if (Mbc == NULL) printf("Thermal: Not enough memory to create Mbc[3][3]\n");
 	for (i=0;i<3;i++) {
-		Mbc[i] = (complex double*) malloc(3*sizeof(complex double));
+		Mbc[i] = (double complex*) malloc(3*sizeof(double complex));
 		if (Mbc[i] == NULL) printf("Thermal: Not enough memory to create Mbc[3][3]\n");
 	}
 	// bsurf: surface boundary condition, defined as a 3x1 array for compatibility with GaussJordan()
-	complex double **bsurf = (complex double**) malloc(3*sizeof(complex double*));
+	double complex **bsurf = (double complex**) malloc(3*sizeof(double complex*));
 	if (bsurf == NULL) printf("Thermal: Not enough memory to create bsurf[3][1]\n");
 	for (i=0;i<3;i++) {
-		bsurf[i] = (complex double*) malloc(1*sizeof(complex double));
+		bsurf[i] = (double complex*) malloc(1*sizeof(double complex));
 		if (bsurf[i] == NULL) printf("Thermal: Not enough memory to create bsurf[3][1]\n");
 	}
 	// Ypropmtx: propagator matrix (Sabadini & Vermeersen 2004; Roberts & Nimmo 2008; Henning & Hurford 2014)
-	complex double ***Ypropmtx = (complex double***) malloc(NR*sizeof(complex double**));
+	double complex ***Ypropmtx = (double complex***) malloc(NR*sizeof(double complex**));
 	if (Ypropmtx == NULL) printf("Thermal: Not enough memory to create Ypropmtx[NR][6][6]\n");
 	for (ir=0;ir<NR;ir++) {
-		Ypropmtx[ir] = (complex double**) malloc(6*sizeof(complex double*));
+		Ypropmtx[ir] = (double complex**) malloc(6*sizeof(double complex*));
 		if (Ypropmtx[ir] == NULL) printf("Thermal: Not enough memory to create Ypropmtx[NR][6][6]\n");
 		for (i=0;i<6;i++) {
-			Ypropmtx[ir][i] = (complex double*) malloc(6*sizeof(complex double));
+			Ypropmtx[ir][i] = (double complex*) malloc(6*sizeof(double complex));
 			if (Ypropmtx[ir][i] == NULL) printf("Thermal: Not enough memory to create Ypropmtx[NR][6][6]\n");
 		}
 	}
 	// Ypropinv: inverse of Ypropmtx
-	complex double ***Ypropinv = (complex double***) malloc(NR*sizeof(complex double**));
+	double complex ***Ypropinv = (double complex***) malloc(NR*sizeof(double complex**));
 	if (Ypropinv == NULL) printf("Thermal: Not enough memory to create Ypropbar[NR][6][6]\n");
 	for (ir=0;ir<NR;ir++) {
-		Ypropinv[ir] = (complex double**) malloc(6*sizeof(complex double*));
+		Ypropinv[ir] = (double complex**) malloc(6*sizeof(double complex*));
 		if (Ypropinv[ir] == NULL) printf("Thermal: Not enough memory to create Ypropbar[NR][6][6]\n");
 		for (i=0;i<6;i++) {
-			Ypropinv[ir][i] = (complex double*) malloc(6*sizeof(complex double));
+			Ypropinv[ir][i] = (double complex*) malloc(6*sizeof(double complex));
 			if (Ypropinv[ir][i] == NULL) printf("Thermal: Not enough memory to create Ypropbar[NR][6][6]\n");
 		}
 	}
 	// Bpropmtx: compound matrix, = Y[ir]*Y[ir-1]^-1*Bpropmtx[ir-1]
-	complex double ***Bpropmtx = (complex double***) malloc(NR*sizeof(complex double**));
+	double complex ***Bpropmtx = (double complex***) malloc(NR*sizeof(double complex**));
 	if (Bpropmtx == NULL) printf("Thermal: Not enough memory to create Bpropmtx[NR][6][3]\n");
 	for (ir=0;ir<NR;ir++) {
-		Bpropmtx[ir] = (complex double**) malloc(6*sizeof(complex double*));
+		Bpropmtx[ir] = (double complex**) malloc(6*sizeof(double complex*));
 		if (Bpropmtx[ir] == NULL) printf("Thermal: Not enough memory to create Bpropmtx[NR][6][3]\n");
 		for (i=0;i<6;i++) {
-			Bpropmtx[ir][i] = (complex double*) malloc(3*sizeof(complex double));
+			Bpropmtx[ir][i] = (double complex*) malloc(3*sizeof(double complex));
 			if (Bpropmtx[ir][i] == NULL) printf("Thermal: Not enough memory to create Bpropmtx[NR][6][3]\n");
 		}
 	}
@@ -2497,6 +2515,7 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
     	}
 	}
     for (i=0;i<6;i++) {
+    	dum[i][0] = 0.0 + 0.0*I;
     	for (j=0;j<3;j++) Btemp[i][j] = 0.0 + 0.0*I;
     }
     for (i=0;i<3;i++) {
@@ -2563,9 +2582,17 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 			mu_visc = 1.0e3; // TODO Implement propagator matrix through liquid
 			mu_rigid = 1.0e4;
 		}
-		// If there is ammonia in partially melted layers, decrease viscosity according to Fig. 6 of Arakawa & Maeno (1994)
-		// TODO As of 3/24/2016, this results in viscosities so low that the model blows up. Need to decrease the rigidity with NH3 content?
+//		// If there is ammonia in partially melted layers, decrease viscosity according to Fig. 6 of Arakawa & Maeno (1994)
+//		// TODO As of 3/24/2016, this results in viscosities so low that the model blows up. Need to decrease the rigidity with NH3 content?
 //		if (Mnh3l[ir]+Madhs[ir] >= 0.01*Mh2os[ir]) mu1 = mu1*1.0e-3;
+
+		// Benchmark against Tobie et al. (2005)
+//		rho[ir] = 3.5;
+//		g[ir] = 4.0/3.0*PI_greek*Gcgs*rho[ir]*r[ir+1];
+//		mu_rigid = rho[ir]*4500.0*4500.0/cm/cm;
+//		mu_visc = 1.0e21;
+//		K = rho[ir]*8000.0*8000.0/cm/cm - 4.0/3.0*mu_rigid;
+//		omega_tide = 2.05e-5;
 
 		switch(tidalmodel) {
 
@@ -2612,7 +2639,7 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 
 	for (ir=0;ir<NR;ir++) {
 
-		// Compute Ypropmtx, the propagator matrix
+		// Compute Ypropmtx, the incompressible propagator matrix
 		Ypropmtx[ir][0][0] = pow(r[ir+1],3)/7.0;
 		Ypropmtx[ir][1][0] = 5.0*pow(r[ir+1],3)/42.0;
 		Ypropmtx[ir][2][0] = (rho[ir]*g[ir]*r[ir+1]-shearmod[ir])*pow(r[ir+1],2)/7.0;
@@ -2708,6 +2735,111 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 		}
 	}
 
+	/* Compute compressible propagator matrix (Appendix A of Sabadini & Vermeersen 2004)
+	 * This is really hard to do:
+	 * (1) getting an analytical inverse would require thousands of calculations by hand;
+	 * (2) Numerical inversion by Gauss-Jordan elimination with full pivoting yields rounding errors of order 10^30 or more
+	 *     because the order-of-magnitude differences between matrix elements far exceed the computational precision of 10^-16
+	 * (3) For the same reason, partial elimination with back-substitution also fails
+	 * (4) Singular value decomposition provides a diagnosis for where inversion algorithms fail and an opportunity to zero out
+	 *     coefficients responsible for the largest order of mag variations among matrix elements, but to no avail.
+	 *
+	 * Alternatively, the matrix could be inverted using a package that carry out operations at arbitrarily high precision
+	 * (e.g. http://www.multiprecision.org), or the system of equations could be solved instead by a numerical shooting method.
+	 */
+
+//	for (ir=0;ir<NR;ir++) {
+//
+//		double complex k_w = 0.0; // Wavenumber
+//		double complex q_w = 0.0; // Wavenumber
+//		double complex C_k = 0.0; // Parameter
+//		double complex C_q = 0.0; // Parameter
+//		double complex lambda = 0.0; // Other Lame parameter, = K - 2/3*shearmod
+//		double complex beta = 0.0;   // lambda + 2*shearmod
+//		double ksi = 0.0;         // g/r
+//		double complex s = I*omega_tide; // Laplace variable
+
+//		// Benchmark against Tobie et al. (2005)
+//		mu_rigid = rho[ir]*4500.0*4500.0/cm/cm;
+//		mu_visc = 1.0e21;
+//		K = rho[ir]*8000.0*8000.0/cm/cm - 4.0/3.0*mu_rigid;
+//
+//		ksi = g[ir]/r[ir+1];
+//		lambda = K - 2.0/3.0*shearmod[ir];
+//		beta = lambda + 2.0*shearmod[ir];
+//
+//		int mod = 0;
+//
+//		// Wavenumbers & parameters
+//		k_w = csqrt(
+//				  rho[ir]/2.0 * (4.0*PI_greek*Gcgs*rho[ir] + ksi)
+//			    * (s + shearmod[ir]/mu_visc) / (beta*s + K*shearmod[ir]/mu_visc)
+//			    * (1.0 + csqrt(1.0 + 24.0*ksi*ksi/(pow(4.0*PI_greek*Gcgs*rho[ir] + ksi,2)) * (beta*s + K*shearmod[ir]/mu_visc)/(shearmod[ir]*s)))
+//		);
+//
+//		q_w = csqrt(
+//				  rho[ir]/2.0 * (4.0*PI_greek*Gcgs*rho[ir] + ksi)
+//			    * (s + shearmod[ir]/mu_visc) / (beta*s + K*shearmod[ir]/mu_visc)
+//			    * (1.0 - csqrt(1.0 + 24.0*ksi*ksi/(pow(4.0*PI_greek*Gcgs*rho[ir] + ksi,2)) * (beta*s + K*shearmod[ir]/mu_visc)/(shearmod[ir]*s)))
+//		);
+//
+//		C_k = - 2.0*ksi / (4.0*PI_greek*Gcgs*rho[ir] + ksi) * (beta*s + K*shearmod[ir]/mu_visc)/(shearmod[ir]*s)
+//				/ (1.0 + csqrt(1.0 + 24.0*ksi*ksi/(pow(4.0*PI_greek*Gcgs*rho[ir] + ksi,2)) * (beta*s + K*shearmod[ir]/mu_visc)/(shearmod[ir]*s)));
+//
+//		C_q = - 2.0*ksi / (4.0*PI_greek*Gcgs*rho[ir] + ksi) * (beta*s + K*shearmod[ir]/mu_visc)/(shearmod[ir]*s)
+//				/ (1.0 - csqrt(1.0 + 24.0*ksi*ksi/(pow(4.0*PI_greek*Gcgs*rho[ir] + ksi,2)) * (beta*s + K*shearmod[ir]/mu_visc)/(shearmod[ir]*s)));
+
+//		Ypropmtx[ir][0][0] = -1.0/(k_w*k_w*r[ir+1]) * (6.0*C_k*j2(k_w*r[ir+1],mod) + k_w*r[ir+1]*j2p(k_w*r[ir+1],mod));
+//		Ypropmtx[ir][1][0] = -1.0/(q_w*q_w*r[ir+1]) * (6.0*C_q*j2(q_w*r[ir+1],mod) + q_w*r[ir+1]*j2p(q_w*r[ir+1],mod));
+//		Ypropmtx[ir][2][0] = 2.0*r[ir+1];
+//		Ypropmtx[ir][3][0] = -1.0/(k_w*k_w*r[ir+1]) * (6.0*C_k*y2(k_w*r[ir+1],mod) + k_w*r[ir+1]*y2p(k_w*r[ir+1],mod));
+//		Ypropmtx[ir][4][0] = -1.0/(q_w*q_w*r[ir+1]) * (6.0*C_q*y2(q_w*r[ir+1],mod) + q_w*r[ir+1]*y2p(q_w*r[ir+1],mod));
+//		Ypropmtx[ir][5][0] = -3.0/pow(r[ir+1],4);
+//
+//		Ypropmtx[ir][0][1] = -1.0/(k_w*k_w*r[ir+1]) * ((1.0+C_k)*j2(k_w*r[ir+1],mod) + C_k*k_w*r[ir+1]*j2p(k_w*r[ir+1],mod));
+//		Ypropmtx[ir][1][1] = -1.0/(q_w*q_w*r[ir+1]) * ((1.0+C_q)*j2(q_w*r[ir+1],mod) + C_q*q_w*r[ir+1]*j2p(q_w*r[ir+1],mod));
+//		Ypropmtx[ir][2][1] = r[ir+1];
+//		Ypropmtx[ir][3][1] = -1.0/(k_w*k_w*r[ir+1]) * ((1.0+C_k)*y2(k_w*r[ir+1],mod) + C_k*k_w*r[ir+1]*y2p(k_w*r[ir+1],mod));
+//		Ypropmtx[ir][4][1] = -1.0/(q_w*q_w*r[ir+1]) * ((1.0+C_q)*y2(q_w*r[ir+1],mod) + C_q*q_w*r[ir+1]*y2p(q_w*r[ir+1],mod));
+//		Ypropmtx[ir][5][1] = 1.0/pow(r[ir+1],4);
+//
+//		Ypropmtx[ir][0][2] = lambda*j2(k_w*r[ir+1],mod) + 2.0*shearmod[ir] * (6.0*C_k/(k_w*r[ir+1]) * (1.0/(k_w*r[ir+1])*j2(k_w*r[ir+1],mod)-j2p(k_w*r[ir+1],mod)) - j2pp(k_w*r[ir+1],mod));
+//		Ypropmtx[ir][1][2] = lambda*j2(q_w*r[ir+1],mod) + 2.0*shearmod[ir] * (6.0*C_q/(q_w*r[ir+1]) * (1.0/(q_w*r[ir+1])*j2(q_w*r[ir+1],mod)-j2p(q_w*r[ir+1],mod)) - j2pp(q_w*r[ir+1],mod));
+//		Ypropmtx[ir][2][2] = 4.0*shearmod[ir];
+//		Ypropmtx[ir][3][2] = lambda*y2(k_w*r[ir+1],mod) + 2.0*shearmod[ir] * (6.0*C_k/(k_w*r[ir+1]) * (1.0/(k_w*r[ir+1])*y2(k_w*r[ir+1],mod)-y2p(k_w*r[ir+1],mod)) - y2pp(k_w*r[ir+1],mod));
+//		Ypropmtx[ir][4][2] = lambda*y2(q_w*r[ir+1],mod) + 2.0*shearmod[ir] * (6.0*C_q/(q_w*r[ir+1]) * (1.0/(q_w*r[ir+1])*y2(q_w*r[ir+1],mod)-y2p(q_w*r[ir+1],mod)) - y2pp(q_w*r[ir+1],mod));
+//		Ypropmtx[ir][5][2] = 24.0*shearmod[ir]/pow(r[ir+1],5);
+//
+//		Ypropmtx[ir][0][3] = -shearmod[ir]*C_k*j2(k_w*r[ir+1],mod) + 2.0*shearmod[ir] * ((1.0+C_k)/(k_w*r[ir+1]) * (1.0/(k_w*r[ir+1])*j2(k_w*r[ir+1],mod)-j2p(k_w*r[ir+1],mod)) - C_k*j2pp(k_w*r[ir+1],mod));
+//		Ypropmtx[ir][1][3] = -shearmod[ir]*C_q*j2(q_w*r[ir+1],mod) + 2.0*shearmod[ir] * ((1.0+C_q)/(q_w*r[ir+1]) * (1.0/(q_w*r[ir+1])*j2(q_w*r[ir+1],mod)-j2p(q_w*r[ir+1],mod)) - C_q*j2pp(q_w*r[ir+1],mod));
+//		Ypropmtx[ir][2][3] = 2.0*shearmod[ir];
+//		Ypropmtx[ir][3][3] = -shearmod[ir]*C_k*y2(k_w*r[ir+1],mod) + 2.0*shearmod[ir] * ((1.0+C_k)/(k_w*r[ir+1]) * (1.0/(k_w*r[ir+1])*y2(k_w*r[ir+1],mod)-y2p(k_w*r[ir+1],mod)) - C_k*y2pp(k_w*r[ir+1],mod));
+//		Ypropmtx[ir][4][3] = -shearmod[ir]*C_q*y2(q_w*r[ir+1],mod) + 2.0*shearmod[ir] * ((1.0+C_q)/(q_w*r[ir+1]) * (1.0/(q_w*r[ir+1])*y2(q_w*r[ir+1],mod)-y2p(q_w*r[ir+1],mod)) - C_q*y2pp(q_w*r[ir+1],mod));
+//		Ypropmtx[ir][5][3] = -8.0*shearmod[ir]/pow(r[ir+1],5);
+//
+//		Ypropmtx[ir][0][4] = 4.0*PI_greek*Gcgs*rho[ir]/(k_w*k_w)*j2(k_w*r[ir+1],mod);
+//		Ypropmtx[ir][1][4] = 4.0*PI_greek*Gcgs*rho[ir]/(q_w*q_w)*j2(q_w*r[ir+1],mod);
+//		Ypropmtx[ir][2][4] = -2.0*ksi*r[ir+1]*r[ir+1];
+//		Ypropmtx[ir][3][4] = 4.0*PI_greek*Gcgs*rho[ir]/(k_w*k_w)*y2(k_w*r[ir+1],mod);
+//		Ypropmtx[ir][4][4] = 4.0*PI_greek*Gcgs*rho[ir]/(q_w*q_w)*y2(q_w*r[ir+1],mod);
+//		Ypropmtx[ir][5][4] = -3.0/pow(r[ir+1],3)*ksi;
+//
+//		Ypropmtx[ir][0][5] = 4.0*PI_greek*Gcgs*rho[ir]*(1.0-2.0*C_k)*3.0/(k_w*k_w*r[ir+1])*j2(k_w*r[ir+1],mod);
+//		Ypropmtx[ir][1][5] = 4.0*PI_greek*Gcgs*rho[ir]*(1.0-2.0*C_q)*3.0/(q_w*q_w*r[ir+1])*j2(q_w*r[ir+1],mod);
+//		Ypropmtx[ir][2][5] = -2.0*(5.0*ksi - 4.0*PI_greek*Gcgs*rho[ir])*r[ir+1];
+//		Ypropmtx[ir][3][5] = 4.0*PI_greek*Gcgs*rho[ir]*(1.0-2.0*C_k)*3.0/(k_w*k_w*r[ir+1])*y2(k_w*r[ir+1],mod);
+//		Ypropmtx[ir][4][5] = 4.0*PI_greek*Gcgs*rho[ir]*(1.0-2.0*C_q)*3.0/(q_w*q_w*r[ir+1])*y2(q_w*r[ir+1],mod);
+//		Ypropmtx[ir][5][5] = -12.0*PI_greek*Gcgs*rho[ir]/pow(r[ir+1],4);
+//
+//		for (i=0;i<6;i++) {
+//			for (j=0;j<6;j++) Ypropinv[ir][i][j] = Ypropmtx[ir][i][j];
+//		}
+
+//		GaussJordan(&Ypropinv[ir], &dum, 6, 1);
+//		ScaledGaussJordan(&Ypropinv[ir], 6);
+//		SVdcmp(&Ypropinv[ir], 6, 6, &w, &v);
+//	}
+
 	// Central boundary conditions (3). They are inconsequential on the rest of the solution, so false assumptions are OK.
 	Bpropmtx[0][2][0] = 1.0; // Roberts & Nimmo (2008): liquid innermost zone.
 	Bpropmtx[0][3][1] = 1.0;
@@ -2725,12 +2857,12 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 		for (i=0;i<6;i++) {
 			for (j=0;j<3;j++) {
 				for (k=0;k<6;k++) Btemp[i][j] = Btemp[i][j] + Ypropinv[ir-1][i][k]*Bpropmtx[ir-1][k][j];
+//				for (k=0;k<6;k++) Btemp[i][j] = Btemp[i][j] + Ypropinv[ir][i][k]*Bpropmtx[ir-1][k][j]; // Debug, should be boundary condition everywhere
 			}
 		}
 		for (i=0;i<6;i++) {
 			for (j=0;j<3;j++) {
 				for (k=0;k<6;k++) Bpropmtx[ir][i][j] = Bpropmtx[ir][i][j] + Ypropmtx[ir][i][k]*Btemp[k][j];
-				// Debug: Ypropmtx[ir]*Ypropbar[ir] should be the identity matrix at all ir
 			}
 		}
 	}
@@ -2754,12 +2886,14 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 		}
 	}
 
-	// Benchmark against Tobie et al. (2005) and Roberts & Nimmo (2008) TODO try with a compressible propagator matrix
+	// Benchmark against Tobie et al. (2005) and Roberts & Nimmo (2008)
 //	if (water > 20) {
 //		for (ir=0;ir<NR;ir++) {
-//			printf ("%g \t %g \t %g \t %g \t %g \n", r[ir]/km2cm, cabs(ytide[ir][0])/cm, cabs(ytide[ir][1])/cm,
-//					cabs(ytide[ir][2])*gram/cm/cm/cm, cabs(ytide[ir][3])*gram/cm/cm/cm);
+//			printf ("%g \t %g \t %g \t %g \t %g \t %g \t %g\n", r[ir]/km2cm, creal(ytide[ir][0])/cm, creal(ytide[ir][1])/cm,
+//					creal(ytide[ir][2])*gram/cm/cm/cm, creal(ytide[ir][3])*gram/cm/cm/cm,
+//					creal(ytide[ir][4]), creal(ytide[ir][5])/(-r_p/5.0));
 //		}
+//		exit(0);
 //	}
 
     //-------------------------------------------------------------------
@@ -2770,16 +2904,16 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 		K_ice = 10.7e9/gram*cm;
 		K_rock =     (Xhydr[ir] *E_Young_serp/(3.0*(1.0-2.0*nu_Poisson_serp))
 			   + (1.0-Xhydr[ir])*E_Young_oliv/(3.0*(1.0-2.0*nu_Poisson_oliv)))/gram*cm; // K = E/(3*(1-2*nu))
-
+		// The scaling is linear, not the log scaling of Roberts (2015))
 		K = (Mrock[ir]*K_rock + (Mh2os[ir]+Madhs[ir]+Mh2ol[ir]+Mnh3l[ir])*K_ice)/dM[ir];
 
 		// Tobie et al. 2005, doi:10.1016/j.icarus.2005.04.006, equation 33. Note y2 and y3 are inverted here.
 		H_mu = 4.0/3.0 * (r[ir+1]*r[ir+1]/pow(cabs(K + 4.0/3.0*shearmod[ir]),2))
-			 * pow( cabs( ytide[ir][2] - (K-2.0/3.0*shearmod[ir])/r[ir+1] * (2.0*ytide[ir][0]-6.0*ytide[ir][1]) ) ,2)
+			 * pow( cabsl( ytide[ir][2] - (K-2.0/3.0*shearmod[ir])/r[ir+1] * (2.0*ytide[ir][0]-6.0*ytide[ir][1]) ) ,2)
 			 - 4.0/3.0 * r[ir+1] * creal( (conj(ytide[ir][0])-conj(ytide[ir-1][0]))/(r[ir+1]-r[ir]) * (2.0*ytide[ir][0]-6.0*ytide[ir][1]) )
-			 + 1.0/3.0 * pow( cabs(2.0*ytide[ir][0]-6.0*ytide[ir][1]) ,2)
-			 + 6.0*r[ir+1]*r[ir+1]*pow(cabs(ytide[ir][3]),2)/pow(cabs(shearmod[ir]),2)
-			 + 24.0 * pow(cabs(ytide[ir][1]),2);
+			 + 1.0/3.0 * pow( cabsl(2.0*ytide[ir][0]-6.0*ytide[ir][1]) ,2)
+			 + 6.0*r[ir+1]*r[ir+1]*pow(cabsl(ytide[ir][3]),2)/pow(cabsl(shearmod[ir]),2)
+			 + 24.0 * pow(cabsl(ytide[ir][1]),2);
 
 		// Calculate volumetric heating rate, multiply by layer volume (Tobie et al. 2005, equation 37).
 		// Note Im(k2) = -Im(y5) (Henning & Hurford 2014 eq. A9), the opposite convention of Tobie et al. (2005, eqs. 9 & 36).
@@ -2819,7 +2953,10 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 		free (Ypropinv[ir]);
 		free (Bpropmtx[ir]);
 	}
-	for (i=0;i<6;i++) free (Btemp[i]);
+	for (i=0;i<6;i++) {
+		free (Btemp[i]);
+		free (dum[i]);
+	}
 	for (i=0;i<3;i++) {
 		free (Mbc[i]);
 		free (bsurf[i]);
@@ -2834,6 +2971,7 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 	free (Btemp);
 	free (bsurf);
 	free (Mbc);
+	free (dum);
 
 	return 0;
 }
@@ -2851,7 +2989,7 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
  *
  *--------------------------------------------------------------------*/
 
-int GaussJordan(complex double ***M, complex double ***b, int n, int m) {
+int GaussJordan(double complex ***M, double complex ***b, int n, int m) {
     int i = 0;
     int j = 0;
     int k = 0;
@@ -2861,9 +2999,9 @@ int GaussJordan(complex double ***M, complex double ***b, int n, int m) {
     int ll = 1;
 
     double big = 0.0;
-    complex double dum = 0.0 + 0.0*I;
-    complex double pivinv = 0.0 + 0.0*I;
-    complex double temp = 0.0 + 0.0*I;
+    double complex dum = 0.0 + 0.0*I;
+    double complex pivinv = 0.0 + 0.0*I;
+    double complex temp = 0.0 + 0.0*I;
 
     int indxc[n]; //Used for bookkeeping on the pivoting
     int indxr[n];
@@ -2877,17 +3015,18 @@ int GaussJordan(complex double ***M, complex double ***b, int n, int m) {
 
     for (i=0;i<n;i++) { // Loop over columns
         big = 0.0;
-        for (j=0;j<n;j++) { // Search for a pivot element, "big"
+        for (j=n-1;j>=0;j--) { // Search for a pivot element, "big". Loop over rows
             if (ipiv[j] != 1) {
-                for (k=0;k<n;k++) {
+                for (k=n-1;k>=0;k--) { // Loop over columns
                     if (ipiv[k] == 0) { // Find the biggest coefficient (usually safe to select as pivot element)
-                        if (cabs((*M)[j][k]) >= big) {
-                            big = cabs((*M)[j][k]);
+                        if (cabsl((*M)[j][k]) >= big) {
+                            big = cabsl((*M)[j][k]);
                             irow = j;
                             icol = k;
                         }
                     }
                 }
+                if (i==0 && j==n-1) break;
             }
         }
         (ipiv[icol])++;
@@ -2906,7 +3045,7 @@ int GaussJordan(complex double ***M, complex double ***b, int n, int m) {
         indxr[i] = irow; // Divide the pivot row by the pivot element, located at irow and icol.
         indxc[i] = icol;
         if ((*M)[icol][icol] == 0.0) {
-            printf("Thermal: Singular matrix in GaussJordan");
+            printf("Thermal: Singular matrix in GaussJordan\n");
             exit(0);
         }
         pivinv = 1.0/(*M)[icol][icol];
@@ -2935,6 +3074,535 @@ int GaussJordan(complex double ***M, complex double ***b, int n, int m) {
     }
 
     return 0;
+}
+
+/*--------------------------------------------------------------------
+ *
+ * Subroutine ScaledGaussJordan
+ *
+ * Returns the solution to a set of linear equations, as well as the
+ * inverse matrix. Full-pivoting algorithm after
+ * https://math.okstate.edu/people/binegar/4513-F98/4513-l12.pdf
+ *
+ * M: initial matrix input; inverted matrix output (size n x n)
+ * b: initial right-hand-side input; solution vector output (size n x m)
+ *
+ *--------------------------------------------------------------------*/
+
+int ScaledGaussJordan(long double complex ***M, int n) {
+
+	int i = 0;
+	int j = 0;
+	int k = 0;
+	int pi = 0;
+	int pj = 0;
+	int pk = 0;
+	int tmp = 0;
+
+	long double maxq = 0.0; // Maximum quality
+	long double q = 0.0;
+	long double complex z = 0.0 + 0.0*I;
+
+	int p[n]; // Permutation vector
+	long double s[n]; // Row scales
+
+	long double complex **sol = (long double complex**) malloc(n*sizeof(long double complex*)); // Solution matrix
+	if (sol == NULL) printf("Thermal: ScaledGaussJordan: Not enough memory to create sol[n][n]\n");
+	for (i=0;i<n;i++) {
+		sol[i] = (long double complex*) malloc(n*sizeof(long double complex));
+		if (sol[i] == NULL) printf("Thermal: Not enough memory to create sol[n][n]\n");
+	}
+
+	// Initialize permutation vector p and row scales
+
+	for (i=0;i<n;i++) { // Loop over rows
+		p[i] = i;
+		s[i] = 0.0;
+		for (j=0;j<n;j++) {
+			if (cabsl((*M)[i][j]) > s[i]) s[i] = cabsl((*M)[i][j]);
+			if (i==j) sol[i][j] = 1.0;
+			else sol[i][j] = 0.0;
+		}
+		if (s[i] == 0.0) {
+			printf("Thermal: singular matrix in ScaledGaussJordan\n");
+			exit(0);
+		}
+	}
+
+	for (k=0;k<n-1;k++) {
+
+		maxq = 0.0;
+
+		// Find row with highest quality
+		for (j=k;j<n;j++) {
+			pj = p[j];
+			q = cabsl((*M)[pj][k])/s[pj];
+			if (q > maxq) {
+				maxq = q;
+				i = j;
+			}
+		}
+
+		// Update p
+		tmp = p[k];
+		p[k] = p[i];
+		p[i] = tmp;
+		pk = p[k];
+
+		// Carry out kth stage of Gaussian elimination
+		for (i=k+1;i<n;i++) {
+			pi = p[i];
+			z = (*M)[pi][k]/(*M)[pk][k];
+			for (j=0;j<n;j++) {
+				(*M)[pi][j] = (*M)[pi][j] - z*(*M)[pk][j];
+				sol[pi][j] = sol[pi][j] - z*sol[pk][j];
+			}
+		}
+	} // End of Gaussian elimination
+
+	// Back substitution
+	for (k=n-1;k>=0;k--) {
+		// Find row with the least nonzero coefficients
+		pk = p[k];
+		// Subtract
+		for (i=k+1;i<n;i++) {
+			pi = p[i];
+			z = (*M)[pk][i];
+			for (j=0;j<n;j++) {
+				(*M)[pk][j] = (*M)[pk][j] - z*(*M)[pi][j];
+				sol[pk][j] = sol[pk][j] - z*sol[pi][j];
+			}
+		}
+		// Divide by diagonal
+		z = (*M)[pk][k];
+		for (j=0;j<n;j++) {
+			(*M)[pk][j] = (*M)[pk][j]/z;
+			sol[pk][j] = sol[pk][j]/z;
+		}
+	}
+	// Unscramble rows
+	for (k=0;k<n;k++) {
+		pk = p[k];
+		for (j=0;j<n;j++) {
+			(*M)[k][j] = sol[pk][j];
+		}
+	}
+
+	for (i=0;i<n;i++) free (sol[i]);
+	free (sol);
+
+	return 0;
+}
+
+/*--------------------------------------------------------------------
+ *
+ * Subroutine SVdcmp
+ *
+ * Given a matrix a[1..m][1..n], this routine computes its singular
+ * value decomposition, M = U¥W¥V^T. The matrix U replaces M on
+ * output. The diagonal matrix of singular values W is output as a
+ * vector w[1..n]. The matrix V (not its transpose V^T ) is output as
+ * v[1..n][1..n].
+ *
+ * It follows that A-1 = V¥diag(1/w)¥U^T because U and V are both
+ * orthogonal, so U-1 = U^T and V-1 = V^T. If the singular values w
+ * are too small (i.e. w_min/w_max < floating point precision), 1/w
+ * can be set to 0 to throw out equations that lead to rounding errors.
+ *
+ * From the Numerical Recipes book.
+ *
+ *--------------------------------------------------------------------*/
+
+int SVdcmp(long double ***M, int m, int n, long double **w, long double ***v) {
+
+	int flag = 0;
+	int i = 0;
+	int its = 0;
+	int j = 0;
+	int jj = 0;
+	int k = 0;
+	int l = 0;
+	int nm = 0;
+	int min = 0;
+
+	long double anorm = 0.0;
+	long double c = 0.0;
+	long double f = 0.0;
+	long double g = 0.0;
+	long double h = 0.0;
+	long double s = 0.0;
+	long double scale = 0.0;
+	long double x = 0.0;
+	long double y = 0.0;
+	long double z = 0.0;
+
+	long double rv1[n];
+
+	for (i=0;i<n;i++) rv1[i] = 0.0;
+
+	for (i=0;i<n;i++) {
+		l = i+1;
+		rv1[i] = scale*g;
+		g = 0.0;
+		s = 0.0;
+		scale = 0.0;
+		if (i<m) {
+			for (k=i;k<m;k++) scale = scale + fabsl((*M)[k][i]);
+			if (scale) {
+				for (k=i;k<m;k++) {
+					(*M)[k][i] = (*M)[k][i]/scale;
+					s = s + (*M)[k][i]*(*M)[k][i];
+				}
+				f = (*M)[i][i];
+				if (f > 0.0) g = -sqrtl(s);
+				else g = sqrtl(s);
+				h = f*g - s;
+				(*M)[i][i] = f-g;
+				for (j=l;j<n;j++) {
+					s = 0.0;
+					for (k=i;k<m;k++) s = s + (*M)[k][i]*(*M)[k][j];
+					f = s/h;
+					for (k=i;k<m;k++) (*M)[k][j] = (*M)[k][j] + f*(*M)[k][i];
+				}
+				for (k=i;k<m;k++) (*M)[k][i] = (*M)[k][i]*scale;
+			}
+		}
+		(*w)[i] = scale*g;
+		g = 0.0;
+		s = 0.0;
+		scale = 0.0;
+		if (i<m && i != n-1) { // n?
+			for (k=l;k<n;k++) scale = scale + fabsl((*M)[i][k]);
+			if (scale) {
+				for (k=l;k<n;k++) {
+					(*M)[i][k] = (*M)[i][k]/scale;
+					s = s + (*M)[i][k]*(*M)[i][k];
+				}
+				f = (*M)[i][l];
+				if (f >= 0.0) g = -sqrtl(s);
+				else g = sqrtl(s);
+				h = f*g - s;
+				(*M)[i][l] = f-g;
+				for (k=l;k<n;k++) rv1[k] = (*M)[i][k]/h;
+				for (j=l;j<m;j++) {
+					s = 0.0;
+					for (k=l;k<n;k++) s = s + (*M)[j][k]*(*M)[i][k];
+					for (k=l;k<n;k++) (*M)[j][k] = (*M)[j][k] + s*rv1[k];
+				}
+				for (k=l;k<n;k++) (*M)[i][k] = (*M)[i][k]*scale;
+			}
+		}
+		if (anorm < fabsl((*w)[i])+fabsl(rv1[i])) anorm = fabsl((*w)[i])+fabsl(rv1[i]);
+	}
+
+	// Accumulation of right-hand transformations
+	for (i=n-1;i>=0;i--) {
+		if (i < n-1) {
+			if (g) {
+				for (j=l;j<n;j++) (*v)[j][i] = ((*M)[i][j]/(*M)[i][l])/g; // Double division to avoid possible underflow
+				for (j=l;j<n;j++) {
+					s = 0.0;
+					for (k=l;k<n;k++) s = s + (*M)[i][k]*(*v)[k][j];
+					for (k=l;k<n;k++) (*v)[k][j] = (*v)[k][j] + s*(*v)[k][i];
+				}
+			}
+			for (j=l;j<n;j++) {
+				(*v)[i][j] = 0.0;
+				(*v)[j][i] = 0.0;
+			}
+		}
+		(*v)[i][i] = 1.0;
+		g = rv1[i];
+		l = i;
+	}
+
+	// Accumulation of left-hand transformations
+	if (m < n) min = m;
+	else min = n;
+	for (i=min-1;i>=0;i--) {
+		l = i+1;
+		g = (*w)[i];
+		for (j=l;j<n;j++) (*M)[i][j] = 0.0;
+		if (g) {
+			g = 1.0/g;
+			for (j=l;j<n;j++) {
+				s = 0.0;
+				for (k=l;k<m;k++) s = s + (*M)[k][i]*(*M)[k][j];
+				f = (s/(*M)[i][i])*g;
+				for (k=i;k<m;k++) (*M)[k][j] = (*M)[k][j] + f*(*M)[k][i]; // Numerical Recipes has <=m
+			}
+			for (j=i;j<m;j++) (*M)[j][i] = (*M)[j][i]*g;
+		}
+		else {
+			for (j=i;j<m;j++) (*M)[j][i] = 0.0;
+		}
+		(*M)[i][i]++;
+	}
+
+	// Diagonalization of the bidiagonal form: loop over singular values, and over allowed iterations
+	for (k=n-1;k>=0;k--) {
+		for (its=1;its<=30;its++) {
+			flag = 1;
+			for (l=k;l>=0;l--) { // Test for splitting
+				nm = l-1; // Note that rv1[0] is always zero
+				if ((long double) (fabsl(rv1[l])+anorm) == anorm) {
+					flag = 0;
+					break;
+				}
+				if ((long double) (fabsl((*w)[nm])+anorm) == anorm) break;
+			}
+			if (flag) {
+				c = 0.0; // Cancellation of rv1[l], if l>1
+				s = 1.0;
+				for (i=l;i<=k;i++) {
+					f = s*rv1[i];
+					rv1[i] = c*rv1[i];
+					if ((long double) (fabsl(f)+anorm) == anorm) break;
+					g = (*w)[i];
+					h = pythag(f,g);
+					(*w)[i] = h;
+					h = 1.0/h;
+					c = g*h;
+					s = -f*h;
+					for (j=0;j<m;j++) {
+						y = (*M)[j][nm];
+						z = (*M)[j][i];
+						(*M)[j][nm] = y*c + z*s;
+						(*M)[j][i] = z*c - y*s;
+					}
+				}
+			}
+			z = (*w)[k];
+			if (l == k) { // Convergence
+				if (z < 0.0) { // Singular value is made nonnegative
+					(*w)[k] = -z;
+					for (j=0;j<n;j++) (*v)[j][k] = -(*v)[j][k];
+				}
+				break;
+			}
+			if (its == 30) {
+				printf("Thermal: SVDcmp: no convergence in 30 iterations\n");
+				exit(0);
+			}
+			x = (*w)[l]; // Shift from bottom 2-by-2 minor
+			nm = k-1;
+			y = (*w)[nm];
+			g = rv1[nm];
+			h = rv1[k];
+			f = ((y-z)*(y+z) + (g-h)*(g+h))/(2.0*h*y);
+			g = pythag(f,1.0);
+			if (f >= 0.0) f = ((x-z)*(x+z) + h*(y/(f+g)-h))/x;
+			else f = ((x-z)*(x+z) + h*(y/(f-g)-h))/x;
+			c = 1.0;
+			s = 1.0; // Next QR transformation:
+			for (j=l;j<=nm;j++) { // < ?
+				i = j+1;
+				g = rv1[i];
+				y = (*w)[i];
+				h = s*g;
+				g = c*g;
+				z = pythag(f,h);
+				rv1[j] = z;
+				c = f/z;
+				s = h/z;
+				f = x*c + g*s;
+				g = g*c - x*s;
+				h = y*s;
+				y = y*c;
+				for (jj=0;jj<n;jj++) {
+					x = (*v)[jj][j];
+					z = (*v)[jj][i];
+					(*v)[jj][j] = x*c + z*s;
+					(*v)[jj][i] = z*c - x*s;
+				}
+				z = pythag(f,h);
+				(*w)[j] = z; // Rotation can be arbitrary if z = 0
+				if (z) {
+					z = 1.0/z;
+					c = f*z;
+					s = h*z;
+				}
+				f = c*g + s*y;
+				x = c*y - s*g;
+				for (jj=0;jj<m;jj++) {
+					y = (*M)[jj][j];
+					z = (*M)[jj][i];
+					(*M)[jj][j] = y*c + z*s;
+					(*M)[jj][i] = z*c - y*s;
+				}
+			}
+			rv1[l] = 0.0;
+			rv1[k] = f;
+			(*w)[k] = x;
+		}
+	}
+
+	return 0;
+}
+
+/*--------------------------------------------------------------------
+ *
+ * Subroutine pythag
+ *
+ * Computes (a^2+b^2)^0.5 without destructive overflow or underflow
+ *
+ * From the Numerical Recipes book.
+ *
+ *--------------------------------------------------------------------*/
+
+double pythag(long double a, long double b) {
+
+	double absa = 0.0;
+	double absb = 0.0;
+
+	absa = fabsl(a);
+	absb = fabsl(b);
+
+	if (absa > absb) return absa*sqrtl(1.0+(absb*absb/(absa*absa)));
+	else if (absb == 0.0) return 0.0;
+	else return absb*sqrtl(1.0+absa*absa/(absb*absb));
+}
+
+/*--------------------------------------------------------------------
+ *
+ * Subroutine j2
+ * Regular (first-order) spherical Bessel function j2 if mod=0
+ * Modified first-order spherical Bessel function otherwise
+ *
+ *--------------------------------------------------------------------*/
+
+long double complex j2(long double complex x, int mod) {
+
+	long double complex sol = 0.0;
+
+	if (x == 0.0) {
+		printf ("Bessel function j2: x must be nonzero\n");
+		exit(0);
+	}
+	if (mod == 0) sol = (3.0/(x*x) - 1.0) * csin(x)/x - 3.0*ccos(x)/(x*x);
+	else sol = ((x*x + 3.0)*csinh(x) - 3.0*x*ccosh(x))/(x*x*x);
+
+	return sol;
+}
+
+/*--------------------------------------------------------------------
+ *
+ * Subroutine j2p
+ * First derivative of the regular (first-order) spherical Bessel
+ * function j2 if mod=0
+ * First derivative of the modified first-order spherical Bessel
+ * function otherwise
+ *
+ *--------------------------------------------------------------------*/
+
+long double complex j2p(long double complex x, int mod) {
+
+	long double complex sol = 0.0;
+
+	if (x == 0.0) {
+		printf ("Bessel function j2p: x must be nonzero\n");
+		exit(0);
+	}
+	if (mod == 0) sol = - 9.0*csin(x)/(x*x*x*x) + 9.0*ccos(x)/(x*x*x) + 4.0*csin(x)/(x*x) - ccos(x)/x;
+	else sol = ((x*x+3.0)*ccosh(x) - x*csinh(x) - 3.0*ccosh(x))/(x*x*x) - (3.0*((x*x+3.0)*csinh(x) - 3.0*x*ccosh(x))/(x*x*x*x));
+
+	return sol;
+}
+
+/*--------------------------------------------------------------------
+ *
+ * Subroutine j2pp
+ * Second derivative of the regular (first-order) spherical Bessel
+ * function j2 if mod=0
+ * Second derivative of the modified first-order spherical Bessel
+ * function otherwise
+ *
+ *--------------------------------------------------------------------*/
+
+long double complex j2pp(long double complex x, int mod) {
+
+	long double complex sol = 0.0;
+
+	if (x == 0.0) {
+		printf ("Bessel function j2pp: x must be nonzero\n");
+		exit(0);
+	}
+	if (mod == 0) sol = 36.0*csin(x)/(x*x*x*x*x) - 36.0*ccos(x)/(x*x*x*x) - 17.0*csin(x)/(x*x*x) + 5.0*ccos(x)/(x*x) + csin(x)/x;
+	else sol =   12.0*((x*x+3.0)*csinh(x) - 3.0*x*ccosh(x))/(x*x*x*x*x)
+			   -  6.0*((x*x+3.0)*ccosh(x) - x*csinh(x) - 3.0*ccosh(x))/(x*x*x*x)
+			   +      ((x*x+3.0)*csinh(x) - 4.0*csinh(x) + x*ccosh(x))/(x*x*x);
+
+	return sol;
+}
+
+/*--------------------------------------------------------------------
+ *
+ * Subroutine y2
+ * Irregular (second-order) spherical Bessel function y2 if mod=0
+ * Modified second-order spherical Bessel function otherwise
+ *
+ *--------------------------------------------------------------------*/
+
+long double complex y2(long double complex x, int mod) {
+
+	long double complex sol = 0.0;
+
+	if (x == 0.0) {
+		printf ("Bessel function y2: x must be nonzero\n");
+		exit(0);
+	}
+	if (mod == 0) sol = (-3.0/(x*x) + 1.0) * ccos(x)/x - 3.0*csin(x)/(x*x);
+	else sol = cexp(-x) * (x*x+3.0*x+3.0) / (x*x*x);
+
+	return sol;
+}
+
+/*--------------------------------------------------------------------
+ *
+ * Subroutine y2p
+ * First derivative of the irregular (second-order) spherical Bessel
+ * function y2 if mod=0
+ * First derivative of the modified second-order spherical Bessel
+ * function otherwise
+ *
+ *--------------------------------------------------------------------*/
+
+long double complex y2p(long double complex x, int mod) {
+
+	long double complex sol = 0.0;
+
+	if (x == 0.0) {
+		printf ("Bessel function y2p: x must be nonzero\n");
+		exit(0);
+	}
+	if (mod == 0) sol = 9.0*ccos(x)/(x*x*x*x) + 9.0*csin(x)/(x*x*x) - 4.0*ccos(x)/(x*x) - csin(x)/x;
+	else sol = - cexp(-x) * (x*x*x + 4.0*x*x + 9.0*x + 9.0)/(x*x*x*x);
+
+	return sol;
+}
+
+/*--------------------------------------------------------------------
+ *
+ * Subroutine y2pp
+ * Second derivative of the irregular (second-order) spherical Bessel
+ * function y2 if mod=0
+ * Second derivative of the modified second-order spherical Bessel
+ * function otherwise
+ *
+ *--------------------------------------------------------------------*/
+
+long double complex y2pp(long double complex x, int mod) {
+
+	long double complex sol = 0.0;
+
+	if (x == 0.0) {
+		printf ("Bessel function y2pp: x must be nonzero\n");
+		exit(0);
+	}
+	if (mod == 0) sol = - 36.0*ccos(x)/(x*x*x*x*x) - 36.0*csin(x)/(x*x*x*x) + 17.0*ccos(x)/(x*x*x) + 5.0*csin(x)/(x*x) - ccos(x)/x;
+	else sol = cexp(-x) * (x*x*x*x + 5.0*x*x*x + 17.0*x*x + 36.0*x + 36.0)/(x*x*x*x*x);
+
+	return sol;
 }
 
 #endif /* THERMAL_H_ */
