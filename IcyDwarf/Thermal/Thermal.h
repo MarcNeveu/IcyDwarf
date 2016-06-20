@@ -2552,7 +2552,7 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 
 		mu_rigid_ice = 4.0e9/gram*cm;
 
-		mu_visc_rock = 6.0e7/cm/cm/(4800.0/gram*cm*cm*cm)*exp(3.0e5/(R_G*T[ir])); // Driscoll & Barnes (2015)
+		mu_visc_rock = 6.0e7/cm/cm*(4800.0/gram*cm*cm*cm)*exp(3.0e5/(R_G*T[ir])); // Driscoll & Barnes (2015)
 //		mu_visc_rock = 1.0e20/gram*cm; // Tobie et al. (2005), reached at 1570 K by Driscoll & Barnes (2015)
 //		mu_visc_rock = 1.0e20/gram*cm; // Roberts (2015)
 
@@ -2904,8 +2904,14 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 		K_ice = 10.7e9/gram*cm;
 		K_rock =     (Xhydr[ir] *E_Young_serp/(3.0*(1.0-2.0*nu_Poisson_serp))
 			   + (1.0-Xhydr[ir])*E_Young_oliv/(3.0*(1.0-2.0*nu_Poisson_oliv)))/gram*cm; // K = E/(3*(1-2*nu))
-		// The scaling is linear, not the log scaling of Roberts (2015))
-		K = (Mrock[ir]*K_rock + (Mh2os[ir]+Madhs[ir]+Mh2ol[ir]+Mnh3l[ir])*K_ice)/dM[ir];
+
+		if (Mh2os[ir]+Madhs[ir]+Mh2ol[ir]+Mnh3l[ir] > 0.0) { // Log scaling of Roberts (2015)
+			frock = Vrock[ir]/dVol[ir];
+			phi = 1.0-frock;
+			if (phi < 0.3) K = ((0.3-phi)*K_rock + phi*K_ice)/0.3;
+			else K = K_ice;
+		}
+		else K = K_rock;
 
 		// Tobie et al. 2005, doi:10.1016/j.icarus.2005.04.006, equation 33. Note y2 and y3 are inverted here.
 		H_mu = 4.0/3.0 * (r[ir+1]*r[ir+1]/pow(cabs(K + 4.0/3.0*shearmod[ir]),2))
