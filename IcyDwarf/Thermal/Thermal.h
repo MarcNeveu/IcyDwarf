@@ -152,7 +152,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double Wtide_tot = 0.0;              // Tidal heating rate in all of the ice (erg s-1)
 	double aorb = aorb_init;             // Moon orbital semi-major axis (cm)
 	double eorb = eorb_init;             // Moon orbital eccentricity
-	double m_p = rho_p*4.0/3.0*PI_greek*r_p*r_p*r_p;
+	double m_p = 0.0;                    // Moon mass
 	double Crack_depth[2];				 // Crack_depth[2] (km), output
 	double WRratio[2];					 // WRratio[2] (by mass, no dim), output
 	double Heat[6];                      // Heat[6] (erg), output
@@ -446,6 +446,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	create_output(path, "Outputs/Orbit.txt");
 
     r_p = r_p*km2cm;                                                     // Convert planet radius to cm
+    m_p = rho_p*4.0/3.0*PI_greek*r_p*r_p*r_p;
     tzero = tzero*Myr2sec;                                               // Convert tzero to s
     fulltime = fulltime*Myr2sec;                                         // Convert fulltime to s
     dtoutput = dtoutput*Myr2sec;                                         // Convert increment between outputs in s
@@ -911,7 +912,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		}
 
 		// Tidal heating
-		if (moon && eorb > 0.0) {
+		if (itime > 0 && moon && eorb > 0.0) {
 			for (ir=0;ir<NR;ir++) strain(Pressure[ir], Xhydr[ir], T[ir], &strain_rate[ir], &Brittle_strength[ir], pore[ir]);
 			Wtide_tot = 0.0;
 			tide(tidalmodel, tidetimesten, eorb, omega_tide, r_p, &Qth, NR, dtime, &Wtide_tot, Mrock, Mh2os, Madhs, Mh2ol, Mnh3l,
@@ -920,7 +921,14 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
 			// Update orbital parameters (Barnes et al. 2008):
 			if (eccdecay == 1 && Wtide_tot > 0.0) {
-				eorb = eorb - dtime*(Wtide_tot*aorb / (Gcgs*Mprim*m_p*eorb) - 171.0/16.0*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p/Qprim*pow(aorb,-6.5)*eorb);
+				double d_eorb = 0.0;
+				d_eorb = dtime*(Wtide_tot*aorb / (Gcgs*Mprim*m_p*eorb) - 171.0/16.0*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p/Qprim*pow(aorb,-6.5)*eorb);
+				if (d_eorb < eorb) eorb = eorb - d_eorb;
+				else {
+					d_eorb = eorb;
+					Wtide_tot = (d_eorb/dtime + 171.0/16.0*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p/Qprim*pow(aorb,-6.5)*eorb) * Gcgs*Mprim*m_p*eorb / aorb;
+					eorb = 0.0;
+				}
 				aorb = aorb - dtime*(2.0*Wtide_tot*aorb*aorb / (Gcgs*Mprim*m_p) - 4.5*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p/Qprim*pow(aorb,-5.5));
 				norb = sqrt(Gcgs*Mprim/(aorb*aorb*aorb));
 				omega_tide = norb;
@@ -2550,6 +2558,14 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 		mu_visc_ice = (1.0e15)*exp(25.0*(273.0/T[ir]-1.0))/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // 1.0e14 in SI (Thomas et al. LPSC 1987; Desch et al. 2009)
 //		mu_visc_ice = 1.0e14/gram*cm; // Roberts (2015)
 
+		// If there is ammonia in partially melted layers, decrease viscosity according to Fig. 6 of Arakawa & Maeno (1994)
+		if (Mnh3l[ir]+Madhs[ir] >= 0.01*Mh2os[ir]) {
+			if (T[ir] > 140.0) mu_visc_ice = mu_visc_ice*1.0e-3;
+			else if (T[ir] > 176.0) mu_visc_ice = mu_visc_ice*1.0e-8;
+			else if (T[ir] < 271.0) mu_visc_ice = mu_visc_ice*1.0e-15;
+			if (mu_visc_ice < 1.0e3) mu_visc_ice = 1.0e3;
+		}
+
 		mu_rigid_ice = 4.0e9/gram*cm;
 
 		mu_visc_rock = 6.0e7/cm/cm*(4800.0/gram*cm*cm*cm)*exp(3.0e5/(R_G*T[ir])); // Driscoll & Barnes (2015)
@@ -2582,9 +2598,6 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 			mu_visc = 1.0e3; // TODO Implement propagator matrix through liquid
 			mu_rigid = 1.0e4;
 		}
-//		// If there is ammonia in partially melted layers, decrease viscosity according to Fig. 6 of Arakawa & Maeno (1994)
-//		// TODO As of 3/24/2016, this results in viscosities so low that the model blows up. Need to decrease the rigidity with NH3 content?
-//		if (Mnh3l[ir]+Madhs[ir] >= 0.01*Mh2os[ir]) mu1 = mu1*1.0e-3;
 
 		// Benchmark against Tobie et al. (2005)
 //		rho[ir] = 3.5;

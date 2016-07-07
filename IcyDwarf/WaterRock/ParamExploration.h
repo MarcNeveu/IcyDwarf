@@ -93,7 +93,7 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 	if (v_release == 1) strncat(dbase,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(dbase,path,strlen(path)-18);
 	else strncat(dbase,path,strlen(path)-16);
-	strcat(dbase,"PHREEQC-3.1.2/core6.dat");
+	strcat(dbase,"PHREEQC-3.1.2/core7.dat");
 
 	strncat(infile,dbase,strlen(dbase)-9);
 	strcat(infile,"io/inputIcyDwarf");
@@ -114,6 +114,7 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 			T = Tmin + Tstep*(double) itemp;
 
 			if (T == 0.0) T = 0.01; // PHREEQC crashes at 0 celsius
+			if (P == 0.0) P = 1.0;  // 1 bar minimum
 
 			// Use CHNOSZ to get log fO2 for F-M-Q buffer at given T and P
 			logfO2 = -3.0*CHNOSZ_logK("quartz", "cr", T, P, "SUPCRT92")
