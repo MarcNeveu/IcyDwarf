@@ -822,7 +822,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
 //		//-------------------------------------------------------------------
 //		//               Allow for chemical equilibrium again
-//    	// 160610: Not really necessary any more since we'r not moving energies around when differentiating, just mass
+//    	// 160610: Not really necessary any more since we're not moving energies around when differentiating, just mass
 //		//-------------------------------------------------------------------
 //
 //		for (ir=0;ir<NR;ir++) {
@@ -2559,9 +2559,9 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 //		mu_visc_ice = 1.0e14/gram*cm; // Roberts (2015)
 
 		// If there is ammonia in partially melted layers, decrease viscosity according to Fig. 6 of Arakawa & Maeno (1994)
-		if (Mnh3l[ir]+Madhs[ir] >= 0.01*Mh2os[ir]) {
-			if (T[ir] > 140.0) mu_visc_ice = mu_visc_ice*1.0e-3;
-			else if (T[ir] > 176.0) mu_visc_ice = mu_visc_ice*1.0e-8;
+		if (Mnh3l[ir]+Madhs[ir] >= 0.01*Mh2os[ir] && T[ir] > 140.0) {
+			if (T[ir] < 176.0) mu_visc_ice = mu_visc_ice*1.0e-3;
+			else if (T[ir] < 250.0) mu_visc_ice = mu_visc_ice*1.0e-8;
 			else if (T[ir] < 271.0) mu_visc_ice = mu_visc_ice*1.0e-15;
 			if (mu_visc_ice < 1.0e3) mu_visc_ice = 1.0e3;
 		}
