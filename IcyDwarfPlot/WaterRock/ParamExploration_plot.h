@@ -62,9 +62,9 @@ int ParamExploration_plot(char path[1024],	int warnings, int msgout, SDL_Rendere
 	int nspecies = 0;
 	int nvar = 1830;                                             // Max number of physico-chemical variables
 	int nleg = 16;                                               // Max number of legends
-	int naq = 521;                                               // Number of aqueous species (+ physical parameters)
+	int naq = 570;                                               // Number of aqueous species (+ physical parameters)
 	int ngases = 15;                                             // Number of gaseous species
-	int nmingas = 659;                                           // Number of minerals and gases
+	int nmingas = 595;                                           // Number of minerals and gases
 	int nelts = 31;                                              // 30 elements + 1 extra column in WaterRock/Molar_masses.txt
 	int naf = 35;                                                // 34 antifreezes in WaterRock/Antifreezes.txt
 	int ntemp = 0;                                               // Number of different temperatures in output file
@@ -1263,7 +1263,7 @@ int Angles(double **simdata, double **molmass, double **antifreezes, int isim, i
 	for (i=0;i<nspecies;i++) angle[i] = 0.0;
 
 	mass_water = simdata[isim][11];
-	total_Gas = simdata[isim][1811];
+	total_Gas = simdata[isim][1732];
 	for (i=0;i<nspecies+1;i++) angle[i] = 0.0;
 
 	if (PT != 1) {
@@ -1286,267 +1286,179 @@ int Angles(double **simdata, double **molmass, double **antifreezes, int isim, i
 		if (itopic == 0) { // K species
 			double total_K = 0.0;
 			if (chondrite == 0) // ordinary chondrite (H/L/LL), K present as K-feldspar initially
-				total_K = (simdata[isim][1058]-simdata[isim][1059])*molmass[1058][11]; // Initial K-feldspar
+				total_K = (simdata[isim][1049]-simdata[isim][1050])*molmass[1049][11]; // Initial K-feldspar
 			else                // carbonaceous chondrite (CI/CM), K present as clays
-				total_K = (simdata[isim][1488]-simdata[isim][1489])*molmass[1488][11] // Smectite-high-Fe-Mg
-						+ (simdata[isim][1356]-simdata[isim][1357])*molmass[1356][11] // Nontronite-K
-						+ (simdata[isim][1226]-simdata[isim][1227])*molmass[1226][11] // Montmor-K
-						+ (simdata[isim][748]-simdata[isim][749])*molmass[748][11];   // Clinoptilolite-K
+				total_K = (simdata[isim][1419]-simdata[isim][1420])*molmass[1419][11] // Smectite-high-Fe-Mg
+						+ (simdata[isim][1297]-simdata[isim][1298])*molmass[1297][11] // Nontronite-K
+						+ (simdata[isim][1197]-simdata[isim][1198])*molmass[1197][11] // Montmor-K
+						+ (simdata[isim][777]-simdata[isim][778])*molmass[777][11];   // Clinoptilolite-K
 			angle[1] = simdata[isim][23]*mass_water/total_K;                          // Dissolved potassium
-			for (i=naq+1;i<naq+2*(nmingas-ngases);i=i+2) {                            // All solid species containing K
+			for (i=naq+1;i<naq+2*(nmingas-ngases)-2;i=i+2) {                            // All solid species containing K
 				if (molmass[i][11] > 0.0) angle[2] = angle[2] + simdata[isim][i]*molmass[i][11]; // If the mineral contains potassium
 			}
-			angle[2] = angle[2] - simdata[isim][1058]*molmass[1058][11];              // Minus K-feldspar
+			angle[2] = angle[2] - simdata[isim][1049]*molmass[1049][11];              // Minus K-feldspar
 			angle[2] = angle[2]/total_K;
 
-			angle[3] = simdata[isim][1058]*molmass[1058][11]/total_K;                 // K-feldspar
+			angle[3] = simdata[isim][1049]*molmass[1049][11]/total_K;                 // K-feldspar
 		}
 		else if (itopic == 1) { // Th species
 			 // Correct for what seems to be a PHREEQC bug for low-abundance species:
 			// Th is only added as ThO2, so ThO2 can't be added during the reaction. Yet sometimes there is an arbitrary addition.
-			if (simdata[isim][1551] > 0.0) simdata[isim][1551] = 0.0;
+			if (simdata[isim][1478] > 0.0) simdata[isim][1478] = 0.0;
 			double total_Th = 0.0;
-			total_Th = (simdata[isim][1550]-simdata[isim][1551])*molmass[1550][24];   // Initial thorianite ThO2
+			total_Th = (simdata[isim][1477]-simdata[isim][1478])*molmass[1477][24];   // Initial thorianite ThO2
 			angle[1] = simdata[isim][36]*mass_water/total_Th;                         // Dissolved Th
-			for (i=naq+1;i<naq+2*(nmingas-ngases);i=i+2) {                            // All solid species containing Th
+			for (i=naq+1;i<naq+2*(nmingas-ngases)-2;i=i+2) {                            // All solid species containing Th
 				if (molmass[i][24] > 0.0) angle[2] = angle[2] + simdata[isim][i]*molmass[i][24];
 			}
-			angle[2] = (angle[2] - simdata[isim][1550]*molmass[1550][24])/total_Th;   // Minus ThO2
-			angle[3] = simdata[isim][1550]*molmass[1550][24]/total_Th;                // ThO2
+			angle[2] = (angle[2] - simdata[isim][1477]*molmass[1477][24])/total_Th;   // Minus ThO2
+			angle[3] = simdata[isim][1477]*molmass[1477][24]/total_Th;                // ThO2
 		}
 		else if (itopic == 2) { // U species
 			// Correct for what seems to be a PHREEQC bug for low-abundance species:
 			// 1- U is only added as UO2, so UO2 can't be added during the reaction. Yet sometimes there is an arbitrary addition.
-			if (simdata[isim][1725] > 0.0) simdata[isim][1725] = 0.0;
+			if (simdata[isim][1650] > 0.0) simdata[isim][1650] = 0.0;
 			// 2- The amount of UO2 lost can't be lower than the U dissolved, yet sometimes it is.
-			if (-simdata[isim][1725] < simdata[isim][38]*mass_water) simdata[isim][1725] = -simdata[isim][38]*mass_water;
+			if (-simdata[isim][1650] < simdata[isim][38]*mass_water) simdata[isim][1650] = -simdata[isim][38]*mass_water;
 			double total_U = 0.0;
-			total_U = (simdata[isim][1724]-simdata[isim][1725])*molmass[1724][26];    // Initial uraninite UO2
+			total_U = (simdata[isim][1649]-simdata[isim][1650])*molmass[1649][26];    // Initial uraninite UO2
 			angle[1] = simdata[isim][38]*mass_water/total_U;                          // Dissolved U
-			for (i=naq+1;i<naq+2*(nmingas-ngases);i=i+2) {                            // All solid species containing U
+			for (i=naq+1;i<naq+2*(nmingas-ngases)-2;i=i+2) {                            // All solid species containing U
 				if (molmass[i][26] > 0.0) angle[2] = angle[2] + simdata[isim][i]*molmass[i][26];
 			}
-			angle[2] = (angle[2] - simdata[isim][1724]*molmass[1724][26])/total_U;    // Minus UO2
-			angle[3] = simdata[isim][1724]*molmass[1724][26]/total_U;                 // UO2
+			angle[2] = (angle[2] - simdata[isim][1649]*molmass[1649][26])/total_U;    // Minus UO2
+			angle[3] = simdata[isim][1649]*molmass[1649][26]/total_U;                 // UO2
 		}
 		else if (itopic == 3) { // N species
 			// Initial dissolved N + pyridine. Dissolved N, if specified in ppm in the input, depends on the mass of C, N, S.
 			// That's too complicated to figure out analytically, just copy-paste from any PHREEQC speciation run of the template input.
 			double total_N = 0.0;
-			if (comet == 1) total_N = 1.110e+00*simdata[isim][6] + simdata[isim][1396]-simdata[isim][1397];
-			else total_N = simdata[isim][1396]-simdata[isim][1397];
-			angle[1] = simdata[isim][375]*mass_water/total_N;     // NH3(aq)
-			angle[2] = simdata[isim][1306]/total_N;               // NH4-feldspar
-			angle[3] = simdata[isim][1308]/total_N;               // NH4-muscovite
-			angle[4] = simdata[isim][1316]/total_N;               // NH4HCO3
-			angle[5] = 2.0*simdata[isim][1822]/total_N; 		  // N2(g)
-			angle[6] = simdata[isim][1823]/total_N; 			  // NH3(g)
-			angle[7] = 2.0*simdata[isim][384]*mass_water/total_N; // N2(aq)
-			angle[8] = simdata[isim][376]*mass_water/total_N;     // NH4+(aq)
-			angle[9] = (simdata[isim][28]-simdata[isim][376]-2.0*simdata[isim][384]-simdata[isim][375])*mass_water/total_N; // NH3-complexes(aq)
-			angle[10] = simdata[isim][1396]/total_N;              // Organic (pyridine)
+			if (comet == 1) total_N = 1.110e+00*simdata[isim][6] + simdata[isim][1335]-simdata[isim][1336];
+			else total_N = simdata[isim][1335]-simdata[isim][1336];
+			angle[1] = simdata[isim][424]*mass_water/total_N;     // NH3(aq)
+			angle[2] = simdata[isim][1257]/total_N;               // NH4-feldspar
+			angle[3] = simdata[isim][1259]/total_N;               // NH4-muscovite
+			angle[4] = simdata[isim][1263]/total_N;               // NH4HCO3
+			angle[5] = 2.0*simdata[isim][1743]/total_N; 		  // N2(g)
+			angle[6] = simdata[isim][1744]/total_N; 			  // NH3(g)
+			angle[7] = 2.0*simdata[isim][433]*mass_water/total_N; // N2(aq)
+			angle[8] = simdata[isim][425]*mass_water/total_N;     // NH4+(aq)
+			angle[9] = (simdata[isim][28]-simdata[isim][425]-2.0*simdata[isim][433]-simdata[isim][424])*mass_water/total_N; // NH3-complexes(aq)
+			angle[10] = simdata[isim][1335]/total_N;              // Organic (pyridine)
 		}
 		else if (itopic == 5) { // Final moles of gases
-			angle[1] = simdata[isim][1814]/total_Gas; // C2H6
-			angle[2] = simdata[isim][1816]/total_Gas; // CH4
-			angle[3] = simdata[isim][1818]/total_Gas; // CO2
-			angle[4] = simdata[isim][1822]/total_Gas; // N2
-			angle[5] = simdata[isim][1819]/total_Gas; // H2
-			angle[6] = simdata[isim][1820]/total_Gas; // H2O
+			angle[1] = simdata[isim][1735]/total_Gas; // C2H6
+			angle[2] = simdata[isim][1737]/total_Gas; // CH4
+			angle[3] = simdata[isim][1739]/total_Gas; // CO2
+			angle[4] = simdata[isim][1743]/total_Gas; // N2
+			angle[5] = simdata[isim][1740]/total_Gas; // H2
+			angle[6] = simdata[isim][1741]/total_Gas; // H2O
 		}
 		else if (itopic == 6) { // Brucite & carbonates
-			angle[1] = simdata[isim][660]*(1.0+massnotmol*(molmass[660][nelts-1]-1.0));   // Brucite
-			angle[2] = simdata[isim][1136]*(1.0+massnotmol*(molmass[1136][nelts-1]-1.0)); // Magnesite
-			angle[3] = simdata[isim][1030]*(1.0+massnotmol*(molmass[1030][nelts-1]-1.0)); // Hydromagnesite
-			angle[4] = simdata[isim][1024]*(1.0+massnotmol*(molmass[1024][nelts-1]-1.0)); // Huntite
-			angle[5] = simdata[isim][854]*(1.0+massnotmol*(molmass[854][nelts-1]-1.0))
-			         + simdata[isim][856]*(1.0+massnotmol*(molmass[856][nelts-1]-1.0))
-			         + simdata[isim][858]*(1.0+massnotmol*(molmass[858][nelts-1]-1.0));   // Dolomite
-			angle[6] = simdata[isim][1316]*(1.0+massnotmol*(molmass[1316][nelts-1]-1.0)); // NH4HCO3
-			angle[7] = simdata[isim][1102]*(1.0+massnotmol*(molmass[1102][nelts-1]-1.0)); // KNaCO3:6H2O
-	        angle[8] = simdata[isim][692]*(1.0+massnotmol*(molmass[692][nelts-1]-1.0));   // Calcite (for init CM compo)
-	        angle[9] = simdata[isim][1410]*(1.0+massnotmol*(molmass[1410][nelts-1]-1.0)); // Rhodochrosite (MnCO3)
-	        angle[10] = simdata[isim][1468]*(1.0+massnotmol*(molmass[1468][nelts-1]-1.0)); // Siderite (FeCO3)
-			for (i=522;i<1808;i=i+2) total_Min = total_Min + simdata[isim][i]*(1.0+massnotmol*(molmass[i][nelts-1]-1.0));
+			angle[1] = simdata[isim][691]*(1.0+massnotmol*(molmass[691][nelts-1]-1.0));   // Brucite
+			angle[2] = simdata[isim][1115]*(1.0+massnotmol*(molmass[1115][nelts-1]-1.0)); // Magnesite
+			angle[3] = simdata[isim][1027]*(1.0+massnotmol*(molmass[1027][nelts-1]-1.0)); // Hydromagnesite
+			angle[4] = simdata[isim][1023]*(1.0+massnotmol*(molmass[1023][nelts-1]-1.0)); // Huntite
+			angle[5] = simdata[isim][879]*(1.0+massnotmol*(molmass[879][nelts-1]-1.0))
+			         + simdata[isim][881]*(1.0+massnotmol*(molmass[881][nelts-1]-1.0))
+			         + simdata[isim][883]*(1.0+massnotmol*(molmass[883][nelts-1]-1.0));   // Dolomite
+			angle[6] = simdata[isim][1263]*(1.0+massnotmol*(molmass[1263][nelts-1]-1.0)); // NH4HCO3
+			angle[7] = simdata[isim][1083]*(1.0+massnotmol*(molmass[1083][nelts-1]-1.0)); // KNaCO3:6H2O
+	        angle[8] = simdata[isim][723]*(1.0+massnotmol*(molmass[723][nelts-1]-1.0));   // Calcite (for init CM compo)
+	        angle[9] = simdata[isim][1349]*(1.0+massnotmol*(molmass[1349][nelts-1]-1.0)); // Rhodochrosite (MnCO3)
+	        angle[10] = simdata[isim][1399]*(1.0+massnotmol*(molmass[1399][nelts-1]-1.0)); // Siderite (FeCO3)
+			for (i=naq+1;i<naq+(nmingas-ngases)*2-2;i=i+2) total_Min = total_Min + simdata[isim][i]*(1.0+massnotmol*(molmass[i][nelts-1]-1.0));
 			for (i=1;i<11;i++) angle[i] = angle[i]/total_Min;
 		}
 		else if (itopic == 8) { // Minerals
-			angle[1] = simdata[isim][582]*(1.0+massnotmol*(molmass[582][nelts-1]-1.0))   // Andradite
-			         + simdata[isim][1086]*(1.0+massnotmol*(molmass[1086][nelts-1]-1.0)) // Katoite
-			         + simdata[isim][792]*(1.0+massnotmol*(molmass[792][nelts-1]-1.0))   // Corundum
-			         + simdata[isim][690]*(1.0+massnotmol*(molmass[690][nelts-1]-1.0))   // CaAl2O4:10H2O
-			         + simdata[isim][974]*(1.0+massnotmol*(molmass[974][nelts-1]-1.0))   // Gismondine (Ca2Al4Si4O16:9H2O)
-			         + simdata[isim][1576]*(1.0+massnotmol*(molmass[1576][nelts-1]-1.0))
-			         + simdata[isim][1578]*(1.0+massnotmol*(molmass[1578][nelts-1]-1.0))
-			         + simdata[isim][1580]*(1.0+massnotmol*(molmass[1580][nelts-1]-1.0)) // Tobermorite (Ca5Si6H21O27.5)
-			         + simdata[isim][1586]*(1.0+massnotmol*(molmass[1586][nelts-1]-1.0)) // Tremolite
-			         + simdata[isim][850]*(1.0+massnotmol*(molmass[850][nelts-1]-1.0))   // Diopside
-			         + simdata[isim][1406]*(1.0+massnotmol*(molmass[1406][nelts-1]-1.0));  // Quartz
-			angle[2] = simdata[isim][1524]*(1.0+massnotmol*(molmass[1524][nelts-1]-1.0)); // Talc
-			for (i=732;i<754;i=i+2) angle[2] = angle[2] + simdata[isim][i]*(1.0+massnotmol*(molmass[i][nelts-1]-1.0)); // All clinoptilolites
-			angle[3] = simdata[isim][1434]*(1.0+massnotmol*(molmass[1434][nelts-1]-1.0))
-			         + simdata[isim][1436]*(1.0+massnotmol*(molmass[1436][nelts-1]-1.0))
-			         + simdata[isim][1438]*(1.0+massnotmol*(molmass[1438][nelts-1]-1.0))  // Smectites, including saponites
-			         + simdata[isim][1440]*(1.0+massnotmol*(molmass[1440][nelts-1]-1.0))
-			         + simdata[isim][1442]*(1.0+massnotmol*(molmass[1442][nelts-1]-1.0))
-			         + simdata[isim][1488]*(1.0+massnotmol*(molmass[1488][nelts-1]-1.0))  // Smectites, including saponites
-			         + simdata[isim][1352]*(1.0+massnotmol*(molmass[1352][nelts-1]-1.0))
-			         + simdata[isim][1356]*(1.0+massnotmol*(molmass[1356][nelts-1]-1.0))
-			         + simdata[isim][1358]*(1.0+massnotmol*(molmass[1358][nelts-1]-1.0))
-			         + simdata[isim][1360]*(1.0+massnotmol*(molmass[1360][nelts-1]-1.0))  // Nontronites for init CM compo
-			         + simdata[isim][1230]*(1.0+massnotmol*(molmass[1230][nelts-1]-1.0))
-			         + simdata[isim][1226]*(1.0+massnotmol*(molmass[1226][nelts-1]-1.0))
-			         + simdata[isim][1224]*(1.0+massnotmol*(molmass[1224][nelts-1]-1.0));   // Montmorillonites for init CM compo
-			angle[4] = simdata[isim][594]*(1.0+massnotmol*(molmass[594][nelts-1]-1.0))      // Serpentines: Antigorite
-			         + simdata[isim][820]*(1.0+massnotmol*(molmass[820][nelts-1]-1.0))      // Cronstedtite
-			         + simdata[isim][980]*(1.0+massnotmol*(molmass[980][nelts-1]-1.0));     // Greenalite
-			angle[5] = simdata[isim][728]*(1.0+massnotmol*(molmass[728][nelts-1]-1.0))      // Chlorite clays: Clinochlore-14A
-			         + simdata[isim][730]*(1.0+massnotmol*(molmass[730][nelts-1]-1.0))      // Clinochlore-7A
-			         + simdata[isim][1416]*(1.0+massnotmol*(molmass[1416][nelts-1]-1.0))    // Ripidolite-14A
-			         + simdata[isim][1418]*(1.0+massnotmol*(molmass[1418][nelts-1]-1.0))    // Ripidolite-7A
-			         + simdata[isim][836]*(1.0+massnotmol*(molmass[836][nelts-1]-1.0));     // Daphnite-14A
-			angle[6] = simdata[isim][1136]*(1.0+massnotmol*(molmass[1136][nelts-1]-1.0))    // Magnesite
-					 + simdata[isim][1030]*(1.0+massnotmol*(molmass[1030][nelts-1]-1.0))    // Hydromagnesite
-					 + simdata[isim][1024]*(1.0+massnotmol*(molmass[1024][nelts-1]-1.0))    // Huntite
-					 + simdata[isim][854]*(1.0+massnotmol*(molmass[854][nelts-1]-1.0))
-					 + simdata[isim][856]*(1.0+massnotmol*(molmass[856][nelts-1]-1.0))
-					 + simdata[isim][858]*(1.0+massnotmol*(molmass[858][nelts-1]-1.0))      // Dolomite
-			         + simdata[isim][1316]*(1.0+massnotmol*(molmass[1316][nelts-1]-1.0))    // NH4HCO3
-			         + simdata[isim][692]*(1.0+massnotmol*(molmass[692][nelts-1]-1.0))      // Calcite (for init CM compo)
-			         + simdata[isim][1410]*(1.0+massnotmol*(molmass[1410][nelts-1]-1.0))    // Rhodochrosite (MnCO3)
-			         + simdata[isim][1468]*(1.0+massnotmol*(molmass[1468][nelts-1]-1.0));   // Siderite (FeCO3)
-			angle[7] = simdata[isim][1012]*(1.0+massnotmol*(molmass[1012][nelts-1]-1.0));   // Hematite
-			angle[8] = simdata[isim][1138]*(1.0+massnotmol*(molmass[1138][nelts-1]-1.0));   // Magnetite
-			angle[9] = simdata[isim][916]*(1.0+massnotmol*(molmass[916][nelts-1]-1.0))              // Fe
-			         + simdata[isim][1324]*(1.0+massnotmol*(molmass[1324][nelts-1]-1.0))            // Ni
-			         + simdata[isim][928]*(1.0+massnotmol*(molmass[928][nelts-1]-1.0))              // FeO
-			         + simdata[isim][1588]*(1.0+massnotmol*(molmass[1588][nelts-1]-1.0))            // Trevorite (NiFe2O4)
-			         + simdata[isim][1330]*(1.0+massnotmol*(molmass[1330][nelts-1]-1.0))            // Ni2SiO4
-			         + simdata[isim][722]*(1.0+massnotmol*(molmass[722][nelts-1]-1.0))              // Chromite (FeCr2O4)
-			         + simdata[isim][774]*(1.0+massnotmol*(molmass[774][nelts-1]-1.0));             // CoFe2O4
-			angle[10] = simdata[isim][1168]*(1.0+massnotmol*(molmass[1168][nelts-1]-1.0)); // MgCl2:12H2O
-			angle[11] = simdata[isim][860]*(1.0+massnotmol*(molmass[860][nelts-1]-1.0))
-			          + simdata[isim][944]*(1.0+massnotmol*(molmass[944][nelts-1]-1.0))
-			          + simdata[isim][1252]*(1.0+massnotmol*(molmass[1252][nelts-1]-1.0))
-			          + simdata[isim][1394]*(1.0+massnotmol*(molmass[1394][nelts-1]-1.0))  // Px: enstatite + ferrosilite + Na2SiO3 + pseudowollastonite (CaSiO3)
-			          + simdata[isim][1752]*(1.0+massnotmol*(molmass[1752][nelts-1]-1.0))  // Px: Wollastonite for init CM compo
-			          + simdata[isim][952]*(1.0+massnotmol*(molmass[952][nelts-1]-1.0))
-			          + simdata[isim][914]*(1.0+massnotmol*(molmass[914][nelts-1]-1.0))
-			          + simdata[isim][1222]*(1.0+massnotmol*(molmass[1222][nelts-1]-1.0)); // Ol: forsterite + fayalite + monticellite (CaMgSiO4)
-			angle[12] = simdata[isim][1306]*(1.0+massnotmol*(molmass[1306][nelts-1]-1.0))
-			          + simdata[isim][1308]*(1.0+massnotmol*(molmass[1308][nelts-1]-1.0)); // NH4-feldspar + NH4-muscovite
-			angle[13] = simdata[isim][660]*(1.0+massnotmol*(molmass[660][nelts-1]-1.0));   // Brucite
-			angle[14] = simdata[isim][1592]*(1.0+massnotmol*(molmass[1592][nelts-1]-1.0))
-			          + simdata[isim][1398]*(1.0+massnotmol*(molmass[1398][nelts-1]-1.0))  // Troilite+Pyrite
-			          + simdata[isim][1188]*(1.0+massnotmol*(molmass[1188][nelts-1]-1.0))  // + Millerite for init CM compo
-			          + simdata[isim][714]*(1.0+massnotmol*(molmass[714][nelts-1]-1.0))    // + Chalcopyrite (CuFeS2)
-			          + simdata[isim][1386]*(1.0+massnotmol*(molmass[1386][nelts-1]-1.0)); // + Polydymite (Ni3S4)
-			angle[15] = simdata[isim][668]*(1.0+massnotmol*(molmass[668][nelts-1]-1.0))              // Graphite
-			          + simdata[isim][1090]*(1.0+massnotmol*(molmass[1090][2]*molmass[0][2]-1.0))
-			          + simdata[isim][1092]*(1.0+massnotmol*(molmass[1092][2]*molmass[0][2]-1.0))
-			          + simdata[isim][1094]*(1.0+massnotmol*(molmass[1094][2]*molmass[0][2]-1.0)); // Kerogens (for init CM compo)
-			         // + simdata[isim][544]*(1.0+massnotmol*(molmass[544][nelts-1]-1.0));          // Aromatic O
-//			angle[1] = simdata[isim][582]*(1.0+massnotmol*(molmass[582][nelts-1]-1.0))   // Andradite
-//			         + simdata[isim][1086]*(1.0+massnotmol*(molmass[1086][nelts-1]-1.0)) // Katoite
-//			         + simdata[isim][792]*(1.0+massnotmol*(molmass[792][nelts-1]-1.0))   // Corundum
-//			         + simdata[isim][690]*(1.0+massnotmol*(molmass[690][nelts-1]-1.0))   // CaAl2O4:10H2O
-//			         + simdata[isim][974]*(1.0+massnotmol*(molmass[974][nelts-1]-1.0))   // Gismondine (Ca2Al4Si4O16:9H2O)
-//			         + simdata[isim][1576]*(1.0+massnotmol*(molmass[1576][nelts-1]-1.0))
-//			         + simdata[isim][1578]*(1.0+massnotmol*(molmass[1578][nelts-1]-1.0))
-//			         + simdata[isim][1586]*(1.0+massnotmol*(molmass[1586][nelts-1]-1.0)) // Tremolite
-//			         + simdata[isim][850]*(1.0+massnotmol*(molmass[850][nelts-1]-1.0));   // Diopside
-//		    angle[2] = simdata[isim][1524]*(1.0+massnotmol*(molmass[1524][nelts-1]-1.0)); // Talc
-//			for (i=732;i<754;i=i+2) angle[2] = angle[2] + simdata[isim][i]*(1.0+massnotmol*(molmass[i][nelts-1]-1.0)); // All clinoptilolites
-//			angle[3] = simdata[isim][1434]*(1.0+massnotmol*(molmass[1434][nelts-1]-1.0))
-//			         + simdata[isim][1436]*(1.0+massnotmol*(molmass[1436][nelts-1]-1.0))
-//			         + simdata[isim][1438]*(1.0+massnotmol*(molmass[1438][nelts-1]-1.0))  // Smectites, including saponites
-//			         + simdata[isim][1440]*(1.0+massnotmol*(molmass[1440][nelts-1]-1.0))
-//			         + simdata[isim][1442]*(1.0+massnotmol*(molmass[1442][nelts-1]-1.0))
-//			         + simdata[isim][1488]*(1.0+massnotmol*(molmass[1488][nelts-1]-1.0))  // Smectites, including saponites
-//			         + simdata[isim][1352]*(1.0+massnotmol*(molmass[1352][nelts-1]-1.0))
-//			         + simdata[isim][1356]*(1.0+massnotmol*(molmass[1356][nelts-1]-1.0))
-//			         + simdata[isim][1358]*(1.0+massnotmol*(molmass[1358][nelts-1]-1.0))
-//			         + simdata[isim][1360]*(1.0+massnotmol*(molmass[1360][nelts-1]-1.0))  // Nontronites for init CM compo
-//			         + simdata[isim][1230]*(1.0+massnotmol*(molmass[1230][nelts-1]-1.0))
-//			         + simdata[isim][1226]*(1.0+massnotmol*(molmass[1226][nelts-1]-1.0))
-//			         + simdata[isim][1224]*(1.0+massnotmol*(molmass[1224][nelts-1]-1.0));   // Montmorillonites for init CM compo
-//			angle[4] = simdata[isim][594]*(1.0+massnotmol*(molmass[594][nelts-1]-1.0))      // Serpentines: Antigorite
-//			         + simdata[isim][820]*(1.0+massnotmol*(molmass[820][nelts-1]-1.0))      // Cronstedtite
-//			         + simdata[isim][980]*(1.0+massnotmol*(molmass[980][nelts-1]-1.0));     // Greenalite
-//			angle[5] = simdata[isim][728]*(1.0+massnotmol*(molmass[728][nelts-1]-1.0))      // Chlorite clays: Clinochlore-14A
-//			         + simdata[isim][730]*(1.0+massnotmol*(molmass[730][nelts-1]-1.0))      // Clinochlore-7A
-//			         + simdata[isim][1416]*(1.0+massnotmol*(molmass[1416][nelts-1]-1.0))    // Ripidolite-14A
-//			         + simdata[isim][1418]*(1.0+massnotmol*(molmass[1418][nelts-1]-1.0))    // Ripidolite-7A
-//			         + simdata[isim][836]*(1.0+massnotmol*(molmass[836][nelts-1]-1.0));     // Daphnite-14A
-//			angle[6] = simdata[isim][1136]*(1.0+massnotmol*(molmass[1136][nelts-1]-1.0))    // Magnesite
-//					 + simdata[isim][1030]*(1.0+massnotmol*(molmass[1030][nelts-1]-1.0))    // Hydromagnesite
-//					 + simdata[isim][1024]*(1.0+massnotmol*(molmass[1024][nelts-1]-1.0))    // Huntite
-//					 + simdata[isim][854]*(1.0+massnotmol*(molmass[854][nelts-1]-1.0))
-//					 + simdata[isim][856]*(1.0+massnotmol*(molmass[856][nelts-1]-1.0))
-//					 + simdata[isim][858]*(1.0+massnotmol*(molmass[858][nelts-1]-1.0))      // Dolomite
-//			         + simdata[isim][1316]*(1.0+massnotmol*(molmass[1316][nelts-1]-1.0))    // NH4HCO3
-//			         + simdata[isim][692]*(1.0+massnotmol*(molmass[692][nelts-1]-1.0))      // Calcite (for init CM compo)
-//			         + simdata[isim][1410]*(1.0+massnotmol*(molmass[1410][nelts-1]-1.0))    // Rhodochrosite (MnCO3)
-//			         + simdata[isim][1468]*(1.0+massnotmol*(molmass[1468][nelts-1]-1.0));   // Siderite (FeCO3)
-//			angle[7] = simdata[isim][1012]*(1.0+massnotmol*(molmass[1012][nelts-1]-1.0));   // Hematite
-//			angle[8] = simdata[isim][1138]*(1.0+massnotmol*(molmass[1138][nelts-1]-1.0));   // Magnetite
-//			angle[9] = simdata[isim][916]*(1.0+massnotmol*(molmass[916][nelts-1]-1.0))              // Fe
-//			         + simdata[isim][1324]*(1.0+massnotmol*(molmass[1324][nelts-1]-1.0))            // Ni
-//					 + simdata[isim][722]*(1.0+massnotmol*(molmass[722][nelts-1]-1.0));              // Chromite (FeCr2O4)
-//			angle[11] = simdata[isim][860]*(1.0+massnotmol*(molmass[860][nelts-1]-1.0))
-//			          + simdata[isim][944]*(1.0+massnotmol*(molmass[944][nelts-1]-1.0))
-//			          + simdata[isim][1252]*(1.0+massnotmol*(molmass[1252][nelts-1]-1.0))
-//			          + simdata[isim][1394]*(1.0+massnotmol*(molmass[1394][nelts-1]-1.0))  // Px: enstatite + ferrosilite + Na2SiO3 + pseudowollastonite (CaSiO3)
-//			          + simdata[isim][1752]*(1.0+massnotmol*(molmass[1752][nelts-1]-1.0))  // Px: Wollastonite for init CM compo
-//			          + simdata[isim][952]*(1.0+massnotmol*(molmass[952][nelts-1]-1.0))
-//			          + simdata[isim][914]*(1.0+massnotmol*(molmass[914][nelts-1]-1.0))
-//			          + simdata[isim][1222]*(1.0+massnotmol*(molmass[1222][nelts-1]-1.0)); // Ol: forsterite + fayalite + monticellite (CaMgSiO4)
-//			angle[12] = //simdata[isim][1306]*(1.0+massnotmol*(molmass[1306][nelts-1]-1.0))  // NH4-feldspar
-//					   simdata[isim][1308]*(1.0+massnotmol*(molmass[1308][nelts-1]-1.0)); // NH4-muscovite
-//			angle[13] = simdata[isim][660]*(1.0+massnotmol*(molmass[660][nelts-1]-1.0));   // Brucite
-//			angle[14] = simdata[isim][1398]*(1.0+massnotmol*(molmass[1398][nelts-1]-1.0))  // Pyrite
-//			          + simdata[isim][714]*(1.0+massnotmol*(molmass[714][nelts-1]-1.0))    // + Chalcopyrite (CuFeS2)
-//			          + simdata[isim][1386]*(1.0+massnotmol*(molmass[1386][nelts-1]-1.0)); // + Polydymite (Ni3S4)
-//			angle[15] = simdata[isim][668]*(1.0+massnotmol*(molmass[668][nelts-1]-1.0))              // Graphite
-//			          + simdata[isim][1090]*(1.0+massnotmol*(molmass[1090][2]*molmass[0][2]-1.0))
-//			          + simdata[isim][1092]*(1.0+massnotmol*(molmass[1092][2]*molmass[0][2]-1.0))
-//			          + simdata[isim][1094]*(1.0+massnotmol*(molmass[1094][2]*molmass[0][2]-1.0)); // Kerogens (for init CM compo)
-			for (i=522;i<1808;i=i+2) total_Min = total_Min + simdata[isim][i]*(1.0+massnotmol*(molmass[i][nelts-1]-1.0));
+			angle[1] = simdata[isim][615]*(1.0+massnotmol*(molmass[615][nelts-1]-1.0))   // Andradite
+			         + simdata[isim][1067]*(1.0+massnotmol*(molmass[1067][nelts-1]-1.0)) // Katoite
+			         + simdata[isim][821]*(1.0+massnotmol*(molmass[821][nelts-1]-1.0))   // Corundum
+			         + simdata[isim][721]*(1.0+massnotmol*(molmass[721][nelts-1]-1.0))   // CaAl2O4:10H2O
+			         + simdata[isim][985]*(1.0+massnotmol*(molmass[985][nelts-1]-1.0))   // Gismondine (Ca2Al4Si4O16:9H2O)
+			         + simdata[isim][1503]*(1.0+massnotmol*(molmass[1503][nelts-1]-1.0))
+			         + simdata[isim][1505]*(1.0+massnotmol*(molmass[1505][nelts-1]-1.0))
+			         + simdata[isim][1507]*(1.0+massnotmol*(molmass[1507][nelts-1]-1.0)) // Tobermorite (Ca5Si6H21O27.5)
+			         + simdata[isim][1513]*(1.0+massnotmol*(molmass[1513][nelts-1]-1.0)) // Tremolite
+			         + simdata[isim][875]*(1.0+massnotmol*(molmass[875][nelts-1]-1.0))   // Diopside
+			         + simdata[isim][1345]*(1.0+massnotmol*(molmass[1345][nelts-1]-1.0));  // Quartz
+			angle[2] = simdata[isim][1451]*(1.0+massnotmol*(molmass[1451][nelts-1]-1.0)); // Talc
+			for (i=761;i<782;i=i+2) angle[2] = angle[2] + simdata[isim][i]*(1.0+massnotmol*(molmass[i][nelts-1]-1.0)); // All clinoptilolites
+			angle[3] = simdata[isim][1419]*(1.0+massnotmol*(molmass[1419][nelts-1]-1.0))
+				     + simdata[isim][1421]*(1.0+massnotmol*(molmass[1421][nelts-1]-1.0));  // Smectites
+			for (i=1367;i<1376;i=i+2) angle[3] = angle[3] + simdata[isim][i]*(1.0+massnotmol*(molmass[i][nelts-1]-1.0)); // Saponite smectites
+			for (i=1293;i<1302;i=i+2) angle[3] = angle[3] + simdata[isim][i]*(1.0+massnotmol*(molmass[i][nelts-1]-1.0)); // Nontronites for init CM compo
+			for (i=1195;i<1202;i=i+2) angle[3] = angle[3] + simdata[isim][i]*(1.0+massnotmol*(molmass[i][nelts-1]-1.0)); // Montmorillonites for init CM compo
+			angle[4] = simdata[isim][627]*(1.0+massnotmol*(molmass[627][nelts-1]-1.0))      // Serpentines: Antigorite
+			         + simdata[isim][847]*(1.0+massnotmol*(molmass[847][nelts-1]-1.0))      // Cronstedtite
+			         + simdata[isim][991]*(1.0+massnotmol*(molmass[991][nelts-1]-1.0));     // Greenalite
+			angle[5] = simdata[isim][755]*(1.0+massnotmol*(molmass[755][nelts-1]-1.0))      // Chlorite clays: Clinochlore-14A
+			         + simdata[isim][757]*(1.0+massnotmol*(molmass[757][nelts-1]-1.0))      // Clinochlore-7A
+			         + simdata[isim][1353]*(1.0+massnotmol*(molmass[1353][nelts-1]-1.0))    // Ripidolite-14A
+			         + simdata[isim][1355]*(1.0+massnotmol*(molmass[1355][nelts-1]-1.0))    // Ripidolite-7A
+			         + simdata[isim][863]*(1.0+massnotmol*(molmass[863][nelts-1]-1.0));     // Daphnite-14A
+			angle[6] = simdata[isim][1115]*(1.0+massnotmol*(molmass[1115][nelts-1]-1.0))    // Carbonates: Magnesite
+					 + simdata[isim][1027]*(1.0+massnotmol*(molmass[1027][nelts-1]-1.0))    // Hydromagnesite
+					 + simdata[isim][1023]*(1.0+massnotmol*(molmass[1023][nelts-1]-1.0))    // Huntite
+					 + simdata[isim][879]*(1.0+massnotmol*(molmass[879][nelts-1]-1.0))
+					 + simdata[isim][881]*(1.0+massnotmol*(molmass[881][nelts-1]-1.0))
+					 + simdata[isim][883]*(1.0+massnotmol*(molmass[883][nelts-1]-1.0))      // Dolomite
+			         + simdata[isim][1263]*(1.0+massnotmol*(molmass[1263][nelts-1]-1.0))    // NH4HCO3
+			         + simdata[isim][723]*(1.0+massnotmol*(molmass[723][nelts-1]-1.0))      // Calcite (for init CM compo)
+			         + simdata[isim][1349]*(1.0+massnotmol*(molmass[1349][nelts-1]-1.0))    // Rhodochrosite (MnCO3)
+			         + simdata[isim][1399]*(1.0+massnotmol*(molmass[1399][nelts-1]-1.0));   // Siderite (FeCO3)
+			angle[7] = simdata[isim][1013]*(1.0+massnotmol*(molmass[1013][nelts-1]-1.0));   // Hematite
+			angle[8] = simdata[isim][1117]*(1.0+massnotmol*(molmass[1117][nelts-1]-1.0));   // Magnetite
+			angle[9] = simdata[isim][941]*(1.0+massnotmol*(molmass[941][nelts-1]-1.0))              // Fe
+			         + simdata[isim][1265]*(1.0+massnotmol*(molmass[1265][nelts-1]-1.0))            // Ni
+			         + simdata[isim][945]*(1.0+massnotmol*(molmass[945][nelts-1]-1.0))              // FeO
+			         + simdata[isim][1515]*(1.0+massnotmol*(molmass[1515][nelts-1]-1.0))            // Trevorite (NiFe2O4)
+			         + simdata[isim][1271]*(1.0+massnotmol*(molmass[1271][nelts-1]-1.0))            // Ni2SiO4
+			         + simdata[isim][751]*(1.0+massnotmol*(molmass[751][nelts-1]-1.0))              // Chromite (FeCr2O4)
+			         + simdata[isim][803]*(1.0+massnotmol*(molmass[803][nelts-1]-1.0));             // CoFe2O4
+			angle[10] = 0.0;
+			angle[11] = simdata[isim][885]*(1.0+massnotmol*(molmass[885][nelts-1]-1.0))
+			          + simdata[isim][959]*(1.0+massnotmol*(molmass[959][nelts-1]-1.0))
+			          + simdata[isim][1223]*(1.0+massnotmol*(molmass[1223][nelts-1]-1.0))
+			          + simdata[isim][1333]*(1.0+massnotmol*(molmass[1333][nelts-1]-1.0))  // Px: enstatite + ferrosilite + Na2SiO3 + pseudowollastonite (CaSiO3)
+			          + simdata[isim][1673]*(1.0+massnotmol*(molmass[1673][nelts-1]-1.0))  // Px: Wollastonite for init CM compo
+			          + simdata[isim][963]*(1.0+massnotmol*(molmass[963][nelts-1]-1.0))
+			          + simdata[isim][939]*(1.0+massnotmol*(molmass[939][nelts-1]-1.0))
+			          + simdata[isim][1193]*(1.0+massnotmol*(molmass[1193][nelts-1]-1.0)); // Ol: forsterite + fayalite + monticellite (CaMgSiO4)
+			angle[12] = simdata[isim][1257]*(1.0+massnotmol*(molmass[1257][nelts-1]-1.0))
+			          + simdata[isim][1259]*(1.0+massnotmol*(molmass[1259][nelts-1]-1.0)); // NH4-feldspar + NH4-muscovite
+			angle[13] = simdata[isim][691]*(1.0+massnotmol*(molmass[691][nelts-1]-1.0));   // Brucite
+			angle[14] = simdata[isim][1519]*(1.0+massnotmol*(molmass[1519][nelts-1]-1.0))
+			          + simdata[isim][1337]*(1.0+massnotmol*(molmass[1337][nelts-1]-1.0))  // Troilite+Pyrite
+			          + simdata[isim][1159]*(1.0+massnotmol*(molmass[1159][nelts-1]-1.0))  // + Millerite for init CM compo
+			          + simdata[isim][743]*(1.0+massnotmol*(molmass[743][nelts-1]-1.0))    // + Chalcopyrite (CuFeS2)
+			          + simdata[isim][1325]*(1.0+massnotmol*(molmass[1325][nelts-1]-1.0)); // + Polydymite (Ni3S4)
+			angle[15] = simdata[isim][699]*(1.0+massnotmol*(molmass[699][nelts-1]-1.0))              // Graphite
+			          + simdata[isim][1071]*(1.0+massnotmol*(molmass[1071][2]*molmass[0][2]-1.0))
+			          + simdata[isim][1073]*(1.0+massnotmol*(molmass[1073][2]*molmass[0][2]-1.0))
+			          + simdata[isim][1075]*(1.0+massnotmol*(molmass[1075][2]*molmass[0][2]-1.0)); // Kerogens (for init CM compo)
+			         // + simdata[isim][581]*(1.0+massnotmol*(molmass[581][nelts-1]-1.0));          // Aromatic O
+			for (i=naq+1;i<naq+(nmingas-ngases)*2-2;i=i+2) total_Min = total_Min + simdata[isim][i]*(1.0+massnotmol*(molmass[i][nelts-1]-1.0));
 			for(i=1;i<16;i++) angle[i] = angle[i]/total_Min;
 		}
 		else if (itopic == 9 || itopic == 13) { // Solution, freezing temp
 			double total_Sol = 0.0; // Final mass of solution
 			for (i=12;i<40;i++) total_Sol = total_Sol + simdata[isim][i];
-			total_Sol = total_Sol + 2.0*simdata[isim][333]; // H2
-//			angle[1] = simdata[isim][12]/total_Sol;         // Al
-//			angle[2] = (simdata[isim][75]+simdata[isim][71]+simdata[isim][70])/total_Sol; // C ox = CO2 + HCO3- + CO3-2
-//			angle[3] = simdata[isim][14]/total_Sol - angle[2]; // C red: all other C
-//			angle[4] = simdata[isim][15]/total_Sol;         // Ca
-//			angle[5] = simdata[isim][16]/total_Sol;         // Cl
-//			angle[6] = simdata[isim][31]/total_Sol;         // P
-//			angle[7] = simdata[isim][23]/total_Sol;         // K
-//			angle[8] = simdata[isim][25]/total_Sol;         // Mg
-//			angle[9] = simdata[isim][28]/total_Sol;         // N
-//			angle[10] = simdata[isim][29]/total_Sol;         // Na
-//			angle[11] = simdata[isim][30]/total_Sol;        // Ni
-//			angle[12] = simdata[isim][32]/total_Sol;        // S
-//			angle[13] = simdata[isim][34]/total_Sol;        // Si
-//			angle[14] = 2.0*simdata[isim][333]/total_Sol;   // H = 2*H2
+			total_Sol = total_Sol + 2.0*simdata[isim][66]; // H2
 			angle[1] = simdata[isim][12]/total_Sol;         // Al
-			angle[2] = (simdata[isim][75]+simdata[isim][71]+simdata[isim][70]+simdata[isim][72]+simdata[isim][80]+simdata[isim][73]+simdata[isim][74])
-					/total_Sol; // C ox = CO2 + HCO3- + CO3-2 + CaCO3 + MgCO3 + NaCO3- + NaHCO3
-			angle[3] = (simdata[isim][68]+2.0*simdata[isim][66]+3.0*simdata[isim][67])/total_Sol; // CH4 + C2H6 + C3H8
+			angle[2] = (simdata[isim][45]+simdata[isim][46])/total_Sol; // C ox: C(2)+C(4)
+			angle[3] = (simdata[isim][42]+simdata[isim][43]+simdata[isim][44])/total_Sol; // C red: C(-2)+C(-3)+C(-4)
 			angle[4] = simdata[isim][15]/total_Sol;         // Ca
 			angle[5] = simdata[isim][16]/total_Sol;         // Cl
 			angle[6] = simdata[isim][31]/total_Sol;         // P
-			angle[7] = simdata[isim][335]/total_Sol;         // K+
-			angle[8] = simdata[isim][375]/total_Sol;         // NH3
-			angle[9] = simdata[isim][376]/total_Sol;         // NH4+
-			angle[10] = simdata[isim][396]/total_Sol;         // Na+
-			angle[11] = 2.0*simdata[isim][384]/total_Sol;        // N2
-			angle[12] = simdata[isim][442]/total_Sol;        // S-2
-			angle[13] = simdata[isim][444]/total_Sol;        // H2S
-			angle[14] = 2.0*simdata[isim][333]/total_Sol;   // H = 2*H2
+			angle[7] = simdata[isim][23]/total_Sol;         // K
+			angle[8] = simdata[isim][25]/total_Sol;         // Mg
+			angle[9] = simdata[isim][28]/total_Sol;         // N
+			angle[10] = simdata[isim][29]/total_Sol;         // Na
+			angle[11] = simdata[isim][30]/total_Sol;        // Ni
+			angle[12] = simdata[isim][32]/total_Sol;        // S
+			angle[13] = simdata[isim][34]/total_Sol;        // Si
+			angle[14] = 2.0*simdata[isim][66]/total_Sol;   // H = 2*H2
 		}
 
 		// Plot pies
@@ -1750,18 +1662,9 @@ int Freeze(double **simdata, double **antifreezes, int nelts, int naf, int isim,
 	// Initialize sol
 	for (i=0;i<nelts-3;i++) sol[i] = simdata[isim][i+12];
 
-	// Initialize Cred, Nred, and Sred
-	for (i=65;i<69;i++) Cred = Cred + simdata[isim][i]; // C2H4, C2H6, C3H8, CH4
-	Nred = simdata[isim][99]*2.0                                         // CO(NH2)2
-	     + simdata[isim][120] + simdata[isim][142]                       // NH4CH3COO complexes
-	     + simdata[isim][275] + simdata[isim][277]*2.0 + simdata[isim][278]*3.0; // Cu-NH3 complexes
-	for (i=375;i<379;i++) Nred = Nred + simdata[isim][i];                // Other metal-NH3/NH4 complexes
-	Nred = Nred + simdata[isim][379]*2.0 + simdata[isim][380]*2.0 + simdata[isim][381]*3.0 + simdata[isim][382]*4.0 + simdata[isim][383]*6.0;
-	Sred = simdata[isim][146] + simdata[isim][155]*2.0 + simdata[isim][160]*2.0 + simdata[isim][163] + simdata[isim][169]
-	     + simdata[isim][171]*4.0                           // SCN complexes
-	     + simdata[isim][245]*2.0 + simdata[isim][246]      // Metal-sulfide complexes
-	     + simdata[isim][442] + simdata[isim][443] + simdata[isim][444] + simdata[isim][445]*2.0 + simdata[isim][446]*3.0
-	     + simdata[isim][447]*4.0 + simdata[isim][448]*5.0; // Sulfide
+	Cred = simdata[isim][42] + simdata[isim][43] + simdata[isim][44]; // C(-2), C(-3), C(-4)
+	Nred = simdata[isim][71] + simdata[isim][72]; // N(-03) + N(-3)
+	Sred = simdata[isim][79]; // S(-2)
 
 	// Go through the list of antifreezes from highest to lowest eutectic temperature
 	for (i=naf-1;i>=0;i--) {
@@ -1774,8 +1677,8 @@ int Freeze(double **simdata, double **antifreezes, int nelts, int naf, int isim,
 			if (antifreezes[i][j] > 0.0 &&
 					(sol[j] <= 0.0                                      // Antifreeze not in solution
 					|| (j==2 && Cred > 0.99*sol[j])                     // C is reduced
-					|| (i==21 && simdata[isim][117] < 1.0e-5*sol[i])    // Negligible CH2O (if not, case not well handled)
-					|| (i==0 && simdata[isim][111] <= 0.0)              // No CH3OH
+					|| (i==21 && simdata[isim][170] < 1.0e-5*sol[i])    // Negligible CH2O (if not, case not well handled)
+					|| (i==0 && simdata[isim][164] <= 0.0)              // No CH3OH
 				    || ((i==9 || i==16 || i==17) && j==16 && (1.0-Nred) < 1.0e-5*sol[j]) // Negligible oxidized N
 				    || (j==16 && Nred < 0.99*sol[j])                    // N is not overwhelmingly oxidized
 				    || (j==20 && Sred > 0.99*sol[j]))) {                // S is reduced
@@ -1783,8 +1686,8 @@ int Freeze(double **simdata, double **antifreezes, int nelts, int naf, int isim,
 				if (verbose == 1 && antifreezes[i][j] > 0.0) {
 					if (sol[j] <= 0.0) printf("Antifreeze not in solution\n");
 					if (j==2 && Cred > 0.99*sol[j]) printf("C is reduced\n");
-					if (i==21 && simdata[isim][117] < 1.0e-5*sol[i]) printf("Negligible CH2O\n");
-					if (i==0 && simdata[isim][111] <= 0.0) printf("No CH3OH");
+					if (i==21 && simdata[isim][170] < 1.0e-5*sol[i]) printf("Negligible CH2O\n");
+					if (i==0 && simdata[isim][164] <= 0.0) printf("No CH3OH");
 					if ((i==9 || i==16 || i==17) && j==16 && (1.0-Nred) < 1.0e-5*sol[j]) printf("Negligible oxidized N\n");
 					if (j==16 && Nred < 0.99*sol[j]) printf("N is not overwhelmingly oxidized\n");
 					if (j==20 && Sred > 0.99*sol[j]) printf("S is reduced\n");
