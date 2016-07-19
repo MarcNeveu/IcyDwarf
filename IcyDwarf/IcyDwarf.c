@@ -263,13 +263,10 @@ int main(int argc, char *argv[]){
 			if (thoutput[r] == NULL) printf("IcyDwarf: Not enough memory to create the thoutput structure\n");
 		}
 		thoutput = read_thermal_output (thoutput, NR, NT_output, path);
-		for (r=0;r<NR;r++) Xhydr[r] = thoutput[r][NT_output].famor;
 
 		compression(NR, NT_output, thoutput, NT_output-1, 205, 302, 403, 0, path, rhoHydrRock, rhoDryRock, Xhydr);
 
-		for (r=0;r<NR;r++) {
-			free (thoutput[r]);
-		}
+		for (r=0;r<NR;r++) free (thoutput[r]);
 		free (thoutput);
 		printf("\n");
 	}
