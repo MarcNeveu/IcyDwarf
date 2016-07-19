@@ -202,7 +202,7 @@ int compression(int NR, int NT, thermalout **thoutput, int t, int dbincore, int 
 	for (ir=0;ir<NR;ir++) {
 		Mp = Mp + (thoutput[ir][t].mrock + thoutput[ir][t].mh2os + thoutput[ir][t].madhs +
 				thoutput[ir][t].mh2ol + thoutput[ir][t].mnh3l)*gram;
-		if (thoutput[ir][t].famor < 0.1) Mincore = Mincore + (thoutput[ir][t].mrock)*gram;
+		if (thoutput[ir][t].xhydr < 0.1) Mincore = Mincore + (thoutput[ir][t].mrock)*gram;
 		else Moutcore = Moutcore + thoutput[ir][t].mrock*gram;
 	}
 	Mmantle = Mp-Mincore-Moutcore;
@@ -222,11 +222,23 @@ int compression(int NR, int NT, thermalout **thoutput, int t, int dbincore, int 
 		r[ir] = Rincore*(double)ir/(double)nic;
 		rho[ir] = rho0[icomp[ir]];
 	}
+	if (nic == 0) {
+		ir = 0;
+		r[ir] = 0.0;
+		rho[ir] = rho0[icomp[ir]];
+	}
+
 	for (ir=nic+1;ir<=noc;ir++) {
 		icomp[ir] = ioutcore;
 		r[ir] = Rincore+(Routcore-Rincore)*(double)(ir-nic)/(double)(noc-nic);
 		rho[ir] = rho0[icomp[ir]];
 	}
+	if (noc == 0) {
+		ir = 0;
+		r[ir] = 0.0;
+		rho[ir] = rho0[icomp[ir]];
+	}
+
 	for (ir=noc+1;ir<=NR;ir++) {
 		icomp[ir] = imantle;
 		r[ir] = Routcore+(Rp-Routcore)*(double)(ir-noc)/(double)(NR-noc);
@@ -471,9 +483,7 @@ int planmat(int ncomp, int **dbindex, int **eos, double **rho0, double **c, doub
 	strcat(planmatdb,"Data/Compression_planmat.txt");
 
 	fid = fopen (planmatdb,"r");
-	if (fid == NULL) {
-		printf("IcyDwarf: Missing Compression_planmat.txt file.\n");
-	}
+	if (fid == NULL) printf("IcyDwarf: Missing Compression_planmat.txt file.\n");
 	else {
 		printf("Reading planmat database file...\n");
 		if (fgets(str, 1024, fid) != NULL) puts(str);
@@ -485,7 +495,7 @@ int planmat(int ncomp, int **dbindex, int **eos, double **rho0, double **c, doub
 						&(*rho0)[i], &(*c)[i], &(*nn)[i], &(*Ks0)[i], &(*Ksp)[i], &(*V0)[i], &(*Tref)[i], &(*a0)[i],
 						&(*a1)[i], &(*b0)[i], &(*b1)[i], &(*b2)[i]);
 			if (scan != 14) {                                                         // If scanning error
-				printf("Error scanning planmat database file at i = %d\n",i);
+				printf("%d components found in planmat database\n",i);
 				break;
 			}
 			if (fgets(str, 1024, fid) != NULL) puts(str);
