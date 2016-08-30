@@ -97,7 +97,7 @@ int icy_dwarf_input (double **input, char (*thermal_file)[1024], char path[1024]
 	i = 0;
 	f = fopen (idi,"r");
 		if (f == NULL) {
-			printf("IcyDwarf: Missing IcyDwarfPlotInput.txt file.\n");
+			printf("IcyDwarf: Cannot find IcyDwarfPlotInput.txt file.\n");
 			printf("Was IcyDwarfPlot launched from the right folder?\n");
 			printf("The following option is active: release %d, command line %d\n", v_release, cmdline);
 			exit(0);

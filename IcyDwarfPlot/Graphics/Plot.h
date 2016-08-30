@@ -162,7 +162,7 @@ int renderTexture(SDL_Texture *tex, SDL_Renderer *ren, int x, int y) {
 //-------------------------------------------------------------------
 
 int scanNumber(char (*nb)[20], double i) {
-	if (i<100.0) sprintf((*nb), "   %g", i);
+	if (i<100.0) sprintf((*nb), "   %.2g", i);
 	else if (i<1000.0) sprintf((*nb), "  %g", i);
 	else sprintf((*nb), "%g", i);
 	return 0;

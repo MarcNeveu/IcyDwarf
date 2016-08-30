@@ -966,7 +966,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		}
 		Crack_size_avg = 0.0;
 
-		if ((ircrack < ircore && Mh2ol[ircore] > 0.0 && fineVolFrac < 0.64) || forced_hydcirc) {
+		if ((ircrack < ircore && Mh2ol[ircore] > 0.0 && fineVolFrac < 0.64)) {
 			// Calculate Rayleigh number
 			for (ir=ircrack;ir<=ircore;ir++) {
 				Crack_size_avg = Crack_size_avg + Crack_size[ir];
@@ -1001,6 +1001,10 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 					}
 				}
 			}
+		}
+
+		if (forced_hydcirc == 1) {
+			for (ir=0;ir<ircore;ir++) kappa[ir] = kap_hydro;
 		}
 
 		//-------------------------------------------------------------------
