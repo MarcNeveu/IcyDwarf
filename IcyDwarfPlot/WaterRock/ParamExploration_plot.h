@@ -58,7 +58,7 @@ int ParamExploration_plot(char path[1024],	int warnings, int msgout, SDL_Rendere
 	int j = 0;
 	int k = 0;
 	int nspecies = 0;
-	int nvar = 1830;                                             // Number of physico-chemical variables
+	int nvar = 930;                                             // Number of physico-chemical variables
 	int nleg = 16;                                               // Max number of legends
 	int naq = 256;                                               // Number of aqueous species (+ physical parameters)
 	int ngases = 15;                                             // Number of gaseous species
