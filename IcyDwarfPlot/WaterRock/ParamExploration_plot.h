@@ -399,7 +399,18 @@ int UpdateDisplaysParamExploration (SDL_Renderer* renderer, SDL_Texture* backgro
 	}
 
 	// Numbers
-	if (itopic == 4 || (itopic >= 10 && itopic <= 13)) {
+	if (itopic == 11 && PT) { // pH-pe
+		x = 82; y=355; d=52;
+		for (j=0;j<ntemp;j++) {
+			for (k=0;k<npressure;k++) {
+				if (num_tex[j*npressure+k] != NULL) {
+					renderTexture(num_tex[j*npressure+k], renderer, x + j*d, y - k*d - 13);
+					renderTexture(num_tex2[j*npressure+k], renderer, x + j*d - 2, y - k*d + 13);
+				}
+			}
+		}
+	}
+	else if (itopic == 4 || (itopic >= 10 && itopic <= 13)) {
 		if (PT == 0) {
 			x = 576; y = 372; d = 26;
 			for (i=0;i<nWR;i++) {
@@ -899,21 +910,21 @@ int PieStyle(int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npre
 	SDL_Color maroon;
 	SDL_Color spindrift;
 	SDL_Color key;
-	black.r = 30; black.g = 30; black.b = 30;
-	white.r = 250; white.g = 250; white.b = 250;
-	red.r = 250; red.g = 20; red.b = 20;
-	green.r = 39; green.g = 145; green.b = 39;
-	aqua.r = 0; aqua.g = 128; aqua.b = 255;
-	purple.r = 168; purple.g = 50; purple.b = 208;
-	gray.r = 174; gray.g = 174; gray.b = 174;
-	yellow.r = 245; yellow.g = 217; yellow.b = 33;
-	gold.r = 255; gold.g = 255; gold.b = 158;
-	orange.r = 238; orange.g = 124; orange.b = 22;
-	pink.r = 255; pink.g = 47; pink.b = 146;
-	cyan.r = 138; cyan.g = 240; cyan.b = 255;
-	light_green.r = 204; light_green.g = 255; light_green.b = 102;
-	maroon.r = 128; maroon.g = 0; maroon.b = 64;
-	spindrift.r = 102; spindrift.g = 255; spindrift.b = 204;
+	black.r = 30; black.g = 30; black.b = 30; black.a = 255;
+	white.r = 250; white.g = 250; white.b = 250; white.a = 255;
+	red.r = 250; red.g = 20; red.b = 20; red.a = 255;
+	green.r = 39; green.g = 145; green.b = 39; green.a = 255;
+	aqua.r = 0; aqua.g = 128; aqua.b = 255; aqua.a = 255;
+	purple.r = 168; purple.g = 50; purple.b = 208; purple.a = 255;
+	gray.r = 174; gray.g = 174; gray.b = 174; gray.a = 255;
+	yellow.r = 245; yellow.g = 217; yellow.b = 33; yellow.a = 255;
+	gold.r = 255; gold.g = 255; gold.b = 158; gold.a = 255;
+	orange.r = 238; orange.g = 124; orange.b = 22; orange.a = 255;
+	pink.r = 255; pink.g = 47; pink.b = 146; pink.a = 255;
+	cyan.r = 138; cyan.g = 240; cyan.b = 255; cyan.a = 255;
+	light_green.r = 204; light_green.g = 255; light_green.b = 102; light_green.a = 255;
+	maroon.r = 128; maroon.g = 0; maroon.b = 64; maroon.a = 255;
+	spindrift.r = 102; spindrift.g = 255; spindrift.b = 204; spindrift.a = 255;
 
 	if (itopic <= 2) (*nspecies) = 3;       // Radionuclides
 	else if (itopic == 3 || itopic == 6) (*nspecies) = 10;  // NH3 / Brucite & carbonates
@@ -1065,6 +1076,7 @@ int PieStyle(int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npre
 	}
 
 	if (itopic == 4) { // Total gas
+		key.a = 255;
 		if (PT == 1) {
 			key.r = 255; key.b = 0;
 			key.g = (int) ((1.0-1.0/100.0)*255.0);
@@ -1085,7 +1097,7 @@ int PieStyle(int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npre
 		}
 	}
 	else if (itopic == 10) { // Ionic strength
-		key.r = 255; key.b = 0;
+		key.r = 255; key.b = 0; key.a = 255;
 		key.g = (int) ((1.0-1.0/100.0)*255.0);
 		Pie(2.0*M_PI, 0.0, -2, 0, 0, 2.0*log(1.0e1), &(*pies), key, 0, 0, 0);
 		key.g = (int) ((1.0-10.0/100.0)*255.0);
@@ -1095,6 +1107,8 @@ int PieStyle(int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npre
 	}
 	else if (itopic == 11) { // pH-pe
 		key.r = 255; key.b = 0;
+		if (PT) key.a = 255;
+		else key.a = 255;
 		key.g = (int) ((1.0-(7.0/7.0-1.0))*255.0);
 		Pie(2.0*M_PI, 0.0, -2, 0, -2, 10.0-6.0, &(*pies), key, 0, 0, 0);
 		Pie(2.0*M_PI, 0.0, -2, 0, 0, 10.0+0.0, &(*pies), key, 0, 0, 0);
@@ -1109,6 +1123,7 @@ int PieStyle(int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npre
 		Pie(2.0*M_PI, 0.0, -2, 4, 2, 10.0+6.0, &(*pies), key, 0, 0, 0);
 	}
 	else if (itopic == 12) { // W:R
+		key.a = 255;
 		key.r = (Uint8) (200.0*(1.0-0.5*(log(0.01)/log(10.0)+2.0)/3.0));
 		key.g = (Uint8) (100.0*(1.0+0.35*(log(0.01)/log(10.0)+2.0)/3.0));
 		key.b = (Uint8) (255.0*(log(0.01)/log(10.0)+2.0)/3.0);
@@ -1187,6 +1202,9 @@ int Angles(double **simdata, double **molmass, double **antifreezes, int isim, i
 	double mass_water = 0.0; // Final mass of water
 	double total_Gas = 0.0;  // Final moles of gases
 	double total_Min = 0.0;  // Final moles of solids
+
+	SDL_Color blue;
+	blue.r = 0; blue.g = 0; blue.b = 255; blue.a = 0;
 
 	double angle[nspecies+1];
 	for (i=0;i<nspecies;i++) angle[i] = 0.0;
@@ -1380,7 +1398,7 @@ int Angles(double **simdata, double **molmass, double **antifreezes, int isim, i
 
 		// Plot pies
 		if (itopic == 4) { // Total gas
-			key.r = 255; key.b = 0;
+			key.r = 255; key.b = 0; key.a = 255;
 			if (total_Gas/100.0 > 1.0) key.g = 0;
 			else key.g = (int) ((1.0-total_Gas/100.0)*255.0);
 			Pie(2.0*M_PI, 0.0, ipie, jpie, kpie, 4.0*log(10.0*total_Gas), &(*pies), key, 0, PT, 0); // log = natural logarithm ln
@@ -1398,7 +1416,7 @@ int Angles(double **simdata, double **molmass, double **antifreezes, int isim, i
 			}
 		}
 		else if (itopic == 10) { // Ionic strength
-			key.r = 255; key.b = 0;
+			key.r = 255; key.b = 0; key.a = 255;
 			if (simdata[isim][10]/100.0 > 1.0) key.g = 0;
 			else key.g = (int) ((1.0-simdata[isim][10]/100.0)*255.0);
 			Pie(2.0*M_PI, 0.0, ipie, jpie, kpie, 2.0*log(10.0*simdata[isim][10]), &(*pies), key, 0, PT, 0); // log = natural logarithm ln
@@ -1410,44 +1428,40 @@ int Angles(double **simdata, double **molmass, double **antifreezes, int isim, i
 		}
 		else if (itopic == 11) { // pH-pe
 			key.r = 255; key.b = 0;
+			if (PT) key.a = 255; else key.a = 255;
 			if (simdata[isim][7]/14.0 > 1.0) key.g = 0;
+			else if (simdata[isim][7]/7.0 < 1.0) key.g = 255;
 			else key.g = (int) ((1.0-(simdata[isim][7]/7.0-1.0))*255.0);
 			// Equilibrium log fO2 = Init log fO2 + 4(pH_f + pe_f - pH_i - pe_i)
 			Pie(2.0*M_PI, 0.0, ipie, jpie, kpie, 10.0+simdata[isim][5]+4.0*(simdata[isim][7]+simdata[isim][8]-simdata[isim][2]-simdata[isim][3]), &(*pies), key, 0, PT, 0); // log = natural logarithm ln
 
-			char nb[20];
-			char nb_pH[20];
-			char nb_pe[20];
-			char *nb_pe2 = (char*)malloc(20); // !! Memory not freed because this crashes the code saying "memory not allocated"
-			nb_pe2[0] = '\0';
-
-			scanNumber(&nb_pH, simdata[isim][7]);
-			scanNumber(&nb_pe, simdata[isim][5]+4.0*(simdata[isim][7]+simdata[isim][8]-simdata[isim][2]-simdata[isim][3]));
-			strcpy(nb_pe2, nb_pe);
-			nb_pe2 += 3;
-
-			strcpy(nb, nb_pH);
-			strcat(nb, " | ");
-			strcat(nb, nb_pe2);
-
-			(*num_tex)[ipie*njpie*nkpie+jpie*nkpie+kpie] = renderText(nb, FontFile, black, 12, renderer);
-			(*num_tex2)[ipie*njpie*nkpie+jpie*nkpie+kpie] = renderText(nb, FontFile, white, 12, renderer);
+			if (PT) {
+				char nb_pH[20];
+				char nb_pe[20];
+				scanNumber(&nb_pH, simdata[isim][7]);
+				scanNumber(&nb_pe, simdata[isim][5]+4.0*(simdata[isim][7]+simdata[isim][8]-simdata[isim][2]-simdata[isim][3]));
+				(*num_tex)[ipie*njpie*nkpie+jpie*nkpie+kpie] = renderText(nb_pH, FontFile, black, 14, renderer);
+				(*num_tex2)[ipie*njpie*nkpie+jpie*nkpie+kpie] = renderText(nb_pe, FontFile, blue, 14, renderer);
+			}
 		}
 		else if (itopic == 12) { // W:R
 			if (simdata[isim][11] < 0.01) {
 				key.r = 200;
 				key.g = 100;
 				key.b = 0;
+				key.a = 255;
 			}
 			else if (simdata[isim][11] > 10.0) {
 				key.r = 100;
 				key.g = 135;
 				key.b = 255;
+				key.a = 255;
 			}
 			else {
 				key.r = (Uint8) (200.0*(1.0-0.5*(log(simdata[isim][11])/log(10.0)+2.0)/3.0)); // log = natural logarithm ln
 				key.g = (Uint8) (100.0*(1.0+0.35*(log(simdata[isim][11])/log(10.0)+2.0)/3.0));
 				key.b = (Uint8) (255.0*(log(simdata[isim][11])/log(10.0)+2.0)/3.0);
+				key.a = 255;
 			}
 			Pie(2.0*M_PI, 0.0, ipie, jpie, kpie, pie_radius, &(*pies), key, 0, PT, 0);
 
@@ -1465,21 +1479,24 @@ int Angles(double **simdata, double **molmass, double **antifreezes, int isim, i
 				(*num_tex)[ipie*njpie*nkpie+jpie*nkpie+kpie] = renderText(nb, FontFile, black, 12, renderer);
 				(*num_tex2)[ipie*njpie*nkpie+jpie*nkpie+kpie] = renderText(nb, FontFile, white, 12, renderer);
 			}
-			if ((itopic == 9 || itopic == 8) && PT) { // For solution or mineral makeup, color-code validity (ionic strength) at top right
+			if (((itopic >=0 && itopic <= 3) || itopic == 8 || itopic == 9) && PT) { // For solution or mineral makeup, color-code validity (ionic strength) at top right
 				if (simdata[isim][10] < 0.1) {
 					key.r = 0;
 					key.g = 255;
 					key.b = 125;
+					key.a = 255;
 				}
 				else if (simdata[isim][10] < 1.0) {
 					key.r = 255;
 					key.g = 255;
 					key.b = 102;
+					key.a = 255;
 				}
 				else {
 					key.r = 255;
 					key.g = 50;
 					key.b = 50;
+					key.a = 255;
 				}
 				Pie(2.0*M_PI, 0.0, ipie, jpie, kpie, 4.0, &(*pies), key, 0, PT, 1);
 			}
@@ -1509,7 +1526,7 @@ int Pie (double angle, double angle_start, int iWR, int ipH, int ipe, double pie
 
 	int red = 0; int green = 0; int blue = 0; int alpha = 0;
 
-	red = color.r; green = color.g; blue = color.b; alpha = 255;
+	red = color.r; green = color.g; blue = color.b; alpha = color.a;
 
 	if (angle + angle_start > 2.0*M_PI) {
 		printf("ParamExplorationPlot: Pies: angle %g + angle_start %g > 2 pi\n",angle,angle_start);
