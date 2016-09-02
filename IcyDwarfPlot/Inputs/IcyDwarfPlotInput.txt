@@ -23,10 +23,10 @@ Thermal plot
 	IcyDwarf output       Thermal.txt
 	Max temp (K; 0=auto)  1500
 Geochemistry plot
-	Temperature           0 200 50
+	Temperature           200 200 50
 	Pressure              0 1000 200
-	pH                    7 14 1
-	pe = FMQ + ...        -6 6 1
-	Water:rock mass ratio 0.1 10 10
-	Rock type 0:OC def:CC 1
-	Fluid 1:comet def:H2O 1
+	pH                    7 7 1
+	pe = FMQ + ...        0 0 1
+	Water:rock mass ratio 10 10 10
+	Rock type 0:OC def:CC 0
+	Fluid 1:comet def:H2O 0

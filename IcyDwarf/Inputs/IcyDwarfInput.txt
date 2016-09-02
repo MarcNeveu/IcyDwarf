@@ -34,26 +34,26 @@ Output every (Myr)            10
 -------------------------------
 Subroutines
 -------------------------------
-Run thermal?                  1
+Run thermal?                  0
 	Sim time step (yr)    50
-	Sim starts at (Myr)   100
+	Sim starts at (Myr)   5
 	Initial temp (K)      100
-	Degree of hydration   1
+	Degree of hydration   0.1
 	Hydrate/dehydrate?    1
 	Fine rock fraction    0
-	Start differentiated? 1
+	Start differentiated? 0
 	Tidal rhe 2Ma 3Bu 4An 4
 	Tidal heating x10?    1
 Core cracks
 	Calculate aTP?        0
 	Water alpha beta?     0
 	CHNOSZ species?       0
-Geochemistry? (min max step)  0
-	Temperature           0 300 50
-	Pressure              200 1400 200
-	pH                    7 14 1
-	pe = FMQ + ...        -6 6 1
-	Water:rock mass ratio 0.1 10 10
+Geochemistry? (min max step)  1
+	Temperature           200 200 50
+	Pressure              0 1000 200
+	pH                    7 7 1
+	pe = FMQ + ...        0 0 1
+	Water:rock mass ratio 10 10 10
 Compression?                  0
 Cryovolcanism?                0
 	After how many Myr?   2500

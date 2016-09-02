@@ -1317,14 +1317,17 @@ int Angles(double **simdata, double **molmass, double **antifreezes, int isim, i
 			for (i=1;i<11;i++) angle[i] = angle[i]/total_Min;
 		}
 		else if (itopic == 8) { // Minerals
-			angle[1] = simdata[isim][287]*(1.0+massnotmol*(molmass[287][nelts-1]-1.0))    // Andradite
+			angle[1] = simdata[isim][287]*(1.0+massnotmol*(molmass[287][nelts-1]-1.0))    // Andradite (Ca3Fe2(SiO4)3)
 			         + simdata[isim][411]*(1.0+massnotmol*(molmass[411][nelts-1]-1.0))    // Corundum
 			         + simdata[isim][843]*(1.0+massnotmol*(molmass[843][nelts-1]-1.0))    // Tobermorite (Ca5Si6H21O27.5)
-			         + simdata[isim][845]*(1.0+massnotmol*(molmass[845][nelts-1]-1.0))    // Tremolite
-			         + simdata[isim][455]*(1.0+massnotmol*(molmass[455][nelts-1]-1.0))    // Diopside
+			         + simdata[isim][845]*(1.0+massnotmol*(molmass[845][nelts-1]-1.0))    // Tremolite (Ca2Mg5Si8O22(OH)2)
+			         + simdata[isim][455]*(1.0+massnotmol*(molmass[455][nelts-1]-1.0))    // Diopside (CaMgSi2O6)
+			         + simdata[isim][671]*(1.0+massnotmol*(molmass[671][nelts-1]-1.0))    // Nepheline (NaAlSiO4)
 			         + simdata[isim][739]*(1.0+massnotmol*(molmass[739][nelts-1]-1.0));   // Quartz
-			angle[2] = simdata[isim][805]*(1.0+massnotmol*(molmass[805][nelts-1]-1.0));   // Talc
-			for (i=385;i<391;i=i+2) angle[2] = angle[2] + simdata[isim][i]*(1.0+massnotmol*(molmass[i][nelts-1]-1.0)); // All clinoptilolites
+			angle[2] = simdata[isim][805]*(1.0+massnotmol*(molmass[805][nelts-1]-1.0))    // Talc
+					 + simdata[isim][599]*(1.0+massnotmol*(molmass[599][nelts-1]-1.0))    // Mesolite zeolite
+					 + simdata[isim][663]*(1.0+massnotmol*(molmass[663][nelts-1]-1.0));   // Natrolite zeolite
+			for (i=385;i<391;i=i+2) angle[2] = angle[2] + simdata[isim][i]*(1.0+massnotmol*(molmass[i][nelts-1]-1.0)); // All clinoptilolites (zeolites)
 			for (i=761;i<771;i=i+2) angle[3] = angle[3] + simdata[isim][i]*(1.0+massnotmol*(molmass[i][nelts-1]-1.0)); // Saponite smectites
 			for (i=699;i<709;i=i+2) angle[3] = angle[3] + simdata[isim][i]*(1.0+massnotmol*(molmass[i][nelts-1]-1.0)); // Nontronites for init CM compo
 			for (i=631;i<639;i=i+2) angle[3] = angle[3] + simdata[isim][i]*(1.0+massnotmol*(molmass[i][nelts-1]-1.0)); // Montmorillonites for init CM compo
@@ -1343,10 +1346,12 @@ int Angles(double **simdata, double **molmass, double **antifreezes, int isim, i
 					 + simdata[isim][461]*(1.0+massnotmol*(molmass[461][nelts-1]-1.0))
 					 + simdata[isim][463]*(1.0+massnotmol*(molmass[463][nelts-1]-1.0))      // Dolomite
 			         + simdata[isim][681]*(1.0+massnotmol*(molmass[681][nelts-1]-1.0))      // NH4HCO3
-			         + simdata[isim][357]*(1.0+massnotmol*(molmass[357][nelts-1]-1.0))      // Calcite (for init CM compo)
+			         + simdata[isim][357]*(1.0+massnotmol*(molmass[357][nelts-1]-1.0))      // Calcite
 			         + simdata[isim][743]*(1.0+massnotmol*(molmass[743][nelts-1]-1.0))      // Rhodochrosite (MnCO3)
 			         + simdata[isim][783]*(1.0+massnotmol*(molmass[783][nelts-1]-1.0));     // Siderite (FeCO3)
-			angle[7] = simdata[isim][521]*(1.0+massnotmol*(molmass[521][nelts-1]-1.0));     // Hematite
+//			angle[7] = simdata[isim][521]*(1.0+massnotmol*(molmass[521][nelts-1]-1.0));     // Hematite
+			angle[7] = simdata[isim][721]*(1.0+massnotmol*(molmass[721][nelts-1]-1.0))      // Phlogopite
+				     + simdata[isim][291]*(1.0+massnotmol*(molmass[291][nelts-1]-1.0));     // Annite
 			angle[8] = simdata[isim][583]*(1.0+massnotmol*(molmass[583][nelts-1]-1.0));     // Magnetite
 			angle[9] = simdata[isim][481]*(1.0+massnotmol*(molmass[481][nelts-1]-1.0))      // Fe
 			         + simdata[isim][683]*(1.0+massnotmol*(molmass[683][nelts-1]-1.0))      // Ni
@@ -1360,14 +1365,22 @@ int Angles(double **simdata, double **molmass, double **antifreezes, int isim, i
 			          + simdata[isim][883]*(1.0+massnotmol*(molmass[883][nelts-1]-1.0));    //     Wollastonite for init CM compo
 			angle[11] = simdata[isim][493]*(1.0+massnotmol*(molmass[493][nelts-1]-1.0))     // Ol: Forsterite
 			          + simdata[isim][479]*(1.0+massnotmol*(molmass[479][nelts-1]-1.0))     //     Fayalite
-			          + simdata[isim][629]*(1.0+massnotmol*(molmass[629][nelts-1]-1.0));    //     Monticellite (CaMgSiO4)
+			          + simdata[isim][629]*(1.0+massnotmol*(molmass[629][nelts-1]-1.0))     //     Monticellite (CaMgSiO4)
+			          + simdata[isim][811]*(1.0+massnotmol*(molmass[811][nelts-1]-1.0));    //     Tephroite (Mn2SiO4)
 			angle[12] = simdata[isim][675]*(1.0+massnotmol*(molmass[675][nelts-1]-1.0))     // NH4-feldspar
 			          + simdata[isim][677]*(1.0+massnotmol*(molmass[677][nelts-1]-1.0));    // NH4-muscovite
-			angle[13] = simdata[isim][343]*(1.0+massnotmol*(molmass[343][nelts-1]-1.0));    // Brucite
+			angle[13] = simdata[isim][665]*(1.0+massnotmol*(molmass[665][nelts-1]-1.0))     // Salts: Natron
+					  + simdata[isim][511]*(1.0+massnotmol*(molmass[511][nelts-1]-1.0));    // Halite
 			angle[14] = simdata[isim][851]*(1.0+massnotmol*(molmass[851][nelts-1]-1.0))     // Sulfides: Troilite
 			          + simdata[isim][731]*(1.0+massnotmol*(molmass[731][nelts-1]-1.0))     //           Pyrite
 			          + simdata[isim][607]*(1.0+massnotmol*(molmass[607][nelts-1]-1.0))     //           Millerite for init CM compo
 			          + simdata[isim][371]*(1.0+massnotmol*(molmass[371][nelts-1]-1.0))     //           Chalcopyrite (CuFeS2)
+			          + simdata[isim][337]*(1.0+massnotmol*(molmass[337][nelts-1]-1.0))     //           Bornite (Cu5FeS4)
+			          + simdata[isim][369]*(1.0+massnotmol*(molmass[369][nelts-1]-1.0))     //           Chalcocite (Cu2S)
+			          + simdata[isim][575]*(1.0+massnotmol*(molmass[575][nelts-1]-1.0))     //           Linnaeite (Co3S4)
+			          + simdata[isim][269]*(1.0+massnotmol*(molmass[269][nelts-1]-1.0))     //           Alabandite (MnS)
+			          + simdata[isim][791]*(1.0+massnotmol*(molmass[791][nelts-1]-1.0))     //           Sphalerite
+			          + simdata[isim][517]*(1.0+massnotmol*(molmass[517][nelts-1]-1.0))     //           Heazlewoodite (Ni3S2)
 			          + simdata[isim][723]*(1.0+massnotmol*(molmass[723][nelts-1]-1.0));    //           Polydymite (Ni3S4)
 			angle[15] = simdata[isim][347]*(1.0+massnotmol*(molmass[347][nelts-1]-1.0))     // Graphite
 			          + simdata[isim][555]*(1.0+massnotmol*(molmass[555][2]*molmass[0][2]-1.0))

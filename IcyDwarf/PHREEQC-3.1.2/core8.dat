@@ -3213,6 +3213,7 @@ Greenalite
 	-delta_H	-165.297	kJ/mol	# Calculated deltarH	Greenalite
 #	deltafH	-787.778 kcal/mol
         -analytic -1.4187e1 -3.8377e-3 1.1710e4 1.6442e0 -4.8290e5
+	#analytic -1.352e1 -3.8377e-3 1.1710e4 1.6442e0 -4.8290e5
 #       -Range:  0-300
 	-Vm 115 # HDN+78
 
