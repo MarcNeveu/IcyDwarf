@@ -717,7 +717,7 @@ int PlotNumChem(int PT, int ntemp, double Tmin, double Tstep, int npressure, dou
 	white.r = 255; white.g = 255; white.b = 255; white.a = 0;
 
 	for (i=0;i<ntemp;i++) {
-		if (i == 0 && Tmin == 0) scanNumber(&nb, 5);          // Right-justified
+		if (i == 0 && Tmin == 0) scanNumber(&nb, 0.01);       // Right-justified
 		else scanNumber(&nb, Tmin + (double) i*Tstep);        // Right-justified
 		(*Numbers)[i] = renderText(nb, FontFile, black, 14, renderer);
 	}
