@@ -1658,6 +1658,7 @@ int Freeze(double **simdata, double **antifreezes, int nelts, int naf, int isim,
 	double stoich = 0.0;             // Amount of stoichiometrically limiting element
 	double Cred = 0.0;               // Dissolved reduced carbon
 	double Nred = 0.0;               // Dissolved reduced nitrogen
+	double Nox5 = 0.0;               // Dissolved nitrate
 	double Sred = 0.0;               // Dissolved reduced sulfur
 	double *sol = (double*) malloc((nelts-3)*sizeof(double)); // Solution composition, except in O and H which don't matter here
 	for (i=0;i<nelts-3;i++) sol[i] = 0.0;
@@ -1667,6 +1668,7 @@ int Freeze(double **simdata, double **antifreezes, int nelts, int naf, int isim,
 
 	Cred = simdata[isim][41] + simdata[isim][42] + simdata[isim][43]; // C(-2), C(-3), C(-4)
 	Nred = simdata[isim][68]; // N(-3)
+	Nox5 = simdata[isim][71]; // N(5)
 	Sred = simdata[isim][74]; // S(-2)
 
 	// Go through the list of antifreezes from highest to lowest eutectic temperature
@@ -1678,22 +1680,27 @@ int Freeze(double **simdata, double **antifreezes, int nelts, int naf, int isim,
 		// Is antifreeze j in solution? Discriminate between oxidized and reduced C, N, and S
 		for (j=0;j<nelts-3;j++) {
 			if (antifreezes[i][j] > 0.0 &&
-					(sol[j] <= 0.0                                      // Antifreeze not in solution
-					|| (j==2 && Cred > 0.99*sol[j])                     // C is reduced
-					|| (i==21 && simdata[isim][115] < 1.0e-5*sol[i])    // Negligible CH2O (if not, case not well handled)
-					|| (i==0 && simdata[isim][103] <= 0.0)              // No CH3OH
-				    || ((i==9 || i==16 || i==17) && j==16 && (1.0-Nred) < 1.0e-5*sol[j]) // Negligible oxidized N
-				    || (j==16 && Nred < 0.99*sol[j])                    // N is not overwhelmingly oxidized
-				    || (j==20 && Sred > 0.99*sol[j]))) {                // S is reduced
+					(sol[j] <= 0.0                                                  // Antifreeze not in solution
+					|| (j==2 && Cred > 0.99*sol[j])                                 // C is reduced
+					|| (i==21 && simdata[isim][115] < 1.0e-5*sol[i])                // Negligible CH2O (if not, case not well handled)
+					|| (i==0 && simdata[isim][103] <= 0.0)                          // No CH3OH
+				    || ((i==9 || i==16 || i==17) && j==16 && Nox5 < 1.0e-5*sol[16]) // Negligible oxidized N
+				    || (j==16 && Nred < 0.99*sol[j] && Nox5 < 0.99*sol[j])          // N is not overwhelmingly oxidized or oxidized
+				    || (j==20 && Sred > 0.99*sol[j])                                // S is reduced
+				    || (i==6 && simdata[isim][50] < 1.0e-5*sol[4])					// No ClO4
+				    || (i==2 && simdata[isim][7] > 7)                               // No H+ if pH > 7
+				    )) {
 				notinsol = 1;
 				if (verbose == 1 && antifreezes[i][j] > 0.0) {
 					if (sol[j] <= 0.0) printf("Antifreeze not in solution\n");
 					if (j==2 && Cred > 0.99*sol[j]) printf("C is reduced\n");
 					if (i==21 && simdata[isim][115] < 1.0e-5*sol[i]) printf("Negligible CH2O\n");
 					if (i==0 && simdata[isim][103] <= 0.0) printf("No CH3OH");
-					if ((i==9 || i==16 || i==17) && j==16 && (1.0-Nred) < 1.0e-5*sol[j]) printf("Negligible oxidized N\n");
-					if (j==16 && Nred < 0.99*sol[j]) printf("N is not overwhelmingly oxidized\n");
+					if ((i==9 || i==16 || i==17) && j==16 && Nox5 < 1.0e-5*sol[j]) printf("Negligible oxidized N\n");
+					if (j==16 && Nred < 0.99*sol[j] && Nox5 < 0.99*sol[j]) printf("N is not overwhelmingly oxidized\n");
 					if (j==20 && Sred > 0.99*sol[j]) printf("S is reduced\n");
+					if (i==6 && simdata[isim][50] < 1.0e-5*sol[4]) printf("Negligible ClO4");
+					if (i==2 && simdata[isim][7] > 7) printf("Negligible H+: pH > 7");
 				}
 				if (verbose == 1) printf("Antifreeze %d not in solution, moving on\n",i);
 				break;
