@@ -93,10 +93,10 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 	if (v_release == 1) strncat(dbase,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(dbase,path,strlen(path)-18);
 	else strncat(dbase,path,strlen(path)-16);
-	strcat(dbase,"PHREEQC-3.1.2/core8.dat");
+	strcat(dbase,"PHREEQC-3.1.2/core9.dat");
 
 	strncat(infile,dbase,strlen(dbase)-9);
-	strcat(infile,"io/inputIcyDwarf");
+	strcat(infile,"io/PHREEQCinput");
 
 	nloops = 0;
 

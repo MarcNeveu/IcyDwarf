@@ -49,11 +49,11 @@ Core cracks
 	Water alpha beta?     0
 	CHNOSZ species?       0
 Geochemistry? (min max step)  1
-	Temperature           200 200 50
+	Temperature           0 200 50
 	Pressure              0 1000 200
-	pH                    7 7 1
-	pe = FMQ + ...        0 0 1
-	Water:rock mass ratio 10 10 10
+	pH                    7 10 1
+	pe = FMQ + ...        -6 6 1
+	Water:rock mass ratio 0.1 10 10
 Compression?                  0
 Cryovolcanism?                0
 	After how many Myr?   2500

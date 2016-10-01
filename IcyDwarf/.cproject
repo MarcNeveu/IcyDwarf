@@ -99,6 +99,7 @@
 								</option>
 								<option id="macosx.c.link.option.userobjs.1710905719" name="Other objects" superClass="macosx.c.link.option.userobjs" valueType="userObjs">
 									<listOptionValue builtIn="false" value="/usr/local/lib/libiphreeqc-3.1.7.dylib"/>
+									<listOptionValue builtIn="false" value="/usr/local/lib/libiomp5.dylib"/>
 									<listOptionValue builtIn="false" value="/usr/local/lib/libiphreeqc.dylib"/>
 									<listOptionValue builtIn="false" value="/usr/local/lib/libiphreeqc.a"/>
 								</option>
@@ -107,7 +108,7 @@
 									<listOptionValue builtIn="false" value="/usr/local/lib"/>
 									<listOptionValue builtIn="false" value="/Library/Frameworks/R.framework/Versions/3.2/Resources/lib"/>
 								</option>
-								<option id="macosx.c.link.option.ldflags.773286692" superClass="macosx.c.link.option.ldflags" value="-lgomp" valueType="string"/>
+								<option id="macosx.c.link.option.ldflags.773286692" name="Linker flags" superClass="macosx.c.link.option.ldflags" value="-lgomp" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.macosx.c.linker.input.119318470" superClass="cdt.managedbuild.tool.macosx.c.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
@@ -131,6 +132,7 @@
 								</option>
 								<option defaultValue="gnu.c.optimization.level.most" id="gnu.c.compiler.option.optimization.level.1962023231" name="Optimization Level" superClass="gnu.c.compiler.option.optimization.level" valueType="enumerated"/>
 								<option id="gnu.c.compiler.option.debugging.level.467385180" name="Debug Level" superClass="gnu.c.compiler.option.debugging.level" value="gnu.c.debugging.level.none" valueType="enumerated"/>
+								<option id="gnu.c.compiler.option.misc.other.1112009053" name="Other flags" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0" valueType="string"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.955803567" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 						</toolChain>

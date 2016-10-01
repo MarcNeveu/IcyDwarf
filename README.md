@@ -115,13 +115,13 @@ The *PHREEQC* input file, *IcyDwarf/PHREEQC-3.1.2/io/inputIcyDwarf*, can be modi
 
 If you wish to modify the code, set up your compiler and linker so that all the relevant flags are added. 
 
-## Compiler setup (*gcc* on Mac OS 10.11 El Capitan)
+## Compiler setup (*gcc 6.2* on Mac OS 10.12 Sierra)
 
 My compiling instructions look like this:
 
 For IcyDwarf:
  
-    gcc -I/usr/local/lib/gcc/x86_64-apple-darwin14.0.0/5.0.0/include -I/usr/local/include -I/Library/Frameworks/R.framework/Versions/3.0/Resources/include -I/Library/Frameworks/R.framework/Versions/3.0/Resources/library/RInside/include -O3 -g -Wall -c -fmessage-length=0 -arch x86_64 -fopenmp -o IcyDwarf.o ../IcyDwarf.c
+    gcc /usr/local/lib/gcc/x86_64-apple-darwin15.6.0/6.2.0/include -I/usr/local/include -I/Library/Frameworks/R.framework/Versions/3.0/Resources/include -I/Library/Frameworks/R.framework/Versions/3.0/Resources/library/RInside/include -O3 -g -Wall -c -fmessage-length=0 -arch x86_64 -fopenmp -o IcyDwarf.o ../IcyDwarf.c
     gcc -L/Users/marc/Documents/Research/2011-2016_ASU/2IcyDwarf/Git/IcyDwarf/IcyDwarf -L/usr/local/lib -L/Library/Frameworks/R.framework/Versions/3.2/Resources/lib -o IcyDwarf IcyDwarf.o /usr/local/lib/libiphreeqc-3.1.7.dylib /usr/local/lib/libiphreeqc.dylib /usr/local/lib/libiphreeqc.a -lgomp -lR
 
 For IcyDwarfPlot:
