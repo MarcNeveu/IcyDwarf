@@ -49,7 +49,7 @@
 # SSW01: http://dx.doi.org/10.1016/S0016-7037(01)00717-7 (CO2, H2S)
 # Ste01: http://dx.doi.org/10.1016/S0009-2541(00)00263-1 (Ti(OH)4)
 # Wat81: “Ammonium Aluminosilicates: The Examination of a Mechanism for the High Temperature Condensation of Ammonia in Circumplanetary Subnebulae” MS Thesis, MIT, 1981. (NH4-feldspar, NH4-muscovite)
-# WEP+82: http://dx.doi.org/10.1063/1.555661 (87 solutes, solids, and gases)
+# WEP+82: http://dx.doi.org/10.1063/1.555845 (87 solutes, solids, and gases)
 # WebElements: http://www.webelements.com/periodicity/molar_volume (K, U molar volumes)
 # WebMineral: http://www.webmineral.com (38 solid molar volumes)
 #
@@ -59,8 +59,8 @@
 # 88db 3: Database development group iii/3, 1988, Errors in computation of estimated delH298 for montmor-x endmembers of smectite-di solid solution:  LLNL Internal Memo. (Montmor-Ca, K, Mg, Na)
 # 89db 7=89db 6, Database development group, 1989, Zeolite thermodynamic data:  LLNL Internal memo. (Clinoptilolite-Ca, K, Na, Mesolite)
 # 76del/hal: http://dx.doi.org/10.1021/cr60301a001 (2 Cr solutes, 9 Cr solids)
-# 92gre/fug: Grenthe, I., Fuger, J., Konings, R.J.M., Lemire, R.J., Muller, A.B., Nguyen-Trung, C., and Wanner, H., 1992, Chemical Thermodynamics, Volume 1: Chemical Thermodynamics of Uranium:  North-Holland, Amsterdam, 1, 714p. (4 solutes, 21 solids)
-# 90how/joh: ? (Stilbite)
+# 92gre/fug: Grenthe, I., Fuger, J., Konings, R.J.M., Lemire, R.J., Muller, A.B., Nguyen-Trung, C., and Wanner, H., 1992, Chemical Thermodynamics, Volume 1: Chemical Thermodynamics of Uranium:  North-Holland, Amsterdam, 1, 714p. (4 U solutes, 21 U solids)
+# 90how/joh: http://dx.doi.org/10.1016/S0144-2449(05)80307-0 (Stilbite)
 # 82joh/flo: Johnson, G.K., Flotow, H.E., O'Hare, P.A.G., and Wise, W.S., 1982, Thermodynamic studies of zeolites: Analcime and dehydrated analcime:  Amer. Mineral., 67, 736-748. (Analcime)
 # 83joh/flo: Johnson, G.K., Flotow, H.E., O'Hare, P.A.G., and Wise, W.S., 1983, Thermodynamic studies of zeolites: Natrolite, mesolite, and scolecite:  Amer. Mineral., 68, 1134-1145. (Natrolite, Scolecite)
 # 91joh/tas: http://dx.doi.org/10.1016/S0021-9614(05)80135-1 (Mordenite)
@@ -68,11 +68,11 @@
 # 87kee/rup: Kee, R.J., Rupley, F.M., and Miller, J.A., 1987, The Chemkin thermodynamic database:  SNL Rep. SAND-87-8215, 92p. (Ice)
 # 78lan: http://dx.doi.org/10.1016/0016-7037(78)90001-7 (Bassetite, Ningyoite, Saleeite)
 # 80lan/her: http://dx.doi.org/10.1016/0016-7037(80)90226-4 (ThCl4)
-# 82mar/smi: Martell, A.E., and Smith, R.M., 1982, Critical Stability Constants, Vol. 5: First Supplement:  Plenum, New York, 5, 604p. (MgSO4)
+# 82mar/smi: Martell, A.E., and Smith, R.M., 1982, Critical Stability Constants, Vol. 5: First Supplement:  Plenum, New York, 5, 604p. (MgSO4(aq))
 # 74nau/ryz: Naumov, G.B., Ryzhenko, B.N., and Khodakovsky, I.L., 1974, Handbook of Thermodynamic Data:  U.S.G.S. WRD-74-001, 328p. (CoCl+, CoFe2O4, CoS, CoSO4:H2O, Delafossite, Ni2SiO4)
 # 76mac: http://dx.doi.org/10.1016/0010-938X(76)90066-4 (Mn+3)
 # 95pok/hel: http://dx.doi.org/10.2475/ajs.295.10.1255 (4 solutes, 4 solids)
-# 85rar 2: 10.1021/cr00070a003 (9 europium solids)
+# 85rar 2: http://dx.doi.org/10.1021/cr00070a003 (9 europium solids)
 # 87rar 2: Rard, J.A., 1987, Update of the europium data base, October, 1987:  LLNL Internal Memo. (3 europium solids)
 # 87rua/sew: http://dx.doi.org/10.1016/0016-7037(87)90013-5 (HCl)
 # 82sar/bar: Sarkar, A.K., Barnes, M.W., and Roy, D.M., 1982, Longevity of borehole and shaft sealing materials: thermodynamic properties of cements and related phases applied to repository sealing:  ONWI Tech. Rep. ONWI-201, 52p. (16 solids)
@@ -2608,7 +2608,7 @@ Al
 #	deltafH		0		kJ/mol
 	-analytic	-1.8752e2 -4.6187e-2 5.7127e4 6.6270e1 -3.8952e5
 #	Range		0-300
-	-Vm		9.99 # http://periodictable.com/Properties/A/MolarVolume.html
+	-Vm		9.99 # thermo.com.V8.R6+.tdat
 #	Extrapol	Cp integration
 #	Ref		CWM89
 
@@ -2861,7 +2861,7 @@ B2O3
 #	deltafH		-1273.5		kJ/mol
 	-analytic	9.0905e1 5.5365e-3 -2.6629e3 -3.1553e1 -4.1578e1
 #	Range		0-300
-	-Vm		28.30 # Wikipedia
+	-Vm		28.30 # gfw/density
 #	Extrapol	Cp integration
 #	Ref		CWM89
 
@@ -3421,7 +3421,7 @@ CoO
 #	deltafH		-237.946	kJ/mol
 	-analytic	-8.4424e1 -1.9457e-2 7.8616e3 3.1281e1 1.2270e2
 #	Range		0-300
-	-Vm		11.64 # Wikipedia
+	-Vm		11.64 # gfw/density
 #	Extrapol	Cp integration
 #	Ref		WEP+82
 
@@ -4442,7 +4442,7 @@ K2O
 #	deltafH		-86.8		kcal/mol
 	-analytic	-1.8283e1 -5.2255e-3 2.3184e4 1.0553e1 3.6177e2
 #	Range		0-350
-	-Vm		40.085 # Wikipedia
+	-Vm		40.085 # gfw/density
 #	Extrapol	supcrt92
 #	Ref		HDN+78
 
@@ -4453,7 +4453,7 @@ KAl(SO4)2
 #	deltafH		-2470.29	kJ/mol
 	-analytic	-4.2785e2 -1.6303e-1 1.5311e4 1.7312e2 2.3904e2
 #	Range		0-300
-	-Vm		146.71 # Wikipedia
+	-Vm		146.71 # gfw/density
 #	Extrapol	Cp integration
 #	Ref		RHF79
 
@@ -4846,7 +4846,7 @@ MnCl2:H2O
 #	deltafH		-789.793	kJ/mol
 	-analytic	-4.5051e1 -2.5923e-2 2.8739e3 1.9674e1 4.8818e1
 #	Range		0-200
-	-Vm		42.27 # Wikipedia
+	-Vm		42.27 # gfw/density
 #	Extrapol	Constant H approx
 #	Ref		WEP+82
 
@@ -4857,7 +4857,7 @@ MnSO4
 #	deltafH		-1065.33	kJ/mol
 	-analytic	-2.3088e2 -8.2694e-2 8.1653e3 9.3256e1 1.2748e2
 #	Range		0-300
-	-Vm		46.46 # Wikipedia
+	-Vm		46.46 # gfw/density
 #	Extrapol	Cp integration
 #	Ref		RHF79
 
@@ -5022,7 +5022,7 @@ Na2Cr2O7
 #	deltafH		-473		kcal/mol
 	-analytic	4.4885e1 -2.4919e-2 -5.0321e3 -1.2430e1 -8.5468e1
 #	Range		0-200
-	-Vm		103.96 # Wikipedia
+	-Vm		103.96 # gfw/density
 #	Extrapol	Constant H approx
 #	Ref		76del/hal
 
@@ -5088,7 +5088,7 @@ NaUO3
 #	deltafH		-1494.9		kJ/mol
 	-analytic	-3.6363e1 7.0505e-4 4.5359e3 1.1828e1 7.0790e1
 #	Range		0-300
-	-Vm		42.56 # http://materials-test3.springer.com/isp/crystallographic/docs/sd_1001450
+	-Vm		42.56 # gfw/density
 #	Extrapol	Cp integration
 #	Ref		92gre/fug
 
@@ -5888,7 +5888,7 @@ Spinel-Co
 #	deltafH		-891		kJ/mol
 	-analytic	-3.2239e2 -8.0782e-2 1.4635e4 1.1755e2 2.2846e2
 #	Range		0-300
-	-Vm		39.41 # Wikipedia
+	-Vm		39.41 # gfw/density
 #	Extrapol	Cp integration
 #	Ref		WEP+82
 
@@ -6101,49 +6101,49 @@ Ti2O3
 	Ti2O3 + 4 H2O + 0.5 O2 = 2 Ti(OH)4
 	log_k		42.9866
 #	deltafH		-1520.78	kJ/mol
-	-Vm		32.02 # Wikipedia
+	-Vm		32.02 # gfw/density
 #	Ref		WEP+82
 
 Ti3O5
 	Ti3O5 + 6 H2O + 0.5 O2 = 3 Ti(OH)4
 	log_k		34.6557
 #	deltafH		-2459.24	kJ/mol
-	-Vm		48.93 # www.phelly.com/ti3o5
+	-Vm		48.93 # gfw/density
 #	Ref		WEP+82
 
 TiB2
 	TiB2 + 5 H2O + 2.5 O2 = Ti(OH)4 + 2 B(OH)3
 	log_k		312.4194
 #	deltafH		-323.883	kJ/mol
-	-Vm		15.37 # Wikipedia
+	-Vm		15.37 # gfw/density
 #	Ref		WEP+82
 
 TiC
 	TiC + 3 H2O + 2 O2 = H+ + HCO3- + Ti(OH)4
 	log_k		181.8139
 #	deltafH		-184.346	kJ/mol
-	-Vm		12.15 # Wikipedia
+	-Vm		12.15 # gfw/density
 #	Ref		WEP+82
 
 TiCl2
 	TiCl2 + 3 H2O + 0.5 O2 = Ti(OH)4 + 2 Cl- + 2 H+
 	log_k		70.9386
 #	deltafH		-514.012	kJ/mol
-	-Vm		37.95 # Wikipedia
+	-Vm		37.95 # gfw/density
 #	Ref		WEP+82
 
 TiCl3
 	TiCl3 + 3.5 H2O + 0.25 O2 = Ti(OH)4 + 3 Cl- + 3 H+
 	log_k		39.3099
 #	deltafH		-720.775	kJ/mol
-	-Vm		58.42 # Wikipedia
+	-Vm		58.42 # gfw/density
 #	Ref		WEP+82
 
 TiN
 	TiN + 3.5 H2O + 0.25 O2 = NH3 + Ti(OH)4
 	log_k		35.2344
 #	deltafH		-338.304	kJ/mol
-	-Vm		11.46 # Wikipedia
+	-Vm		11.46 # gfw/density
 #	Ref		WEP+82
 
 Titanite
@@ -6226,7 +6226,7 @@ U2O2Cl5
 #	deltafH		-2197.4		kJ/mol
 	-analytic	-4.3945e2 -1.6239e-1 2.1694e4 1.7551e2 3.3865e2
 #	Range		0-300
-	-Vm		142.48 # http://materials-test3.springer.com/isp/crystallographic/docs/sd_1903788
+	-Vm		142.48 # gfw/density
 #	Extrapol	Cp integration
 #	Ref		92gre/fug
 
@@ -6237,7 +6237,7 @@ U3S5
 #	deltafH		-1431		kJ/mol
 	-analytic	-1.1011e2 -6.7959e-2 1.0369e4 3.8481e1 1.7611e2
 #	Range		0-200
-	-Vm		106.12 # http://materials-test3.springer.com/isp/crystallographic/docs/sd_0458678
+	-Vm		106.12 # gfw/density
 #	Extrapol	Constant H approx
 #	Ref		92gre/fug
 
@@ -6248,7 +6248,7 @@ UC
 #	deltafH		-97.9		kJ/mol
 	-analytic	-4.6329e1 -4.4600e-2 6.1417e4 1.9566e1 9.5836e2
 #	Range		0-300
-	-Vm		18.34 # Wikipedia
+	-Vm		18.34 # gfw/density
 #	Extrapol	Cp integration
 #	Ref		92gre/fug
 
@@ -6259,7 +6259,7 @@ UCl3
 #	deltafH		-863.7		kJ/mol
 	-analytic	-2.6388e2 -1.0241e-1 1.1629e4 1.0846e2 1.8155e2
 #	Range		0-300
-	-Vm		62.62 # Wikipedia
+	-Vm		62.62 # gfw/density
 #	Extrapol	Cp integration
 #	Ref		92gre/fug
 
@@ -6270,7 +6270,7 @@ UCl4
 #	deltafH		-1018.8		kJ/mol
 	-analytic	-3.6881e2 -1.3618e-1 1.9685e4 1.4763e2 3.0727e2
 #	Range		0-300
-	-Vm		78.00 # Wikipedia
+	-Vm		78.00 # gfw/density
 #	Extrapol	Cp integration
 #	Ref		92gre/fug
 
@@ -6281,7 +6281,7 @@ UCl6
 #	deltafH		-1066.5		kJ/mol
 	-analytic	-4.5589e2 -1.9203e-1 2.8029e4 1.9262e2 4.3750e2
 #	Range		0-300
-	-Vm		125.21 # Wikipedia
+	-Vm		125.21 # gfw/density
 #	Extrapol	Cp integration
 #	Ref		92gre/fug
 
@@ -6292,7 +6292,7 @@ UH3(beta)
 #	deltafH		-126.98		kJ/mol
 	-analytic	5.2870e1 4.2151e-3 6.0167e4 -2.2701e1 1.0217e3
 #	Range		0-200
-	-Vm		22.01 # Wikipedia
+	-Vm		22.01 # gfw/density
 #	Extrapol	Constant H approx
 #	Ref		92gre/fug
 
@@ -6303,7 +6303,7 @@ UN
 #	deltafH		-290		kJ/mol
 	-analytic	-1.6393e2 -1.1679e-3 2.8845e3 6.5637e1 3.0122e6
 #	Range		0-300
-	-Vm		45.85 # Wikipedia
+	-Vm		45.85 # gfw/density
 #	Extrapol	Cp integration
 #	Ref		92gre/fug
 
@@ -6314,7 +6314,7 @@ UO2(NO3)2
 #	deltafH		-1351		kJ/mol
 	-analytic	-1.2216e1 -1.1261e-2 3.9895e3 5.7166 6.7751e1
 #	Range		0-200
-	-Vm		140.23 # Wikipedia
+	-Vm		140.23 # gfw/density
 #	Extrapol	Constant H approx
 #	Ref		92gre/fug
 
@@ -6347,7 +6347,7 @@ UO2SO4
 #	deltafH		-1845.14	kJ/mol
 	-analytic	-1.5677e2 -6.5310e-2 6.7411e3 6.2867e1 1.0523e2
 #	Range		0-300
-	-Vm		111.61 # Wikipedia
+	-Vm		111.61 # gfw/density
 #	Extrapol	Cp integration
 #	Ref		92gre/fug
 
@@ -6479,7 +6479,7 @@ Zn(NO3)2:6H2O
 #	deltafH		-2306.8		kJ/mol
 	-analytic	-1.7152e2 -1.6875e-2 5.6291e3 6.5094e1 9.5649e1
 #	Range		0-200
-	-Vm		144.06 # Wikipedia
+	-Vm		144.06 # gfw/density
 #	Extrapol	Constant H approx
 #	Ref		WEP+82
 
@@ -6490,7 +6490,7 @@ Zn(OH)2(beta)
 #	deltafH		-641.851	kJ/mol
 	-analytic	-7.7810e1 -7.8548e-3 7.1994e3 2.7455e1 1.2228e2
 #	Range		0-200
-	-Vm		32.60 # Wikipedia
+	-Vm		32.60 # gfw/density
 #	Extrapol	Constant H approx
 #	Ref		WEP+82
 
@@ -6501,7 +6501,7 @@ Zn(OH)2(epsilon)
 #	deltafH		-643.281	kJ/mol
 	-analytic	-7.7938e1 -7.8767e-3 7.1282e3 2.7496e1 1.2107e2
 #	Range		0-200
-	-Vm		32.60 # Wikipedia
+	-Vm		32.60 # gfw/density
 #	Extrapol	Constant H approx
 #	Ref		WEP+82
 
@@ -6523,7 +6523,7 @@ ZnCl2
 #	deltafH		-415.09		kJ/mol
 	-analytic	-1.6157e1 -2.5405e-2 2.6505e3 8.8584 4.5015e1
 #	Range		0-200
-	-Vm		46.84 # Wikipedia
+	-Vm		46.84 # gfw/density
 #	Extrapol	Constant H approx
 #	Ref		WEP+82
 
@@ -6545,7 +6545,7 @@ ZnSO4
 #	deltafH		-982.855	kJ/mol
 	-analytic	6.9905 -1.8046e-2 2.2566e3 -2.2819 3.8318e1
 #	Range		0-200
-	-Vm		45.61 # Wikipedia
+	-Vm		45.61 # gfw/density
 #	Extrapol	Constant H approx
 #	Ref		WEP+82
 
@@ -6556,7 +6556,7 @@ ZnSO4:6H2O
 #	deltafH		-2777.61	kJ/mol
 	-analytic	-1.4506e2 -1.8736e-2 5.2179e3 5.3121e1 8.8657e1
 #	Range		0-200
-	-Vm		130.08 # Wikipedia
+	-Vm		130.08 # gfw/density
 #	Extrapol	Constant H approx
 #	Ref		WEP+82
 
@@ -6644,8 +6644,8 @@ CO2(g)
 	-analytic	-8.5938e1 -3.0431e-2 2.0702e3 3.2427e1 3.2328e1
 #	Range		0-350
 	-T_c		304.25 # K
-	-P_c		72.83 # atm, 7.38 MPa, Wikipedia citing NIST: http://webbook.nist.gov/cgi/cbook.cgi?ID=C124389&Units=SI&Mask=4#Thermo-Phase
-	-Omega		0.228 # Wikipedia
+	-P_c		72.83 # atm, 7.38 MPa, http://webbook.nist.gov/cgi/cbook.cgi?ID=C124389&Units=SI&Mask=4#Thermo-Phase
+	-Omega		0.225 # http://webserver.dmt.upm.es/~isidoro/dat1/eGAS.pdf
 #	Extrapol	supcrt92
 #	Ref		WEP+82, Kel60
 
