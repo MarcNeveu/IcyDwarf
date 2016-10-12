@@ -53,7 +53,7 @@ int ParamExploration_plot(char path[1024],	int warnings, int msgout, SDL_Rendere
 		double pHmin, double pHmax, double pHstep, double pemin, double pemax, double pestep, double WRmin, double WRmax, double WRstep,
 		int chondrite, int comet) {
 
-	int blendpe = 0;                                             // Blend P-T plot over all pe (for runs where only a few simulations converged)
+	int blendpe = 1;                                             // Blend P-T plot over all pe (for runs where only a few simulations converged)
 	int i = 0;
 	int j = 0;
 	int k = 0;
@@ -718,12 +718,13 @@ int PlotNumChem(int PT, int ntemp, double Tmin, double Tstep, int npressure, dou
 	white.r = 255; white.g = 255; white.b = 255; white.a = 0;
 
 	for (i=0;i<ntemp;i++) {
-		if (i == 0 && Tmin == 0) scanNumber(&nb, 0.01);       // Right-justified
-		else scanNumber(&nb, Tmin + (double) i*Tstep);        // Right-justified
+		if (i == 0 && Tmin == 0) scanNumber(&nb, 0.01);    // Right-justified
+		else scanNumber(&nb, Tmin + (double) i*Tstep);     // Right-justified
 		(*Numbers)[i] = renderText(nb, FontFile, black, 14, renderer);
 	}
 	for (i=0;i<npressure;i++) {
-		scanNumber(&nb, Pmin + (double) i*Pstep);        // Right-justified
+		if (i == 0 && Pmin == 0) scanNumber(&nb, 1);       // Right-justified
+		else scanNumber(&nb, Pmin + (double) i*Pstep);     // Right-justified
 		(*Numbers)[i+ntemp] = renderText(nb, FontFile, black, 14, renderer);
 	}
 	for (i=0;i<npH;i++) {
@@ -1023,8 +1024,8 @@ int PieStyle(int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npre
 		(*leg_tex)[10] = renderText("Px",FontFile, black, 16, renderer);
 		(*leg_tex)[11] = renderText("Ol",FontFile, white, 16, renderer);
 		(*leg_tex)[12] = renderText("NH4-",FontFile, black, 16, renderer);
-		(*leg_tex)[13] = renderText("Bruc",FontFile, black, 16, renderer);
-		(*leg_tex)[14] = renderText("Troi+Pyr",FontFile, black, 16, renderer);
+		(*leg_tex)[13] = renderText("K-",FontFile, black, 16, renderer);
+		(*leg_tex)[14] = renderText("S-2",FontFile, black, 16, renderer);
 		(*leg_tex)[15] = renderText("  C",FontFile, white, 16, renderer);
 	}
 	else if (itopic == 9 || itopic == 13) { // Solution, freezing temp
@@ -1045,21 +1046,6 @@ int PieStyle(int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npre
 		(*leg_tex)[12] = renderText("S(-2)",FontFile, black, 16, renderer);
 		(*leg_tex)[13] = renderText("Si",FontFile, black, 16, renderer);
 		(*leg_tex)[14] = renderText("H as H2",FontFile, black, 16, renderer);
-//		(*leg_tex)[0] = renderText("mol per mol solutes",FontFile, black, 16, renderer);
-//		(*leg_tex)[1] = renderText("Al",FontFile, black, 16, renderer);
-//		(*leg_tex)[2] = renderText("C ox",FontFile, black, 16, renderer);
-//		(*leg_tex)[3] = renderText("C red",FontFile, white, 16, renderer);
-//		(*leg_tex)[4] = renderText("Ca",FontFile, black, 16, renderer);
-//		(*leg_tex)[5] = renderText("Cl",FontFile, black, 16, renderer);
-//		(*leg_tex)[6] = renderText("P",FontFile, black, 16, renderer);
-//		(*leg_tex)[7] = renderText("K+",FontFile, black, 16, renderer);
-//		(*leg_tex)[8] = renderText("NH3",FontFile, black, 16, renderer);
-//		(*leg_tex)[9] = renderText("NH4+",FontFile, black, 16, renderer);
-//		(*leg_tex)[10] = renderText("Na",FontFile, black, 16, renderer);
-//		(*leg_tex)[11] = renderText("N2",FontFile, black, 16, renderer);
-//		(*leg_tex)[12] = renderText("S-2",FontFile, black, 16, renderer);
-//		(*leg_tex)[13] = renderText("H2S",FontFile, black, 16, renderer);
-//		(*leg_tex)[14] = renderText("H as H2",FontFile, black, 16, renderer);
 	}
 	else if (itopic == 10) { // Ionic strength
 		(*leg_tex)[0] = renderText("mol per kg H2O",FontFile, black, 16, renderer);
@@ -1321,6 +1307,7 @@ int Angles(double **simdata, double **molmass, double **antifreezes, int isim, i
 			angle[1] = simdata[isim][288]*(1.0+massnotmol*(molmass[288][nelts-1]-1.0))    // Andradite (Ca3Fe2(SiO4)3)
 					 + simdata[isim][468]*(1.0+massnotmol*(molmass[468][nelts-1]-1.0))    // Diaspore (AlHO2)
 			         + simdata[isim][924]*(1.0+massnotmol*(molmass[924][nelts-1]-1.0))    // Tremolite (Ca2Mg5Si8O22(OH)2)
+			         + simdata[isim][730]*(1.0+massnotmol*(molmass[730][nelts-1]-1.0))    // Nepheline (NaAlSiO4)
 			         + simdata[isim][455]*(1.0+massnotmol*(molmass[455][nelts-1]-1.0));   // Diopside (CaMgSi2O6)
 			angle[2] = simdata[isim][876]*(1.0+massnotmol*(molmass[876][nelts-1]-1.0))    // Talc
 					 + simdata[isim][652]*(1.0+massnotmol*(molmass[652][nelts-1]-1.0))    // Mesolite zeolite
@@ -1340,10 +1327,9 @@ int Angles(double **simdata, double **molmass, double **antifreezes, int isim, i
 			         + simdata[isim][364]*(1.0+massnotmol*(molmass[364][nelts-1]-1.0))      // Calcite
 			         + simdata[isim][806]*(1.0+massnotmol*(molmass[806][nelts-1]-1.0));     // Rhodochrosite (MnCO3)
 			angle[7] = simdata[isim][574]*(1.0+massnotmol*(molmass[574][nelts-1]-1.0));     // Hematite
-			angle[7] = simdata[isim][782]*(1.0+massnotmol*(molmass[782][nelts-1]-1.0))      // Phlogopite
-				     + simdata[isim][292]*(1.0+massnotmol*(molmass[292][nelts-1]-1.0));     // Annite
 			angle[8] = simdata[isim][636]*(1.0+massnotmol*(molmass[636][nelts-1]-1.0));     // Magnetite
 			angle[9] = simdata[isim][520]*(1.0+massnotmol*(molmass[520][nelts-1]-1.0))      // Fe
+			         + simdata[isim][528]*(1.0+massnotmol*(molmass[528][nelts-1]-1.0))      // FeO
 			         + simdata[isim][742]*(1.0+massnotmol*(molmass[742][nelts-1]-1.0))      // Ni
 			         + simdata[isim][452]*(1.0+massnotmol*(molmass[452][nelts-1]-1.0))      // Cu
 			         + simdata[isim][386]*(1.0+massnotmol*(molmass[386][nelts-1]-1.0))      // Chromite (FeCr2O4)
@@ -1358,22 +1344,24 @@ int Angles(double **simdata, double **molmass, double **antifreezes, int isim, i
 			          + simdata[isim][882]*(1.0+massnotmol*(molmass[882][nelts-1]-1.0));    //     Tephroite (Mn2SiO4)
 			angle[12] = simdata[isim][734]*(1.0+massnotmol*(molmass[734][nelts-1]-1.0))     // NH4-feldspar
 			          + simdata[isim][736]*(1.0+massnotmol*(molmass[736][nelts-1]-1.0));    // NH4-muscovite
-			angle[13] = simdata[isim][724]*(1.0+massnotmol*(molmass[724][nelts-1]-1.0))     // Salts: Natron
-					  + simdata[isim][564]*(1.0+massnotmol*(molmass[564][nelts-1]-1.0));    // Halite
+//			angle[13] = simdata[isim][724]*(1.0+massnotmol*(molmass[724][nelts-1]-1.0))     // Salts: Natron
+//					  + simdata[isim][564]*(1.0+massnotmol*(molmass[564][nelts-1]-1.0));    // Halite
+			angle[13] = simdata[isim][782]*(1.0+massnotmol*(molmass[782][nelts-1]-1.0))     // Phlogopite
+				      + simdata[isim][292]*(1.0+massnotmol*(molmass[292][nelts-1]-1.0))     // Annite
+					  + simdata[isim][586]*(1.0+massnotmol*(molmass[586][nelts-1]-1.0));    // Hydroxyapatite
 			angle[14] = simdata[isim][930]*(1.0+massnotmol*(molmass[930][nelts-1]-1.0))     // Sulfides: Troilite
 			          + simdata[isim][794]*(1.0+massnotmol*(molmass[794][nelts-1]-1.0))     //           Pyrite
 //			          + simdata[isim][607]*(1.0+massnotmol*(molmass[607][nelts-1]-1.0))     //           Millerite for init CM compo
 			          + simdata[isim][380]*(1.0+massnotmol*(molmass[380][nelts-1]-1.0))     //           Chalcopyrite (CuFeS2)
 			          + simdata[isim][340]*(1.0+massnotmol*(molmass[340][nelts-1]-1.0))     //           Bornite (Cu5FeS4)
 			          + simdata[isim][376]*(1.0+massnotmol*(molmass[376][nelts-1]-1.0))     //           Chalcocite (Cu2S)
-			          + simdata[isim][628]*(1.0+massnotmol*(molmass[628][nelts-1]-1.0))     //           Linnaeite (Co3S4)
 			          + simdata[isim][270]*(1.0+massnotmol*(molmass[270][nelts-1]-1.0))     //           Alabandite (MnS)
 			          + simdata[isim][862]*(1.0+massnotmol*(molmass[862][nelts-1]-1.0))     //           Sphalerite
 			          + simdata[isim][570]*(1.0+massnotmol*(molmass[570][nelts-1]-1.0))     //           Heazlewoodite (Ni3S2)
 			          + simdata[isim][784]*(1.0+massnotmol*(molmass[784][nelts-1]-1.0));    //           Polydymite (Ni3S4)
-			angle[15] = simdata[isim][350]*(1.0+massnotmol*(molmass[350][nelts-1]-1.0));     // Graphite
+			angle[15] = simdata[isim][350]*(1.0+massnotmol*(molmass[350][nelts-1]-1.0))     // Graphite
 //			          + simdata[isim][555]*(1.0+massnotmol*(molmass[555][2]*molmass[0][2]-1.0))
-//			          + simdata[isim][557]*(1.0+massnotmol*(molmass[557][2]*molmass[0][2]-1.0))
+			          + simdata[isim][610]*(1.0+massnotmol*(molmass[610][2]*molmass[0][2]-1.0)); // KerogenC292
 //			          + simdata[isim][559]*(1.0+massnotmol*(molmass[559][2]*molmass[0][2]-1.0)); // Kerogens (for init CM compo)
 			for (i=naq+1;i<naq+(nmingas-ngases)*2-2;i=i+2) total_Min = total_Min + simdata[isim][i]*(1.0+massnotmol*(molmass[i][nelts-1]-1.0));
 			for(i=1;i<16;i++) angle[i] = angle[i]/total_Min;
