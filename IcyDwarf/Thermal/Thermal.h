@@ -58,7 +58,7 @@ double viscosity(double T, double Mh2ol, double Mnh3l);
 
 int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, double r_p, double **Qth, int NR, double dtime,
 		double *Wtide_tot, double *Mrock, double *Mh2os, double *Madhs, double *Mh2ol, double *Mnh3l, double *dM,  double *Vrock,
-		double *dVol, double *r, double *T, double fineVolFrac, double *Brittle_strength, double *Xhydr);
+		double *dVol, double *r, double *T, double fineVolFrac, double *Brittle_strength, double *Xhydr, double *Pressure, double *pore);
 
 int GaussJordan(double complex ***M, double complex ***b, int n, int m);
 int ScaledGaussJordan(long double complex ***M, int n);
@@ -693,9 +693,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 					else { // Reset all the variables modified by crack()
 						Crack[ir] = 0.0;
 						Crack_size[ir] = 0.0;
-						for (i=0;i<n_species_crack;i++) {
-							Act[ir][i] = 0.0;
-						}
+						for (i=0;i<n_species_crack;i++) Act[ir][i] = 0.0;
 						for (i=0;i<12;i++) Stress[ir][i] = 0.0;
 						P_pore[ir] = 0.0;
 						P_hydr[ir] = 0.0;
@@ -760,7 +758,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
 //		//-------------------------------------------------------------------
 //		//               Allow for chemical equilibrium again
-//    	// TODO disabled to avoid artificial cooling upon dehydration. Put back?
+//    	// Disabled to avoid artificial cooling upon dehydration. Put back?
 //    	// 160610: Unnecessary since no energy is transferred in hydrating/dehydrating?
 //		//-------------------------------------------------------------------
 //
@@ -793,19 +791,15 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
     	irdiffold = irdiff;
     	if (Xp >= 1.0e-2) Tliq = 174.0; // Differentiation occurs at the solidus (first melt). We set 174 K instead of 176 K for consistency with the heatIce() subroutine.
-    	else Tliq = 271.0;             // instead of 273 K for consistency with heatIce().
+    	else Tliq = 271.0;              // instead of 273 K for consistency with heatIce().
 
     	for (ir=0;ir<NR-1;ir++) { // Differentiation first by ice melting (above solidus, 176 K if there is any NH3)
-    		if (ir > irdiff && T[ir] > Tliq) {
-    			irdiff = ir;
-    		}
+    		if (ir > irdiff && T[ir] > Tliq) irdiff = ir;
     	}
 
     	if (irdiff > NR/2) {      // Subsequent differentiation by Rayleigh-Taylor instabilities
 			for (ir=0;ir<NR-1;ir++) {
-				if (ir > irdiff && T[ir] > Tdiff) {
-					irdiff = ir;
-				}
+				if (ir > irdiff && T[ir] > Tdiff) irdiff = ir;
 			}
     	}
 
@@ -823,7 +817,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
 //		//-------------------------------------------------------------------
 //		//               Allow for chemical equilibrium again
-//    	// 160610: Not really necessary any more since we're not moving energies around when differentiating, just mass
+//    	// 160610: Not really necessary any more since we're not moving
+//    	// energies around when differentiating, just mass
 //		//-------------------------------------------------------------------
 //
 //		for (ir=0;ir<NR;ir++) {
@@ -856,8 +851,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			M[ir] = M[ir-1] + dM[ir];
 		}
 
-		if (fabs(Phi-Phiold) < 1.0e-5*Phiold)
-			Phi = Phiold;
+		if (fabs(Phi-Phiold) < 1.0e-5*Phiold) Phi = Phiold;
 
 		//-------------------------------------------------------------------
 		//                   Find % radionuclides leached TODO Don't do this at every step! Every time T, P, or WR change substantially?
@@ -917,7 +911,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			for (ir=0;ir<NR;ir++) strain(Pressure[ir], Xhydr[ir], T[ir], &strain_rate[ir], &Brittle_strength[ir], pore[ir]);
 			Wtide_tot = 0.0;
 			tide(tidalmodel, tidetimesten, eorb, omega_tide, r_p, &Qth, NR, dtime, &Wtide_tot, Mrock, Mh2os, Madhs, Mh2ol, Mnh3l,
-					dM, Vrock, dVol, r, T, fineVolFrac, Brittle_strength, Xhydr);
+					dM, Vrock, dVol, r, T, fineVolFrac, Brittle_strength, Xhydr, Pressure, pore);
 			Heat_tide = Heat_tide + Wtide_tot;
 
 			// Update orbital parameters (Barnes et al. 2008):
@@ -968,9 +962,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
 		if ((ircrack < ircore && Mh2ol[ircore] > 0.0 && fineVolFrac < 0.64)) {
 			// Calculate Rayleigh number
-			for (ir=ircrack;ir<=ircore;ir++) {
-				Crack_size_avg = Crack_size_avg + Crack_size[ir];
-			}
+			for (ir=ircrack;ir<=ircore;ir++) Crack_size_avg = Crack_size_avg + Crack_size[ir];
 			Crack_size_avg = Crack_size_avg / (double) (ircore-ircrack);
 			if (Crack_size_avg == 0) Crack_size_avg = smallest_crack_size; // If hydration and dissolution cracking are not active, assume arbitrary crack size
 			jr = floor(((double)ircrack + (double)ircore)*0.5);
@@ -1011,11 +1003,12 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		//                  Convection in H2O(l) / mud layer
 		//-------------------------------------------------------------------
 
-		// Reset Nu and irice at each iteration (need to reset irice several times at each iteration because state() is called several times, and because for convection we want a slightly different definition (2% liquid))
+		// Reset Nu and irice at each iteration (need to reset irice several times at each iteration because state() is called several times,
+		// and because for convection we want a slightly different definition (2% liquid))
 		irice_cv = 0;
 		for (ir=0;ir<NR;ir++) {
 			Nu[ir] = 1.0;
-			if (Mh2ol[ir] > 0.0) irice_cv = ir; // 2% liquid minimum for liquid convection?
+			if (Mh2ol[ir] > 0.0) irice_cv = ir; // TODO 2% liquid minimum for liquid convection?
 		}
 
 		if (irice_cv >= ircore+2 && fineVolFrac < 0.64) {
@@ -1050,9 +1043,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		//-------------------------------------------------------------------
 
 		// Reset Nu at each iteration. No need to reset irice, which was just set for H2O(l) convection above
-		for (ir=0;ir<NR;ir++) {
-			Nu[ir] = 1.0;
-		}
+		for (ir=0;ir<NR;ir++) Nu[ir] = 1.0;
 
 		if (irice > ircore) irice_cv = irice;
 		else irice_cv = ircore; // Case where there is no longer liquid: irice=0 (should =ircore but that crashes the code. 15/4/25: no longer true?)
@@ -1068,7 +1059,10 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			alf1 = alf1 * 1.0e-5;
 			cp1 = (1.0-fineMassFrac)*qh2o*T[jr] + fineMassFrac*(heatRock(T[jr]+2.0)-heatRock(T[jr]-2.0))*0.25; // For rock, cp = d(energy)/d(temp), here taken over 4 K surrounding T[jr]
 			kap1 = kappa[jr];                  // cgs
-			mu1 = (1.0e15)*exp(25.0*(273.0/T[jr]-1.0))/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // 1.0e14 in SI
+
+			creep(T[jr], Pressure[jr], &creep_rate, 1.0-Vrock[jr]/dVol[jr], pore[jr]);
+			mu1 = Pa2ba*Pressure[jr]/(2.0*creep_rate);
+
 			dT = T[irice_cv] - T[irdiff];
 			dr = r[irdiff+1] - r[irice_cv+1];
 			g1 = Gcgs*M[jr]/(r[jr+1]*r[jr+1]);
@@ -2395,7 +2389,7 @@ double viscosity(double T, double Mh2ol, double Mnh3l) {
 
 int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, double r_p, double **Qth, int NR, double dtime,
 		double *Wtide_tot, double *Mrock, double *Mh2os, double *Madhs, double *Mh2ol, double *Mnh3l, double *dM,  double *Vrock,
-		double *dVol, double *r, double *T, double fineVolFrac, double *Brittle_strength, double *Xhydr) {
+		double *dVol, double *r, double *T, double fineVolFrac, double *Brittle_strength, double *Xhydr, double *Pressure, double *pore) {
 
 	int ir = 0;                          // Counters
 	int i = 0;
@@ -2407,12 +2401,9 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 	double mu_rigid = 0.0;               // Rigidity = shear modulus (g cm-1 s-2)
 	double mu_rigid_ice = 0.0;           // Ice rigidity = shear modulus (g cm-1 s-2)
 	double mu_rigid_rock = 0.0;          // Rock rigidity = shear modulus (g cm-1 s-2)
-	double K = 0.0;                      // Bulk modulus (g cm-2 s-2)
-	double K_ice = 0.0;                  // Ice bulk modulus (g cm-2 s-2)
-	double K_rock = 0.0;                 // Rock bulk modulus (g cm-2 s-2)
-	double mu_visc = 0.0;                // Viscosity (g cm-1 s-1)
-	double mu_visc_ice = 0.0;            // Ice viscosity (g cm-1 s-1)
-	double mu_visc_rock = 0.0;           // Rock viscosity (g cm-1 s-1)
+	double K = 200.0e9/gram*cm;          // Bulk modulus (g cm-2 s-2), arbitrarily higher than K_rock (39-133 GPa) and K_ice (10.7 GPa) for consistency with incompressible prop mtx
+	double mu_visc = 0.0;                // Viscosity of ice or rock (g cm-1 s-1)
+	double creep_rate = 0.0;			 // Strain rate (s-1)
 	double Wtide = 0.0;                  // Tidal heating rate in a given layer (erg s-1)
 	double mu_rigid_1 = 0.0;             // Burgers viscoelastic model, steady-state rigidity (g cm-1 s-2)
 	double mu_rigid_2 = 0.0;			 // Burgers viscoelastic model, transient rigidity (g cm-1 s-2)
@@ -2559,21 +2550,24 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 		rho[ir] = dM[ir]/dVol[ir];
 		g[ir] = 4.0/3.0*PI_greek*Gcgs*rho[ir]*r[ir+1];
 
-		// Steady-state viscosity and shear modulus
-		mu_visc_ice = (1.0e15)*exp(25.0*(273.0/T[ir]-1.0))/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // 1.0e14 in SI (Thomas et al. LPSC 1987; Desch et al. 2009)
-//		mu_visc_ice = 1.0e14/gram*cm; // Roberts (2015)
-
+		// Steady-state viscosity
+		creep(T[ir], Pressure[ir], &creep_rate, 1.0-Vrock[ir]/dVol[ir], pore[ir]);
+		mu_visc = Pa2ba*Pressure[ir]/(2.0*creep_rate);
 		// If there is ammonia in partially melted layers, decrease viscosity according to Fig. 6 of Arakawa & Maeno (1994)
-		if (Mnh3l[ir]+Madhs[ir] >= 0.01*Mh2os[ir] && T[ir] > 140.0) {
-			if (T[ir] < 176.0) mu_visc_ice = mu_visc_ice*1.0e-3;
-			else if (T[ir] < 250.0) mu_visc_ice = mu_visc_ice*1.0e-8;
-			else if (T[ir] < 271.0) mu_visc_ice = mu_visc_ice*1.0e-15;
-			if (mu_visc_ice < 1.0e3) mu_visc_ice = 1.0e3;
+		if (Mrock[ir] == 0.0 && Mnh3l[ir]+Madhs[ir] >= 0.01*Mh2os[ir] && T[ir] > 140.0) {
+			if (T[ir] < 176.0) mu_visc = mu_visc*1.0e-3;
+			else if (T[ir] < 250.0) mu_visc = mu_visc*1.0e-8;
+			else if (T[ir] < 271.0) mu_visc = mu_visc*1.0e-15;
+			if (mu_visc < 1.0e3) mu_visc = 1.0e3;
 		}
+
+		// Steady-state shear modulus
+//		mu_visc_ice = (1.0e15)*exp(25.0*(273.0/T[ir]-1.0))/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // 1.0e14 in SI (Thomas et al. LPSC 1987; Desch et al. 2009)
+//		mu_visc_ice = 1.0e14/gram*cm; // Roberts (2015)
 
 		mu_rigid_ice = 4.0e9/gram*cm;
 
-		mu_visc_rock = 6.0e7/cm/cm*(4800.0/gram*cm*cm*cm)*exp(3.0e5/(R_G*T[ir])); // Driscoll & Barnes (2015)
+//		mu_visc_rock = 6.0e7/cm/cm*(4800.0/gram*cm*cm*cm)*exp(3.0e5/(R_G*T[ir])); // Driscoll & Barnes (2015)
 //		mu_visc_rock = 1.0e20/gram*cm; // Tobie et al. (2005), reached at 1570 K by Driscoll & Barnes (2015)
 //		mu_visc_rock = 1.0e20/gram*cm; // Roberts (2015)
 
@@ -2583,23 +2577,15 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 //		mu_rigid_rock = 3300.0*4500.0*4500.0/gram*cm; // Tobie et al. (2005), reached at 1730 K by Driscoll & Barnes (2015)
 //		mu_rigid_rock = 70.0e9/gram*cm; // Roberts (2015)
 
-		if (Mh2os[ir]+Madhs[ir]+Mh2ol[ir]+Mnh3l[ir] > 0.0) { // Scaling of Roberts (2015)
+		if (Mh2os[ir]+Madhs[ir]+Mh2ol[ir]+Mnh3l[ir] > 0.0) { // Ice-rock scaling of Roberts (2015), mu_visc is scaled likewise in creep()
 			frock = Vrock[ir]/dVol[ir];
 			phi = 1.0-frock;
-			if (phi < 0.3) {
-				mu_visc = ((0.3-phi)*mu_visc_rock + phi*mu_visc_ice)/0.3;
-				mu_rigid = ((0.3-phi)*mu_rigid_rock + phi*mu_rigid_ice)/0.3;
-			}
-			else {
-				mu_visc = mu_visc_ice;
-				mu_rigid = mu_rigid_ice;
-			}
+			if (phi < 0.3) mu_rigid = ((0.3-phi)*mu_rigid_rock + phi*mu_rigid_ice)/0.3;
+			else mu_rigid = mu_rigid_ice;
 		}
-		else {
-			mu_visc = mu_visc_rock;
-			mu_rigid = mu_rigid_rock;
-		}
-		if (Mh2ol[ir] + Mnh3l[ir] > 0.02*dM[ir]) { // In the ocean, sufficiently low rigidity and viscosity, far from Maxwell time
+		else mu_rigid = mu_rigid_rock;
+
+		if (Mh2ol[ir] + Mnh3l[ir] > 0.9*dM[ir]) { // In the ocean, sufficiently low rigidity and viscosity, far from Maxwell time
 			mu_visc = 1.0e3; // TODO Implement propagator matrix through liquid
 			mu_rigid = 1.0e4;
 		}
@@ -2919,18 +2905,6 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
     //-------------------------------------------------------------------
 
 	for (ir=1;ir<NR;ir++) {
-		K_ice = 10.7e9/gram*cm;
-		K_rock =     (Xhydr[ir] *E_Young_serp/(3.0*(1.0-2.0*nu_Poisson_serp))
-			   + (1.0-Xhydr[ir])*E_Young_oliv/(3.0*(1.0-2.0*nu_Poisson_oliv)))/gram*cm; // K = E/(3*(1-2*nu))
-
-		if (Mh2os[ir]+Madhs[ir]+Mh2ol[ir]+Mnh3l[ir] > 0.0) { // Log scaling of Roberts (2015)
-			frock = Vrock[ir]/dVol[ir];
-			phi = 1.0-frock;
-			if (phi < 0.3) K = ((0.3-phi)*K_rock + phi*K_ice)/0.3;
-			else K = K_ice;
-		}
-		else K = K_rock;
-
 		// Tobie et al. 2005, doi:10.1016/j.icarus.2005.04.006, equation 33. Note y2 and y3 are inverted here.
 		H_mu = 4.0/3.0 * (r[ir+1]*r[ir+1]/pow(cabs(K + 4.0/3.0*shearmod[ir]),2))
 			 * pow( cabs( ytide[ir][2] - (K-2.0/3.0*shearmod[ir])/r[ir+1] * (2.0*ytide[ir][0]-6.0*ytide[ir][1]) ) ,2)
