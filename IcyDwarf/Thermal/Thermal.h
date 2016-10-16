@@ -126,7 +126,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double Ra = 0.0;                     // Rayleigh number
 	double dT = 0.0;                     // Temperature difference across convective region (K)
 	double alf1 = 0.0;                   // Thermal expansion coefficient of H2O ice (K-1)
-	double mu1 = 0.0;                    // Water ice viscosity (cgs)
+	double mu_visc = 0.0;                    // Water ice viscosity (cgs)
 	double cp1 = 0.0;                    // Heat capacity of H2O ice (erg g-1 K-1)
 	double g1 = 0.0;                     // Gravitational acceleration for calculation of Ra in ice (cgs)
 	double Nu0 = 0.0;                    // Critical Nusselt number = Ra_c^0.25
@@ -966,7 +966,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			Crack_size_avg = Crack_size_avg / (double) (ircore-ircrack);
 			if (Crack_size_avg == 0) Crack_size_avg = smallest_crack_size; // If hydration and dissolution cracking are not active, assume arbitrary crack size
 			jr = floor(((double)ircrack + (double)ircore)*0.5);
-			mu1 = Pa2ba*viscosity(T[jr],Mh2ol[ircore],Mnh3l[ircore])/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // Mueller, S. et al. (2010) Proc Roy Soc A 466, 1201-1228.
+			mu_visc = Pa2ba*viscosity(T[jr],Mh2ol[ircore],Mnh3l[ircore])/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // Mueller, S. et al. (2010) Proc Roy Soc A 466, 1201-1228.
 			dT = T[ircrack] - T[ircore];
 			dr = r[ircore+1] - r[ircrack+1];
 			kap1 = kappa[jr];
@@ -976,7 +976,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 					*((1.0-fineMassFrac)*ch2ol + fineMassFrac*(heatRock(T[jr]+2.0)-heatRock(T[jr]-2.0))*0.25)                  // For rock, cp = d(energy)/d(temp), here taken over 4 K surrounding T[jr]
 					*((1.0-fineMassFrac)*rhoH2olth + fineMassFrac*(Xhydr[ircore+1]*rhoHydrth+(1.0-Xhydr[ircore+1])*rhoRockth)) // Density
 					*((1.0-fineMassFrac)*rhoH2olth + fineMassFrac*(Xhydr[ircore+1]*rhoHydrth+(1.0-Xhydr[ircore+1])*rhoRockth)) // Squared
-					/ (kap1*mu1); // Phillips (1991)
+					/ (kap1*mu_visc); // Phillips (1991)
 
 			if (Ra > Ra_cr) {
 				// Calculate volumes of liquid water and pore space to check if there is enough liquid to circulate
@@ -984,7 +984,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 				for (ir=ircore;ir<irdiff;ir++) Vliq = Vliq + Vh2ol[ir];
 
 				if (Vliq >= Vcracked) { // Circulation, modeled as enhanced effective thermal conductivity kap1
-					kap1 = rhoH2olth*ch2ol/pore[ircore-1]*(permeability*Crack_size_avg*Crack_size_avg/cm/cm)/mu1
+					kap1 = rhoH2olth*ch2ol/pore[ircore-1]*(permeability*Crack_size_avg*Crack_size_avg/cm/cm)/mu_visc
 										*(Pressure[ircrack]-Pressure[ircore])*Pa2ba;
 					for (ir=ircrack;ir<ircore;ir++) {  // Capped at kap_hydro for numerical stability
 						if (kap1 < kap_hydro) kappa[ir] = kap1;
@@ -1013,7 +1013,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
 		if (irice_cv >= ircore+2 && fineVolFrac < 0.64) {
 			jr = (int) (ircore+irice_cv)*0.5;
-			mu1 = Pa2ba*viscosity(T[jr],Mh2ol[jr],Mnh3l[jr])/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // Mueller, S. et al. (2010) Proc Roy Soc A 466, 1201-1228.
+			mu_visc = Pa2ba*viscosity(T[jr],Mh2ol[jr],Mnh3l[jr])/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // Mueller, S. et al. (2010) Proc Roy Soc A 466, 1201-1228.
 			dT = T[ircore] - T[irice_cv];
 			dr = r[irice_cv+1] - r[ircore+1];
 			kap1 = kappa[jr];
@@ -1022,7 +1022,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 					*((1.0-fineMassFrac)*ch2ol + fineMassFrac*(heatRock(T[jr]+2.0)-heatRock(T[jr]-2.0))*0.25)                // For rock, cp = d(energy)/d(temp), here taken over 4 K surrounding T[jr]
 					*((1.0-fineMassFrac)*rhoH2olth + fineMassFrac*(Xhydr[ircore+1]*rhoHydrth+(1.0-Xhydr[ircore+1])*rhoRockth)) // Density
 					*((1.0-fineMassFrac)*rhoH2olth + fineMassFrac*(Xhydr[ircore+1]*rhoHydrth+(1.0-Xhydr[ircore+1])*rhoRockth)) // Squared
-					/ (kap1*mu1);
+					/ (kap1*mu_visc);
 			if (Ra > 0.0)
 				Nu0 = pow((Ra/1707.762),0.25); // Ra_c given by http://home.iitk.ac.in/~sghorai/NOTES/benard/node15.html, see also Koschmieder EL (1993) Benard cells and Taylor vortices, Cambridge U Press, p. 20.
 
@@ -1060,8 +1060,14 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			cp1 = (1.0-fineMassFrac)*qh2o*T[jr] + fineMassFrac*(heatRock(T[jr]+2.0)-heatRock(T[jr]-2.0))*0.25; // For rock, cp = d(energy)/d(temp), here taken over 4 K surrounding T[jr]
 			kap1 = kappa[jr];                  // cgs
 
-			creep(T[jr], Pressure[jr], &creep_rate, 1.0-Vrock[jr]/dVol[jr], pore[jr]);
-			mu1 = Pa2ba*Pressure[jr]/(2.0*creep_rate);
+			if (jr<NR-1) {
+				creep(T[jr], Pressure[jr], &creep_rate, 1.0-Vrock[jr]/dVol[jr], pore[jr]);
+				mu_visc = Pa2ba*Pressure[jr]/(2.0*creep_rate);
+			}
+			else {
+				creep(T[NR-2], Pressure[NR-2], &creep_rate, 1.0-Vrock[NR-2]/dVol[NR-2], pore[NR-2]);
+				mu_visc = Pa2ba*Pressure[NR-2]/(2.0*creep_rate);
+			}
 
 			dT = T[irice_cv] - T[irdiff];
 			dr = r[irdiff+1] - r[irice_cv+1];
@@ -1069,7 +1075,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			Ra = alf1*g1*dT*dr*dr*dr*cp1
 					*((1.0-fineMassFrac)*rhoH2osth + fineMassFrac*(Xhydr[ircore+1]*rhoHydrth+(1.0-Xhydr[ircore+1])*rhoRockth))
 					*((1.0-fineMassFrac)*rhoH2osth + fineMassFrac*(Xhydr[ircore+1]*rhoHydrth+(1.0-Xhydr[ircore+1])*rhoRockth))
-					/ (kap1*mu1);
+					/ (kap1*mu_visc);
 			Nu0 = pow((Ra/1707.762),0.25);
 
 			if (Nu0 > 1.0) {
@@ -2551,8 +2557,15 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 		g[ir] = 4.0/3.0*PI_greek*Gcgs*rho[ir]*r[ir+1];
 
 		// Steady-state viscosity
-		creep(T[ir], Pressure[ir], &creep_rate, 1.0-Vrock[ir]/dVol[ir], pore[ir]);
-		mu_visc = Pa2ba*Pressure[ir]/(2.0*creep_rate);
+		if (ir<NR-1) {
+			creep(T[ir], Pressure[ir], &creep_rate, 1.0-Vrock[ir]/dVol[ir], pore[ir]);
+			mu_visc = Pa2ba*Pressure[ir]/(2.0*creep_rate);
+		}
+		else {
+			creep(T[NR-2], Pressure[NR-2], &creep_rate, 1.0-Vrock[NR-2]/dVol[NR-2], pore[NR-2]);
+			mu_visc = Pa2ba*Pressure[NR-2]/(2.0*creep_rate);
+		}
+
 		// If there is ammonia in partially melted layers, decrease viscosity according to Fig. 6 of Arakawa & Maeno (1994)
 		if (Mh2os[ir] > 0.0 && Mnh3l[ir]+Madhs[ir] >= 0.01*Mh2os[ir] && T[ir] > 140.0) {
 			if (T[ir] < 176.0) mu_visc = mu_visc*1.0e-3;
