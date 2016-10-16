@@ -130,7 +130,7 @@
 #define V_flow_law 0.0                                     // Activation volume of Rutter and Brodie (1988), default 0 m3, Hilairet et al. 2007 3.2e-6 m3
 #define n_flow_law 1.0                                     // Stress in Pa exponent of Rutter and Brodie (1988), default 1.0 (diffusion creep), Hilairet et al. 2007 3.8 dislocation creep
 #define p_flow_law 3.0                                     // Grain size in microns exponent of Rutter and Brodie (1988), default 3 (i.e., d^-p = d^-3)
-#define d_flow_law 1000.0                                   // Grain size in microns, default 500
+#define d_flow_law 500.0                                   // Grain size in microns, default 500
 
 // Thermal expansion/contraction mismatch (Vance et al. 2007)
 #define K_IC_oliv 1.5e6                                    // Critical stress intensity for olivine in Pa m^0.5 (DeMartin et al. 2004; Balme et al. 2004)

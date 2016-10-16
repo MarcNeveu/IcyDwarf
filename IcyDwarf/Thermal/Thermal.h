@@ -2554,7 +2554,7 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 		creep(T[ir], Pressure[ir], &creep_rate, 1.0-Vrock[ir]/dVol[ir], pore[ir]);
 		mu_visc = Pa2ba*Pressure[ir]/(2.0*creep_rate);
 		// If there is ammonia in partially melted layers, decrease viscosity according to Fig. 6 of Arakawa & Maeno (1994)
-		if (Mrock[ir] == 0.0 && Mnh3l[ir]+Madhs[ir] >= 0.01*Mh2os[ir] && T[ir] > 140.0) {
+		if (Mh2os[ir] > 0.0 && Mnh3l[ir]+Madhs[ir] >= 0.01*Mh2os[ir] && T[ir] > 140.0) {
 			if (T[ir] < 176.0) mu_visc = mu_visc*1.0e-3;
 			else if (T[ir] < 250.0) mu_visc = mu_visc*1.0e-8;
 			else if (T[ir] < 271.0) mu_visc = mu_visc*1.0e-15;
