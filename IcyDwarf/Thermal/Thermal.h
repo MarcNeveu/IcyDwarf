@@ -83,6 +83,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	//                 Declarations and initializations
 	//-------------------------------------------------------------------
 
+	int forced_hydcirc = 0;              // Switch to force hydrothermal circulation
 	int itime = 0;                       // Time counter
 	int ntime = 0;                       // Total number of iterations
 	int isteps = 0;                      // Output step counter
@@ -101,7 +102,6 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     int thermal_mismatch = 0;            // Switch for grain thermal expansion/contraction mismatch effects
 	int pore_water_expansion = 0;        // Switch for pore water expansion effects
 	int dissolution_precipitation = 0;   // Switch for rock dissolution/precipitation effects
-	int forced_hydcirc = 1;              // Switch to force hydrothermal circulation
 	double Heat_radio = 0.0;             // Total heats produced (erg), for output file
 	double Heat_grav = 0.0;
 	double Heat_serp = 0.0;

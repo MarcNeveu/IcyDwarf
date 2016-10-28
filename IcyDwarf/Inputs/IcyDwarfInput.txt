@@ -17,7 +17,7 @@ Moon?                         1
 	Planet radius (km)    58232
 	Host planet tidal Q   2452.8
 Density, 0 porosity (g cm-3)  1.149
-Porosity                      0.5
+Porosity                      0
 Hydr. rock density (g cm-3)   2.9
 Dry rock density (g cm-3)     3.8 
 Chondrite type? 1:CO, otw CI  0

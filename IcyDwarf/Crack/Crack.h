@@ -419,8 +419,9 @@ int creep (double T, double P, double *creep_rate, double Xice, double porosity)
 	double eps_gbs = 0.0;
 	double eps_diff = 0.0;
 
-	if (T<258) eps_disl = 4.0e5*pow(P/MPa/(1.0-porosity),4.0)*exp(-60.0e3/(R_G*T));
-	else eps_disl = 6.0e28*pow(P/MPa/(1.0-porosity),4.0)*exp(-180.0e3/(R_G*T)); // Q=18e3, not 180e3 in Table 5 of G&K 2001, that's a typo (see end of their section 5.4)
+	eps_disl = 4.0e5*pow(P/MPa/(1.0-porosity),4.0)*exp(-60.0e3/(R_G*T));
+//	if (T<258) eps_disl = 4.0e5*pow(P/MPa/(1.0-porosity),4.0)*exp(-60.0e3/(R_G*T));
+//	else eps_disl = 6.0e28*pow(P/MPa/(1.0-porosity),4.0)*exp(-180.0e3/(R_G*T)); // Q=18e3, not 180e3 in Table 5 of G&K 2001, that's a typo (see end of their section 5.4)
 	if (T<255) eps_basal = 3.9e-3*pow(P/MPa/(1.0-porosity),1.8)*pow(d_flow_law,-1.4)*exp(-49.0e3/(R_G*T));
 	else eps_basal = 3.0e26*pow(P/MPa/(1.0-porosity),1.8)*pow(d_flow_law,-1.4)*exp(-192.0e3/(R_G*T));
 	eps_gbs = 5.5e7*pow(P/MPa/(1.0-porosity),2.4)*exp(-60.0e3/(R_G*T));
