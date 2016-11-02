@@ -328,6 +328,12 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		magnesite[i] = (double*) malloc(sizeaTP*sizeof(double));
 		if (magnesite[i] == NULL) printf("Thermal: Not enough memory to create magnesite[sizeaTP][sizeaTP]\n");
 	}
+	double **Tide_output = (double**) malloc((NR)*sizeof(double*)); // Output: radial and temporal distribution of tidal heating rates (erg s-1)
+	if (Tide_output == NULL) printf("Thermal: Not enough memory to create Tide_output[NR][2]\n");
+	for (ir=0;ir<NR;ir++) {
+		Tide_output[ir] = (double*) malloc(2*sizeof(double));
+		if (Tide_output[ir] == NULL) printf("Thermal: Not enough memory to create Tide_output[NR][2]\n");
+	}
 
 	// Zero all the arrays
 	Crack_depth[0] = 0.0, Crack_depth[1] = 0.0;
@@ -373,6 +379,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	pore[ir] = porosity;
     	for (i=0;i<n_species_crack;i++) Act[ir][i] = 0.0;
     	for (i=0;i<12;i++) Stress[ir][i] = 0.0;
+    	for (i=0;i<2;i++) Tide_output[ir][i] = 0.0;
     }
     for (ir=0;ir<NR+1;ir++) {
     	r[ir] = 0.0;
@@ -444,6 +451,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	create_output(path, "Outputs/Crack_depth.txt");
 	create_output(path, "Outputs/Crack_WRratio.txt");
 	create_output(path, "Outputs/Crack_stresses.txt");
+	create_output(path, "Outputs/Tidal_rates.txt");
 	create_output(path, "Outputs/Orbit.txt");
 
     r_p = r_p*km2cm;                                                     // Convert planet radius to cm
@@ -613,6 +621,12 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	for (ir=0;ir<NR;ir++) {
 		Stress[ir][0] = r[ir+1]/km2cm;
 		append_output(12, Stress[ir], path, "Outputs/Crack_stresses.txt");
+	}
+
+	// Tidal rate outputs
+	for (ir=0;ir<NR;ir++) {
+		Tide_output[ir][0] = r[ir+1]/km2cm;
+		append_output(2, Tide_output[ir], path, "Outputs/Tidal_rates.txt"); // in W
 	}
 
 	// Orbital parameters
@@ -908,11 +922,16 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
 		// Tidal heating
 		if (itime > 0 && moon && eorb > 0.0) {
-			for (ir=0;ir<NR;ir++) strain(Pressure[ir], Xhydr[ir], T[ir], &strain_rate[ir], &Brittle_strength[ir], pore[ir]);
+			for (ir=0;ir<NR;ir++) {
+				Tide_output[ir][1] = -Qth[ir]/1.0e7; // To output the distribution of tidal heating rates in each layer = -before+after
+				strain(Pressure[ir], Xhydr[ir], T[ir], &strain_rate[ir], &Brittle_strength[ir], pore[ir]);
+			}
 			Wtide_tot = 0.0;
 			tide(tidalmodel, tidetimesten, eorb, omega_tide, r_p, &Qth, NR, dtime, &Wtide_tot, Mrock, Mh2os, Madhs, Mh2ol, Mnh3l,
 					dM, Vrock, dVol, r, T, fineVolFrac, Brittle_strength, Xhydr, Pressure, pore);
 			Heat_tide = Heat_tide + Wtide_tot;
+
+			for (ir=0;ir<NR;ir++) Tide_output[ir][1] = Tide_output[ir][1] + Qth[ir]/1.0e7;
 
 			// Update orbital parameters (Barnes et al. 2008):
 			if (eccdecay == 1 && Wtide_tot > 0.0) {
@@ -1222,6 +1241,12 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 				append_output(12, Stress[ir], path, "Outputs/Crack_stresses.txt");
 			}
 
+			// Tidal rate outputs
+			for (ir=0;ir<NR;ir++) {
+				Tide_output[ir][0] = r[ir+1]/km2cm;
+				append_output(2, Tide_output[ir], path, "Outputs/Tidal_rates.txt"); // in W
+			}
+
 			// Orbital parameters
 			Orbit[0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
 			Orbit[1] = aorb/km2cm;
@@ -1245,6 +1270,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	}
 	for (i=0;i<12;i++) free (Stress[i]);
 	for (ir=0;ir<NR;ir++) free (Act[ir]);
+	for (i=0;i<2;i++) free (Tide_output[i]);
 	free (r);
 	free (dVol);
 	free (dM);
@@ -1292,6 +1318,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	free (strain_rate);
 	free (fracOpen);
 	free (pore);
+	free (Tide_output);
 
 	return 0;
 }

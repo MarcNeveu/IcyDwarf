@@ -1,7 +1,7 @@
 IcyDwarf
 ========
 *IcyDwarf* calculates the coupled physical-chemical evolution of an icy dwarf planet or moon. As of version 16.3, the code calculates:
-- The thermal evolution of an icy dwarf planet, with no chemistry, but with rock hydration, dehydration, hydrothermal circulation, core cracking, tidal heating, and porosity. The depth of cracking and a bulk water:rock ratio by mass in the rocky core are also computed.
+- The thermal evolution of an icy planetary body (moon or dwarf planet), with no chemistry, but with rock hydration, dehydration, hydrothermal circulation, core cracking, tidal heating, and porosity. The depth of cracking and a bulk water:rock ratio by mass in the rocky core are also computed.
 - Whether cryovolcanism is possible by the exsolution of volatiles from cryolavas.
 - Equilibrium fluid and rock chemistries resulting from water-rock interaction in subsurface oceans in contact with a rocky core, up to 200ºC and 1000 bar.
 
@@ -74,7 +74,7 @@ The respective input files are located in the *IcyDwarf/Input* and *IcyDwarfPlot
 
 ### Thermal code
 
-The output file of the thermal evolution code is *Thermal.txt*. It lists, for a given layer inside a dwarf planet:
+The output file of the thermal evolution code is *Thermal.txt*. It lists, for a given layer inside a planetary body:
 - radius (km)
 - temperature (K)
 - mass of rock (g)
@@ -88,6 +88,11 @@ The output file of the thermal evolution code is *Thermal.txt*. It lists, for a 
 - degree of hydration (0: fully dry, 1: fully hydrated)
 
 The first *n_layer* lines list these properties in each layer, from the center to the surface, at *t*=0. The next *n_layer* lines list them at *t+dt_output*, and so on, such that the total number of lines is *n_layer* * *n_output*.
+
+Three additional files, *Heats.txt*, *Tidal_rates.txt*, and *Orbit.txt*, output, respectively:
+- *Heats.txt*: Time (Gyr); cumulative heats (erg) from radioactive decay, differentiation, rock hydration, rock dehydration (negative numbers), and tidal dissipation;
+- *Tidal_rates.txt*: radius (km); tidal heating rate (W); repeated over time as in *Thermal.txt*;
+- *Orbit.txt*: Time (Gyr); orbital semimajor axis (km); orbital eccentricity.
 
 ### Cracking code
 
@@ -105,9 +110,13 @@ The cryolava routine outputs three files:
 - *Cryolava_partialP.txt*, with the same layout as the molalities file, shows the partial pressure of each of these 10 species
 - *Cryolava_xvap.txt* has the same amount of rows, but only 6 columns which show the depth under the surface (km), total gas pressure (bar), volumic vapor fraction x_vap (a dimensionless indicator of exsolution),  fluid cryolava density (kg m-3), stress intensity K_I at the crack tip (Pa m^0.5), a boolean (0: no crack propagation; 1: crack propagation).
 
+### Compression code
+
+The compression routine outputs one files, *Compression.txt*, which provides pressures and densities as a function of radius, both accounting for self-compression (output) and not accounting for it (output of the thermal code). The file structure, format, and units are explained in the file itself.
+
 ### ParamExploration code
 
-This routine outputs a file that looks much like the *PHREEQC* selected output specified in the *IcyDwarf/PHREEQC-3.1.2/io* folder, with a few added columns at the beginning (starting T in celsius, P in bar, pH, pe, log fO2 at FMQ(T,P) buffer, pe-FMQ). The file is formatted for easy import into a spreadsheet, with each line describing a different simulation. Lines filled with zeros are *PHREEQC* simulations that did not converge.
+This routine outputs a file, *ParamExploration.txt*, that looks much like the *PHREEQC* selected output specified in the *IcyDwarf/PHREEQC-3.1.2/io* folder, with a few added columns at the beginning (starting T in celsius, P in bar, pH, pe, log fO2 at FMQ(T,P) buffer, pe-FMQ). The file is formatted for easy import into a spreadsheet, with each line describing a different simulation. Lines filled with zeros are *PHREEQC* simulations that did not converge.
 
 The *PHREEQC* input file, *IcyDwarf/PHREEQC-3.1.2/io/inputIcyDwarf*, can be modified, but be aware that *IcyDwarfPlot* will plot results accurately only if the SELECTED_OUTPUT block is left unchanged.
 
