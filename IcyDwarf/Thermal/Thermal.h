@@ -679,7 +679,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     	//-------------------------------------------------------------------
 
     	for (ir=0; ir<NR;ir++) {
-    		creep(T[ir], Pressure[ir], &creep_rate, 1.0-Vrock[ir]/dVol[ir], pore[ir]);
+    		creep(T[ir], Pressure[ir], &creep_rate, 1.0-Vrock[ir]/dVol[ir], pore[ir], Xhydr[ir]);
     		pore[ir] = pore[ir]-dtime*(1.0-pore[ir])*creep_rate;
     		if (pore[ir] < 0.0) pore[ir] = 0.0;
     		if (Mrock[ir] < 0.01 && Mh2ol[ir] > 0.01) pore[ir] = 0.0;
@@ -1080,11 +1080,11 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			kap1 = kappa[jr];                  // cgs
 
 			if (jr<NR-1) {
-				creep(T[jr], Pressure[jr], &creep_rate, 1.0-Vrock[jr]/dVol[jr], pore[jr]);
+				creep(T[jr], Pressure[jr], &creep_rate, 1.0-Vrock[jr]/dVol[jr], pore[jr], Xhydr[jr]);
 				mu_visc = Pa2ba*Pressure[jr]/(2.0*creep_rate);
 			}
 			else {
-				creep(T[NR-2], Pressure[NR-2], &creep_rate, 1.0-Vrock[NR-2]/dVol[NR-2], pore[NR-2]);
+				creep(T[NR-2], Pressure[NR-2], &creep_rate, 1.0-Vrock[NR-2]/dVol[NR-2], pore[NR-2], Xhydr[NR-2]);
 				mu_visc = Pa2ba*Pressure[NR-2]/(2.0*creep_rate);
 			}
 
@@ -2585,11 +2585,11 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 
 		// Steady-state viscosity
 		if (ir<NR-1) {
-			creep(T[ir], Pressure[ir], &creep_rate, 1.0-Vrock[ir]/dVol[ir], pore[ir]);
+			creep(T[ir], Pressure[ir], &creep_rate, 1.0-Vrock[ir]/dVol[ir], pore[ir], Xhydr[ir]);
 			mu_visc = Pa2ba*Pressure[ir]/(2.0*creep_rate);
 		}
 		else {
-			creep(T[NR-2], Pressure[NR-2], &creep_rate, 1.0-Vrock[NR-2]/dVol[NR-2], pore[NR-2]);
+			creep(T[NR-2], Pressure[NR-2], &creep_rate, 1.0-Vrock[NR-2]/dVol[NR-2], pore[NR-2], Xhydr[NR-2]);
 			mu_visc = Pa2ba*Pressure[NR-2]/(2.0*creep_rate);
 		}
 

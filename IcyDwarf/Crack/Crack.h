@@ -49,7 +49,7 @@ int crack(double T, double T_old, double Pressure, double *Crack,
 
 int strain (double Pressure, double Xhydr, double T, double *strain_rate, double *Brittle_strength, double porosity);
 
-int creep (double T, double P, double *creep_rate, double Xice, double porosity);
+int creep (double T, double P, double *creep_rate, double Xice, double porosity, double Xhydr);
 
 int crack(double T, double T_old, double Pressure, double *Crack,
 		double *Crack_size, double Xhydr, double Xhydr_old, double dtime, double Mrock, double Mrock_init,
@@ -389,9 +389,9 @@ int strain (double Pressure, double Xhydr, double T, double *strain_rate, double
 	(*Brittle_strength) = (*Brittle_strength)/(1.0-porosity);
 
 	if (T > 140.0)
-		(*strain_rate) = A_flow_law*pow((*Brittle_strength)/MPa,n_flow_law)*pow(d_flow_law,-p_flow_law)*exp((-Ea_flow_law + Pressure*V_flow_law)/(n_flow_law*R_G*T));
+		(*strain_rate) = pow(10.0,5.62)*pow((*Brittle_strength)/MPa,1.0)*pow(d_flow_law,-3.0)*exp((-240.0e3 + Pressure*0.0)/(1.0*R_G*T));
 	else // Set T at 140 K to calculate ductile strength so that it doesn't yield numbers too high to handle
-		(*strain_rate) = A_flow_law*pow((*Brittle_strength)/MPa,n_flow_law)*pow(d_flow_law,-p_flow_law)*exp((-Ea_flow_law + Pressure*V_flow_law)/(n_flow_law*R_G*140.0));
+		(*strain_rate) = pow(10.0,5.62)*pow((*Brittle_strength)/MPa,1.0)*pow(d_flow_law,-3.0)*exp((-240.0e3 + Pressure*0.0)/(1.0*R_G*140.0));
 
 	return 0;
 }
@@ -401,17 +401,19 @@ int strain (double Pressure, double Xhydr, double T, double *strain_rate, double
  * Subroutine creep
  *
  * Calculates the creep rate in s-1 of ice, rock, or a mixture using
- * flow laws from Goldsby & Kohlstedt (2001) for ice and Rutter &
- * Brodie (1988) for rock (as for the strain() subroutine). Stresses
- * are hydrostatic pressure/(1-porosity) (Neumann et al. 2014)
+ * flow laws from Goldsby & Kohlstedt (2001) for ice, Rutter &
+ * Brodie (1988) for hydrated rock, and Korenage & Karato (2008) for
+ * dry rock (as for the strain() subroutine). Stresses are
+ * hydrostatic pressure/(1-porosity) (Neumann et al. 2014).
  * Flow parameters scale with ice volume fraction Xice according to
  * Roberts (2015).
  *
  *--------------------------------------------------------------------*/
 
-int creep (double T, double P, double *creep_rate, double Xice, double porosity) {
+int creep (double T, double P, double *creep_rate, double Xice, double porosity, double Xhydr) {
 
-	double creep_rate_rock = 0.0;
+	double creep_rate_dry = 0.0;
+	double creep_rate_hydr = 0.0;
 	double creep_rate_ice = 0.0;
 
 	double eps_disl = 0.0;
@@ -433,13 +435,18 @@ int creep (double T, double P, double *creep_rate, double Xice, double porosity)
 		(*creep_rate) = creep_rate_ice;
 	}
 	else {            // Deformation is controlled by both rock and ice properties
-		if (T > 140.0)
-			creep_rate_rock = A_flow_law*pow(P/MPa/(1.0-porosity),n_flow_law)*pow(d_flow_law,-p_flow_law)*exp((-Ea_flow_law + P*V_flow_law)/(n_flow_law*R_G*T));
-		else // Set T at 140 K to calculate creep rate so that it doesn't yield numbers too high to handle
-			creep_rate_rock = A_flow_law*pow(P/MPa/(1.0-porosity),n_flow_law)*pow(d_flow_law,-p_flow_law)*exp((-Ea_flow_law + P*V_flow_law)/(n_flow_law*R_G*140.0));
-
+		if (T > 140.0) {
+			creep_rate_hydr = pow(10.0,5.62)*pow(P/MPa/(1.0-porosity),1.0)*pow(d_flow_law,-3.0)*exp((-240.0e3 + P*0.0)/(R_G*T)); // Rutter & Brodie (1988), diffusion
+//			creep_rate_hydr = pow(10.0,4.32)*pow(P/MPa/(1.0-porosity),1.0)*pow(d_flow_law,-2.56)*pow(Xhydr*2.0e6,1.93)*exp((-387.0e3 + P*25.0e-6)/(R_G*T)); // Korenaga & Karato (2008), wet diffusion. When Xhydr=1, H/Si=2e6 ppm.
+			creep_rate_dry = pow(10.0,5.25)*pow(P/MPa/(1.0-porosity),1.0)*pow(d_flow_law,-2.98)*exp((-261.0e3 + P*6.0e-6)/(R_G*T)); // Korenaga & Karato (2008), dry diffusion
+		}
+		else { // Set T at 140 K to calculate creep rate so that it doesn't yield numbers too high to handle
+			creep_rate_hydr = pow(10.0,5.62)*pow(P/MPa/(1.0-porosity),1.0)*pow(d_flow_law,-3.0)*exp((-240.0e3 + P*0.0)/(R_G*140.0)); // Rutter & Brodie (1988)
+//			creep_rate_hydr = pow(10.0,4.32)*pow(P/MPa/(1.0-porosity),1.0)*pow(d_flow_law,-2.56)*pow(Xhydr*2.0e6,1.93)*exp((-387.0e3 + P*25.0e-6)/(R_G*140.0)); // Korenaga & Karato (2008), wet diffusion. When Xhydr=1, H/Si=2e6 ppm.
+			creep_rate_dry = pow(10.0,5.25)*pow(P/MPa/(1.0-porosity),1.0)*pow(d_flow_law,-2.98)*exp((-261.0e3 + P*6.0e-6)/(R_G*140.0)); // Korenaga & Karato (2008), dry diffusion
+		}
 		// Scaling from Roberts (2015)
-		(*creep_rate) = exp(((0.3-Xice)*log(creep_rate_rock) + Xice*log(creep_rate_ice))/0.3);
+		(*creep_rate) = exp(((0.3-Xice)*log(Xhydr*creep_rate_hydr + (1.0-Xhydr)*creep_rate_dry) + Xice*log(creep_rate_ice))/0.3);
 	}
 
 	return 0;

@@ -125,11 +125,6 @@
 #define mu_f_Byerlee_loP 0.85                              // Friction coefficient for dry olivine rock brittle strength below 200 MPa (Byerlee 1978)
 #define mu_f_Byerlee_hiP 0.6                               // Friction coefficient for dry olivine rock brittle strength between 200 MPa and 1700 MPa (Byerlee 1978)
 #define C_f_Byerlee_hiP 50.0e6                             // Frictional cohesive strength for dry olivine rock between 200 MPa and 1700 MPa (Byerlee 1978)
-#define A_flow_law 4.17e5                                  // A of the antigorite flow law of Rutter and Brodie (1988), default 10^5.62 = 4.17e5 for sigma in MPa, Hilairet et al. 2007 1.0e-37
-#define Ea_flow_law 240.0e3                                // Activation energy of the antigorite flow law of Rutter and Brodie (1988), default 240e3 J, Hilairet et al. 2007 8900 J
-#define V_flow_law 0.0                                     // Activation volume of Rutter and Brodie (1988), default 0 m3, Hilairet et al. 2007 3.2e-6 m3
-#define n_flow_law 1.0                                     // Stress in Pa exponent of Rutter and Brodie (1988), default 1.0 (diffusion creep), Hilairet et al. 2007 3.8 dislocation creep
-#define p_flow_law 3.0                                     // Grain size in microns exponent of Rutter and Brodie (1988), default 3 (i.e., d^-p = d^-3)
 #define d_flow_law 500.0                                   // Grain size in microns, default 500
 
 // Thermal expansion/contraction mismatch (Vance et al. 2007)

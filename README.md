@@ -112,7 +112,7 @@ The cryolava routine outputs three files:
 
 ### Compression code
 
-The compression routine outputs one files, *Compression.txt*, which provides pressures and densities as a function of radius, both accounting for self-compression (output) and not accounting for it (output of the thermal code). The file structure, format, and units are explained in the file itself.
+The compression routine outputs one file, *Compression.txt*, which provides pressures and densities as a function of radius, both accounting for self-compression (output) and not accounting for it (output of the thermal code). The file structure, format, and units are explained in the file itself.
 
 ### ParamExploration code
 
