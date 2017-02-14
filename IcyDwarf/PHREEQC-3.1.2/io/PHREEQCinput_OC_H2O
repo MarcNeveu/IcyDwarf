@@ -1,4 +1,4 @@
-TITLE IcyDwarf generated speciation input using core8.dat
+TITLE IcyDwarf generated speciation input using core9.dat
 
 SOLUTION 1 Pure water
 
@@ -411,7 +411,6 @@ EQUILIBRIUM_PHASES 1 Ordinary chondrite
 
 SELECTED_OUTPUT 1
 	
-#	-file		/Users/marc/Documents/Research/2011-2016_ASU/2IcyDwarf/Git/IcyDwarf/IcyDwarf/PHREEQC-3.1.2/io/selectedIcyDwarf.out
 	-state 		false	
 	-solution 	false
 	-distance 	false

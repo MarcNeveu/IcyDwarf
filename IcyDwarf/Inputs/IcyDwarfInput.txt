@@ -1,4 +1,4 @@
-ICY DWARF v16.x INPUT FILE
+ICY DWARF v17.x INPUT FILE
 
 1 for Yes, 0 for No
 -------------------------------
@@ -12,17 +12,21 @@ Planet parameters
 Moon?                         1
 	Orbital a (km)        185539
 	Orbital e             0.0196
-	Orbital e decay?      1
+	Orbital evolution?    1
 	Host planet mass (kg) 5.68e26
 	Planet radius (km)    58232
 	Host planet tidal Q   2452.8
+Ring?                         1
+	Ring mass (kg)        7e19
+	Ring inner edge (km)  92000
+	Ring outer edge (km)  140000
 Density, 0 porosity (g cm-3)  1.149
-Porosity                      0
+Porosity                      0.5
 Hydr. rock density (g cm-3)   2.9
 Dry rock density (g cm-3)     3.8 
 Chondrite type? 1:CO, otw CI  0
 Radius (km)                   198.2
-Ammonia w.r.t. water          0
+Ammonia w.r.t. water          0.02
 Briny liquid? y=1, n=0        0
 Surface temperature (K)       76
 -------------------------------
@@ -30,20 +34,20 @@ Grid
 -------------------------------
 Number of grid zones          200
 Total time of sim (Myr)       5000
-Output every (Myr)            1
+Output every (Myr)            10
 -------------------------------
 Subroutines
 -------------------------------
 Run thermal?                  1
 	Sim time step (yr)    50
-	Sim starts at (Myr)   2
+	Sim starts at (Myr)   5
 	Initial temp (K)      100
 	Degree of hydration   0.1
 	Hydrate/dehydrate?    1
 	Fine rock fraction    0
 	Start differentiated? 0
 	Tidal rhe 2Ma 3Bu 4An 4
-	Tidal heating x10?    0
+	Tidal heating x10?    1
 Core cracks
 	Calculate aTP?        0
 	Water alpha beta?     0

@@ -33,7 +33,7 @@
 //-------------------------------------------------------------------
 
 #define v_release 0                                        // 0 for Debug, 1 for Release
-#define cmdline 1										   // If execution from terminal as "./IcyDwarf",
+#define cmdline 0										   // If execution from terminal as "./IcyDwarf",
                                                            // overwritten by v_release.
 //-------------------------------------------------------------------
 // PHYSICAL AND MATHEMATICAL CONSTANTS
@@ -391,7 +391,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
-			fseek(f,24,SEEK_CUR);   // Eccentricity decay
+			fseek(f,24,SEEK_CUR);   // Orbital evolution
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
@@ -404,6 +404,22 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
 			fseek(f,24,SEEK_CUR);   // Tidal Q of primary (host planet)
+			scan = fscanf(f, "%lg", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,31,SEEK_CUR);   // Ring?
+			scan = fscanf(f, "%lg", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,24,SEEK_CUR);   // Ring mass (kg)
+			scan = fscanf(f, "%lg", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,24,SEEK_CUR);   // Ring inner edge (km)
+			scan = fscanf(f, "%lg", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
+			fseek(f,24,SEEK_CUR);   // Ring outer edge (km)
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
@@ -630,10 +646,14 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 		printf("Moon? \t \t \t \t %g\n",input[i]), i++;
 		printf("\t Orbital a (km) \t %g\n",input[i]), i++;
 		printf("\t Orbital e \t \t %g\n",input[i]), i++;
-		printf("\t Orbital e decay? \t %g\n",input[i]), i++;
+		printf("\t Orbital evolution? \t %g\n",input[i]), i++;
 		printf("\t Host planet mass (kg) \t %g\n",input[i]), i++;
 		printf("\t Planet radius (km) \t %g\n",input[i]), i++;
 		printf("\t Host planet tidal Q \t %g\n",input[i]), i++;
+		printf("Ring? \t \t \t \t %g\n",input[i]), i++;
+		printf("\t Ring mass (kg) \t %g\n",input[i]), i++;
+		printf("\t Ring inner edge (km) \t %g\n",input[i]), i++;
+		printf("\t Ring outer edge (km) \t %g\n",input[i]), i++;
 		printf("Density, 0 porosity (g cm-3) \t %g\n",input[i]), i++;
 		printf("Porosity \t \t \t %g\n",input[i]), i++;
 		printf("Hydr. rock density (g cm-3) \t %g\n",input[i]), i++;

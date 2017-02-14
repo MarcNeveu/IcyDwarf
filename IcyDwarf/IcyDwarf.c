@@ -29,14 +29,20 @@ int main(int argc, char *argv[]){
 	int msgout = 0;                    // Display messages
 
 	// Planet inputs
-	int moon = 0;                      // Is the simulated planet a moon? If so, consider the following 3 parameters:
-	double aorb = 0.0;                 // Moon orbital semi-major axis (cm)
+	int moon = 0;                      // Is the simulated planet a moon? If so, consider the following 6 parameters:
+	double aorb = 0.0;                 // Moon orbital semi-major axis (km)
 	double eorb = 0.0;                 // Moon orbital eccentricity
-	int eccdecay = 0;                  // Eccentricity decay?
-	double Mprim = 0.0;                // Mass of the primary (host planet) (g)
-	double Rprim = 0.0;				   // Radius of the primary (host planet) (g)
+	int orbevol = 0;                   // Orbital evolution?
+	double Mprim = 0.0;                // Mass of the primary (host planet) (kg)
+	double Rprim = 0.0;				   // Radius of the primary (host planet) (km)
 	double Qprim = 0.0;				   // Tidal Q of the primary (host planet). For Saturn, = 2452.8, range 1570.8-4870.6 (Lainey et al. 2016)
-    double rho_p = 0.0;                // Planetary density (g cm-3)
+
+	int ring = 0;                      // Does the host planet have an inner ring? If so, consider the following 3 parameters:
+	double Mring = 0.0;                // Mass of planet rings (kg). For Saturn, 4 to 7e19 kg (Robbins et al. 2010, http://dx.doi.org/10.1016/j.icarus.2009.09.012)
+	double aring_in = 0.0;             // Inner orbital radius of rings (km). for Saturn B ring, 92000 km
+	double aring_out = 0.0;            // Outer orbital radius of rings (km). for Saturn's A ring, 140000 km
+
+	double rho_p = 0.0;                // Planetary density (g cm-3)
     double rhoHydrRock = 0.0;          // Density of hydrated rock endmember (kg m-3)
     double rhoDryRock = 0.0;           // Density of dry rock endmember (kg m-3)
     double r_p = 0.0;                  // Planetary radius
@@ -106,7 +112,7 @@ int main(int argc, char *argv[]){
 	int i = 0;
 	int j = 0;
 
-	int n_inputs = 62;
+	int n_inputs = 66;
 
 	double *input = (double*) malloc(n_inputs*sizeof(double));
 	if (input == NULL) printf("IcyDwarf: Not enough memory to create input[28]\n");
@@ -118,7 +124,7 @@ int main(int argc, char *argv[]){
 
 	printf("\n");
 	printf("-------------------------------------------------------------------\n");
-	printf("IcyDwarf v16.11\n");
+	printf("IcyDwarf v17.2\n");
 	if (v_release == 1) printf("Release mode\n");
 	else if (cmdline == 1) printf("Command line mode\n");
 	printf("-------------------------------------------------------------------\n");
@@ -148,28 +154,32 @@ int main(int argc, char *argv[]){
 	warnings = (int) input[i]; i++;
 	msgout = (int) input[i]; i++;
 	moon = (int) input[i]; i++;
-	aorb = input[i]*km2cm*moon; i++;          // Input-specified aorb if moon=1, 0 otherwise, cm
-	eorb = input[i]*moon; i++;                // Input-specified eorb if moon=1, 0 otherwise
-	eccdecay = input[i]; i++;
-	Mprim = input[i]/gram*moon; i++;          // Input-specified Mprim if moon=1, 0 otherwise, g
+	aorb = input[i]*km2cm*moon; i++;           // Input-specified aorb if moon=1, 0 otherwise, cm
+	eorb = input[i]*moon; i++;                 // Input-specified eorb if moon=1, 0 otherwise
+	orbevol = input[i]; i++;
+	Mprim = input[i]/gram*moon; i++;           // Input-specified Mprim if moon=1, 0 otherwise, g
 	Rprim = input[i]*km2cm; i++;
 	Qprim = input[i]; i++;
-	rho_p = input[i]; i++;                          // g cm-3
+	ring = input[i]; i++;
+	Mring = input[i]/gram; i++;                // g
+	aring_in = input[i]*km2cm; i++;            // cm
+	aring_out = input[i]*km2cm; i++;           // cm
+	rho_p = input[i]; i++;                     // g cm-3
 	porosity = input[i]; i++;
-	rhoHydrRock = input[i]*gram/cm/cm/cm; i++;      // kg m-3
-	rhoDryRock = input[i]*gram/cm/cm/cm; i++;       // kg m-3
+	rhoHydrRock = input[i]*gram/cm/cm/cm; i++; // kg m-3
+	rhoDryRock = input[i]*gram/cm/cm/cm; i++;  // kg m-3
 	chondr = input[i]; i++;
-	r_p = input[i]; i++;
+	r_p = input[i]*km2cm; i++;                 // cm
 	nh3 = input[i]; i++;
 	salt = input[i]; i++;
 	Tsurf = input[i]; i++;
 	NR = input[i]; i++;
-	total_time = input[i]; i++;
-	output_every = input[i]; i++;
+	total_time = input[i]*Myr2sec; i++;        // s
+	output_every = input[i]*Myr2sec; i++;      // s
 	NT_output = floor(total_time/output_every)+1;
 	calculate_thermal = (int) input[i]; i++;
-	timestep = input[i]; i++;                       // yr
-	tzero = input[i]; i++;                          // Myr
+	timestep = input[i]; i++;                  // yr
+	tzero = input[i]*Myr2sec; i++;             // s
 	Tinit = input[i]; i++;
 	Hydr_init = input[i]; i++;
 	hy = input[i]; i++;
@@ -231,7 +241,7 @@ int main(int argc, char *argv[]){
 		printf("Running thermal evolution code...\n");
 		Thermal(argc, argv, path, NR, r_p, rho_p, rhoHydrRock, rhoDryRock, warnings, msgout, nh3, salt, Xhydr, Xfines, tzero, Tsurf,
 				Tinit, timestep, total_time, output_every, crack_input, crack_species, chondr, moon, aorb, eorb, Mprim, Rprim, Qprim,
-				porosity, startdiff, eccdecay, tidalmodel, tidetimesten, hy);
+				ring, Mring, aring_in, aring_out, porosity, startdiff, orbevol, tidalmodel, tidetimesten, hy);
 		printf("\n");
 	}
 

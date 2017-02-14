@@ -27,8 +27,8 @@
 int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p, double rhoHydr, double rhoDry,
 		int warnings, int msgout, double Xp, double Xsalt, double *Xhydr, double Xfines, double tzero, double Tsurf,
 		double Tinit, double dtime, double fulltime, double dtoutput, int *crack_input, int *crack_species, int chondr,
-		int moon, double aorb_init, double eorb_init, double Mprim, double Rprim, double Qprim, double porosity, int startdiff,
-		int eccdecay, int tidalmodel, int tidetimesten, int hy);
+		int moon, double aorb_init, double eorb_init, double Mprim, double Rprim, double Qprim, int ring, double Mring,
+		double aring_in, double aring_out, double porosity, int startdiff, int orbevol, int tidalmodel, int tidetimesten, int hy);
 
 int state (char path[1024], int itime, int ir, double E, double *frock, double *fh2os, double *fadhs, double *fh2ol, double *fnh3l,
 		double Xsalt, double *T);
@@ -76,8 +76,8 @@ long double complex y2pp(long double complex x, int mod);
 int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p, double rhoHydr, double rhoDry,
 		int warnings, int msgout, double Xp, double Xsalt, double *Xhydr, double Xfines, double tzero, double Tsurf,
 		double Tinit, double dtime, double fulltime, double dtoutput, int *crack_input, int *crack_species, int chondr,
-		int moon, double aorb_init, double eorb_init, double Mprim, double Rprim, double Qprim, double porosity, int startdiff,
-		int eccdecay, int tidalmodel, int tidetimesten, int hy) {
+		int moon, double aorb_init, double eorb_init, double Mprim, double Rprim, double Qprim, int ring, double Mring,
+		double aring_in, double aring_out, double porosity, int startdiff, int orbevol, int tidalmodel, int tidetimesten, int hy) {
 
 	//-------------------------------------------------------------------
 	//                 Declarations and initializations
@@ -102,6 +102,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     int thermal_mismatch = 0;            // Switch for grain thermal expansion/contraction mismatch effects
 	int pore_water_expansion = 0;        // Switch for pore water expansion effects
 	int dissolution_precipitation = 0;   // Switch for rock dissolution/precipitation effects
+	int kmin = 0;                        // Lowest order of inner Lindblad resonance in the rings
+	int kmax = 0;                        // Highest order of inner Lindblad resonance in the rings
 	double Heat_radio = 0.0;             // Total heats produced (erg), for output file
 	double Heat_grav = 0.0;
 	double Heat_serp = 0.0;
@@ -126,13 +128,13 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double Ra = 0.0;                     // Rayleigh number
 	double dT = 0.0;                     // Temperature difference across convective region (K)
 	double alf1 = 0.0;                   // Thermal expansion coefficient of H2O ice (K-1)
-	double mu_visc = 0.0;                    // Water ice viscosity (cgs)
+	double mu_visc = 0.0;                // Water ice viscosity (cgs)
 	double cp1 = 0.0;                    // Heat capacity of H2O ice (erg g-1 K-1)
 	double g1 = 0.0;                     // Gravitational acceleration for calculation of Ra in ice (cgs)
 	double Nu0 = 0.0;                    // Critical Nusselt number = Ra_c^0.25
 	double Crack_size_avg = 0.0;         // Average crack size in cracked layer
 	double Tliq = 0.0;                   // Melting temperature of an ammonia-water mixture (K)
-	double rhoRockth = rhoDry*gram;     // Density of dry rock (g/cm3)
+	double rhoRockth = rhoDry*gram;      // Density of dry rock (g/cm3)
 	double rhoHydrth = rhoHydr*gram;     // Density of hydrated rock (g/cm3)
 	double rhoH2osth = rhoH2os*gram;	 // Density of water ice (g/cm3)
 	double rhoAdhsth = rhoAdhs*gram;	 // Density of ammonia dihydrate ice (g/cm3)
@@ -153,7 +155,14 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double Wtide_tot = 0.0;              // Tidal heating rate in all of the ice (erg s-1)
 	double aorb = aorb_init;             // Moon orbital semi-major axis (cm)
 	double eorb = eorb_init;             // Moon orbital eccentricity
-	double m_p = 0.0;                    // Moon mass
+	double d_aorb_pl = 0.0;              // Change rate in moon orbital semi-major axis due to interactions with primary (cm s-1)
+	double d_aorb_ring = 0.0;            // Change rate in moon orbital semi-major axis due to interactions with ring (cm s-1)
+	double d_eorb = 0.0;                 // Change rate in moon orbital eccentricity (s-1)
+	double m_p = 0.0;                    // Moon mass (g)
+	double ringTorque = 0.0;             // Torque exerted by ring on moon (g cm2 s-2)
+	double ringSurfaceDensity = Mring/(PI_greek*(aring_out*aring_out-aring_in*aring_in)); // Ring surface density (g cm-2)
+	double alpha_Lind = 0.0;             // Dissipation of Lindblad resonance in rings (no dim)
+	if (ringSurfaceDensity <= 2.0) alpha_Lind = 2.0e-5; else alpha_Lind = 1.0e-4; // Mostly viscosity and pressure if surf density²2 g cm-2, or self-gravity if surf density~50 g cm-2
 	double Crack_depth[2];				 // Crack_depth[2] (km), output
 	double WRratio[2];					 // WRratio[2] (by mass, no dim), output
 	double Heat[6];                      // Heat[6] (erg), output
@@ -454,11 +463,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	create_output(path, "Outputs/Tidal_rates.txt");
 	create_output(path, "Outputs/Orbit.txt");
 
-    r_p = r_p*km2cm;                                                     // Convert planet radius to cm
-    m_p = rho_p*4.0/3.0*PI_greek*r_p*r_p*r_p;
-    tzero = tzero*Myr2sec;                                               // Convert tzero to s
-    fulltime = fulltime*Myr2sec;                                         // Convert fulltime to s
-    dtoutput = dtoutput*Myr2sec;                                         // Convert increment between outputs in s
+    m_p = rho_p*4.0/3.0*PI_greek*r_p*r_p*r_p; // Compute object mass from radius and density
 
     // Determine the core vs. ice shell content from bulk density.
 	  // Densities of liquid water and ammonia are chosen to conserve mass and volume,
@@ -934,16 +939,55 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			for (ir=0;ir<NR;ir++) Tide_output[ir][1] = Tide_output[ir][1] + Qth[ir]/1.0e7;
 
 			// Update orbital parameters (Barnes et al. 2008):
-			if (eccdecay == 1 && Wtide_tot > 0.0) {
-				double d_eorb = 0.0;
-				d_eorb = dtime*(Wtide_tot*aorb / (Gcgs*Mprim*m_p*eorb) - 171.0/16.0*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p/Qprim*pow(aorb,-6.5)*eorb);
-				if (d_eorb < eorb) eorb = eorb - d_eorb;
-				else {
-					d_eorb = eorb;
-					Wtide_tot = (d_eorb/dtime + 171.0/16.0*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p/Qprim*pow(aorb,-6.5)*eorb) * Gcgs*Mprim*m_p*eorb / aorb;
+			if (orbevol == 1 && Wtide_tot > 0.0) {
+
+				// Update eccentricity
+				d_eorb = - Wtide_tot*aorb / (Gcgs*Mprim*m_p*eorb)                                // Dissipation inside moon, decreases its eccentricity
+					   + 171.0/16.0*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p/Qprim*pow(aorb,-6.5)*eorb; // Dissipation inside planet, increases moon's eccentricity
+				if (-dtime*d_eorb < eorb) eorb = eorb + dtime*d_eorb;
+				else { // Set eccentricity to zero at which point there is no more dissipation, update Wtide_tot accordingly
+					d_eorb = -eorb/dtime;
+					Wtide_tot = (- d_eorb + 171.0/16.0*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p/Qprim*pow(aorb,-6.5)*eorb) * Gcgs*Mprim*m_p*eorb / aorb;
 					eorb = 0.0;
 				}
-				aorb = aorb - dtime*(2.0*Wtide_tot*aorb*aorb / (Gcgs*Mprim*m_p) - 4.5*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p/Qprim*pow(aorb,-5.5));
+
+				// Update semimajor axis
+				d_aorb_pl = - 2.0*Wtide_tot*aorb*aorb / (Gcgs*Mprim*m_p)                // Dissipation inside moon, shrinks its orbit
+					      + 4.5*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p/Qprim*pow(aorb,-5.5); // Dissipation inside planet, expands moon's orbit
+
+				if (ring) { // Dissipation in the rings, expands moon's orbit if exterior to rings (Meyer-Vernet & Sicardy 1987, http://dx.doi.org/10.1016/0019-1035(87)90011-X)
+					ringTorque = 0.0;
+					// 1- Find inner Lindblad resonances that matter (kmin, kmax)
+					kmin = floor(1.0 / (1.0-pow(aring_in/aorb,1.5))) + 1;
+					kmax = floor(1.0 / (1.0-pow(aring_out/aorb,1.5)));
+
+					if (kmin <= kmax && kmax <= floor(1.0/sqrt(alpha_Lind))) {
+						for (i=kmin;i<=kmax;i++) ringTorque = ringTorque + PI_greek*PI_greek/3.0*ringSurfaceDensity*Gcgs*m_p*m_p*i*(i-1)*aorb/Mprim;
+					}
+					d_aorb_ring = 2.0*ringTorque/m_p*sqrt(aorb/(Gcgs*Mprim)); // Charnoz et al. (2011) eq. 2, http://dx.doi.org/10.1016/j.icarus.2011.09.017
+				}
+				if (-dtime*(d_aorb_pl + d_aorb_ring) < aorb) aorb = aorb + dtime*(d_aorb_pl+d_aorb_ring);
+				else {
+		    		FILE *fout;
+
+		    		// Turn working directory into full file path by moving up two directories to IcyDwarf (e.g., removing
+		    		// "Release/IcyDwarf" characters) and specifying the right path end.
+
+		    		char *title = (char*)malloc(1024*sizeof(char));       // Don't forget to free!
+		    		title[0] = '\0';
+		    		if (v_release == 1) strncat(title,path,strlen(path)-16);
+		    		else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+		    		strcat(title,"Outputs/Thermal.txt");
+
+		    		fout = fopen(title,"a");
+		    		if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
+		    		else fprintf(fout,"Thermal: itime=%d, -dtime*d_aorb_pl = %g - -dtime*d_aorb_ring (= %g) > aorb = %g, moon crashes into planet\n", itime, -dtime*d_aorb_pl, -dtime*d_aorb_ring, aorb);
+		    		fclose (fout);
+		    		free (title);
+		    		exit(0);
+				}
+
+				// Update mean motion and orbital frequency accordingly
 				norb = sqrt(Gcgs*Mprim/(aorb*aorb*aorb));
 				omega_tide = norb;
 			}
