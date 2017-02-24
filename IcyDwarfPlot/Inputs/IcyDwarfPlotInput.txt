@@ -1,4 +1,4 @@
-ICY DWARF PLOT v16.x INPUT FILE
+ICY DWARF PLOT v17.x INPUT FILE
 
 1 for Yes, 0 for No
 -------------------------------
@@ -9,19 +9,19 @@ Messages?                     1
 -------------------------------
 Planet parameters
 -------------------------------
-Radius (km)                   198.2
+Radius (km)                   561.4
 -------------------------------
 Grid
 -------------------------------
 Number of grid zones          200
-Total time of sim (Myr)       5000
+Total time of sim (Myr)       4000
 Output every (Myr)            10
 -------------------------------
 Subroutines
 -------------------------------
 Thermal plot
 	IcyDwarf output       Thermal.txt
-	Max temp (K; 0=auto)  500
+	Max temp (K; 0=auto)  1000
 Geochemistry plot
 	Temperature           0 150 50
 	Pressure              0 1000 250

@@ -59,10 +59,10 @@ int WaterRock (char path[1024], double T, double P, double WR, double *fracKleac
 	if (v_release == 1) strncat(dbase,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(dbase,path,strlen(path)-18);
 	else strncat(dbase,path,strlen(path)-16);
-	strcat(dbase,"PHREEQC-3.1.2/core6.dat");
+	strcat(dbase,"PHREEQC-3.1.2/core9.dat");
 
 	strncat(infile,dbase,strlen(dbase)-9);
-	strcat(infile,"io/inputIcyDwarf");
+	strcat(infile,"io/PHREEQCinput");
 
 	LoadMolMass (path, &molmass); // TODO Load it once before the time loop starts to avoid reading the file at each iteration
 
@@ -79,8 +79,10 @@ int WaterRock (char path[1024], double T, double P, double WR, double *fracKleac
 	FMQ = -pH + 0.25*(logfO2+logKO2H2O);
 	// printf("FMQ pe is %g at T=%g C, P=%g bar, and pH %g\n",FMQ,T,P,pH);
 
-	// printf("WR is %g<0.5, assuming WR=0.5\n",WR);
-	if (WR < 0.5) WR = 0.5; // To avoid high ionic strengths. We assume the liquid interacts only with rock surface, so WR>bulk WR
+	if (WR < 0.5) {
+		printf("WR is %g<0.5, assuming WR=0.5\n",WR);
+		WR = 0.5; // To avoid high ionic strengths. We assume the liquid interacts only with rock surface, so WR>bulk WR
+	}
 
 	WritePHREEQCInput(infile, T, P, pH, FMQ, WR, &tempinput);
 

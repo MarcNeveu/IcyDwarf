@@ -131,14 +131,12 @@ int main(int argc, char *argv[]){
 
 	// Initialize the R environment. We do it here, in the main loop, because this can be done only once.
 	// Otherwise, the program crashes at the second initialization.
-
 	setenv("R_HOME","/Library/Frameworks/R.framework/Resources",1);     // Specify R home directory
 	Rf_initEmbeddedR(argc, argv);                                       // Launch R
 	CHNOSZ_init(1);                                                     // Launch CHNOSZ
 
 	// Get current directory. Works for Mac only! To switch between platforms, see:
 	// http://stackoverflow.com/questions/1023306/finding-current-executables-path-without-proc-self-exe
-
 	char path[1024];
 	unsigned int size = sizeof(path);
 	path[0] = '\0';

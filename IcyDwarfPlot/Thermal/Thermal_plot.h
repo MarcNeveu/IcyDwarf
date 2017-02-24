@@ -423,13 +423,13 @@ int StructurePlot (SDL_Renderer* renderer, thermalout **thoutput, int t, int NR,
 	SDL_RenderCopy(renderer, DryRock_tex, &DryRock_clip, &DryRock_dest);
 
 	// Liquid
-	for (r=DryRock_x+DryRock_w;r<NR-1;r++) {
+	for (r=0;r<NR-1;r++) {
 		if (thoutput[r][t].mh2ol > 0.0) {
 			Liquid_x = r;
 			break;
 		}
 	}
-	for (r=DryRock_x+DryRock_w;r<NR-1;r++) {
+	for (r=Liquid_x;r<NR-1;r++) {
 		if (thoutput[r][t].mh2ol > 0.0 && thoutput[r+1][t].mh2ol <= 0.0) {
 			Liquid_w = r - Liquid_x;
 			break;
@@ -442,18 +442,33 @@ int StructurePlot (SDL_Renderer* renderer, thermalout **thoutput, int t, int NR,
 	SDL_RenderCopy(renderer, Liquid_tex, &Liquid_clip, &Liquid_dest);
 
 	// Ice
-	for (r=DryRock_x+DryRock_w-1;r<NR-1;r++) {
-		if (DryRock_w > 0 && thoutput[r-1][t].mh2os+thoutput[r-1][t].madhs == 0.0 && thoutput[r][t].mh2os+thoutput[r][t].madhs > 0.0) {
+	for (r=1;r<NR-1;r++) {
+		if (thoutput[r-1][t].mh2os+thoutput[r-1][t].madhs == 0.0 && thoutput[r][t].mh2os+thoutput[r][t].madhs > 0.0) {
 			Ice_x = r;
 			break;
 		}
 	}
-	for (r=DryRock_x+DryRock_w;r<NR-1;r++) {
-		if (thoutput[r][t].mh2os+thoutput[r][t].madhs > 0.2*dM[t][r]
-		    && thoutput[r+1][t].mh2os+thoutput[r+1][t].madhs <= thoutput[r][t].mh2os+thoutput[r][t].madhs) {
-			Ice_w = r - Ice_x;
-			break;
+
+	if (thoutput[NR-1][t].mh2os + thoutput[NR-1][t].madhs > 0.2*dM[t][r]) Ice_w = NR-Ice_x;
+	else {
+		for (r=Ice_x;r<NR-1;r++) {
+			if (thoutput[r][t].mh2os+thoutput[r][t].madhs > 0.2*dM[t][r]
+				&& thoutput[r+1][t].mh2os+thoutput[r+1][t].madhs <= thoutput[r][t].mh2os+thoutput[r][t].madhs) {
+				Ice_w = r - Ice_x;
+				printf("%d %d\n",r,Ice_w);
+				break;
+			}
 		}
+
+		// Crust
+		for (r=0;r<NR-1;r++) {
+			if (thoutput[r][t].mrock > 0.0 && thoutput[r][t].mh2os > 0.0 && thoutput[r][t].madhs > 0.0
+					&& thoutput[r][t].mh2ol <= 0.0 && thoutput[r][t].mnh3l <= 0.0) {
+				Crust_x = r;
+				break;
+			}
+		}
+		Crust_w = NR - r;
 	}
 	SDL_QueryTexture(Ice_tex, NULL, NULL, &Ice_clip.w, &Ice_clip.h);
 	Ice_clip.x = 0, Ice_clip.y = 0;
@@ -461,15 +476,6 @@ int StructurePlot (SDL_Renderer* renderer, thermalout **thoutput, int t, int NR,
 	Ice_dest.w = floor((double) Ice_w/(double) NR*(double) temp_time_dilation.w)+1, Ice_dest.h = temp_time_dilation.h;
 	SDL_RenderCopy(renderer, Ice_tex, &Ice_clip, &Ice_dest);
 
-	// Crust
-	for (r=DryRock_x+DryRock_w;r<NR-1;r++) {
-		if (thoutput[r][t].mrock > 0.0 && thoutput[r][t].mh2os > 0.0 && thoutput[r][t].madhs > 0.0
-				&& thoutput[r][t].mh2ol <= 0.0 && thoutput[r][t].mnh3l <= 0.0) {
-			Crust_x = r;
-			break;
-		}
-	}
-	Crust_w = NR - r;
 	SDL_QueryTexture(Crust_tex, NULL, NULL, &Crust_clip.w, &Crust_clip.h);
 	Crust_clip.x = 0, Crust_clip.y = 0;
 	Crust_dest.x = temp_time_dilation.x + floor((double) Crust_x/(double) NR*(double) temp_time_dilation.w), Crust_dest.y = temp_time_dilation.y;
@@ -587,11 +593,11 @@ int UpdateDisplaysThermal(SDL_Renderer* renderer, SDL_Texture* background_tex, c
 	double percent = 0.0; // % of history, 4.56 Gyr = 100%
 	char nb[10];
 
-	SDL_Texture* elapsed_time = NULL;                    // Time elapsed
-	SDL_Texture* elapsed_percent = NULL;                  // % history elapsed
+	SDL_Texture* elapsed_time = NULL;    // Time elapsed
+	SDL_Texture* elapsed_percent = NULL; // % history elapsed
 
-	SDL_Rect progress_bar_clip;        // Section of the image to clip
-	SDL_Rect progress_bar_dilation;    // Resized and repositioned clip
+	SDL_Rect progress_bar_clip;          // Section of the image to clip
+	SDL_Rect progress_bar_dilation;      // Resized and repositioned clip
 	SDL_Rect value_time_clip;
 	SDL_Rect value_time_dilation;
 
