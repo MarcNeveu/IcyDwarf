@@ -178,6 +178,42 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 	}
 	alpha = SDL_MapRGBA(value_time->format, 255, 255, 255, 0);   // r,g,b,alpha 0 to 255. Alpha of 0 is transparent
 
+	// Print out radii over time
+	double r_core = 0.0;
+	double r_ocean = 0.0;
+	double r_ice = 0.0;
+	double r_crust = 0.0;
+
+	printf("Time \t Core (km) \t Ocean (km) \t Ice (km)\n");
+	for (t=0;t<NT_output;t++) {
+		r_core = 0.0;
+		r_ocean = 0.0;
+		r_ice = thoutput[NR-1][t].radius;
+		r_crust = r_ice;
+		// Find r_core
+		for (r=0;r<NR;r++) {
+			if (thoutput[r][t].mrock == 0.0) {
+				r_core = thoutput[r][t].radius;
+				break;
+			}
+		}
+		// Find r_ocean
+		for (r=0;r<NR-1;r++) {
+			if (thoutput[r][t].mh2ol >= 0.0 && thoutput[r+1][t].mh2ol == 0.0) {
+				r_ocean = thoutput[r][t].radius;
+				break;
+			}
+		}
+		// Find r_ice
+		for (r=0;r<NR-1;r++) {
+			if (thoutput[r][t].mrock == 0.0 && thoutput[r+1][t].mrock >= 0.0) {
+				r_ocean = thoutput[r][t].radius;
+				break;
+			}
+		}
+		printf("%g \t %g \t %g \t %g \n", (double)t/100.0, r_core, r_ocean, r_ice);
+	}
+
 	//-------------------------------------------------------------------
 	//              Set static elements using thermal output
 	//-------------------------------------------------------------------

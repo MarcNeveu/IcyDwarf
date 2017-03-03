@@ -14,7 +14,7 @@
 #define ICYDWARF_H_
 
 #define v_release 0                                          // 0 for Debug, 1 for Release
-#define cmdline 1										   // If execution from terminal as "./IcyDwarfPlot",
+#define cmdline 0										   // If execution from terminal as "./IcyDwarfPlot",
                                                            // overwritten by release.
 // Physical parameters and constants
 #define G 6.67e-11                                         // Gravitational constant (SI)

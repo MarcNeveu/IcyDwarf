@@ -33,7 +33,7 @@
 //-------------------------------------------------------------------
 
 #define v_release 0                                        // 0 for Debug, 1 for Release
-#define cmdline 1										   // If execution from terminal as "./IcyDwarf",
+#define cmdline 0										   // If execution from terminal as "./IcyDwarf",
                                                            // overwritten by v_release.
 //-------------------------------------------------------------------
 // PHYSICAL AND MATHEMATICAL CONSTANTS
@@ -106,7 +106,6 @@
 #define kapadhs 1.2e5                                      // Thermal conductivity of ammonia dihydrate ice (cgs)
 #define kaph2ol 0.61e5                                     // Thermal conductivity of liquid water (cgs)
 #define kapnh3l 0.022e5                                    // Thermal conductivity of liquid ammonia (cgs)
-#define Ra_cr 30.0                                         // Critical Rayleigh number for convection of aqueous fluid in a porous medium (Lapwood 1948)
 #define alfh2oavg 1.0e-3                                   // Average expansivity of water at relevant T and P (K-1)
 #define f_mem 0.75                                         // Memory of old hydration state, ideally 0, 1 = no change
 
@@ -499,6 +498,10 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 
+			fseek(f,24,SEEK_CUR);   // Core ice and/or liquid fraction
+			scan = fscanf(f, "%lg", &input[i]), i++;
+			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+
 			fseek(f,24,SEEK_CUR);   // Start differentiated?
 			scan = fscanf(f, "%lg", &input[i]), i++;
 			if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
@@ -679,6 +682,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 		printf("\t Degree of hydration \t %g\n",input[i]), i++;
 		printf("\t Hydrate/dehydrate? \t %g\n",input[i]), i++;
 		printf("\t Fine rock fraction \t %g\n",input[i]), i++;
+		printf("\t Core ice/liq fraction \t %g\n",input[i]), i++;
 		printf("\t Start differentiated? \t %g\n",input[i]), i++;
 		printf("\t Tidal rhe 2Ma 3Bu 4An \t %g\n",input[i]), i++;
 		printf("\t Tidal heating x10? \t %g\n",input[i]), i++;

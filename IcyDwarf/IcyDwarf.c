@@ -54,6 +54,7 @@ int main(int argc, char *argv[]){
     double tzero = 0.0;                // Time zero of the sim (Myr)
     double Hydr_init = 0.0;            // Initial degree of hydration of the rock (0=fully dry, 1=fully hydrated)
     double Xfines = 0.0;               // Mass or volume fraction of rock in fine grains that don't settle into a core (0=none, 1=all)
+    double Xpores = 0.0;               // Mass of volume fraction of core occupied by ice and/or liquid (i.e., core porosity filled with ice and/or liquid)
     int chondr = 0;                    // Nature of the chondritic material incorporated (3/30/2015: default=CI or 1=CO), matters
                                        // for radiogenic heating, see Thermal-state()
     double porosity = 0.0;             // Bulk porosity
@@ -112,10 +113,10 @@ int main(int argc, char *argv[]){
 	int i = 0;
 	int j = 0;
 
-	int n_inputs = 66;
+	int n_inputs = 67;
 
 	double *input = (double*) malloc(n_inputs*sizeof(double));
-	if (input == NULL) printf("IcyDwarf: Not enough memory to create input[28]\n");
+	if (input == NULL) printf("IcyDwarf: Not enough memory to create input[67]\n");
 	for (i=0;i<n_inputs;i++) input[i] = 0.0;
 
 	//-------------------------------------------------------------------
@@ -124,7 +125,7 @@ int main(int argc, char *argv[]){
 
 	printf("\n");
 	printf("-------------------------------------------------------------------\n");
-	printf("IcyDwarf v17.2\n");
+	printf("IcyDwarf v17.3\n");
 	if (v_release == 1) printf("Release mode\n");
 	else if (cmdline == 1) printf("Command line mode\n");
 	printf("-------------------------------------------------------------------\n");
@@ -182,6 +183,7 @@ int main(int argc, char *argv[]){
 	Hydr_init = input[i]; i++;
 	hy = input[i]; i++;
 	Xfines = input[i]; i++;
+	Xpores = input[i]; i++;
 	startdiff = input[i]; i++;
 	tidalmodel = input[i]; i++;
 	tidetimesten = input[i]; i++;
@@ -237,7 +239,7 @@ int main(int argc, char *argv[]){
 
 	if (calculate_thermal == 1) {
 		printf("Running thermal evolution code...\n");
-		Thermal(argc, argv, path, NR, r_p, rho_p, rhoHydrRock, rhoDryRock, warnings, msgout, nh3, salt, Xhydr, Xfines, tzero, Tsurf,
+		Thermal(argc, argv, path, NR, r_p, rho_p, rhoHydrRock, rhoDryRock, warnings, msgout, nh3, salt, Xhydr, Xfines, Xpores, tzero, Tsurf,
 				Tinit, timestep, total_time, output_every, crack_input, crack_species, chondr, moon, aorb, eorb, Mprim, Rprim, Qprim,
 				ring, Mring, aring_in, aring_out, porosity, startdiff, orbevol, tidalmodel, tidetimesten, hy);
 		printf("\n");

@@ -11,7 +11,7 @@ Planet parameters
 -------------------------------
 Moon?                         1
 	Orbital a (km)        160000
-	Orbital e             0.002
+	Orbital e             0.022
 	Orbital e decay?      1
 	Host planet mass (kg) 5.68e26
 	Planet radius (km)    58232
@@ -20,15 +20,15 @@ Ring?                         1
 	Ring mass (kg)        7e19
 	Ring inner edge (km)  92000
 	Ring outer edge (km)  140000
-Density, 0 porosity (g cm-3)  1.478
-Porosity                      0.5
-Hydr. rock density (g cm-3)   2.9
+Density, 0 porosity (g cm-3)  1.237
+Porosity                      0.2
+Hydr. rock density (g cm-3)   2.3
 Dry rock density (g cm-3)     3.8 
 Chondrite type? 1:CO, otw CI  0
-Radius (km)                   561.4
+Radius (km)                   763.5
 Ammonia w.r.t. water          0
 Briny liquid? y=1, n=0        0
-Surface temperature (K)       70
+Surface temperature (K)       72
 -------------------------------
 Grid
 -------------------------------
@@ -45,6 +45,7 @@ Run thermal?                  1
 	Degree of hydration   1
 	Hydrate/dehydrate?    1
 	Fine rock fraction    0
+	Core ice/liq fraction 0.3
 	Start differentiated? 1
 	Tidal rhe 2Ma 3Bu 4An 4
 	Tidal heating x10?    1

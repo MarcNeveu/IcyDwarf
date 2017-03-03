@@ -25,7 +25,7 @@
 #include "../IcyDwarf.h"
 
 int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p, double rhoHydr, double rhoDry,
-		int warnings, int msgout, double Xp, double Xsalt, double *Xhydr, double Xfines, double tzero, double Tsurf,
+		int warnings, int msgout, double Xp, double Xsalt, double *Xhydr, double Xfines, double Xpores, double tzero, double Tsurf,
 		double Tinit, double dtime, double fulltime, double dtoutput, int *crack_input, int *crack_species, int chondr,
 		int moon, double aorb_init, double eorb_init, double Mprim, double Rprim, double Qprim, int ring, double Mring,
 		double aring_in, double aring_out, double porosity, int startdiff, int orbevol, int tidalmodel, int tidetimesten, int hy);
@@ -44,7 +44,7 @@ int decay(double t, double tzero, double **Qth, int NR, int chondr, double fracK
 
 int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double **dM, double **dE, double **Mrock, double **Mh2os, double **Madhs,
 		double **Mh2ol, double **Mnh3l, double **Vrock, double **Vh2os, double **Vadhs, double **Vh2ol, double **Vnh3l, double **Erock,
-		double **Eh2os, double **Eslush, double rhoAdhsth, double rhoH2olth, double rhoNh3lth, double Xfines);
+		double **Eh2os, double **Eslush, double rhoAdhsth, double rhoH2olth, double rhoNh3lth, double Xfines, double Xpores);
 
 int dehydrate(double T, double dM, double dVol, double *Mrock, double *Mh2ol, double *Vrock,
 		double *Vh2ol, double rhoRockth, double rhoHydrth, double rhoH2olth, double *Xhydr);
@@ -53,6 +53,11 @@ int hydrate(double T, double **dM, double *dVol, double **Mrock, double **Mh2os,
 		double **Mnh3l, double **Vrock, double **Vh2os, double **Vh2ol, double **Vnh3l, double rhoRockth,
 		double rhoHydrth, double rhoH2osth, double rhoH2olth, double rhoNh3lth, double **Xhydr, int ir, int ircore,
 		int irice, int NR);
+
+int convect(int ir1, int ir2, double *T, double *r, int NR, double *Pressure, double *M, double *dVol, double *Vrock,
+		double *Vh2ol, double *pore, double *Mh2ol, double *Mnh3l, double *Xhydr, double **kappa, double **Nu, double *Crack_size,
+		double rhofluid, double rhoRockth, double rhoHydrth, double fineMassFrac, double fineVolFrac, int ircore,
+		int irdiff, int **circ, double creep_rate, int cvmode);
 
 double viscosity(double T, double Mh2ol, double Mnh3l);
 
@@ -74,7 +79,7 @@ long double complex y2p(long double complex x, int mod);
 long double complex y2pp(long double complex x, int mod);
 
 int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p, double rhoHydr, double rhoDry,
-		int warnings, int msgout, double Xp, double Xsalt, double *Xhydr, double Xfines, double tzero, double Tsurf,
+		int warnings, int msgout, double Xp, double Xsalt, double *Xhydr, double Xfines, double Xpores, double tzero, double Tsurf,
 		double Tinit, double dtime, double fulltime, double dtoutput, int *crack_input, int *crack_species, int chondr,
 		int moon, double aorb_init, double eorb_init, double Mprim, double Rprim, double Qprim, int ring, double Mring,
 		double aring_in, double aring_out, double porosity, int startdiff, int orbevol, int tidalmodel, int tidetimesten, int hy) {
@@ -98,6 +103,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	int iriceold = 0;
 	int ircore = 0;                      // Radius of the core
 	int ircrack = 0;                     // Inner radius of the continuously cracked rock layer in contact with the ocean
+	int irin = 0;                        // Inner convection radius in a core that contains melted ice
+	int irout = 0;                       // Outer convection radius in a core that contains melted ice
 	int structure_changed = 0;           // Switch to see if we need to call separate()
     int thermal_mismatch = 0;            // Switch for grain thermal expansion/contraction mismatch effects
 	int pore_water_expansion = 0;        // Switch for pore water expansion effects
@@ -109,7 +116,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double Heat_serp = 0.0;
 	double Heat_dehydr = 0.0;
 	double realtime = 0.0;               // Time elapsed (s)
-	double frockp = 0.0;                 // Fraction of rock in the planet by mass
+	double frockpm = 0.0;                 // Fraction of rock in the planet by mass
+	double frockpv = 0.0;                 // Fraction of rock in the planet by volume
 	double e1 = 0.0;                     // Temporary specific energy (erg/g)
 	double frock = 0.0;                  // Rock mass fraction
 	double fh2os = 0.0;                  // Water ice mass fraction
@@ -118,21 +126,11 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double fnh3l = 0.0;                  // Liquid ammonia mass fraction
 	double temp1 = 0.0;                  // Temporary temperature (K)
 	double Xhydr_temp = 0.0;             // Temporary hydration index
-	double kap1 = 0.0;                   // Temporary thermal conductivity (erg/s/cm/K)
-	double dr = 0.0;                     // Physical thickness of ice convection zone (cm)
 	double dr_grid = 0.0;                // Physical thickness of a shell (cm)
 	double Phi = 0.0;                    // Gravitational potential energy (erg)
 	double Phiold = 0.0;
 	double ravg = 0.0;                   // Average radius of a layer (cm)
 	double Volume1 = 0.0;                // Temporary volume for gravitational energy calculation (cm3)
-	double Ra = 0.0;                     // Rayleigh number
-	double dT = 0.0;                     // Temperature difference across convective region (K)
-	double alf1 = 0.0;                   // Thermal expansion coefficient of H2O ice (K-1)
-	double mu_visc = 0.0;                // Water ice viscosity (cgs)
-	double cp1 = 0.0;                    // Heat capacity of H2O ice (erg g-1 K-1)
-	double g1 = 0.0;                     // Gravitational acceleration for calculation of Ra in ice (cgs)
-	double Nu0 = 0.0;                    // Critical Nusselt number = Ra_c^0.25
-	double Crack_size_avg = 0.0;         // Average crack size in cracked layer
 	double Tliq = 0.0;                   // Melting temperature of an ammonia-water mixture (K)
 	double rhoRockth = rhoDry*gram;      // Density of dry rock (g/cm3)
 	double rhoHydrth = rhoHydr*gram;     // Density of hydrated rock (g/cm3)
@@ -143,8 +141,6 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double rhoIce = 0.0;                 // Density of the bulk ice (g/cm3)
 	double Mliq = 0.0;                   // Mass of liquid in the planet (g)
 	double Mcracked_rock = 0.0;          // Mass of cracked rock in the planet (g)
-	double Vliq = 0.0;                   // Volume of liquid (cm3)
-	double Vcracked = 0.0;               // Volume of cracked rock (cm3)
 	double fineMassFrac = 0.0;           // Mass fraction of fines (no dim)
 	double fineVolFrac = 0.0;            // Volume fraction of fines (no dim)
 	double fracKleached = 0.0;           // Fraction of K radionuclide leached (no dim)
@@ -472,17 +468,23 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
     rhoNh3lth = (1.0/rhoH2olth) + (1.0/rhoAdhsth - 1.0/rhoH2osth) / Xc;  // Slush mass balance
     rhoNh3lth = 1.0/rhoNh3lth;
     rhoIce = 1.0 / ((Xp/Xc)/rhoAdhsth + (1.0-Xp/Xc)/rhoH2osth);          // Bulk ice density
-    frockp = (1.0-rhoIce/rho_p) / (1.0-rhoIce/(Xhydr[0]*rhoHydrth+(1.0-Xhydr[0])*rhoRockth));
+    frockpm = (1.0-rhoIce/rho_p) / (1.0-rhoIce/(Xhydr[0]*rhoHydrth+(1.0-Xhydr[0])*rhoRockth));
+    frockpv = frockpm*rho_p/(Xhydr[0]*rhoHydrth+(1.0-Xhydr[0])*rhoRockth);
     dr_grid = r_p/((double) NR);
+
+    if (Xpores > 1.0-frockpv) {
+    	printf("Rocky core liquid/ice fraction higher (%g) than 1 - planet rock volume fraction %g.\n", Xpores, frockpv);
+    	exit(0);
+    }
 
     for (ir=0;ir<NR;ir++) {
     	r[ir+1] = r[ir] + dr_grid;
     	dVol[ir] = 4.0/3.0*PI_greek*(r[ir+1]*r[ir+1]*r[ir+1] - r[ir]*r[ir]*r[ir]);
     	dM[ir] = dVol[ir]*rho_p;
-    	Mrock[ir] = dM[ir]*frockp;
+    	Mrock[ir] = dM[ir]*frockpm;
     	Mrock_init[ir] = Mrock[ir];
-    	Mh2os[ir] = dM[ir]*(1.0-frockp)*(1.0-Xp/Xc);
-    	Madhs[ir] = dM[ir]*(1.0-frockp)*(Xp/Xc);
+    	Mh2os[ir] = dM[ir]*(1.0-frockpm)*(1.0-Xp/Xc);
+    	Madhs[ir] = dM[ir]*(1.0-frockpm)*(Xp/Xc);
 
     	// Init of the energies, prop to Cp(T) * deltaT. Because often Cp(T) prop to T, energies prop to T*deltaT.
     	Erock[ir] = Mrock[ir]*heatRock(Tinit);
@@ -541,7 +543,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	if (startdiff == 1) {
 		irdiff = NR-1;
 		separate(NR, &irdiff, &ircore, &irice, dVol, &dM, &dE, &Mrock, &Mh2os, &Madhs, &Mh2ol, &Mnh3l,
-				 &Vrock, &Vh2os, &Vadhs, &Vh2ol, &Vnh3l, &Erock, &Eh2os, &Eslush, rhoAdhsth, rhoH2olth, rhoNh3lth, Xfines);
+				 &Vrock, &Vh2os, &Vadhs, &Vh2ol, &Vnh3l, &Erock, &Eh2os, &Eslush, rhoAdhsth, rhoH2olth, rhoNh3lth, Xfines, Xpores);
 	}
 
 	//-------------------------------------------------------------------
@@ -824,7 +826,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 
     	if (irdiff > 0 && (irdiff != irdiffold || irice != iriceold || structure_changed == 1)) {
     		separate(NR, &irdiff, &ircore, &irice, dVol, &dM, &dE, &Mrock, &Mh2os, &Madhs, &Mh2ol, &Mnh3l,
-    				 &Vrock, &Vh2os, &Vadhs, &Vh2ol, &Vnh3l, &Erock, &Eh2os, &Eslush, rhoAdhsth, rhoH2olth, rhoNh3lth, Xfines);
+    				 &Vrock, &Vh2os, &Vadhs, &Vh2ol, &Vnh3l, &Erock, &Eh2os, &Eslush, rhoAdhsth, rhoH2olth, rhoNh3lth, Xfines, Xpores);
     	}
 
     	// Update Xhydr
@@ -1011,52 +1013,31 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		//       Convection in cracked layer (hydrothermal circulation)
 		//-------------------------------------------------------------------
 
-		Vcracked = 0.0;
-		Vliq = 0.0;
 		for (ir=0;ir<NR;ir++) circ[ir] = 0;
 
 		// Calculate fine volume fraction in liquid
-		fineMassFrac = 0.0; fineVolFrac = 0.0;
 		if (ircore < NR) {
-			fineMassFrac = Mrock[ircore+1]/(Mh2ol[ircore+1]+Mrock[ircore+1]);
+			fineMassFrac = Mrock[ircore+1]/(Mh2ol[ircore+1]+Mh2os[ircore+1]+Mrock[ircore+1]);
 			fineVolFrac = fineMassFrac*dM[ircore+1]/dVol[ircore+1]/(Xhydr[ircore+1]*rhoHydrth+(1.0-Xhydr[ircore+1])*rhoRockth);
 		}
-		Crack_size_avg = 0.0;
 
-		if ((ircrack < ircore && Mh2ol[ircore] > 0.0 && fineVolFrac < 0.64)) {
-			// Calculate Rayleigh number
-			for (ir=ircrack;ir<=ircore;ir++) Crack_size_avg = Crack_size_avg + Crack_size[ir];
-			Crack_size_avg = Crack_size_avg / (double) (ircore-ircrack);
-			if (Crack_size_avg == 0) Crack_size_avg = smallest_crack_size; // If hydration and dissolution cracking are not active, assume arbitrary crack size
-			jr = floor(((double)ircrack + (double)ircore)*0.5);
-			mu_visc = Pa2ba*viscosity(T[jr],Mh2ol[ircore],Mnh3l[ircore])/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // Mueller, S. et al. (2010) Proc Roy Soc A 466, 1201-1228.
-			dT = T[ircrack] - T[ircore];
-			dr = r[ircore+1] - r[ircrack+1];
-			kap1 = kappa[jr];
-			g1 = Gcgs*M[jr]/(r[jr+1]*r[jr+1]);
-			Ra = alfh2oavg*g1*dT
-					*(permeability*Crack_size_avg*Crack_size_avg/cm/cm)*dr
-					*((1.0-fineMassFrac)*ch2ol + fineMassFrac*(heatRock(T[jr]+2.0)-heatRock(T[jr]-2.0))*0.25)                  // For rock, cp = d(energy)/d(temp), here taken over 4 K surrounding T[jr]
-					*((1.0-fineMassFrac)*rhoH2olth + fineMassFrac*(Xhydr[ircore+1]*rhoHydrth+(1.0-Xhydr[ircore+1])*rhoRockth)) // Density
-					*((1.0-fineMassFrac)*rhoH2olth + fineMassFrac*(Xhydr[ircore+1]*rhoHydrth+(1.0-Xhydr[ircore+1])*rhoRockth)) // Squared
-					/ (kap1*mu_visc); // Phillips (1991)
-
-			if (Ra > Ra_cr) {
-				// Calculate volumes of liquid water and pore space to check if there is enough liquid to circulate
-				for (ir=ircrack;ir<ircore;ir++) Vcracked = Vcracked + dVol[ir]*pore[ir];
-				for (ir=ircore;ir<irdiff;ir++) Vliq = Vliq + Vh2ol[ir];
-
-				if (Vliq >= Vcracked) { // Circulation, modeled as enhanced effective thermal conductivity kap1
-					kap1 = rhoH2olth*ch2ol/pore[ircore-1]*(permeability*Crack_size_avg*Crack_size_avg/cm/cm)/mu_visc
-										*(Pressure[ircrack]-Pressure[ircore])*Pa2ba;
-					for (ir=ircrack;ir<ircore;ir++) {  // Capped at kap_hydro for numerical stability
-						if (kap1 < kap_hydro) kappa[ir] = kap1;
-						else kappa[ir] = kap_hydro;
-						circ[ir] = 1;
-					}
-				}
-			}
+		 // Find inner and outer radii of convective zone
+		irin = ircore; irout = ircore;
+		for (ir=0;ir<ircore;ir++) {
+			if (Mh2ol[ir] > 0.0) irin = ir;
+			break;
 		}
+		for (ir=irin;ir<ircore;ir++) {
+			if (Mh2ol[ir] == 0.0) irout = ir;
+			break;
+		}
+
+		if (irin < ircore) convect(irin, irout, T, r, NR, Pressure, M, dVol, Vrock, Vh2ol, pore, Mh2ol, Mnh3l, Xhydr, &kappa, &Nu,
+				Crack_size, rhoH2olth, rhoRockth, rhoHydrth, fineMassFrac, fineVolFrac, ircore, irdiff, &circ, creep_rate, 1);
+
+		if ((ircrack < ircore && Mh2ol[ircore] > 0.0 && fineVolFrac < 0.64)) convect(ircrack, ircore, T, r, NR, Pressure, M, dVol,
+				Vrock, Vh2ol, pore, Mh2ol, Mnh3l, Xhydr, &kappa, &Nu, Crack_size, rhoH2olth, rhoRockth, rhoHydrth, fineMassFrac,
+				fineVolFrac, ircore, irdiff, &circ, creep_rate, 1);
 
 		if (forced_hydcirc == 1) {
 			for (ir=0;ir<ircore;ir++) kappa[ir] = kap_hydro;
@@ -1074,32 +1055,9 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 			if (Mh2ol[ir] > 0.0) irice_cv = ir; // TODO 2% liquid minimum for liquid convection?
 		}
 
-		if (irice_cv >= ircore+2 && fineVolFrac < 0.64) {
-			jr = (int) (ircore+irice_cv)*0.5;
-			mu_visc = Pa2ba*viscosity(T[jr],Mh2ol[jr],Mnh3l[jr])/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // Mueller, S. et al. (2010) Proc Roy Soc A 466, 1201-1228.
-			dT = T[ircore] - T[irice_cv];
-			dr = r[irice_cv+1] - r[ircore+1];
-			kap1 = kappa[jr];
-			g1 = Gcgs*M[jr]/(r[jr+1]*r[jr+1]);
-			Ra = alfh2oavg*g1*dT*dr*dr*dr                                                                                    // Thermal expansion of rock is neglected
-					*((1.0-fineMassFrac)*ch2ol + fineMassFrac*(heatRock(T[jr]+2.0)-heatRock(T[jr]-2.0))*0.25)                // For rock, cp = d(energy)/d(temp), here taken over 4 K surrounding T[jr]
-					*((1.0-fineMassFrac)*rhoH2olth + fineMassFrac*(Xhydr[ircore+1]*rhoHydrth+(1.0-Xhydr[ircore+1])*rhoRockth)) // Density
-					*((1.0-fineMassFrac)*rhoH2olth + fineMassFrac*(Xhydr[ircore+1]*rhoHydrth+(1.0-Xhydr[ircore+1])*rhoRockth)) // Squared
-					/ (kap1*mu_visc);
-			if (Ra > 0.0)
-				Nu0 = pow((Ra/1707.762),0.25); // Ra_c given by http://home.iitk.ac.in/~sghorai/NOTES/benard/node15.html, see also Koschmieder EL (1993) Benard cells and Taylor vortices, Cambridge U Press, p. 20.
-
-			if (Nu0 > 1.0) {
-				for (jr=ircore;jr<irice_cv;jr++) {
-					Nu[jr] = Nu0;
-				}
-			}
-		}
-
-		for (ir=ircore;ir<irice;ir++) {
-			kappa[ir] = kappa[ir]*Nu[ir];
-			if (kappa[ir] > kap_slush) kappa[ir] = kap_slush;
-		}
+		if (irice_cv >= ircore+2 && fineVolFrac < 0.64) convect(ircore, irice_cv, T, r, NR, Pressure, M, dVol, Vrock, Vh2ol, pore,
+				Mh2ol, Mnh3l, Xhydr, &kappa, &Nu, Crack_size, rhoH2olth, rhoRockth, rhoHydrth, fineMassFrac, fineVolFrac, ircore,
+				irdiff, &circ, creep_rate, 2);
 
 		//-------------------------------------------------------------------
 		//                    Convection in H2O(s) layer
@@ -1111,47 +1069,9 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		if (irice > ircore) irice_cv = irice;
 		else irice_cv = ircore; // Case where there is no longer liquid: irice=0 (should =ircore but that crashes the code. 15/4/25: no longer true?)
 
-		fineMassFrac = 0.0; fineVolFrac = 0.0;
-		if (irdiff >= irice_cv+2 && fineVolFrac < 0.64) {
-			// Calculate fine volume fraction in ice
-			fineMassFrac = Mrock[irice_cv+1]/(Mh2os[irice_cv+1]+Mrock[irice_cv+1]);
-			fineVolFrac = fineMassFrac*dM[irice_cv+1]/dVol[irice_cv+1]/(Xhydr[irice_cv+1]*rhoHydrth+(1.0-Xhydr[irice_cv+1])*rhoRockth);
-			// Calculate Ra
-			jr = (int) (irice_cv+irdiff)/2;
-			alf1 = -0.5 + 6.0*(T[jr]-50.0)/200.0; // Not as in D09!
-			alf1 = alf1 * 1.0e-5;
-			cp1 = (1.0-fineMassFrac)*qh2o*T[jr] + fineMassFrac*(heatRock(T[jr]+2.0)-heatRock(T[jr]-2.0))*0.25; // For rock, cp = d(energy)/d(temp), here taken over 4 K surrounding T[jr]
-			kap1 = kappa[jr];                  // cgs
-
-			if (jr<NR-1) {
-				creep(T[jr], Pressure[jr], &creep_rate, 1.0-Vrock[jr]/dVol[jr], pore[jr], Xhydr[jr]);
-				mu_visc = Pa2ba*Pressure[jr]/(2.0*creep_rate);
-			}
-			else {
-				creep(T[NR-2], Pressure[NR-2], &creep_rate, 1.0-Vrock[NR-2]/dVol[NR-2], pore[NR-2], Xhydr[NR-2]);
-				mu_visc = Pa2ba*Pressure[NR-2]/(2.0*creep_rate);
-			}
-
-			dT = T[irice_cv] - T[irdiff];
-			dr = r[irdiff+1] - r[irice_cv+1];
-			g1 = Gcgs*M[jr]/(r[jr+1]*r[jr+1]);
-			Ra = alf1*g1*dT*dr*dr*dr*cp1
-					*((1.0-fineMassFrac)*rhoH2osth + fineMassFrac*(Xhydr[ircore+1]*rhoHydrth+(1.0-Xhydr[ircore+1])*rhoRockth))
-					*((1.0-fineMassFrac)*rhoH2osth + fineMassFrac*(Xhydr[ircore+1]*rhoHydrth+(1.0-Xhydr[ircore+1])*rhoRockth))
-					/ (kap1*mu_visc);
-			Nu0 = pow((Ra/1707.762),0.25);
-
-			if (Nu0 > 1.0) {
-				for (jr=irice_cv;jr<=irdiff;jr++) {
-					Nu[jr] = Nu0;
-				}
-			}
-		}
-
-		for (ir=irice_cv;ir<=irdiff;ir++) {
-			kappa[ir] = kappa[ir]*Nu[ir];
-			if (kappa[ir] > kap_ice_cv) kappa[ir] = kap_ice_cv;
-		}
+		if (irdiff >= irice_cv+2 && fineVolFrac < 0.64) convect(irice_cv, irdiff, T, r, NR, Pressure, M, dVol, Vrock, Vh2ol, pore,
+				Mh2ol, Mnh3l, Xhydr, &kappa, &Nu, Crack_size, rhoH2osth, rhoRockth, rhoHydrth, fineMassFrac, fineVolFrac, ircore,
+				irdiff, &circ, creep_rate, 3);
 
 		//-------------------------------------------------------------------
 		//              Calculate conductive fluxes everywhere
@@ -1932,7 +1852,7 @@ int decay(double t, double tzero, double **Qth, int NR, int chondr, double fracK
 
 int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double **dM, double **dE, double **Mrock, double **Mh2os, double **Madhs,
 		double **Mh2ol, double **Mnh3l, double **Vrock, double **Vh2os, double **Vadhs, double **Vh2ol, double **Vnh3l, double **Erock,
-		double **Eh2os, double **Eslush, double rhoAdhsth, double rhoH2olth, double rhoNh3lth, double Xfines){
+		double **Eh2os, double **Eslush, double rhoAdhsth, double rhoH2olth, double rhoNh3lth, double Xfines, double Xpores){
 
 	int ir = 0;
 	int jr = 0;
@@ -2010,9 +1930,7 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 		Volcell[ir] = 0.0;
 	}
 
-	for (jr=0;jr<=(*irdiff);jr++) {
-		Volcell[jr] = dVol[jr];
-	}
+	for (jr=0;jr<=(*irdiff);jr++) Volcell[jr] = dVol[jr];
 
 	//-------------------------------------------------------------------
 	//                         Fill up rocky core
@@ -2022,12 +1940,12 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 	(*ircore) = jr;
 	for (ir=0;ir<=(*irdiff);ir++) {
 
-		if (Vrocknew[jr] >= Volcell[jr] && (*Vrock)[ir] > 0.0) {
-			q = (Vrocknew[jr]-Volcell[jr]) / (*Vrock)[ir]; // Numerator = excess volume, Denominator = scaling factor for species moved, (1.0-Xfines) cancel out here
-			Vrocknew[jr] = Volcell[jr];
+		if (Vrocknew[jr] >= Volcell[jr]*(1.0-Xpores) && (*Vrock)[ir] > 0.0) {
+			q = (Vrocknew[jr]-Volcell[jr]*(1.0-Xpores)) / (*Vrock)[ir]; // Numerator = excess volume, Denominator = scaling factor for species moved, (1.0-Xfines) cancel out here
+			Vrocknew[jr] = Volcell[jr]*(1.0-Xpores);
 			Mrocknew[jr] = Mrocknew[jr] - q*(*Mrock)[ir];
 //			Erocknew[jr] = Erocknew[jr] - q*(*Erock)[ir];
-			Volcell[jr] = 0.0;
+			Volcell[jr] = Volcell[jr]*Xpores;
 			jr++;
 			(*ircore) = jr;
 			Vrocknew[jr] = q*(*Vrock)[ir];
@@ -2039,12 +1957,12 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 		Mrocknew[jr] = Mrocknew[jr] + (*Mrock)[ir]*(1.0 - Xfines);
 //		Erocknew[jr] = Erocknew[jr] + (*Erock)[ir]*(1.0 - Xfines);
 
-		if (Vrocknew[jr] >= Volcell[jr] && (*Vrock)[ir] > 0.0) {
-			q = (Vrocknew[jr]-Volcell[jr]) / (*Vrock)[ir]; // Numerator = excess volume, Denominator = scaling factor for species moved
-			Vrocknew[jr] = Volcell[jr];
+		if (Vrocknew[jr] >= Volcell[jr]*(1.0-Xpores) && (*Vrock)[ir] > 0.0) {
+			q = (Vrocknew[jr]-Volcell[jr]*(1.0-Xpores)) / (*Vrock)[ir]; // Numerator = excess volume, Denominator = scaling factor for species moved
+			Vrocknew[jr] = Volcell[jr]*(1.0-Xpores);
 			Mrocknew[jr] = Mrocknew[jr] - q*(*Mrock)[ir];
 //			Erocknew[jr] = Erocknew[jr] - q*(*Erock)[ir];
-			Volcell[jr] = 0.0;
+			Volcell[jr] = Volcell[jr]*Xpores;
 			jr++;
 			(*ircore) = jr;
 			Vrocknew[jr] = q*(*Vrock)[ir];
@@ -2080,8 +1998,10 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 	}
 
 	//-------------------------------------------------------------------
-	//                          Fill up slush layer
+	//     Fill up empty volume with slush, from the center outwards
 	//-------------------------------------------------------------------
+
+	if (Xpores > 0.0) jr = 0;
 
 	for (ir=0;ir<=(*irdiff);ir++) {
 
@@ -2146,8 +2066,10 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 	Volcell[*irice] = Volcell[*irice] - Vadhsnew[*irice] - Vh2olnew[*irice] - Vnh3lnew[*irice];
 
 	//-------------------------------------------------------------------
-	//                           Fill up ice layer
+	//     Fill up empty volume with ice, from the center outwards
 	//-------------------------------------------------------------------
+
+	if (Xpores > 0.0) jr = 0;
 
 	for (ir=0;ir<=(*irdiff);ir++) {
 
@@ -2421,6 +2343,107 @@ int hydrate(double T, double **dM, double *dVol, double **Mrock, double **Mh2os,
 	(*Xhydr)[ircore] = ((*Mrock)[ircore]/(*Vrock)[ircore] - rhoRockth) / (rhoHydrth - rhoRockth);
 	if (fabs((*Xhydr)[ircore]) < 1.0e-10) (*Xhydr)[ircore] = 0.0;  // Avoid numerical residuals
 	if (fabs((*Xhydr)[ircore]) > 1.0-1.0e-10) (*Xhydr)[ircore] = 1.0;
+
+	return 0;
+}
+
+/*--------------------------------------------------------------------
+ *
+ * Subroutine HydCirc
+ *
+ * Calculates the parameterized thermal conductivity in layers
+ * experiencing hydrothermal circulation, using the Rayleigh and
+ * Nusselt numbers.
+ *
+ *--------------------------------------------------------------------*/
+
+int convect(int ir1, int ir2, double *T, double *r, int NR, double *Pressure, double *M, double *dVol, double *Vrock,
+		double *Vh2ol, double *pore, double *Mh2ol, double *Mnh3l, double *Xhydr, double **kappa, double **Nu, double *Crack_size,
+		double rhofluid, double rhoRockth, double rhoHydrth, double fineMassFrac, double fineVolFrac, int ircore,
+		int irdiff, int **circ, double creep_rate, int cvmode) {
+
+	int ir = 0;
+	int jr = floor(((double)ir1 + (double)ir2)*0.5);
+
+	double dT = T[ir1] - T[ir2];         // Temperature difference across convective region (K)
+	double alf1 = 0.0;                   // Thermal expansion coefficient of H2O ice (K-1)
+	double mu_visc = 0.0;                // Water ice viscosity (cgs)
+	double cp1 = 0.0;                    // Heat capacity of H2O ice (erg g-1 K-1)
+	double g1 = Gcgs*M[jr]/(r[jr+1]*r[jr+1]); // Gravitational acceleration for calculation of Ra in ice (cgs)
+	double Nu0 = 0.0;                    // Critical Nusselt number = Ra_c^0.25
+	double Crack_size_avg = 0.0;         // Average crack size in cracked layer
+	double kap1 = (*kappa)[jr];          // Temporary thermal conductivity (erg/s/cm/K)
+	double dr = r[ir2+1] - r[ir1+1];     // Physical thickness of convection zone (cm)
+	double dr1 = 0.0;                    // Smallest dimension of convection medium (cm)
+	double Vliq = 0.0;                   // Volume of liquid (cm3)
+	double Vcracked = 0.0;               // Volume of cracked rock (cm3)
+	double Ra = 0.0;                     // Rayleigh number
+	double Ra_cr = 0.0;                  // Critical Rayleigh number
+
+	Ra = g1*dT*dr*pow((1.0-fineMassFrac)*rhofluid + fineMassFrac*(Xhydr[ircore+1]*rhoHydrth+(1.0-Xhydr[ircore+1])*rhoRockth),2)/kap1;
+
+	if (cvmode == 1) {
+		alf1 = alfh2oavg;
+		cp1 = ((1.0-fineMassFrac)*ch2ol + fineMassFrac*(heatRock(T[jr]+2.0)-heatRock(T[jr]-2.0))*0.25); // For rock, cp = d(energy)/d(temp), here taken over 4 K surrounding T[jr]
+		mu_visc = Pa2ba*viscosity(T[jr],Mh2ol[ir1],Mnh3l[ir1])/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // Mueller, S. et al. (2010) Proc Roy Soc A 466, 1201-1228.
+
+		for (ir=ir1;ir<=ir2;ir++) Crack_size_avg = Crack_size_avg + Crack_size[ir];
+		Crack_size_avg = Crack_size_avg / (double) (ir2-ir1);
+		if (Crack_size_avg == 0) Crack_size_avg = smallest_crack_size; // If hydration and dissolution cracking are not active, assume arbitrary crack size
+		dr1 = sqrt(permeability)*Crack_size_avg/cm;
+	}
+	else if (cvmode == 2) {
+		alf1 = alfh2oavg; // Thermal expansion of rock is neglected
+		cp1 = ((1.0-fineMassFrac)*ch2ol + fineMassFrac*(heatRock(T[jr]+2.0)-heatRock(T[jr]-2.0))*0.25); // For rock, cp = d(energy)/d(temp), here taken over 4 K surrounding T[jr]
+		mu_visc = Pa2ba*viscosity(T[jr],Mh2ol[jr],Mnh3l[jr])/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // Mueller, S. et al. (2010) Proc Roy Soc A 466, 1201-1228.
+		dr1 = dr;
+	}
+	else if (cvmode == 3) {
+		alf1 = (-0.5 + 6.0*(T[jr]-50.0)/200.0) * 1.0e-5; // Not as in D09!
+		cp1 = (1.0-fineMassFrac)*qh2o*T[jr] + fineMassFrac*(heatRock(T[jr]+2.0)-heatRock(T[jr]-2.0))*0.25; // For rock, cp = d(energy)/d(temp), here taken over 4 K surrounding T[jr]
+
+		if (jr == NR-1) jr--;
+		creep(T[jr], Pressure[jr], &creep_rate, 1.0-Vrock[jr]/dVol[jr], pore[jr], Xhydr[jr]);
+		mu_visc = Pa2ba*Pressure[jr]/(2.0*creep_rate);
+
+		dr1 = dr;
+	}
+
+	Ra = Ra*alf1*dr1*dr1*cp1/mu_visc;
+
+	// Determine effective thermal conductivities
+	if (cvmode == 1) {
+		Ra_cr = 30.0; // Lapwood (1948)
+		if (Ra > Ra_cr) {
+			// Calculate volumes of liquid water and pore space to check if there is enough liquid to circulate
+			for (ir=ir1;ir<ir2;ir++) Vcracked = Vcracked + dVol[ir]*pore[ir];
+			for (ir=ircore;ir<irdiff;ir++) Vliq = Vliq + Vh2ol[ir];
+
+			if (Vliq >= Vcracked) { // Circulation, modeled as enhanced effective thermal conductivity kap1
+				kap1 = rhofluid*ch2ol/pore[ir2-1]*(permeability*Crack_size_avg*Crack_size_avg/cm/cm)/mu_visc
+									*(Pressure[ir1]-Pressure[ir2])*Pa2ba;
+				for (ir=ir1;ir<ir2;ir++) {  // Capped at kap_hydro for numerical stability
+					if (kap1 < kap_hydro) (*kappa)[ir] = kap1;
+					else (*kappa)[ir] = kap_hydro;
+					(*circ)[ir] = 1;
+				}
+			}
+		}
+	}
+	else {
+		Ra_cr = 1707.762; //http://home.iitk.ac.in/~sghorai/NOTES/benard/node15.html, see also Koschmieder EL (1993) Benard cells and Taylor vortices, Cambridge U Press, p. 20
+		if (Ra > 0.0) Nu0 = pow((Ra/Ra_cr),0.25);
+		if (Nu0 > 1.0) {
+			for (jr=ir1;jr<=ir2;jr++) {
+				(*Nu)[jr] = Nu0;
+			}
+		}
+		for (ir=ir1;ir<ir2;ir++) {
+			(*kappa)[ir] = (*kappa)[ir]*(*Nu)[ir];
+			if (cvmode == 2 && (*kappa)[ir] > kap_slush) (*kappa)[ir] = kap_slush;
+			if (cvmode == 3 && (*kappa)[ir] > kap_ice_cv) (*kappa)[ir] = kap_ice_cv;
+		}
+	}
 
 	return 0;
 }
