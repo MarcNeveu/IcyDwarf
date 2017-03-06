@@ -61,9 +61,9 @@ int convect(int ir1, int ir2, double *T, double *r, int NR, double *Pressure, do
 
 double viscosity(double T, double Mh2ol, double Mnh3l);
 
-int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, double r_p, double **Qth, int NR, double dtime,
-		double *Wtide_tot, double *Mrock, double *Mh2os, double *Madhs, double *Mh2ol, double *Mnh3l, double *dM,  double *Vrock,
-		double *dVol, double *r, double *T, double fineVolFrac, double *Brittle_strength, double *Xhydr, double *Pressure, double *pore);
+int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, double **Qth, int NR, double *Wtide_tot, double *Mh2os,
+		double *Madhs, double *Mh2ol, double *Mnh3l, double *dM,  double *Vrock, double *dVol, double *r, double *T, double *Xhydr,
+		double *Pressure, double *pore);
 
 int GaussJordan(double complex ***M, double complex ***b, int n, int m);
 int ScaledGaussJordan(long double complex ***M, int n);
@@ -148,7 +148,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double omega_tide = 0.0;             // Tidal frequency
 	double Heat_tide = 0.0;
 	double creep_rate = 0.0;             // Strain rate in s-1 for ice, rock, or a mixture. Stress is hydrostatic pressure/(1-porosity)
-	double Wtide_tot = 0.0;              // Tidal heating rate in all of the ice (erg s-1)
+	double Wtide_tot = 0.0;              // Total tidal heating rate, summed in all layers (erg s-1)
 	double aorb = aorb_init;             // Moon orbital semi-major axis (cm)
 	double eorb = eorb_init;             // Moon orbital eccentricity
 	double d_aorb_pl = 0.0;              // Change rate in moon orbital semi-major axis due to interactions with primary (cm s-1)
@@ -934,8 +934,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 				strain(Pressure[ir], Xhydr[ir], T[ir], &strain_rate[ir], &Brittle_strength[ir], pore[ir]);
 			}
 			Wtide_tot = 0.0;
-			tide(tidalmodel, tidetimesten, eorb, omega_tide, r_p, &Qth, NR, dtime, &Wtide_tot, Mrock, Mh2os, Madhs, Mh2ol, Mnh3l,
-					dM, Vrock, dVol, r, T, fineVolFrac, Brittle_strength, Xhydr, Pressure, pore);
+			tide(tidalmodel, tidetimesten, eorb, omega_tide, &Qth, NR, &Wtide_tot, Mh2os, Madhs, Mh2ol, Mnh3l, dM, Vrock, dVol, r,
+					T, Xhydr, Pressure, pore);
 			Heat_tide = Heat_tide + Wtide_tot;
 
 			for (ir=0;ir<NR;ir++) Tide_output[ir][1] = Tide_output[ir][1] + Qth[ir]/1.0e7;
@@ -2488,9 +2488,9 @@ double viscosity(double T, double Mh2ol, double Mnh3l) {
  *
  *--------------------------------------------------------------------*/
 
-int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, double r_p, double **Qth, int NR, double dtime,
-		double *Wtide_tot, double *Mrock, double *Mh2os, double *Madhs, double *Mh2ol, double *Mnh3l, double *dM,  double *Vrock,
-		double *dVol, double *r, double *T, double fineVolFrac, double *Brittle_strength, double *Xhydr, double *Pressure, double *pore) {
+int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, double **Qth, int NR, double *Wtide_tot, double *Mh2os,
+		double *Madhs, double *Mh2ol, double *Mnh3l, double *dM,  double *Vrock, double *dVol, double *r, double *T, double *Xhydr,
+		double *Pressure, double *pore) {
 
 	int ir = 0;                          // Counters
 	int i = 0;
@@ -2648,7 +2648,7 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 //	}
 
 	for (ir=0;ir<NR;ir++) {
-		rho[ir] = dM[ir]/dVol[ir];
+		rho[ir] = dM[ir]/(4.0/3.0*PI_greek*(r[ir+1]*r[ir+1]*r[ir+1] - r[ir]*r[ir]*r[ir]));
 		g[ir] = 4.0/3.0*PI_greek*Gcgs*rho[ir]*r[ir+1];
 
 		// Steady-state viscosity
@@ -2986,7 +2986,7 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 
 	bsurf[0][0] = 0.0 + 0.0*I;
 	bsurf[1][0] = 0.0 + 0.0*I;
-	bsurf[2][0] = -5.0/r_p + 0.0*I;
+	bsurf[2][0] = -5.0/r[NR-1] + 0.0*I;
 
 	// Invert Mbc and get solution bsurf using Gauss-Jordan elimination with full pivoting (Numerical Recipes C, chap. 3.1)
 	GaussJordan(&Mbc, &bsurf, 3, 1);
@@ -3023,7 +3023,8 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 
 		// Calculate volumetric heating rate, multiply by layer volume (Tobie et al. 2005, equation 37).
 		// Note Im(k2) = -Im(y5) (Henning & Hurford 2014 eq. A9), the opposite convention of Tobie et al. (2005, eqs. 9 & 36).
-		Wtide = dVol[ir] * 2.1*pow(omega_tide,5)*pow(r_p,4)*eorb*eorb/r[ir+1]/r[ir+1]*H_mu*cimag(shearmod[ir]);
+		Wtide = (4.0/3.0*PI_greek*(r[ir+1]*r[ir+1]*r[ir+1] - r[ir]*r[ir]*r[ir]))
+				* 2.1*pow(omega_tide,5)*pow(r[NR-1],4)*eorb*eorb/r[ir+1]/r[ir+1]*H_mu*cimag(shearmod[ir]);
 		if (tidetimesten) Wtide = 10.0*Wtide;
 		(*Qth)[ir] = (*Qth)[ir] + Wtide;
 		(*Wtide_tot) = (*Wtide_tot) + Wtide;
