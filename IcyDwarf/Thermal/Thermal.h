@@ -1033,7 +1033,7 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 		}
 
 		if (irin < ircore) convect(irin, irout, T, r, NR, Pressure, M, dVol, Vrock, Vh2ol, pore, Mh2ol, Mnh3l, Xhydr, &kappa, &Nu,
-				Crack_size, rhoH2olth, rhoRockth, rhoHydrth, fineMassFrac, fineVolFrac, ircore, irdiff, &circ, creep_rate, 1);
+				Crack_size, rhoH2olth, rhoRockth, rhoHydrth, fineMassFrac, fineVolFrac, ircore, irdiff, &circ, creep_rate, 0);
 
 		if ((ircrack < ircore && Mh2ol[ircore] > 0.0 && fineVolFrac < 0.64)) convect(ircrack, ircore, T, r, NR, Pressure, M, dVol,
 				Vrock, Vh2ol, pore, Mh2ol, Mnh3l, Xhydr, &kappa, &Nu, Crack_size, rhoH2olth, rhoRockth, rhoHydrth, fineMassFrac,
@@ -2382,7 +2382,7 @@ int convect(int ir1, int ir2, double *T, double *r, int NR, double *Pressure, do
 
 	Ra = g1*dT*dr*pow((1.0-fineMassFrac)*rhofluid + fineMassFrac*(Xhydr[ircore+1]*rhoHydrth+(1.0-Xhydr[ircore+1])*rhoRockth),2)/kap1;
 
-	if (cvmode == 1) {
+	if (cvmode <= 1) {
 		alf1 = alfh2oavg;
 		cp1 = ((1.0-fineMassFrac)*ch2ol + fineMassFrac*(heatRock(T[jr]+2.0)-heatRock(T[jr]-2.0))*0.25); // For rock, cp = d(energy)/d(temp), here taken over 4 K surrounding T[jr]
 		mu_visc = Pa2ba*viscosity(T[jr],Mh2ol[ir1],Mnh3l[ir1])/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // Mueller, S. et al. (2010) Proc Roy Soc A 466, 1201-1228.
@@ -2412,14 +2412,15 @@ int convect(int ir1, int ir2, double *T, double *r, int NR, double *Pressure, do
 	Ra = Ra*alf1*dr1*dr1*cp1/mu_visc;
 
 	// Determine effective thermal conductivities
-	if (cvmode == 1) {
+	if (cvmode == 0 || cvmode == 1) {
 		Ra_cr = 30.0; // Lapwood (1948)
 		if (Ra > Ra_cr) {
-			// Calculate volumes of liquid water and pore space to check if there is enough liquid to circulate
-			for (ir=ir1;ir<ir2;ir++) Vcracked = Vcracked + dVol[ir]*pore[ir];
-			for (ir=ircore;ir<irdiff;ir++) Vliq = Vliq + Vh2ol[ir];
-
-			if (Vliq >= Vcracked) { // Circulation, modeled as enhanced effective thermal conductivity kap1
+			if (cvmode == 1) {
+				// Calculate volumes of liquid water and pore space to check if there is enough liquid to circulate
+				for (ir=ir1;ir<ir2;ir++) Vcracked = Vcracked + dVol[ir]*pore[ir];
+				for (ir=ircore;ir<irdiff;ir++) Vliq = Vliq + Vh2ol[ir];
+			}
+			if (cvmode == 0 || Vliq >= Vcracked) { // Circulation, modeled as enhanced effective thermal conductivity kap1
 				kap1 = rhofluid*ch2ol/pore[ir2-1]*(permeability*Crack_size_avg*Crack_size_avg/cm/cm)/mu_visc
 									*(Pressure[ir1]-Pressure[ir2])*Pa2ba;
 				for (ir=ir1;ir<ir2;ir++) {  // Capped at kap_hydro for numerical stability
