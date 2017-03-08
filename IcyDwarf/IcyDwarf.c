@@ -14,6 +14,7 @@
  */
 
 #include "IcyDwarf.h"
+#include "PlanetSystem.h"
 #include "Compression/Compression.h"
 #include "Crack/Crack.h"
 #include "Crack/Crack_tables.h"
@@ -28,48 +29,74 @@ int main(int argc, char *argv[]){
 	int warnings = 0;                  // Display warnings
 	int msgout = 0;                    // Display messages
 
+	int ir = 0;
+	int i = 0;
+	int j = 0;
+	int im = 0;
+
+	// Grid inputs
+    double timestep = 0.0;             // Time step of the sim (yr)
+	int NR = 0;                        // Number of grid zones
+	double total_time = 0.0;           // Total time of sim
+	double output_every = 0.0;         // Output frequency
+    int NT_output = 0;                 // Time step for writing output
+
 	// Planet inputs
-	int moon = 0;                      // Is the simulated planet a moon? If so, consider the following 6 parameters:
-	double aorb = 0.0;                 // Moon orbital semi-major axis (km)
-	double eorb = 0.0;                 // Moon orbital eccentricity
-	int orbevol = 0;                   // Orbital evolution?
+	int moon = 0;                      // Is the simulated planet a moon? If so, consider the following parameters:
+    int nmoons = 1;
 	double Mprim = 0.0;                // Mass of the primary (host planet) (kg)
 	double Rprim = 0.0;				   // Radius of the primary (host planet) (km)
 	double Qprim = 0.0;				   // Tidal Q of the primary (host planet). For Saturn, = 2452.8, range 1570.8-4870.6 (Lainey et al. 2016)
-
 	int ring = 0;                      // Does the host planet have an inner ring? If so, consider the following 3 parameters:
 	double Mring = 0.0;                // Mass of planet rings (kg). For Saturn, 4 to 7e19 kg (Robbins et al. 2010, http://dx.doi.org/10.1016/j.icarus.2009.09.012)
 	double aring_in = 0.0;             // Inner orbital radius of rings (km). for Saturn B ring, 92000 km
 	double aring_out = 0.0;            // Outer orbital radius of rings (km). for Saturn's A ring, 140000 km
 
-	double rho_p = 0.0;                // Planetary density (g cm-3)
-    double rhoHydrRock = 0.0;          // Density of hydrated rock endmember (kg m-3)
-    double rhoDryRock = 0.0;           // Density of dry rock endmember (kg m-3)
-    double r_p = 0.0;                  // Planetary radius
-    double nh3 = 0.0;                  // Ammonia w.r.t. water
-    double salt = 0.0;                 // Salt w.r.t. water (3/30/2015: binary quantity)
-    double Tsurf = 0.0;				   // Surface temperature
-    double Tinit = 0.0;                // Initial temperature
-    double timestep = 0.0;             // Time step of the sim (yr)
-    double tzero = 0.0;                // Time zero of the sim (Myr)
-    double Hydr_init = 0.0;            // Initial degree of hydration of the rock (0=fully dry, 1=fully hydrated)
-    double Xfines = 0.0;               // Mass or volume fraction of rock in fine grains that don't settle into a core (0=none, 1=all)
-    double Xpores = 0.0;               // Mass of volume fraction of core occupied by ice and/or liquid (i.e., core porosity filled with ice and/or liquid)
-    int chondr = 0;                    // Nature of the chondritic material incorporated (3/30/2015: default=CI or 1=CO), matters
-                                       // for radiogenic heating, see Thermal-state()
-    double porosity = 0.0;             // Bulk porosity
-    int startdiff = 0;                 // Start differentiated?
-    int hy = 0;						   // Allow for rock hydration/dehydration?
-
-    // Grid inputs
-	int NR = 0;                        // Number of grid zones
-	double total_time = 0;             // Total time of sim
-	double output_every = 0;           // Output frequency
-    int NT_output = 0;                 // Time step for writing output
-
-    // Tidal model inputs
+	// Tidal model inputs
     int tidalmodel = 3;                // 1: Elastic model; 2: Maxwell model; 3: Burgers model; 4: Andrade model
     int tidetimesten = 0;              // Multiply tidal dissipation by 10 (McCarthy & Cooper 2016)
+
+    // Geophysical inputs
+	double rhoHydrRock = 0.0;          // Density of hydrated rock endmember (kg m-3)
+    double rhoDryRock = 0.0;           // Density of dry rock endmember (kg m-3)
+    int chondr = 0;                    // Nature of the chondritic material incorporated (3/30/2015: default=CI or 1=CO), matters
+                                                  // for radiogenic heating, see Thermal-state()
+
+    // Icy world inputs
+    double tzero[nmoons];                // Time of formation (Myr)
+    double r_p[nmoons];                  // Planetary radius
+	double rho_p[nmoons];                // Planetary density (g cm-3)
+    double Tsurf[nmoons];				   // Surface temperature
+    double Tinit[nmoons];                // Initial temperature
+    double nh3[nmoons];                  // Ammonia w.r.t. water
+    double salt[nmoons];                 // Salt w.r.t. water (3/30/2015: binary quantity)
+    double Hydr_init[nmoons];            // Initial degree of hydration of the rock (0=fully dry, 1=fully hydrated)
+    double Xfines[nmoons];               // Mass or volume fraction of rock in fine grains that don't settle into a core (0=none, 1=all)
+    double Xpores[nmoons];               // Mass of volume fraction of core occupied by ice and/or liquid (i.e., core porosity filled with ice and/or liquid)
+    int hy[nmoons];						   // Allow for rock hydration/dehydration?
+    double porosity[nmoons];             // Bulk porosity
+    int startdiff[nmoons];                 // Start differentiated?
+	int orbevol[nmoons];                   // Orbital evolution?
+    double aorb[nmoons];               // Moon orbital semi-major axis (km)
+	double eorb[nmoons];               // Moon orbital eccentricity
+	for (im=0;im<nmoons;im++) {
+		tzero[im] = 0.0;
+		r_p[im] = 0.0;
+		rho_p[im] = 0.0;
+		Tsurf[im] = 0.0;
+		Tinit[im] = 0.0;
+		nh3[im] = 0.0;
+		salt[im] = 0.0;
+		Hydr_init[im] = 0.0;
+		Xfines[im] = 0.0;
+		Xpores[im] = 0.0;
+		hy[im] = 0.0;
+		porosity[im] = 0.0;
+		startdiff[im] = 0.0;
+		orbevol[im] = 0.0;
+		aorb[im] = 0.0;
+		eorb[im] = 0.0;
+	}
 
     // Call specific subroutines
     int calculate_thermal = 0;         // Run thermal code
@@ -109,9 +136,6 @@ int main(int argc, char *argv[]){
     int t_cryolava = 0;                // Time at which to calculate gas exsolution
     double CHNOSZ_T_MIN = 0.0;         // Minimum temperature for the subcrt() routine of CHNOSZ to work
                                        // Default: 235 K (Cryolava), 245 K (Crack, P>200 bar)
-	int r = 0;
-	int i = 0;
-	int j = 0;
 
 	int n_inputs = 67;
 
@@ -153,9 +177,9 @@ int main(int argc, char *argv[]){
 	warnings = (int) input[i]; i++;
 	msgout = (int) input[i]; i++;
 	moon = (int) input[i]; i++;
-	aorb = input[i]*km2cm*moon; i++;           // Input-specified aorb if moon=1, 0 otherwise, cm
-	eorb = input[i]*moon; i++;                 // Input-specified eorb if moon=1, 0 otherwise
-	orbevol = input[i]; i++;
+	aorb[0] = input[i]*km2cm*moon; i++;           // Input-specified aorb if moon=1, 0 otherwise, cm
+	eorb[0] = input[i]*moon; i++;                 // Input-specified eorb if moon=1, 0 otherwise
+	orbevol[0] = input[i]; i++;
 	Mprim = input[i]/gram*moon; i++;           // Input-specified Mprim if moon=1, 0 otherwise, g
 	Rprim = input[i]*km2cm; i++;
 	Qprim = input[i]; i++;
@@ -163,28 +187,28 @@ int main(int argc, char *argv[]){
 	Mring = input[i]/gram; i++;                // g
 	aring_in = input[i]*km2cm; i++;            // cm
 	aring_out = input[i]*km2cm; i++;           // cm
-	rho_p = input[i]; i++;                     // g cm-3
-	porosity = input[i]; i++;
+	rho_p[0] = input[i]; i++;                     // g cm-3
+	porosity[0] = input[i]; i++;
 	rhoHydrRock = input[i]*gram/cm/cm/cm; i++; // kg m-3
 	rhoDryRock = input[i]*gram/cm/cm/cm; i++;  // kg m-3
 	chondr = input[i]; i++;
-	r_p = input[i]*km2cm; i++;                 // cm
-	nh3 = input[i]; i++;
-	salt = input[i]; i++;
-	Tsurf = input[i]; i++;
+	r_p[0] = input[i]*km2cm; i++;                 // cm
+	nh3[0] = input[i]; i++;
+	salt[0] = input[i]; i++;
+	Tsurf[0] = input[i]; i++;
 	NR = input[i]; i++;
 	total_time = input[i]*Myr2sec; i++;        // s
 	output_every = input[i]*Myr2sec; i++;      // s
 	NT_output = floor(total_time/output_every)+1;
 	calculate_thermal = (int) input[i]; i++;
 	timestep = input[i]; i++;                  // yr
-	tzero = input[i]*Myr2sec; i++;             // s
-	Tinit = input[i]; i++;
-	Hydr_init = input[i]; i++;
-	hy = input[i]; i++;
-	Xfines = input[i]; i++;
-	Xpores = input[i]; i++;
-	startdiff = input[i]; i++;
+	tzero[0] = input[i]*Myr2sec; i++;             // s
+	Tinit[0] = input[i]; i++;
+	Hydr_init[0] = input[i]; i++;
+	hy[0] = input[i]; i++;
+	Xfines[0] = input[i]; i++;
+	Xpores[0] = input[i]; i++;
+	startdiff[0] = input[i]; i++;
 	tidalmodel = input[i]; i++;
 	tidetimesten = input[i]; i++;
 	calculate_aTP = (int) input[i]; i++;
@@ -233,16 +257,22 @@ int main(int argc, char *argv[]){
 	// Run thermal code
 	//-------------------------------------------------------------------
 
-    double *Xhydr = (double*) malloc(NR*sizeof(double)); // Degree of hydration, 0=dry, 1=hydrated
-    if (Xhydr == NULL) printf("IcyDwarf: Not enough memory to create Xhydr[NR]\n");
-	for (r=0;r<NR;r++) Xhydr[r] = Hydr_init;
+    double **Xhydr = (double**) malloc(nmoons*sizeof(double*)); // Degree of hydration, 0=dry, 1=hydrated
+    if (Xhydr == NULL) printf("IcyDwarf: Not enough memory to create Xhydr[nmoons]\n");
+	for (im=0;im<nmoons;im++) {
+		Xhydr[im] = (double*) malloc(NR*sizeof(double));
+		if (Xhydr[im] == NULL) printf("Thermal: Not enough memory to create Xhydr[nmoons][NR]\n");
+	}
+
+	for (im=0;im<nmoons;im++) {
+		for (ir=0;ir<NR;ir++) Xhydr[im][ir] = Hydr_init[im];
+	}
 
 	if (calculate_thermal == 1) {
-		printf("Running thermal evolution code...\n");
-		Thermal(argc, argv, path, NR, r_p, rho_p, rhoHydrRock, rhoDryRock, warnings, msgout, nh3, salt, Xhydr, Xfines, Xpores, tzero, Tsurf,
-				Tinit, timestep, total_time, output_every, crack_input, crack_species, chondr, moon, aorb, eorb, Mprim, Rprim, Qprim,
-				ring, Mring, aring_in, aring_out, porosity, startdiff, orbevol, tidalmodel, tidetimesten, hy);
-		printf("\n");
+		PlanetSystem(argc, argv, path, warnings, NR, timestep, tzero, total_time, output_every, nmoons, Mprim, Rprim, Qprim,
+				Mring, aring_out, aring_in,
+				r_p, rho_p, rhoHydrRock, rhoDryRock, nh3, salt, Xhydr, porosity, Xpores, Xfines, Tinit, Tsurf, startdiff,
+				aorb, eorb, tidalmodel, tidetimesten, moon, orbevol, ring, hy, chondr, crack_input, crack_species);
 	}
 
 	//-------------------------------------------------------------------
@@ -268,15 +298,15 @@ int main(int argc, char *argv[]){
 		// Read thermal output
 		thermalout **thoutput = (thermalout**) malloc(NR*sizeof(thermalout*));        // Thermal model output
 		if (thoutput == NULL) printf("IcyDwarf: Not enough memory to create the thoutput structure\n");
-		for (r=0;r<NR;r++) {
-			thoutput[r] = (thermalout*) malloc(NT_output*sizeof(thermalout));
-			if (thoutput[r] == NULL) printf("IcyDwarf: Not enough memory to create the thoutput structure\n");
+		for (ir=0;ir<NR;ir++) {
+			thoutput[ir] = (thermalout*) malloc(NT_output*sizeof(thermalout));
+			if (thoutput[ir] == NULL) printf("IcyDwarf: Not enough memory to create the thoutput structure\n");
 		}
 		thoutput = read_thermal_output (thoutput, NR, NT_output, path);
 
-		compression(NR, NT_output, thoutput, NT_output-1, 205, 302, 403, 0, path, rhoHydrRock, rhoDryRock, Xhydr);
+		compression(NR, NT_output, thoutput, NT_output-1, 205, 302, 403, 0, path, rhoHydrRock, rhoDryRock, Xhydr[0]);
 
-		for (r=0;r<NR;r++) free (thoutput[r]);
+		for (ir=0;ir<NR;ir++) free (thoutput[ir]);
 		free (thoutput);
 		printf("\n");
 	}
@@ -291,23 +321,21 @@ int main(int argc, char *argv[]){
 		// Read thermal output
 		thermalout **thoutput = (thermalout**) malloc(NR*sizeof(thermalout*));        // Thermal model output
 		if (thoutput == NULL) printf("IcyDwarf: Not enough memory to create the thoutput structure\n");
-		for (r=0;r<NR;r++) {
-			thoutput[r] = (thermalout*) malloc(NT_output*sizeof(thermalout));
-			if (thoutput[r] == NULL) printf("IcyDwarf: Not enough memory to create the thoutput structure\n");
+		for (ir=0;ir<NR;ir++) {
+			thoutput[ir] = (thermalout*) malloc(NT_output*sizeof(thermalout));
+			if (thoutput[ir] == NULL) printf("IcyDwarf: Not enough memory to create the thoutput structure\n");
 		}
 		thoutput = read_thermal_output (thoutput, NR, NT_output, path);
-		for (r=0;r<NR;r++) Xhydr[r] = thoutput[r][NT_output].famor;
+		for (ir=0;ir<NR;ir++) Xhydr[0][ir] = thoutput[ir][NT_output].xhydr;
 
 		if (t_cryolava > NT_output) {
 			printf("Icy Dwarf: t_cryolava > total time of sim\n");
 			return -1;
 		}
-		Cryolava(argc, argv, path, NR, NT_output, r_p, thoutput, t_cryolava, CHNOSZ_T_MIN, warnings, msgout,
-				rhoHydrRock, rhoDryRock, Xhydr);
+		Cryolava(argc, argv, path, NR, NT_output, (float) r_p[0], thoutput, t_cryolava, CHNOSZ_T_MIN, warnings, msgout,
+				rhoHydrRock, rhoDryRock, Xhydr[0]);
 
-		for (r=0;r<NR;r++) {
-			free (thoutput[r]);
-		}
+		for (ir=0;ir<NR;ir++) free (thoutput[ir]);
 		free (thoutput);
 		printf("\n");
 	}
@@ -316,6 +344,7 @@ int main(int argc, char *argv[]){
 	// Exit
 	//-------------------------------------------------------------------
 
+	for (im=0;im<nmoons;im++) free(Xhydr[im]);
 	free (input);
 	free (crack_input);
 	free (crack_species);

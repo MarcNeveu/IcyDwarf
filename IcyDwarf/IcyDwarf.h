@@ -32,7 +32,7 @@
 // FLAGS
 //-------------------------------------------------------------------
 
-#define v_release 0                                        // 0 for Debug, 1 for Release
+#define v_release 0                                       // 0 for Debug, 1 for Release
 #define cmdline 1										   // If execution from terminal as "./IcyDwarf",
                                                            // overwritten by v_release.
 //-------------------------------------------------------------------

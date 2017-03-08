@@ -23,15 +23,28 @@
 #define THERMAL_H_
 
 #include "../IcyDwarf.h"
+#include "../Crack/Crack.h"
 
-int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p, double rhoHydr, double rhoDry,
-		int warnings, int msgout, double Xp, double Xsalt, double *Xhydr, double Xfines, double Xpores, double tzero, double Tsurf,
-		double Tinit, double dtime, double fulltime, double dtoutput, int *crack_input, int *crack_species, int chondr,
-		int moon, double aorb_init, double eorb_init, double Mprim, double Rprim, double Qprim, int ring, double Mring,
-		double aring_in, double aring_out, double porosity, int startdiff, int orbevol, int tidalmodel, int tidetimesten, int hy);
+int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int warnings, int NR, double dr_grid,
+		double dtime, double realtime, double tzero, int itime, double Xp, double Xsalt, double Xfines, double Xpores, double Tsurf,
+		double **r, double **dM, double **dM_old, double *Phi, double **dVol, double **dE, double **T, double **T_old, double **Pressure,
+		double rhoRockth, double rhoHydrth, double rhoH2osth, double rhoAdhsth, double rhoH2olth, double rhoNh3lth,
+		double **Mrock, double **Mrock_init, double **Mh2os, double **Madhs, double **Mh2ol, double **Mnh3l,
+		double **Vrock, double **Vh2os, double **Vadhs, double **Vh2ol, double **Vnh3l,
+		double **Erock, double **Eh2os, double **Eslush,
+		double **Xhydr, double **Xhydr_old, double **kappa, double **pore, double *Mliq, double *Mcracked_rock,
+		int **dont_dehydrate, int **circ, int *structure_changed,
+		double **Crack, double **Crack_size, double **fracOpen, double **P_pore, double **P_hydr, double ***Act, double *fracKleached,
+		int *crack_input, int *crack_species, double **aTP, double **integral, double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite,
+		int *ircrack, int *ircore, int *irice, int *irdiff, int forced_hydcirc, double **Nu,
+		double **aorb, double *eorb, double *norb, double *m_p, double r_p, double Mprim, double Rprim, double Qprim,
+		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity,
+		int tidalmodel, int tidetimesten, int moon, int im, int nmoons, int orbevol, int ring, int hy, int chondr,
+		double *Heat_radio, double *Heat_grav, double *Heat_serp, double *Heat_dehydr, double *Heat_tide,
+		double ***Stress, double ***Tide_output);
 
-int state (char path[1024], int itime, int ir, double E, double *frock, double *fh2os, double *fadhs, double *fh2ol, double *fnh3l,
-		double Xsalt, double *T);
+int state (char path[1024], int itime, int im, int ir, double E, double *frock, double *fh2os, double *fadhs, double *fh2ol,
+		double *fnh3l, double Xsalt, double *T);
 
 double heatRock (double T);
 
@@ -61,6 +74,8 @@ int convect(int ir1, int ir2, double *T, double *r, int NR, double *Pressure, do
 
 double viscosity(double T, double Mh2ol, double Mnh3l);
 
+double MMR(double *m_p, double *norb, double *aorb, int imoon, int i, double eorb);
+
 int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, double **Qth, int NR, double *Wtide_tot, double *Mh2os,
 		double *Madhs, double *Mh2ol, double *Mnh3l, double *dM,  double *Vrock, double *dVol, double *r, double *T, double *Xhydr,
 		double *Pressure, double *pore);
@@ -78,46 +93,39 @@ long double complex y2(long double complex x, int mod);
 long double complex y2p(long double complex x, int mod);
 long double complex y2pp(long double complex x, int mod);
 
-int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double rho_p, double rhoHydr, double rhoDry,
-		int warnings, int msgout, double Xp, double Xsalt, double *Xhydr, double Xfines, double Xpores, double tzero, double Tsurf,
-		double Tinit, double dtime, double fulltime, double dtoutput, int *crack_input, int *crack_species, int chondr,
-		int moon, double aorb_init, double eorb_init, double Mprim, double Rprim, double Qprim, int ring, double Mring,
-		double aring_in, double aring_out, double porosity, int startdiff, int orbevol, int tidalmodel, int tidetimesten, int hy) {
+int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int warnings, int NR, double dr_grid,
+		double dtime, double realtime, double tzero, int itime, double Xp, double Xsalt, double Xfines, double Xpores, double Tsurf,
+		double **r, double **dM, double **dM_old, double *Phi, double **dVol, double **dE, double **T, double **T_old, double **Pressure,
+		double rhoRockth, double rhoHydrth, double rhoH2osth, double rhoAdhsth, double rhoH2olth, double rhoNh3lth,
+		double **Mrock, double **Mrock_init, double **Mh2os, double **Madhs, double **Mh2ol, double **Mnh3l,
+		double **Vrock, double **Vh2os, double **Vadhs, double **Vh2ol, double **Vnh3l,
+		double **Erock, double **Eh2os, double **Eslush,
+		double **Xhydr, double **Xhydr_old, double **kappa, double **pore, double *Mliq, double *Mcracked_rock,
+		int **dont_dehydrate, int **circ, int *structure_changed,
+		double **Crack, double **Crack_size, double **fracOpen, double **P_pore, double **P_hydr, double ***Act, double *fracKleached,
+		int *crack_input, int *crack_species, double **aTP, double **integral, double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite,
+		int *ircrack, int *ircore, int *irice, int *irdiff, int forced_hydcirc, double **Nu,
+		double **aorb, double *eorb, double *norb, double *m_p, double r_p, double Mprim, double Rprim, double Qprim,
+		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity,
+		int tidalmodel, int tidetimesten, int moon, int im, int nmoons, int orbevol, int ring, int hy, int chondr,
+		double *Heat_radio, double *Heat_grav, double *Heat_serp, double *Heat_dehydr, double *Heat_tide,
+		double ***Stress, double ***Tide_output) {
 
-	//-------------------------------------------------------------------
-	//                 Declarations and initializations
-	//-------------------------------------------------------------------
-
-	int forced_hydcirc = 0;              // Switch to force hydrothermal circulation
-	int itime = 0;                       // Time counter
-	int ntime = 0;                       // Total number of iterations
-	int isteps = 0;                      // Output step counter
-	int nsteps = 0;                      // Total number of output steps
 	int ir = 0;                          // Grid counter
 	int jr = 0;                          // Secondary grid counter
 	int i = 0;
-	int irdiff = 0;                      // Radius of differentiation
-	int irdiffold = 0;
-	int irice = 0;                       // Radius of the top of the slush layer
-	int irice_cv = 0;                    // Same but for convection purposes
-	int iriceold = 0;
-	int ircore = 0;                      // Radius of the core
-	int ircrack = 0;                     // Inner radius of the continuously cracked rock layer in contact with the ocean
-	int irin = 0;                        // Inner convection radius in a core that contains melted ice
-	int irout = 0;                       // Outer convection radius in a core that contains melted ice
-	int structure_changed = 0;           // Switch to see if we need to call separate()
-    int thermal_mismatch = 0;            // Switch for grain thermal expansion/contraction mismatch effects
-	int pore_water_expansion = 0;        // Switch for pore water expansion effects
-	int dissolution_precipitation = 0;   // Switch for rock dissolution/precipitation effects
+
 	int kmin = 0;                        // Lowest order of inner Lindblad resonance in the rings
 	int kmax = 0;                        // Highest order of inner Lindblad resonance in the rings
-	double Heat_radio = 0.0;             // Total heats produced (erg), for output file
-	double Heat_grav = 0.0;
-	double Heat_serp = 0.0;
-	double Heat_dehydr = 0.0;
-	double realtime = 0.0;               // Time elapsed (s)
-	double frockpm = 0.0;                 // Fraction of rock in the planet by mass
-	double frockpv = 0.0;                 // Fraction of rock in the planet by volume
+
+	int irin = 0;                        // Inner convection radius in a core that contains melted ice
+	int irout = 0;                       // Outer convection radius in a core that contains melted ice
+	int irice_cv = 0;                    // Outermost slush layer, for convection purposes
+	int iriceold = 0;                    // Old outermost slush layer
+	int irdiffold = 0;                   // Old outermost differentiated layer
+
+	double Phiold = 0.0;                 // Old gravitational potential energy (erg)
+	double ravg = 0.0;                   // Average radius of a layer (cm)
 	double e1 = 0.0;                     // Temporary specific energy (erg/g)
 	double frock = 0.0;                  // Rock mass fraction
 	double fh2os = 0.0;                  // Water ice mass fraction
@@ -126,1163 +134,510 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
 	double fnh3l = 0.0;                  // Liquid ammonia mass fraction
 	double temp1 = 0.0;                  // Temporary temperature (K)
 	double Xhydr_temp = 0.0;             // Temporary hydration index
-	double dr_grid = 0.0;                // Physical thickness of a shell (cm)
-	double Phi = 0.0;                    // Gravitational potential energy (erg)
-	double Phiold = 0.0;
-	double ravg = 0.0;                   // Average radius of a layer (cm)
 	double Volume1 = 0.0;                // Temporary volume for gravitational energy calculation (cm3)
 	double Tliq = 0.0;                   // Melting temperature of an ammonia-water mixture (K)
-	double rhoRockth = rhoDry*gram;      // Density of dry rock (g/cm3)
-	double rhoHydrth = rhoHydr*gram;     // Density of hydrated rock (g/cm3)
-	double rhoH2osth = rhoH2os*gram;	 // Density of water ice (g/cm3)
-	double rhoAdhsth = rhoAdhs*gram;	 // Density of ammonia dihydrate ice (g/cm3)
-	double rhoH2olth = 0.0;              // Density of liquid water, just for this thermal routine (g/cm3)
-	double rhoNh3lth = 0.0;              // Density of liquid ammonia, just for this thermal routine (g/cm3)
-	double rhoIce = 0.0;                 // Density of the bulk ice (g/cm3)
-	double Mliq = 0.0;                   // Mass of liquid in the planet (g)
-	double Mcracked_rock = 0.0;          // Mass of cracked rock in the planet (g)
 	double fineMassFrac = 0.0;           // Mass fraction of fines (no dim)
 	double fineVolFrac = 0.0;            // Volume fraction of fines (no dim)
-	double fracKleached = 0.0;           // Fraction of K radionuclide leached (no dim)
-	double norb = 0.0;                   // Orbital mean motion = 2*pi/period = sqrt(GM/a3) (s-1)
-	double omega_tide = 0.0;             // Tidal frequency
-	double Heat_tide = 0.0;
 	double creep_rate = 0.0;             // Strain rate in s-1 for ice, rock, or a mixture. Stress is hydrostatic pressure/(1-porosity)
 	double Wtide_tot = 0.0;              // Total tidal heating rate, summed in all layers (erg s-1)
-	double aorb = aorb_init;             // Moon orbital semi-major axis (cm)
-	double eorb = eorb_init;             // Moon orbital eccentricity
 	double d_aorb_pl = 0.0;              // Change rate in moon orbital semi-major axis due to interactions with primary (cm s-1)
 	double d_aorb_ring = 0.0;            // Change rate in moon orbital semi-major axis due to interactions with ring (cm s-1)
 	double d_eorb = 0.0;                 // Change rate in moon orbital eccentricity (s-1)
-	double m_p = 0.0;                    // Moon mass (g)
 	double ringTorque = 0.0;             // Torque exerted by ring on moon (g cm2 s-2)
-	double ringSurfaceDensity = Mring/(PI_greek*(aring_out*aring_out-aring_in*aring_in)); // Ring surface density (g cm-2)
-	double alpha_Lind = 0.0;             // Dissipation of Lindblad resonance in rings (no dim)
-	if (ringSurfaceDensity <= 2.0) alpha_Lind = 2.0e-5; else alpha_Lind = 1.0e-4; // Mostly viscosity and pressure if surf density²2 g cm-2, or self-gravity if surf density~50 g cm-2
-	double Crack_depth[2];				 // Crack_depth[2] (km), output
-	double WRratio[2];					 // WRratio[2] (by mass, no dim), output
-	double Heat[6];                      // Heat[6] (erg), output
-	double Thermal[12];					 // Thermal[12] (multiple units), output
-	double Orbit[3];                     // Orbit[3] (multiple units), output
+	double omega_tide = 0.0;             // Tidal frequency (s-1)
 
-	int *dont_dehydrate = (int*) malloc((NR)*sizeof(int));    // Don't dehydrate a layer that just got hydrated
-	if (dont_dehydrate == NULL) printf("Thermal: Not enough memory to create dont_dehydrate[NR]\n");
 
-	int *circ = (int*) malloc((NR)*sizeof(int));              // 0=no hydrothermal circulation, 1=hydrothermal circulation
-	if (circ == NULL) printf("Thermal: Not enough memory to create circ[NR]\n");
-
-	double *r = (double*) malloc((NR+1)*sizeof(double));      // Radius (cm)
-	if (r == NULL) printf("Thermal: Not enough memory to create r[NR+1]\n");
-
-	double *dVol = (double*) malloc((NR)*sizeof(double));     // Total volume of a layer at zero porosity (cm^3)
-	if (dVol == NULL) printf("Thermal: Not enough memory to create dVol[NR]\n");
-
-	double *dM = (double*) malloc((NR)*sizeof(double));       // Mass of a layer (g)
-	if (dM == NULL) printf("Thermal: Not enough memory to create dM[NR]\n");
-
-	double *dM_old = (double*) malloc((NR)*sizeof(double));   // Old mass of a layer (g)
-	if (dM_old == NULL) printf("Thermal: Not enough memory to create dM_old[NR]\n");
-
-	double *M = (double*) malloc((NR)*sizeof(double));        // Mass under a layer (g)
+	double *M = (double*) malloc(NR*sizeof(double));        // Mass under a layer (g)
 	if (M == NULL) printf("Thermal: Not enough memory to create M[NR]\n");
-
-	double *dE = (double*) malloc((NR)*sizeof(double));       // Energy of a layer (erg)
-	if (dE == NULL) printf("Thermal: Not enough memory to create dE[NR]\n");
-
-	double *Mrock = (double*) malloc((NR)*sizeof(double));    // Mass of rock (g)
-	if (Mrock == NULL) printf("Thermal: Not enough memory to create Mrock[NR]\n");
-
-	double *Mh2os = (double*) malloc((NR)*sizeof(double));    // Mass of water ice (g)
-	if (Mh2os == NULL) printf("Thermal: Not enough memory to create Mh2os[NR]\n");
-
-	double *Madhs = (double*) malloc((NR)*sizeof(double));    // Mass of ammonia dihydrate ice (g)
-	if (Madhs == NULL) printf("Thermal: Not enough memory to create Madhs[NR]\n");
-
-	double *Mh2ol = (double*) malloc((NR)*sizeof(double));    // Mass of liquid water (g)
-	if (Mh2ol == NULL) printf("Thermal: Not enough memory to create Mh2ol[NR]\n");
-
-	double *Mnh3l = (double*) malloc((NR)*sizeof(double));    // Mass of liquid ammonia (g)
-	if (Mnh3l == NULL) printf("Thermal: Not enough memory to create Mnh3l[NR]\n");
-
-	double *Erock = (double*) malloc((NR)*sizeof(double));    // Energy of rock (erg)
-	if (Erock == NULL) printf("Thermal: Not enough memory to create Erock[NR]\n");
-
-	double *Eh2os = (double*) malloc((NR)*sizeof(double));    // Energy of water ice (erg)
-	if (Eh2os == NULL) printf("Thermal: Not enough memory to create Eh2os[NR]\n");
-
-	double *Eslush = (double*) malloc((NR)*sizeof(double));   // Energy of slush/ocean (erg)
-	if (Eslush == NULL) printf("Thermal: Not enough memory to create Eslush[NR]\n");
-
-	double *Vrock = (double*) malloc((NR)*sizeof(double));    // Volume of rock (cm^3)
-	if (Vrock == NULL) printf("Thermal: Not enough memory to create Vrock[NR]\n");
-
-	double *Vh2os = (double*) malloc((NR)*sizeof(double));    // Volume of water ice (cm^3)
-	if (Vh2os == NULL) printf("Thermal: Not enough memory to create Vh2os[NR]\n");
-
-	double *Vadhs = (double*) malloc((NR)*sizeof(double));    // Volume of ammonia dihydrate ice (cm^3)
-	if (Vadhs == NULL) printf("Thermal: Not enough memory to create Vadhs[NR]\n");
-
-	double *Vh2ol = (double*) malloc((NR)*sizeof(double));    // Volume of liquid water (cm^3)
-	if (Vh2ol == NULL) printf("Thermal: Not enough memory to create Vh2ol[NR]\n");
-
-	double *Vnh3l = (double*) malloc((NR)*sizeof(double));    // Volume of liquid ammonia (cm^3)
-	if (Vnh3l == NULL) printf("Thermal: Not enough memory to create Vnh3l[NR]\n");
-
-	double *T = (double*) malloc((NR)*sizeof(double));        // Temperature (K)
-	if (T == NULL) printf("Thermal: Not enough memory to create T[NR]\n");
-
-	double *T_old = (double*) malloc((NR)*sizeof(double));    // Temperature (K)
-	if (T == NULL) printf("Thermal: Not enough memory to create T_old[NR]\n");
-
-	double *kappa = (double*) malloc((NR)*sizeof(double));    // Thermal conductivity (erg/s/cm/K)
-	if (kappa == NULL) printf("Thermal: Not enough memory to create kappa[NR]\n");
 
 	double *RRflux = (double*) malloc((NR+1)*sizeof(double)); // Thermal flux (erg/s/cm2)
 	if (RRflux == NULL) printf("Thermal: Not enough memory to create RRflux[NR+1]\n");
 
-	double *Qth = (double*) malloc((NR)*sizeof(double));      // Heating power (erg/s)
+	double *Qth = (double*) malloc(NR*sizeof(double));      // Heating power (erg/s)
 	if (Qth == NULL) printf("Thermal: Not enough memory to create Qth[NR]\n");
 
-	double *Xhydr_old = (double*) malloc((NR)*sizeof(double));// Old degree of hydration, 0=dry, 1=hydrated
-	if (Xhydr_old == NULL) printf("Thermal: Not enough memory to create Xhydr_old[NR]\n");
-
-	double *Pressure = (double*) malloc(NR*sizeof(double));   // Pressure in Pa
-	if (Pressure == NULL) printf("Thermal: Not enough memory to create Pressure[NR]\n");
-
-	double *Crack = (double*) malloc(NR*sizeof(double));      // Crack[NR], type of cracked zone, output
-	if (Crack == NULL) printf("Thermal: Not enough memory to create Crack[NR]\n");
-
-	double *Crack_size = (double*) malloc(NR*sizeof(double)); // Crack_size[NR], subgrid crack width in m (width in 1-D, diameter in cylindrical 2-D)
-	if (Crack_size == NULL) printf("Thermal: Not enough memory to create Crack_size[NR]\n");
-
-	double *P_pore = (double*) malloc(NR*sizeof(double));     // Pore overpressure in Pa
-	if (P_pore == NULL) printf("Thermal: Not enough memory to create P_pore[NR]\n");
-
-	double *P_hydr = (double*) malloc(NR*sizeof(double));     // Pore hydration stress in Pa
-	if (P_hydr == NULL) printf("Thermal: Not enough memory to create P_hydr[NR]\n");
-
-	double *Nu = (double*) malloc((NR)*sizeof(double));       // Nusselt number
-	if (Nu == NULL) printf("Thermal: Not enough memory to create Nu[NR]\n");
-
-	double *Mrock_init = (double*) malloc((NR)*sizeof(double)); // Initial rock mass
-	if (Mrock_init == NULL) printf("Thermal: Not enough memory to create Mrock_init[NR]\n");
-
-	double *Brittle_strength = (double*) malloc((NR)*sizeof(double)); // Brittle rock strength in Pa
+	double *Brittle_strength = (double*) malloc(NR*sizeof(double)); // Brittle rock strength (Pa)
 	if (Brittle_strength == NULL) printf("Thermal: Not enough memory to create Brittle_strength[NR]\n");
 
-	double *strain_rate = (double*) malloc((NR)*sizeof(double)); // Strain rate in s-1 at which brittle and ductile strengths of rock are equal (the stress or ductile strength is set to the brittle strength)
+	double *strain_rate = (double*) malloc(NR*sizeof(double)); // Strain rate in s-1 at which brittle and ductile strengths of rock are equal (the stress or ductile strength is set to the brittle strength)
 	if (strain_rate == NULL) printf("Thermal: Not enough memory to create strain_rate[NR]\n");
 
-	double *fracOpen = (double*) malloc((NR)*sizeof(double)); // Fraction of crack that hasn't healed
-	if (fracOpen == NULL) printf("Thermal: Not enough memory to create fracOpen[NR]\n");
-
-	double *pore = (double*) malloc((NR)*sizeof(double)); // Volume fraction of grid cell that is pores
-	if (pore == NULL) printf("Thermal: Not enough memory to create pore[NR]\n");
-
-	double **Stress = (double**) malloc((NR)*sizeof(double*)); // Stress[NR][12], output
-	if (Stress == NULL) printf("Thermal: Not enough memory to create Stress[NR]\n");
-	for (ir=0;ir<NR;ir++) {
-		Stress[ir] = (double*) malloc(12*sizeof(double));
-		if (Stress[ir] == NULL) printf("Thermal: Not enough memory to create Stress[NR][12]\n");
-	}
-	double **Act = (double**) malloc(NR*sizeof(double*));      // Activity of chemical products in cracks, dimensionless or (mol m-3) if << salinity
-	if (Act == NULL) printf("Thermal: Not enough memory to create Act[NR][n_species_crack]\n");
-	for (ir=0;ir<NR;ir++) {
-		Act[ir] = (double*) malloc(n_species_crack*sizeof(double));
-		if (Act[ir] == NULL) printf("Thermal: Not enough memory to create Act[NR][n_species_crack]\n");
-	}
-	double **aTP = (double**) malloc((sizeaTP)*sizeof(double*)); // a[sizeaTP][sizeaTP], table of flaw sizes a that maximize the stress K_I
-	if (aTP == NULL) printf("Thermal: Not enough memory to create a[sizeaTP][sizeaTP]\n");
-	for (i=0;i<sizeaTP;i++) {
-		aTP[i] = (double*) malloc((sizeaTP)*sizeof(double));
-		if (aTP[i] == NULL) printf("Thermal: Not enough memory to create a[sizeaTP][sizeaTP]\n");
-	}
-	double **integral = (double**) malloc(int_size*sizeof(double*)); // integral[int_size][2], used for K_I calculation
-	if (integral == NULL) printf("Thermal: Not enough memory to create integral[int_size][2]\n");
-	for (i=0;i<int_size;i++) {
-		integral[i] = (double*) malloc(2*sizeof(double));
-		if (integral[i] == NULL) printf("Thermal: Not enough memory to create integral[int_size][2]\n");
-	}
-	double **alpha = (double**) malloc(sizeaTP*sizeof(double*)); // Thermal expansivity of water (T,P) in K-1
-	if (alpha == NULL) printf("Thermal: Not enough memory to create alpha[sizeaTP][sizeaTP]\n");
-	for (i=0;i<sizeaTP;i++) {
-		alpha[i] = (double*) malloc(sizeaTP*sizeof(double));
-		if (alpha[i] == NULL) printf("Thermal: Not enough memory to create alpha[sizeaTP][sizeaTP]\n");
-	}
-	double **beta = (double**) malloc(sizeaTP*sizeof(double*)); // Compressibility of water (T,P) in bar-1
-	if (beta == NULL) printf("Thermal: Not enough memory to create beta[sizeaTP][sizeaTP]\n");
-	for (i=0;i<sizeaTP;i++) {
-		beta[i] = (double*) malloc(sizeaTP*sizeof(double));
-		if (beta[i] == NULL) printf("Thermal: Not enough memory to create beta[sizeaTP][sizeaTP]\n");
-	}
-	double **silica = (double**) malloc(sizeaTP*sizeof(double*)); // log K of silica dissolution
-	if (silica == NULL) printf("Thermal: Not enough memory to create silica[sizeaTP][sizeaTP]\n");
-	for (i=0;i<sizeaTP;i++) {
-		silica[i] = (double*) malloc(sizeaTP*sizeof(double));
-		if (silica[i] == NULL) printf("Thermal: Not enough memory to create silica[sizeaTP][sizeaTP]\n");
-	}
-	double **chrysotile = (double**) malloc(sizeaTP*sizeof(double*)); // log K of chrysotile dissolution
-	if (chrysotile == NULL) printf("Thermal: Not enough memory to create chrysotile[sizeaTP][sizeaTP]\n");
-	for (i=0;i<sizeaTP;i++) {
-		chrysotile[i] = (double*) malloc(sizeaTP*sizeof(double));
-		if (chrysotile[i] == NULL) printf("Thermal: Not enough memory to create chrysotile[sizeaTP][sizeaTP]\n");
-	}
-	double **magnesite = (double**) malloc(sizeaTP*sizeof(double*)); // log K of magnesite dissolution
-	if (magnesite == NULL) printf("Thermal: Not enough memory to create magnesite[sizeaTP][sizeaTP]\n");
-	for (i=0;i<sizeaTP;i++) {
-		magnesite[i] = (double*) malloc(sizeaTP*sizeof(double));
-		if (magnesite[i] == NULL) printf("Thermal: Not enough memory to create magnesite[sizeaTP][sizeaTP]\n");
-	}
-	double **Tide_output = (double**) malloc((NR)*sizeof(double*)); // Output: radial and temporal distribution of tidal heating rates (erg s-1)
-	if (Tide_output == NULL) printf("Thermal: Not enough memory to create Tide_output[NR][2]\n");
-	for (ir=0;ir<NR;ir++) {
-		Tide_output[ir] = (double*) malloc(2*sizeof(double));
-		if (Tide_output[ir] == NULL) printf("Thermal: Not enough memory to create Tide_output[NR][2]\n");
-	}
-
 	// Zero all the arrays
-	Crack_depth[0] = 0.0, Crack_depth[1] = 0.0;
-	WRratio[0] = 0.0, WRratio[1] = 0.0;
-	Heat[0] = 0.0, 	Heat[1] = 0.0, 	Heat[2] = 0.0, Heat[3] = 0.0, Heat[4] = 0.0; Heat[5] = 0.0;
-	for (i=0;i<12;i++) Thermal[i] = 0.0;
     for (ir=0;ir<NR;ir++) {
-    	dVol[ir] = 0.0;
-    	dM[ir] = 0.0;
-    	dM_old[ir] = 0.0;
     	M[ir] = 0.0;
-    	dE[ir] = 0.0;
-    	Mrock[ir] = 0.0;
-    	Mh2os[ir] = 0.0;
-    	Madhs[ir] = 0.0;
-    	Mh2ol[ir] = 0.0;
-    	Mnh3l[ir] = 0.0;
-    	Erock[ir] = 0.0;
-    	Eh2os[ir] = 0.0;
-    	Eslush[ir] = 0.0;
-    	Vrock[ir] = 0.0;
-    	Vh2os[ir] = 0.0;
-    	Vadhs[ir] = 0.0;
-    	Vh2ol[ir] = 0.0;
-    	Vnh3l[ir] = 0.0;
-    	T[ir] = 0.0;
-    	T_old[ir] = 0.0;
-    	kappa[ir] = 0.0;
     	Qth[ir] = 0.0;
-    	Xhydr_old[ir] = Xhydr[ir];
-    	Pressure[ir] = 0.0;
-    	Crack[ir] = 0.0;
-    	Crack_size[ir] = 0.0;
-    	P_pore[ir] = 0.0;
-    	P_hydr[ir] = 0.0;
-    	Nu[ir] = 1.0;
-    	dont_dehydrate[ir] = 0;
-    	circ[ir] = 0;
-    	Mrock_init[ir] = 0.0;
     	Brittle_strength[ir] = 0.0;
     	strain_rate[ir] = 0.0;
-    	fracOpen[ir] = 0.0;
-    	pore[ir] = porosity;
-    	for (i=0;i<n_species_crack;i++) Act[ir][i] = 0.0;
-    	for (i=0;i<12;i++) Stress[ir][i] = 0.0;
-    	for (i=0;i<2;i++) Tide_output[ir][i] = 0.0;
     }
-    for (ir=0;ir<NR+1;ir++) {
-    	r[ir] = 0.0;
-    	RRflux[ir] = 0.0;
-    }
-	for (i=0;i<int_size;i++) {
-		integral[i][0] = 0.0;
-		integral[i][1] = 0.0;
-	}
-	for (i=0;i<sizeaTP;i++) {
-		for (ir=0;ir<sizeaTP;ir++) {
-			aTP[i][ir] = 0.0;
-			alpha[i][ir] = 0.0;
-			beta[i][ir] = 0.0;
-			silica[i][ir] = 0.0;
-			chrysotile[i][ir] = 0.0;
-			magnesite[i][ir] = 0.0;
-		}
-	}
+    for (ir=0;ir<NR+1;ir++) RRflux[ir] = 0.0;
 
 	//-------------------------------------------------------------------
 	//                              Setup
 	//-------------------------------------------------------------------
 
-	thermal_mismatch = crack_input[0];
-	pore_water_expansion = crack_input[1];
-	dissolution_precipitation = crack_input[3];
-
-	if (moon) norb = sqrt(Gcgs*Mprim/(aorb*aorb*aorb));
 	// Tidal frequency: once per orbit if tidally locked moon
-	omega_tide = norb;
+	omega_tide = norb[im];
 
-    //-------------------------------------------------------------------
-    //                     Initialize physical tables
-    //-------------------------------------------------------------------
-
-	/* Read the a(T,P) and integral input files.
-	 * - aTP: table of a(deltaT,P) in the model of
-	 * Vance et al. (2007) so we don't have to calculate a(deltaT,P)
-	 * each time the routine is called. Use aTP() to generate this file.
-	 * - integral: Geometry part of the integral in eqs. (3) and (4) of
-	 * Vance et al. (2007) for various a, to calculate the stress intensity K_I.*/
-	if (thermal_mismatch == 1) {
-		aTP = read_input (sizeaTP, sizeaTP, aTP, path, "Data/Crack_aTP.txt");
-		if (aTP[0][0] == 0) printf("Generate a table of a(T,P) using the aTP routine.\n");
-		integral = read_input (2, int_size, integral, path, "Data/Crack_integral.txt");
-		if (integral[0][0] == 0) printf("Generate a table of integral results using the aTP routine.\n");
-	}
-
-	if (pore_water_expansion == 1) {
-		alpha = read_input (sizeaTP, sizeaTP, alpha, path, "Data/Crack_alpha.txt");
-		if (alpha[0][0] == 0) printf("Generate a table of parameter alpha for water using the Crack_water_CHNOSZ routine.\n");
-		beta = read_input (sizeaTP, sizeaTP, beta, path, "Data/Crack_beta.txt");
-		if (beta[0][0] == 0) printf("Generate a table of parameter beta for water using the Crack_water_CHNOSZ routine.\n");
-	}
-
-	if (dissolution_precipitation == 1) {
-		silica = read_input (sizeaTP, sizeaTP, silica, path, "Data/Crack_silica.txt");
-		if (silica[0][0] == 0) printf("Generate a table of silica log K using the Crack_species_CHNOSZ routine.\n");
-		chrysotile = read_input (sizeaTP, sizeaTP, chrysotile, path, "Data/Crack_chrysotile.txt");
-		if (silica[0][0] == 0) printf("Generate a table of chrysotile log K using the Crack_species_CHNOSZ routine.\n");
-		magnesite = read_input (sizeaTP, sizeaTP, magnesite, path, "Data/Crack_magnesite.txt");
-		if (silica[0][0] == 0) printf("Generate a table of magnesite log K using the Crack_species_CHNOSZ routine.\n");
-	}
-
-	create_output(path, "Outputs/Thermal.txt");
-	create_output(path, "Outputs/Heats.txt");
-	create_output(path, "Outputs/Crack.txt");
-	create_output(path, "Outputs/Crack_depth.txt");
-	create_output(path, "Outputs/Crack_WRratio.txt");
-	create_output(path, "Outputs/Crack_stresses.txt");
-	create_output(path, "Outputs/Tidal_rates.txt");
-	create_output(path, "Outputs/Orbit.txt");
-
-    m_p = rho_p*4.0/3.0*PI_greek*r_p*r_p*r_p; // Compute object mass from radius and density
-
-    // Determine the core vs. ice shell content from bulk density.
-	  // Densities of liquid water and ammonia are chosen to conserve mass and volume,
-      // actual densities are 1.00 g/cm-3 and about 0.74 g/cm-3
-    rhoH2olth = rhoH2osth;
-    rhoNh3lth = (1.0/rhoH2olth) + (1.0/rhoAdhsth - 1.0/rhoH2osth) / Xc;  // Slush mass balance
-    rhoNh3lth = 1.0/rhoNh3lth;
-    rhoIce = 1.0 / ((Xp/Xc)/rhoAdhsth + (1.0-Xp/Xc)/rhoH2osth);          // Bulk ice density
-    frockpm = (1.0-rhoIce/rho_p) / (1.0-rhoIce/(Xhydr[0]*rhoHydrth+(1.0-Xhydr[0])*rhoRockth));
-    frockpv = frockpm*rho_p/(Xhydr[0]*rhoHydrth+(1.0-Xhydr[0])*rhoRockth);
-    dr_grid = r_p/((double) NR);
-
-    if (Xpores > 1.0-frockpv) {
-    	printf("Rocky core liquid/ice fraction higher (%g) than 1 - planet rock volume fraction %g.\n", Xpores, frockpv);
-    	exit(0);
-    }
-
-    for (ir=0;ir<NR;ir++) {
-    	r[ir+1] = r[ir] + dr_grid;
-    	dVol[ir] = 4.0/3.0*PI_greek*(r[ir+1]*r[ir+1]*r[ir+1] - r[ir]*r[ir]*r[ir]);
-    	dM[ir] = dVol[ir]*rho_p;
-    	Mrock[ir] = dM[ir]*frockpm;
-    	Mrock_init[ir] = Mrock[ir];
-    	Mh2os[ir] = dM[ir]*(1.0-frockpm)*(1.0-Xp/Xc);
-    	Madhs[ir] = dM[ir]*(1.0-frockpm)*(Xp/Xc);
-
-    	// Init of the energies, prop to Cp(T) * deltaT. Because often Cp(T) prop to T, energies prop to T*deltaT.
-    	Erock[ir] = Mrock[ir]*heatRock(Tinit);
-    	Eh2os[ir] = Mh2os[ir]*qh2o*Tinit*Tinit/2.0;
-    	Eslush[ir] = Madhs[ir]*qadh*Tinit*Tinit/2.0;
-    	dE[ir] = Erock[ir] + Eh2os[ir] + Eslush[ir];
-    }
-
-	// Account for initial porosity
-    for (ir=0;ir<NR;ir++) r[ir+1] = r[ir] + dr_grid*pow(1.0-pore[ir],-1.0/3.0);
-
-	//-------------------------------------------------------------------
-	//                  Allow for chemical equilibrium
-	//-------------------------------------------------------------------
-
+	i = 0;
 	for (ir=0;ir<NR;ir++) {
-		e1 = dE[ir] / dM[ir];
-		frock = Mrock[ir] / dM[ir];
-		fh2os = Mh2os[ir] / dM[ir];
-		fadhs = Madhs[ir] / dM[ir];
-		fh2ol = Mh2ol[ir] / dM[ir];
-		fnh3l = Mnh3l[ir] / dM[ir];
-		state (path, itime, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, Xsalt, &temp1);
-		T[ir] = temp1;
-		Mrock[ir] = dM[ir]*frock;
-		Mh2os[ir] = dM[ir]*fh2os;
-		Madhs[ir] = dM[ir]*fadhs;
-		Mh2ol[ir] = dM[ir]*fh2ol;
-		Mnh3l[ir] = dM[ir]*fnh3l;
-	}
-	for (ir=0;ir<NR;ir++) dM_old[ir] = dM[ir];
-
-	for (ir=0;ir<NR;ir++) {
-    	Vrock[ir] = Mrock[ir] / (Xhydr[ir]*rhoHydrth+(1.0-Xhydr[ir])*rhoRockth);
-    	Vh2os[ir] = Mh2os[ir] / rhoH2osth;
-    	Vadhs[ir] = Madhs[ir] / rhoAdhsth;
-    	Vh2ol[ir] = Mh2ol[ir] / rhoH2olth;
-    	Vnh3l[ir] = Mnh3l[ir] / rhoNh3lth;
-    	T[ir] = Tinit;
-    	Nu[ir] = 1.0;
-    }
-
-    // Gravitational potential energy
-    Phi = 0.6*Gcgs*dM[0]*dM[0]/r[1];
-    M[0] = dM[0];
-    for (ir=1;ir<NR;ir++) {
-    	ravg = (r[ir+1]+r[ir])/2.0;
-    	Phi = Phi + Gcgs*M[ir-1]*dM[ir] / ravg;
-    	M[ir] = M[ir-1] + dM[ir];
-    }
-
-	//-------------------------------------------------------------------
-	//      If simulation starts out differentiated, differentiate
-	//-------------------------------------------------------------------
-
-	if (startdiff == 1) {
-		irdiff = NR-1;
-		separate(NR, &irdiff, &ircore, &irice, dVol, &dM, &dE, &Mrock, &Mh2os, &Madhs, &Mh2ol, &Mnh3l,
-				 &Vrock, &Vh2os, &Vadhs, &Vh2ol, &Vnh3l, &Erock, &Eh2os, &Eslush, rhoAdhsth, rhoH2olth, rhoNh3lth, Xfines, Xpores);
-	}
-
-	//-------------------------------------------------------------------
-	//                  Allow for chemical equilibrium
-	//-------------------------------------------------------------------
-
-    for (ir=0;ir<NR;ir++) {
-    	e1 = dE[ir] / dM[ir];
-    	frock = Mrock[ir] / dM[ir];
-    	fh2os = Mh2os[ir] / dM[ir];
-    	fadhs = Madhs[ir] / dM[ir];
-    	fh2ol = Mh2ol[ir] / dM[ir];
-    	fnh3l = Mnh3l[ir] / dM[ir];
-		state (path, itime, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, Xsalt, &temp1);
-    	T[ir] = temp1;
-    	Mrock[ir] = dM[ir]*frock;
-    	Mh2os[ir] = dM[ir]*fh2os;
-    	Madhs[ir] = dM[ir]*fadhs;
-    	Mh2ol[ir] = dM[ir]*fh2ol;
-    	Mnh3l[ir] = dM[ir]*fnh3l;
-    }
-    for (ir=0;ir<NR;ir++) dM_old[ir] = dM[ir];
-
-	//-------------------------------------------------------------------
-	//                      Output initial configuration
-	//-------------------------------------------------------------------
-
-	for (ir=0;ir<NR;ir++) {
-		Thermal[0] = r[ir+1]/km2cm;
-		Thermal[1] = T[ir];
-		Thermal[2] = Mrock[ir];
-		Thermal[3] = Mh2os[ir];
-		Thermal[4] = Madhs[ir];
-		Thermal[5] = Mh2ol[ir];
-		Thermal[6] = Mnh3l[ir];
-		Thermal[7] = Nu[ir];
-		Thermal[8] = 0.0; // Fraction of amorphous ice in the original code of Desch et al. (2009)
-		Thermal[9] = kappa[ir]/1.0e5;
-		Thermal[10] = Xhydr[ir];
-		Thermal[11] = pore[ir];
-		append_output(12, Thermal, path, "Outputs/Thermal.txt");
-	}
-	Heat[0] = 0.0;                     // t in Gyr
-	Heat[1] = Heat_radio;
-	Heat[2] = Heat_grav;
-	Heat[3] = Heat_serp;
-	Heat[4] = Heat_dehydr;
-	Heat[5] = Heat_tide;
-	append_output(6, Heat, path, "Outputs/Heats.txt");
-
-	// Crack outputs
-	append_output(NR, Crack, path, "Outputs/Crack.txt");        // Crack type
-
-	// Crack depth (km)
-	Crack_depth[0] = 0.0;              // t in Gyr
-
-	for (ir=0;ir<NR;ir++) {
-		if (Crack[ir] > 0.0) break;
-	}
-	Crack_depth[1] = (double) (ircore-ir)/(double)NR*r_p/km2cm;
-	if (Crack_depth[1] < 0.0) Crack_depth[1] = 0.0;
-	append_output(2, Crack_depth, path, "Outputs/Crack_depth.txt");
-
-	// Water:rock ratio by mass in cracked layer
-	// Depends entirely on porosity! The W/R by volume is porosity. Here, we say W/R = Mliq/Mcracked_rock.
-	WRratio[0] = 0.0;                   // t in Gyr
-	Mliq = 0.0;
-	for (ir=0;ir<NR;ir++) {
-		Mliq = Mliq + Mh2ol[ir] + Mnh3l[ir];
-	}
-	Mcracked_rock = 0.0;
-	for (ir=0;ir<NR;ir++) {
-		if (Crack[ir] > 0.0) {
-			Mcracked_rock = Mcracked_rock + Mrock[ir];
+		(*dont_dehydrate)[ir] = 0;
+		for (jr=0;jr<12;jr++) (*Stress)[ir][jr] = 0.0;
+		if (fabs((*dM)[ir] - (*dM_old)[ir])/(*dM_old)[ir] > 0.05) {
+			i = 1;
+			break;
 		}
 	}
-	if (Mcracked_rock < 0.000001) WRratio[1] = 0.0;              // If Mcracked_rock is essentially 0, to avoid infinities
-	else WRratio[1] = Mliq/Mcracked_rock;
-	append_output(2, WRratio, path, "Outputs/Crack_WRratio.txt");
-
-	// Crack stresses
-	for (ir=0;ir<NR;ir++) {
-		Stress[ir][0] = r[ir+1]/km2cm;
-		append_output(12, Stress[ir], path, "Outputs/Crack_stresses.txt");
-	}
-
-	// Tidal rate outputs
-	for (ir=0;ir<NR;ir++) {
-		Tide_output[ir][0] = r[ir+1]/km2cm;
-		append_output(2, Tide_output[ir], path, "Outputs/Tidal_rates.txt"); // in W
-	}
-
-	// Orbital parameters
-	Orbit[0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
-	Orbit[1] = aorb/km2cm;
-	Orbit[2] = eorb;
-	append_output(3, Orbit, path, "Outputs/Orbit.txt");
+	for (ir=0;ir<NR;ir++) (*dM_old)[ir] = (*dM)[ir];
 
 	//-------------------------------------------------------------------
-	//                       Initialize time loop
+	// Calculate pressure everywhere. This takes time, so do that
+	// only if the structure has changed significantly
+	// (i.e., the mass of any layer has changed by more than 5%)
 	//-------------------------------------------------------------------
 
-    dtime = dtime*1.0e-6*Myr2sec;  // Static time step. Make it dynamic, CFL-compliant?
-    // dtime = 0.0010*Myr2sec / ((double) NR / 100.0) / ((double) NR / 100.0);
+	if (itime == 0 || i == 1) {
+		(*Pressure) = calculate_pressure(*Pressure, NR, *dM, *Mrock, *Mh2os, *Madhs, *Mh2ol, *Mnh3l, *r, rhoHydrth/gram, rhoRockth/gram, *Xhydr);     // Pressure
+	}
 
-    realtime = -dtime;
-    ntime = (int) (fulltime / dtime + 1.0e-3);
-    nsteps = (int) (dtoutput / dtime + 1.0e-3);
+	//-------------------------------------------------------------------
+	// Calculate porosity everywhere
+	// Neumann et al. 2014, doi 10.1051/0004-6361/201423648
+	// Creep law of Rutter & Brodie (1988) for rock
+	// This section is in SI since porosity is adimensional
+	//-------------------------------------------------------------------
 
-    for (itime=0;itime<=ntime;itime++) {
+	for (ir=0; ir<NR;ir++) {
+		creep((*T)[ir], (*Pressure)[ir], &creep_rate, 1.0-(*Vrock)[ir]/(*dVol)[ir], (*pore)[ir], (*Xhydr)[ir]);
+		(*pore)[ir] = (*pore)[ir]-dtime*(1.0-(*pore)[ir])*creep_rate;
+		if ((*pore)[ir] < 0.0) (*pore)[ir] = 0.0;
+		if ((*Mrock)[ir] < 0.01 && (*Mh2ol)[ir] > 0.01) (*pore)[ir] = 0.0;
+	}
+	// Update radii
+	for (ir=0;ir<NR;ir++) (*r)[ir+1] = (*r)[ir] + dr_grid*pow(1.0-(*pore)[ir],-1.0/3.0);
 
-    	realtime = realtime + dtime;
+	//-------------------------------------------------------------------
+	//               Rock hydration & dehydration, cracking
+	//-------------------------------------------------------------------
 
-    	i = 0;
-    	for (ir=0;ir<NR;ir++) {
-    		dont_dehydrate[ir] = 0;
-    		for (jr=0;jr<12;jr++) Stress[ir][jr] = 0.0;
-			if (fabs(dM[ir] - dM_old[ir])/dM_old[ir] > 0.05) {
-				i = 1;
-				break;
-			}
-    	}
-    	for (ir=0;ir<NR;ir++) dM_old[ir] = dM[ir];
+	(*structure_changed) = 0;
 
-    	//-------------------------------------------------------------------
-    	// Calculate pressure everywhere. This takes time, so do that
-    	// only if the structure has changed significantly
-    	// (i.e., the mass of any layer has changed by more than 5%)
-    	//-------------------------------------------------------------------
-
-    	if (itime == 0 || i == 1) {
-    		Pressure = calculate_pressure(Pressure, NR, dM, Mrock, Mh2os, Madhs, Mh2ol, Mnh3l, r, rhoHydr, rhoDry, Xhydr);     // Pressure
-    	}
-
-    	//-------------------------------------------------------------------
-    	// Calculate porosity everywhere
-    	// Neumann et al. 2014, doi 10.1051/0004-6361/201423648
-    	// Creep law of Rutter & Brodie (1988) for rock
-    	// This section is in SI since porosity is adimensional
-    	//-------------------------------------------------------------------
-
-    	for (ir=0; ir<NR;ir++) {
-    		creep(T[ir], Pressure[ir], &creep_rate, 1.0-Vrock[ir]/dVol[ir], pore[ir], Xhydr[ir]);
-    		pore[ir] = pore[ir]-dtime*(1.0-pore[ir])*creep_rate;
-    		if (pore[ir] < 0.0) pore[ir] = 0.0;
-    		if (Mrock[ir] < 0.01 && Mh2ol[ir] > 0.01) pore[ir] = 0.0;
-    	}
-    	// Update radii
-    	for (ir=0;ir<NR;ir++) r[ir+1] = r[ir] + dr_grid*pow(1.0-pore[ir],-1.0/3.0);
-
-    	//-------------------------------------------------------------------
-    	//               Rock hydration & dehydration, cracking
-    	//-------------------------------------------------------------------
-
-    	structure_changed = 0;
-
-    	if (itime > 1) { // Don't run crack() at itime = 1, because temperature changes from the initial temp can be artificially strong
-			for (ir=0;ir<ircore;ir++) {
-				if (T[ir]<Tdehydr_max) {
-					strain(Pressure[ir], Xhydr[ir], T[ir], &strain_rate[ir], &Brittle_strength[ir], pore[ir]);
-					if (fracOpen[ir] > 0.0) fracOpen[ir] = fracOpen[ir] - dtime*strain_rate[ir];
-					if (1.0/strain_rate[ir] > dtime) {
-						crack(T[ir], T_old[ir], Pressure[ir], &Crack[ir], &Crack_size[ir], Xhydr[ir], Xhydr_old[ir],
-								dtime, Mrock[ir], Mrock_init[ir], &Act[ir], warnings, crack_input, crack_species,
-								aTP, integral, alpha, beta, silica, chrysotile, magnesite, circ[ir], &Stress[ir],
-								&P_pore[ir], &P_hydr[ir], Brittle_strength[ir], rhoHydrth, rhoRockth);
-					}
-					else { // Reset all the variables modified by crack()
-						Crack[ir] = 0.0;
-						Crack_size[ir] = 0.0;
-						for (i=0;i<n_species_crack;i++) Act[ir][i] = 0.0;
-						for (i=0;i<12;i++) Stress[ir][i] = 0.0;
-						P_pore[ir] = 0.0;
-						P_hydr[ir] = 0.0;
-					}
-					if (Crack[ir] > 0.0 && fracOpen[ir] == 0.0) fracOpen[ir] = 1.0;
-					if (Crack[ir] > 0.0 && pore[ir] < crack_porosity) pore[ir] = crack_porosity;
+	if (itime > 1) { // Don't run crack() at itime = 1, because temperature changes from the initial temp can be artificially strong
+		for (ir=0;ir<(*ircore);ir++) {
+			if ((*T)[ir]<Tdehydr_max) {
+				strain((*Pressure)[ir], (*Xhydr)[ir], (*T)[ir], &strain_rate[ir], &Brittle_strength[ir], (*pore)[ir]);
+				if ((*fracOpen)[ir] > 0.0) (*fracOpen)[ir] = (*fracOpen)[ir] - dtime*strain_rate[ir];
+				if (1.0/strain_rate[ir] > dtime) {
+					crack((*T)[ir], (*T_old)[ir], (*Pressure)[ir], &(*Crack)[ir], &(*Crack_size)[ir], (*Xhydr)[ir], (*Xhydr_old)[ir],
+							dtime, (*Mrock)[ir], (*Mrock_init)[ir], &(*Act)[ir], warnings, crack_input, crack_species,
+							aTP, integral, alpha, beta, silica, chrysotile, magnesite, (*circ)[ir], &(*Stress)[ir],
+							&(*P_pore)[ir], &(*P_hydr)[ir], Brittle_strength[ir], rhoHydrth, rhoRockth);
 				}
-				else { // Reset all the variables modified by crack() and strain()
-					fracOpen[ir] = 0.0;
-					strain_rate[ir] = 0.0;
-					Brittle_strength[ir] = 0.0;
-					Crack[ir] = 0.0;
-					Crack_size[ir] = 0.0;
-					for (i=0;i<n_species_crack;i++) Act[ir][i] = 0.0;
-					for (i=0;i<12;i++) Stress[ir][i] = 0.0;
-					P_pore[ir] = 0.0;
-					P_hydr[ir] = 0.0;
+				else { // Reset all the variables modified by crack()
+					(*Crack)[ir] = 0.0;
+					(*Crack_size)[ir] = 0.0;
+					for (i=0;i<n_species_crack;i++) (*Act)[ir][i] = 0.0;
+					for (i=0;i<12;i++) (*Stress)[ir][i] = 0.0;
+					(*P_pore)[ir] = 0.0;
+					(*P_hydr)[ir] = 0.0;
 				}
-				if (fracOpen[ir] < 0.0 && Crack[ir] <= 0.0) {
-					fracOpen[ir] = 0.0;
-					Crack_size[ir] = 0.0;
-					for (i=0;i<n_species_crack;i++) Act[ir][i] = 0.0;
-				}
-				Stress[ir][10] = fracOpen[ir];
-				Stress[ir][11] = Crack[ir];
+				if ((*Crack)[ir] > 0.0 && (*fracOpen)[ir] == 0.0) (*fracOpen)[ir] = 1.0;
+				if ((*Crack)[ir] > 0.0 && (*pore)[ir] < crack_porosity) (*pore)[ir] = crack_porosity;
 			}
-    	}
-
-    	// Find the depth of the continuous cracked layer in contact with the ocean
-    	ircrack = NR;
-    	for (ir=ircore-1;ir>=0;ir--) {
-    		if (Crack[ir] > 0.0 || (ir>0 && Crack[ir-1] > 0.0)) ircrack = ir; // Second condition to avoid single non-cracked layers
-    		else break;
-    	}
-
-    	iriceold = irice;
-    	irice = ircore;
-    	for (ir=ircore;ir<NR;ir++) {
-    		if (Mh2ol[ir] > 0.0) irice = ir;
-    	}
-
-    	for (ir=0;ir<NR;ir++) Xhydr_old[ir] = Xhydr[ir];
-
-    	if (hy) {
-			for (ir=ircore-1;ir>=ircrack;ir--) { // From the ocean downwards -- irice-1 if fines?
-				if (circ[ir] == 1 && T[ir] < Tdehydr_max && Xhydr[ir] <= 0.99 && structure_changed == 0) {
-					Xhydr_temp = Xhydr[ir];
-					hydrate(T[ir], &dM, dVol, &Mrock, &Mh2os, Madhs, &Mh2ol, &Mnh3l, &Vrock, &Vh2os, &Vh2ol, &Vnh3l,
-						rhoRockth, rhoHydrth, rhoH2osth, rhoH2olth, rhoNh3lth, &Xhydr, ir, ircore, irice, NR);
-					structure_changed = 1;
-					if (Xhydr[ir] >= (1.0+1.0e-10)*Xhydr_temp) dont_dehydrate[ir] = 1; // +epsilon to beat machine error
-				}
+			else { // Reset all the variables modified by crack() and strain()
+				(*fracOpen)[ir] = 0.0;
+				strain_rate[ir] = 0.0;
+				Brittle_strength[ir] = 0.0;
+				(*Crack)[ir] = 0.0;
+				(*Crack_size)[ir] = 0.0;
+				for (i=0;i<n_species_crack;i++) (*Act)[ir][i] = 0.0;
+				for (i=0;i<12;i++) (*Stress)[ir][i] = 0.0;
+				(*P_pore)[ir] = 0.0;
+				(*P_hydr)[ir] = 0.0;
 			}
-			for (ir=0;ir<ircore;ir++) { // irice if fines?
-				if (T[ir] > Tdehydr_min && Xhydr[ir] >= 0.01 && dont_dehydrate[ir] == 0) {
-					dehydrate(T[ir], dM[ir], dVol[ir], &Mrock[ir], &Mh2ol[ir], &Vrock[ir], &Vh2ol[ir], rhoRockth, rhoHydrth, rhoH2olth,
-							&Xhydr[ir]);
-					structure_changed = 1;
-				}
+			if ((*fracOpen)[ir] < 0.0 && (*Crack)[ir] <= 0.0) {
+				(*fracOpen)[ir] = 0.0;
+				(*Crack_size)[ir] = 0.0;
+				for (i=0;i<n_species_crack;i++) (*Act)[ir][i] = 0.0;
 			}
-    	}
-
-//		//-------------------------------------------------------------------
-//		//               Allow for chemical equilibrium again
-//    	// Disabled to avoid artificial cooling upon dehydration. Put back?
-//    	// 160610: Unnecessary since no energy is transferred in hydrating/dehydrating?
-//		//-------------------------------------------------------------------
-//
-//		for (ir=0;ir<NR;ir++) {
-//			e1 = dE[ir] / dM[ir];
-//			frock = Mrock[ir] / dM[ir];
-//			fh2os = Mh2os[ir] / dM[ir];
-//			fadhs = Madhs[ir] / dM[ir];
-//			fh2ol = Mh2ol[ir] / dM[ir];
-//			fnh3l = Mnh3l[ir] / dM[ir];
-//			state (path, itime, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, Xsalt, &temp1);
-//			T[ir] = temp1;
-//			Mrock[ir] = dM[ir]*frock;
-//			Mh2os[ir] = dM[ir]*fh2os;
-//			Madhs[ir] = dM[ir]*fadhs;
-//			Mh2ol[ir] = dM[ir]*fh2ol;
-//			Mnh3l[ir] = dM[ir]*fnh3l;
-//		}
-
-    	//-------------------------------------------------------------------
-    	//           Differentiate the rock, liquids, and H2O ice
-    	//-------------------------------------------------------------------
-
-		// Recalculate irice in case some small amount of liquid was refrozen in the above chemical equilibrium calculation
-//    	irice = ircore;
-//    	for (ir=ircore;ir<NR;ir++) {
-//    		Xhydr_old[ir] = Xhydr[ir];
-//    		if (Mh2ol[ir] > 0.0) irice = ir;
-//    	}
-
-    	irdiffold = irdiff;
-    	if (Xp >= 1.0e-2) Tliq = 174.0; // Differentiation occurs at the solidus (first melt). We set 174 K instead of 176 K for consistency with the heatIce() subroutine.
-    	else Tliq = 271.0;              // instead of 273 K for consistency with heatIce().
-
-    	for (ir=0;ir<NR-1;ir++) { // Differentiation first by ice melting (above solidus, 176 K if there is any NH3)
-    		if (ir > irdiff && T[ir] > Tliq) irdiff = ir;
-    	}
-
-    	if (irdiff > NR/2) {      // Subsequent differentiation by Rayleigh-Taylor instabilities
-			for (ir=0;ir<NR-1;ir++) {
-				if (ir > irdiff && T[ir] > Tdiff) irdiff = ir;
-			}
-    	}
-
-    	if (irdiff > 0 && (irdiff != irdiffold || irice != iriceold || structure_changed == 1)) {
-    		separate(NR, &irdiff, &ircore, &irice, dVol, &dM, &dE, &Mrock, &Mh2os, &Madhs, &Mh2ol, &Mnh3l,
-    				 &Vrock, &Vh2os, &Vadhs, &Vh2ol, &Vnh3l, &Erock, &Eh2os, &Eslush, rhoAdhsth, rhoH2olth, rhoNh3lth, Xfines, Xpores);
-    	}
-
-    	// Update Xhydr
-    	for (ir=0;ir<ircore;ir++) { // irice?
-			Xhydr[ir] = (Mrock[ir]/Vrock[ir] - rhoRockth) / (rhoHydrth - rhoRockth);
-			if (Xhydr[ir] < 1.0e-10) Xhydr[ir] = 0.0;   // Avoid numerical residuals
-			if (Xhydr[ir] > 1.0-1.0e-10) Xhydr[ir] = 1.0;
-    	}
-
-//		//-------------------------------------------------------------------
-//		//               Allow for chemical equilibrium again
-//    	// 160610: Not really necessary any more since we're not moving
-//    	// energies around when differentiating, just mass
-//		//-------------------------------------------------------------------
-//
-//		for (ir=0;ir<NR;ir++) {
-//			e1 = dE[ir] / dM[ir];
-//			frock = Mrock[ir] / dM[ir];
-//			fh2os = Mh2os[ir] / dM[ir];
-//			fadhs = Madhs[ir] / dM[ir];
-//			fh2ol = Mh2ol[ir] / dM[ir];
-//			fnh3l = Mnh3l[ir] / dM[ir];
-//			state (path, itime, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, Xsalt, &temp1);
-//			T[ir] = temp1;
-//			Mrock[ir] = dM[ir]*frock;
-//			Mh2os[ir] = dM[ir]*fh2os;
-//			Madhs[ir] = dM[ir]*fadhs;
-//			Mh2ol[ir] = dM[ir]*fh2ol;
-//			Mnh3l[ir] = dM[ir]*fnh3l;
-//		}
-
-		//-------------------------------------------------------------------
-		//                    Find gravitational energy
-		//-------------------------------------------------------------------
-
-		Phiold = Phi;
-		Phi = 0.6*Gcgs*dM[0]*dM[0]/r[1];
-		M[0] = dM[0];
-
-		for (ir=1;ir<NR;ir++) {
-			ravg = (r[ir+1]+r[ir]) / 2.0;
-			Phi = Phi + Gcgs*M[ir-1]*dM[ir] / ravg;
-			M[ir] = M[ir-1] + dM[ir];
+			(*Stress)[ir][10] = (*fracOpen)[ir];
+			(*Stress)[ir][11] = (*Crack)[ir];
 		}
+	}
 
-		if (fabs(Phi-Phiold) < 1.0e-5*Phiold) Phi = Phiold;
+	// Find the depth of the continuous cracked layer in contact with the ocean
+	(*ircrack) = NR;
+	for (ir=(*ircore)-1;ir>=0;ir--) {
+		if ((*Crack)[ir] > 0.0 || (ir>0 && (*Crack)[ir-1] > 0.0)) (*ircrack) = ir; // Second condition to avoid single non-cracked layers
+		else break;
+	}
 
-		//-------------------------------------------------------------------
-		//                   Find % radionuclides leached TODO Don't do this at every step! Every time T, P, or WR change substantially?
-		//-------------------------------------------------------------------
+	iriceold = (*irice);
+	(*irice) = (*ircore);
+	for (ir=(*ircore);ir<NR;ir++) {
+		if ((*Mh2ol)[ir] > 0.0) (*irice) = ir;
+	}
 
-		Mliq = 0.0;
-		for (ir=0;ir<NR;ir++) Mliq = Mliq + Mh2ol[ir];
+	for (ir=0;ir<NR;ir++) (*Xhydr_old)[ir] = (*Xhydr)[ir];
 
-		Mcracked_rock = 0.0;
-		for (ir=0;ir<NR;ir++) {
-			if (Crack[ir] > 0.0) Mcracked_rock = Mcracked_rock + Mrock[ir];
+	if (hy) {
+		for (ir=(*ircore)-1;ir>=(*ircrack);ir--) { // From the ocean downwards -- irice-1 if fines?
+			if ((*circ)[ir] == 1 && (*T)[ir] < Tdehydr_max && (*Xhydr)[ir] <= 0.99 && (*structure_changed) == 0) {
+				Xhydr_temp = (*Xhydr)[ir];
+				hydrate((*T)[ir], &(*dM), *dVol, &(*Mrock), &(*Mh2os), *Madhs, &(*Mh2ol), &(*Mnh3l), &(*Vrock), &(*Vh2os), &(*Vh2ol), &(*Vnh3l),
+					rhoRockth, rhoHydrth, rhoH2osth, rhoH2olth, rhoNh3lth, &(*Xhydr), ir, (*ircore), (*irice), NR);
+				(*structure_changed) = 1;
+				if ((*Xhydr)[ir] >= (1.0+1.0e-10)*Xhydr_temp) (*dont_dehydrate)[ir] = 1; // +epsilon to beat machine error
+			}
 		}
+		for (ir=0;ir<(*ircore);ir++) { // irice if fines?
+			if ((*T)[ir] > Tdehydr_min && (*Xhydr)[ir] >= 0.01 && (*dont_dehydrate)[ir] == 0) {
+				dehydrate((*T)[ir], (*dM)[ir], (*dVol)[ir], &(*Mrock)[ir], &(*Mh2ol)[ir], &(*Vrock)[ir], &(*Vh2ol)[ir], rhoRockth, rhoHydrth, rhoH2olth,
+						&(*Xhydr)[ir]);
+				(*structure_changed) = 1;
+			}
+		}
+	}
 
-		if (ircore > 0) ir = ircore-1; // Set ir at seafloor for now. TODO average T and P over cracked zone?
-		else ir = 0;
+	irdiffold = (*irdiff);
+	if (Xp >= 1.0e-2) Tliq = 174.0; // Differentiation occurs at the solidus (first melt). We set 174 K instead of 176 K for consistency with the heatIce() subroutine.
+	else Tliq = 271.0;              // instead of 273 K for consistency with heatIce().
+
+	for (ir=0;ir<NR-1;ir++) { // Differentiation first by ice melting (above solidus, 176 K if there is any NH3)
+		if (ir > (*irdiff) && (*T)[ir] > Tliq) (*irdiff) = ir;
+	}
+
+	if ((*irdiff) > NR/2) {      // Subsequent differentiation by Rayleigh-Taylor instabilities
+		for (ir=0;ir<NR-1;ir++) {
+			if (ir > (*irdiff) && (*T)[ir] > Tdiff) (*irdiff) = ir;
+		}
+	}
+
+	if ((*irdiff) > 0 && ((*irdiff) != irdiffold || (*irice) != iriceold || (*structure_changed) == 1)) {
+		separate(NR, &(*irdiff), &(*ircore), &(*irice), *dVol, &(*dM), &(*dE), &(*Mrock), &(*Mh2os), &(*Madhs), &(*Mh2ol), &(*Mnh3l),
+				 &(*Vrock), &(*Vh2os), &(*Vadhs), &(*Vh2ol), &(*Vnh3l), &(*Erock), &(*Eh2os), &(*Eslush), rhoAdhsth, rhoH2olth, rhoNh3lth, Xfines, Xpores);
+	}
+
+	// Update Xhydr
+	for (ir=0;ir<(*ircore);ir++) { // irice?
+		(*Xhydr)[ir] = ((*Mrock)[ir]/(*Vrock)[ir] - rhoRockth) / (rhoHydrth - rhoRockth);
+		if ((*Xhydr)[ir] < 1.0e-10) (*Xhydr)[ir] = 0.0;   // Avoid numerical residuals
+		if ((*Xhydr)[ir] > 1.0-1.0e-10) (*Xhydr)[ir] = 1.0;
+	}
+
+	//-------------------------------------------------------------------
+	//                    Find gravitational energy
+	//-------------------------------------------------------------------
+
+	Phiold = (*Phi);
+	(*Phi) = 0.6*Gcgs*(*dM)[0]*(*dM)[0]/(*r)[1];
+	M[0] = (*dM)[0];
+
+	for (ir=1;ir<NR;ir++) {
+		ravg = ((*r)[ir+1]+(*r)[ir]) / 2.0;
+		(*Phi) = (*Phi) + Gcgs*M[ir-1]*(*dM)[ir] / ravg;
+		M[ir] = M[ir-1] + (*dM)[ir];
+	}
+
+	if (fabs((*Phi)-Phiold) < 1.0e-5*Phiold) (*Phi) = Phiold;
+
+	//-------------------------------------------------------------------
+	//                   Find % radionuclides leached TODO Don't do this at every step! Every time T, P, or WR change substantially?
+	//-------------------------------------------------------------------
+
+	(*Mliq) = 0.0;
+	for (ir=0;ir<NR;ir++) (*Mliq) = (*Mliq) + (*Mh2ol)[ir];
+
+	(*Mcracked_rock) = 0.0;
+	for (ir=0;ir<NR;ir++) {
+		if ((*Crack)[ir] > 0.0) (*Mcracked_rock) = (*Mcracked_rock) + (*Mrock)[ir];
+	}
+
+	if ((*ircore) > 0) ir = (*ircore)-1; // Set ir at seafloor for now. TODO average T and P over cracked zone?
+	else ir = 0;
 
 //		if (Mliq > 0.0 && Mcracked_rock > 0.0)
-//			WaterRock (path, T[ir], Pressure[ir]/bar, Mliq/Mcracked_rock, &fracKleached, chondr);
+//			WaterRock (path, (*T)[ir], Pressure[ir]/bar, Mliq/Mcracked_rock, &(*fracKleached), chondr);
 //
-//		printf("%d %g %g %g\n",itime,Mliq,Mcracked_rock,fracKleached);
+//		printf("%d %g %g %g\n",itime,Mliq,Mcracked_rock,(*fracKleached));
 
-		//-------------------------------------------------------------------
-		// Calculate heating from:
-		// - radioactive decay in rocky layers
-		// - gravitational potential energy release in differentiated layers
-		// - hydration / dehydration (cooling)
-		// - tidal heating
-		//-------------------------------------------------------------------
+	//-------------------------------------------------------------------
+	// Calculate heating from:
+	// - radioactive decay in rocky layers
+	// - gravitational potential energy release in differentiated layers
+	// - hydration / dehydration (cooling)
+	// - tidal heating
+	//-------------------------------------------------------------------
 
-		// Radioactive decay
-		decay(realtime, tzero, &Qth, NR, chondr, fracKleached, Mrock, Mh2os, Mh2ol, Xhydr, rhoH2olth, rhoRockth, rhoHydrth);
-		for (ir=0;ir<NR;ir++) Heat_radio = Heat_radio + Qth[ir];
+	// Radioactive decay
+	decay(realtime, tzero, &Qth, NR, chondr, (*fracKleached), *Mrock, *Mh2os, *Mh2ol, *Xhydr, rhoH2olth, rhoRockth, rhoHydrth);
+	for (ir=0;ir<NR;ir++) (*Heat_radio) = (*Heat_radio) + Qth[ir];
 
-		// Gravitational heat release in differentiation
-		if (irdiff > 0) {
-			Volume1 = 0.0;
-			for (ir=0;ir<=irdiff;ir++) {
-				Volume1 = Volume1 + dVol[ir];
-			}
-			for (ir=0;ir<=irdiff;ir++) {
-				Qth[ir] = Qth[ir] + (Phi-Phiold)/dtime * (dVol[ir]/Volume1);
-				Heat_grav = Heat_grav + (Phi-Phiold)/dtime * (dVol[ir]/Volume1);
-			}
+	// Gravitational heat release in differentiation
+	if ((*irdiff) > 0) {
+		Volume1 = 0.0;
+		for (ir=0;ir<=(*irdiff);ir++) {
+			Volume1 = Volume1 + (*dVol)[ir];
 		}
-
-		// Heats of hydration/dehydration
-		for (ir=0;ir<ircore;ir++) { //irice?
-			if (fabs(Xhydr_old[ir] - Xhydr[ir]) > 1.0e-10) {
-				Qth[ir] = Qth[ir] + (Xhydr[ir] - Xhydr_old[ir])*Mrock[ir]*Hhydr/dtime;
-				if (Xhydr[ir] - Xhydr_old[ir] > 0.0) Heat_serp = Heat_serp + (Xhydr[ir] - Xhydr_old[ir])*Mrock[ir]*Hhydr/dtime;
-				else Heat_dehydr = Heat_dehydr + (Xhydr_old[ir] - Xhydr[ir])*Mrock[ir]*Hhydr/dtime;
-			}
+		for (ir=0;ir<=(*irdiff);ir++) {
+			Qth[ir] = Qth[ir] + ((*Phi)-Phiold)/dtime * ((*dVol)[ir]/Volume1);
+			(*Heat_grav) = (*Heat_grav) + ((*Phi)-Phiold)/dtime * ((*dVol)[ir]/Volume1);
 		}
+	}
 
-		// Tidal heating
-		if (itime > 0 && moon && eorb > 0.0) {
-			for (ir=0;ir<NR;ir++) {
-				Tide_output[ir][1] = -Qth[ir]/1.0e7; // To output the distribution of tidal heating rates in each layer = -before+after
-				strain(Pressure[ir], Xhydr[ir], T[ir], &strain_rate[ir], &Brittle_strength[ir], pore[ir]);
-			}
-			Wtide_tot = 0.0;
-			tide(tidalmodel, tidetimesten, eorb, omega_tide, &Qth, NR, &Wtide_tot, Mh2os, Madhs, Mh2ol, Mnh3l, dM, Vrock, dVol, r,
-					T, Xhydr, Pressure, pore);
-			Heat_tide = Heat_tide + Wtide_tot;
+	// Heats of hydration/dehydration
+	for (ir=0;ir<NR;ir++) {
+		if (fabs((*Xhydr_old)[ir] - (*Xhydr)[ir]) > 1.0e-10) {
+			Qth[ir] = Qth[ir] + ((*Xhydr)[ir] - (*Xhydr_old)[ir])*(*Mrock)[ir]*Hhydr/dtime;
+			if ((*Xhydr)[ir] - (*Xhydr_old)[ir] > 0.0) (*Heat_serp) = (*Heat_serp) + ((*Xhydr)[ir] - (*Xhydr_old)[ir])*(*Mrock)[ir]*Hhydr/dtime;
+			else (*Heat_dehydr) = (*Heat_dehydr) + ((*Xhydr_old)[ir] - (*Xhydr)[ir])*(*Mrock)[ir]*Hhydr/dtime;
+		}
+	}
 
-			for (ir=0;ir<NR;ir++) Tide_output[ir][1] = Tide_output[ir][1] + Qth[ir]/1.0e7;
+	// Tidal heating
+	if (itime > 0 && moon && (*eorb) > 0.0) {
+		for (ir=0;ir<NR;ir++) {
+			(*Tide_output)[ir][1] = -Qth[ir]/1.0e7; // To output the distribution of tidal heating rates in each layer = -before+after
+			strain((*Pressure)[ir], (*Xhydr)[ir], (*T)[ir], &strain_rate[ir], &Brittle_strength[ir], (*pore)[ir]);
+		}
+		Wtide_tot = 0.0;
+		tide(tidalmodel, tidetimesten, (*eorb), omega_tide, &Qth, NR, &Wtide_tot, (*Mh2os), (*Madhs), (*Mh2ol), (*Mnh3l), (*dM),
+				(*Vrock), (*dVol), (*r), (*T), (*Xhydr), (*Pressure), (*pore));
+		(*Heat_tide) = (*Heat_tide) + Wtide_tot;
 
-			// Update orbital parameters (Barnes et al. 2008):
-			if (orbevol == 1 && Wtide_tot > 0.0) {
+		for (ir=0;ir<NR;ir++) (*Tide_output)[ir][1] = (*Tide_output)[ir][1] + Qth[ir]/1.0e7;
 
-				// Update eccentricity
-				d_eorb = - Wtide_tot*aorb / (Gcgs*Mprim*m_p*eorb)                                // Dissipation inside moon, decreases its eccentricity
-					   + 171.0/16.0*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p/Qprim*pow(aorb,-6.5)*eorb; // Dissipation inside planet, increases moon's eccentricity
-				if (-dtime*d_eorb < eorb) eorb = eorb + dtime*d_eorb;
-				else { // Set eccentricity to zero at which point there is no more dissipation, update Wtide_tot accordingly
-					d_eorb = -eorb/dtime;
-					Wtide_tot = (- d_eorb + 171.0/16.0*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p/Qprim*pow(aorb,-6.5)*eorb) * Gcgs*Mprim*m_p*eorb / aorb;
-					eorb = 0.0;
-				}
+		// Update orbital parameters (Barnes et al. 2008):
+		if (orbevol == 1 && Wtide_tot > 0.0) {
 
-				// Update semimajor axis
-				d_aorb_pl = - 2.0*Wtide_tot*aorb*aorb / (Gcgs*Mprim*m_p)                // Dissipation inside moon, shrinks its orbit
-					      + 4.5*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p/Qprim*pow(aorb,-5.5); // Dissipation inside planet, expands moon's orbit
+			// Update eccentricity
+			d_eorb = - Wtide_tot*(*aorb)[im] / (Gcgs*Mprim*m_p[im]*(*eorb))                                // Dissipation inside moon, decreases its eccentricity
+				   + 171.0/16.0*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*(*eorb); // Dissipation inside planet, increases moon's eccentricity
 
-				if (ring) { // Dissipation in the rings, expands moon's orbit if exterior to rings (Meyer-Vernet & Sicardy 1987, http://dx.doi.org/10.1016/0019-1035(87)90011-X)
-					ringTorque = 0.0;
-					// 1- Find inner Lindblad resonances that matter (kmin, kmax)
-					kmin = floor(1.0 / (1.0-pow(aring_in/aorb,1.5))) + 1;
-					kmax = floor(1.0 / (1.0-pow(aring_out/aorb,1.5)));
-
-					if (kmin <= kmax && kmax <= floor(1.0/sqrt(alpha_Lind))) {
-						for (i=kmin;i<=kmax;i++) ringTorque = ringTorque + PI_greek*PI_greek/3.0*ringSurfaceDensity*Gcgs*m_p*m_p*i*(i-1)*aorb/Mprim;
+			// Mean-motion resonances
+			double d_eorb_MMR = 0.0; // Change rate in eccentricity due to mean-motion resonance between two moons (s-1)
+			for (i=0;i<nmoons;i++) {
+				if (i != im) {
+					for (jr=1;jr<6;jr++) {
+						if (norb[im] < norb[i]) {
+							if (fabs(jr*norb[im] - (jr+1)*norb[i]) < 1.0e-2*norb[im]
+							 || fabs(jr*norb[im] - (jr+2)*norb[i]) < 1.0e-2*norb[im]
+							 || fabs(jr*norb[im] - (jr+3)*norb[i]) < 1.0e-2*norb[im])
+								d_eorb_MMR = MMR(m_p, norb, (*aorb), im, i, (*eorb)); // MMR if within 1% of moon mean motion
+								d_eorb = d_eorb + d_eorb_MMR;
+						}
+						else {
+							if (fabs((jr+1)*norb[im] - jr*norb[i]) < 1.0e-2*norb[im]
+							 || fabs((jr+2)*norb[im] - jr*norb[i]) < 1.0e-2*norb[im]
+							 || fabs((jr+3)*norb[im] - jr*norb[i]) < 1.0e-2*norb[im])
+								d_eorb_MMR = MMR(m_p, norb, (*aorb), im, i, (*eorb)); // MMR if within 1% of moon mean motion
+								d_eorb = d_eorb + d_eorb_MMR;
+						}
 					}
-					d_aorb_ring = 2.0*ringTorque/m_p*sqrt(aorb/(Gcgs*Mprim)); // Charnoz et al. (2011) eq. 2, http://dx.doi.org/10.1016/j.icarus.2011.09.017
 				}
-				if (-dtime*(d_aorb_pl + d_aorb_ring) < aorb) aorb = aorb + dtime*(d_aorb_pl+d_aorb_ring);
-				else {
-		    		FILE *fout;
+			}
 
-		    		// Turn working directory into full file path by moving up two directories to IcyDwarf (e.g., removing
-		    		// "Release/IcyDwarf" characters) and specifying the right path end.
+			if (-dtime*d_eorb < (*eorb)) (*eorb) = (*eorb) + dtime*d_eorb;
+			else { // Set eccentricity to zero at which point there is no more dissipation, update Wtide_tot accordingly
+				d_eorb = -(*eorb)/dtime;
+				Wtide_tot = (- d_eorb + 171.0/16.0*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*(*eorb)) * Gcgs*Mprim*m_p[im]*(*eorb) / (*aorb)[im];
+				(*eorb) = 0.0;
+			}
 
-		    		char *title = (char*)malloc(1024*sizeof(char));       // Don't forget to free!
-		    		title[0] = '\0';
-		    		if (v_release == 1) strncat(title,path,strlen(path)-16);
-		    		else if (cmdline == 1) strncat(title,path,strlen(path)-18);
-		    		strcat(title,"Outputs/Thermal.txt");
+			// Update semimajor axis
+			d_aorb_pl = - 2.0*Wtide_tot*(*aorb)[im]*(*aorb)[im] / (Gcgs*Mprim*m_p[im])         // Dissipation inside moon, shrinks its orbit
+					  + 4.5*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-5.5); // Dissipation inside planet, expands moon's orbit
 
-		    		fout = fopen(title,"a");
-		    		if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
-		    		else fprintf(fout,"Thermal: itime=%d, -dtime*d_aorb_pl = %g - -dtime*d_aorb_ring (= %g) > aorb = %g, moon crashes into planet\n", itime, -dtime*d_aorb_pl, -dtime*d_aorb_ring, aorb);
-		    		fclose (fout);
-		    		free (title);
-		    		exit(0);
+			if (ring) { // Dissipation in the rings, expands moon's orbit if exterior to rings (Meyer-Vernet & Sicardy 1987, http://dx.doi.org/10.1016/0019-1035(87)90011-X)
+				ringTorque = 0.0;
+				// 1- Find inner Lindblad resonances that matter (kmin, kmax)
+				kmin = floor(1.0 / (1.0-pow(aring_in/(*aorb)[im],1.5))) + 1;
+				kmax = floor(1.0 / (1.0-pow(aring_out/(*aorb)[im],1.5)));
+
+				if (kmin <= kmax && kmax <= floor(1.0/sqrt(alpha_Lind))) {
+					for (i=kmin;i<=kmax;i++) ringTorque = ringTorque + PI_greek*PI_greek/3.0*ringSurfaceDensity*Gcgs*m_p[im]*m_p[im]*i*(i-1)*(*aorb)[im]/Mprim;
 				}
+				d_aorb_ring = 2.0*ringTorque/m_p[im]*sqrt((*aorb)[im]/(Gcgs*Mprim)); // Charnoz et al. (2011) eq. 2, http://dx.doi.org/10.1016/j.icarus.2011.09.017
+			}
+			if (-dtime*(d_aorb_pl + d_aorb_ring) < (*aorb)[im]) (*aorb)[im] =(*aorb)[im] + dtime*(d_aorb_pl+d_aorb_ring);
+			else {
+				FILE *fout;
 
-				// Update mean motion and orbital frequency accordingly
-				norb = sqrt(Gcgs*Mprim/(aorb*aorb*aorb));
-				omega_tide = norb;
+				// Turn working directory into full file path by moving up two directories to IcyDwarf (e.g., removing
+				// "Release/IcyDwarf" characters) and specifying the right path end.
+	    		char *title = (char*)malloc(1024*sizeof(char));       // Don't forget to free!
+	    		title[0] = '\0';
+	    		char im_str[2];
+	    		im_str[0] = '\0';
+	    		if (v_release == 1) strncat(title,path,strlen(path)-16);
+	    		else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+	    		strcat(title,"Output");
+	    		sprintf(im_str, "%d", im);
+	    		strcat(title, im_str);
+	    		strcat(title,"/Thermal.txt");
+
+				fout = fopen(title,"a");
+				if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
+				else fprintf(fout,"Thermal: itime=%d, -dtime*d_aorb_pl = %g - -dtime*d_aorb_ring (= %g) > aorb = %g, moon crashes into planet\n",
+						itime, -dtime*d_aorb_pl, -dtime*d_aorb_ring, (*aorb)[im]);
+				fclose (fout);
+				free (title);
+				exit(0);
 			}
 		}
+	}
 
-		//-------------------------------------------------------------------
-		//                     Calculate conductive fluxes
-		//-------------------------------------------------------------------
+	//-------------------------------------------------------------------
+	//                     Calculate conductive fluxes
+	//-------------------------------------------------------------------
 
-		for (ir=0;ir<NR;ir++) {
-			frock = Vrock[ir] / dVol[ir];
-			fh2os = Vh2os[ir] / dVol[ir];
-			fadhs = Vadhs[ir] / dVol[ir];
-			fh2ol = Vh2ol[ir] / dVol[ir];
-			fnh3l = Vnh3l[ir] / dVol[ir];
+	for (ir=0;ir<NR;ir++) {
+		frock = (*Vrock)[ir] / (*dVol)[ir];
+		fh2os = (*Vh2os)[ir] / (*dVol)[ir];
+		fadhs = (*Vadhs)[ir] / (*dVol)[ir];
+		fh2ol = (*Vh2ol)[ir] / (*dVol)[ir];
+		fnh3l = (*Vnh3l)[ir] / (*dVol)[ir];
 
-			kappa[ir] = kapcond(T[ir], frock, fh2os, fadhs, fh2ol, fnh3l, Xhydr[ir], pore[ir]);
-		}
+		(*kappa)[ir] = kapcond((*T)[ir], frock, fh2os, fadhs, fh2ol, fnh3l, (*Xhydr)[ir], (*pore)[ir]);
+	}
 
-		//-------------------------------------------------------------------
-		//       Convection in cracked layer (hydrothermal circulation)
-		//-------------------------------------------------------------------
+	//-------------------------------------------------------------------
+	//       Convection in cracked layer (hydrothermal circulation)
+	//-------------------------------------------------------------------
 
-		for (ir=0;ir<NR;ir++) circ[ir] = 0;
+	for (ir=0;ir<NR;ir++) (*circ)[ir] = 0;
 
-		// Calculate fine volume fraction in liquid
-		if (ircore < NR) {
-			fineMassFrac = Mrock[ircore+1]/(Mh2ol[ircore+1]+Mh2os[ircore+1]+Mrock[ircore+1]);
-			fineVolFrac = fineMassFrac*dM[ircore+1]/dVol[ircore+1]/(Xhydr[ircore+1]*rhoHydrth+(1.0-Xhydr[ircore+1])*rhoRockth);
-		}
+	// Calculate fine volume fraction in liquid
+	if ((*ircore) < NR) {
+		fineMassFrac = (*Mrock)[(*ircore)+1] / ((*Mh2ol)[(*ircore)+1] + (*Mh2os)[(*ircore)+1] + (*Mrock)[(*ircore)+1]);
+		fineVolFrac = fineMassFrac * (*dM)[(*ircore)+1] / (*dVol)[(*ircore)+1] / ((*Xhydr)[(*ircore)+1]*rhoHydrth+(1.0-(*Xhydr)[(*ircore)+1])*rhoRockth);
+	}
 
-		 // Find inner and outer radii of convective zone
-		irin = ircore; irout = ircore;
-		for (ir=0;ir<ircore;ir++) {
-			if (Mh2ol[ir] > 0.0) irin = ir;
-			break;
-		}
-		for (ir=irin;ir<ircore;ir++) {
-			if (Mh2ol[ir] == 0.0) irout = ir;
-			break;
-		}
+	 // Find inner and outer radii of convective zone
+	irin = (*ircore); irout = (*ircore);
+	for (ir=0;ir<(*ircore);ir++) {
+		if ((*Mh2ol)[ir] > 0.0) irin = ir;
+		break;
+	}
+	for (ir=irin;ir<(*ircore);ir++) {
+		if ((*Mh2ol)[ir] == 0.0) irout = ir;
+		break;
+	}
 
-		if (irin < ircore) convect(irin, irout, T, r, NR, Pressure, M, dVol, Vrock, Vh2ol, pore, Mh2ol, Mnh3l, Xhydr, &kappa, &Nu,
-				Crack_size, rhoH2olth, rhoRockth, rhoHydrth, fineMassFrac, fineVolFrac, ircore, irdiff, &circ, creep_rate, 0);
+	if (irin < (*ircore)) convect(irin, irout, (*T), (*r), NR, (*Pressure), M, (*dVol), (*Vrock), (*Vh2ol), (*pore), (*Mh2ol), (*Mnh3l), (*Xhydr), &(*kappa), &(*Nu),
+			(*Crack_size), rhoH2olth, rhoRockth, rhoHydrth, fineMassFrac, fineVolFrac, (*ircore), (*irdiff), &(*circ), creep_rate, 0);
 
-		if ((ircrack < ircore && Mh2ol[ircore] > 0.0 && fineVolFrac < 0.64)) convect(ircrack, ircore, T, r, NR, Pressure, M, dVol,
-				Vrock, Vh2ol, pore, Mh2ol, Mnh3l, Xhydr, &kappa, &Nu, Crack_size, rhoH2olth, rhoRockth, rhoHydrth, fineMassFrac,
-				fineVolFrac, ircore, irdiff, &circ, creep_rate, 1);
+	if ((*ircrack) < (*ircore) && (*Mh2ol)[(*ircore)] > 0.0 && fineVolFrac < 0.64) convect((*ircrack), (*ircore), (*T), (*r), NR, (*Pressure), M, (*dVol),
+			(*Vrock), (*Vh2ol), (*pore), (*Mh2ol), (*Mnh3l), (*Xhydr), &(*kappa), &(*Nu), (*Crack_size), rhoH2olth, rhoRockth, rhoHydrth, fineMassFrac,
+			fineVolFrac, (*ircore), (*irdiff), &(*circ), creep_rate, 1);
 
-		if (forced_hydcirc == 1) {
-			for (ir=0;ir<ircore;ir++) kappa[ir] = kap_hydro;
-		}
+	if (forced_hydcirc == 1) {
+		for (ir=0;ir<(*ircore);ir++) (*kappa)[ir] = kap_hydro;
+	}
 
-		//-------------------------------------------------------------------
-		//                  Convection in H2O(l) / mud layer
-		//-------------------------------------------------------------------
+	//-------------------------------------------------------------------
+	//                  Convection in H2O(l) / mud layer
+	//-------------------------------------------------------------------
 
-		// Reset Nu and irice at each iteration (need to reset irice several times at each iteration because state() is called several times,
-		// and because for convection we want a slightly different definition (2% liquid))
-		irice_cv = 0;
-		for (ir=0;ir<NR;ir++) {
-			Nu[ir] = 1.0;
-			if (Mh2ol[ir] > 0.0) irice_cv = ir; // TODO 2% liquid minimum for liquid convection?
-		}
+	// Reset Nu and irice at each iteration (need to reset irice several times at each iteration because state() is called several times,
+	// and because for convection we want a slightly different definition (2% liquid))
+	irice_cv = 0;
+	for (ir=0;ir<NR;ir++) {
+		(*Nu)[ir] = 1.0;
+		if ((*Mh2ol)[ir] > 0.0) irice_cv = ir; // TODO 2% liquid minimum for liquid convection?
+	}
 
-		if (irice_cv >= ircore+2 && fineVolFrac < 0.64) convect(ircore, irice_cv, T, r, NR, Pressure, M, dVol, Vrock, Vh2ol, pore,
-				Mh2ol, Mnh3l, Xhydr, &kappa, &Nu, Crack_size, rhoH2olth, rhoRockth, rhoHydrth, fineMassFrac, fineVolFrac, ircore,
-				irdiff, &circ, creep_rate, 2);
+	if (irice_cv >= (*ircore)+2 && fineVolFrac < 0.64) convect((*ircore), irice_cv, (*T), (*r), NR, (*Pressure), M, (*dVol), (*Vrock), (*Vh2ol), (*pore),
+			(*Mh2ol), (*Mnh3l), (*Xhydr), &(*kappa), &(*Nu), (*Crack_size), rhoH2olth, rhoRockth, rhoHydrth, fineMassFrac, fineVolFrac, (*ircore),
+			(*irdiff), &(*circ), creep_rate, 2);
 
-		//-------------------------------------------------------------------
-		//                    Convection in H2O(s) layer
-		//-------------------------------------------------------------------
+	//-------------------------------------------------------------------
+	//                    Convection in H2O(s) layer
+	//-------------------------------------------------------------------
 
-		// Reset Nu at each iteration. No need to reset irice, which was just set for H2O(l) convection above
-		for (ir=0;ir<NR;ir++) Nu[ir] = 1.0;
+	// Reset Nu at each iteration. No need to reset irice, which was just set for H2O(l) convection above
+	for (ir=0;ir<NR;ir++) (*Nu)[ir] = 1.0;
 
-		if (irice > ircore) irice_cv = irice;
-		else irice_cv = ircore; // Case where there is no longer liquid: irice=0 (should =ircore but that crashes the code. 15/4/25: no longer true?)
+	if ((*irice) > (*ircore)) irice_cv = (*irice);
+	else irice_cv = (*ircore); // Case where there is no longer liquid
 
-		if (irdiff >= irice_cv+2 && fineVolFrac < 0.64) convect(irice_cv, irdiff, T, r, NR, Pressure, M, dVol, Vrock, Vh2ol, pore,
-				Mh2ol, Mnh3l, Xhydr, &kappa, &Nu, Crack_size, rhoH2osth, rhoRockth, rhoHydrth, fineMassFrac, fineVolFrac, ircore,
-				irdiff, &circ, creep_rate, 3);
+	if ((*irdiff) >= irice_cv+2 && fineVolFrac < 0.64) convect(irice_cv, (*irdiff), (*T), (*r), NR, (*Pressure), M, (*dVol), (*Vrock), (*Vh2ol), (*pore),
+			(*Mh2ol), (*Mnh3l), (*Xhydr), &(*kappa), &(*Nu), (*Crack_size), rhoH2osth, rhoRockth, rhoHydrth, fineMassFrac, fineVolFrac, (*ircore),
+			(*irdiff), &(*circ), creep_rate, 3);
 
-		//-------------------------------------------------------------------
-		//              Calculate conductive fluxes everywhere
-		//-------------------------------------------------------------------
+	//-------------------------------------------------------------------
+	//              Calculate conductive fluxes everywhere
+	//-------------------------------------------------------------------
 
-		for (ir=1;ir<NR;ir++) {
-			RRflux[ir] = -r[ir]*r[ir]*(kappa[ir]+kappa[ir-1]) * (T[ir]-T[ir-1]) / (r[ir+1]-r[ir-1]);
-		}
+	for (ir=1;ir<NR;ir++) {
+		RRflux[ir] = -(*r)[ir]*(*r)[ir]*((*kappa)[ir]+(*kappa)[ir-1]) * ((*T)[ir]-(*T)[ir-1]) / ((*r)[ir+1]-(*r)[ir-1]);
+	}
 
-		//-------------------------------------------------------------------
-		//                   Solve heat diffusion equation
-		//-------------------------------------------------------------------
+	//-------------------------------------------------------------------
+	//                   Solve heat diffusion equation
+	//-------------------------------------------------------------------
 
-    	for (ir=0;ir<NR;ir++) {
-    		T_old[ir] = T[ir];  // Memorize temperature
-    	}
+	for (ir=0;ir<NR;ir++) {
+		(*T_old)[ir] = (*T)[ir];  // Memorize temperature
+	}
 
-		// Heat equation
-		for (ir=0;ir<NR-1;ir++) {
-			dE[ir] = dE[ir] + dtime*Qth[ir] + 4.0*PI_greek*dtime*(RRflux[ir]-RRflux[ir+1]);
-		}
+	// Heat equation
+	for (ir=0;ir<NR-1;ir++) {
+		(*dE)[ir] = (*dE)[ir] + dtime*Qth[ir] + 4.0*PI_greek*dtime*(RRflux[ir]-RRflux[ir+1]);
+	}
 
-		// Chemical equilibrium
-		for (ir=0;ir<NR;ir++) {
-			e1 = dE[ir] / dM[ir];
-			frock = Mrock[ir] / dM[ir];
-			fh2os = Mh2os[ir] / dM[ir];
-			fadhs = Madhs[ir] / dM[ir];
-			fh2ol = Mh2ol[ir] / dM[ir];
-			fnh3l = Mnh3l[ir] / dM[ir];
-			state (path, itime, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, Xsalt, &temp1);
-	    	T[ir] = temp1;
-			Mrock[ir] = dM[ir]*frock;
-			Mh2os[ir] = dM[ir]*fh2os;
-			Madhs[ir] = dM[ir]*fadhs;
-			Mh2ol[ir] = dM[ir]*fh2ol;
-			Mnh3l[ir] = dM[ir]*fnh3l;
-		}
+	// Chemical equilibrium
+	for (ir=0;ir<NR;ir++) {
+		e1 = (*dE)[ir] / (*dM)[ir];
+		frock = (*Mrock)[ir] / (*dM)[ir];
+		fh2os = (*Mh2os)[ir] / (*dM)[ir];
+		fadhs = (*Madhs)[ir] / (*dM)[ir];
+		fh2ol = (*Mh2ol)[ir] / (*dM)[ir];
+		fnh3l = (*Mnh3l)[ir] / (*dM)[ir];
+		state (path, itime, im, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, Xsalt, &temp1);
+		(*T)[ir] = temp1;
+		(*Mrock)[ir] = (*dM)[ir]*frock;
+		(*Mh2os)[ir] = (*dM)[ir]*fh2os;
+		(*Madhs)[ir] = (*dM)[ir]*fadhs;
+		(*Mh2ol)[ir] = (*dM)[ir]*fh2ol;
+		(*Mnh3l)[ir] = (*dM)[ir]*fnh3l;
+	}
 
-		// Update energies
-		for (ir=0;ir<NR-1;ir++) {
-			Erock[ir] = heatRock(T[ir])*Mrock[ir];
-			Eh2os[ir] = Mh2os[ir]*qh2o*T[ir]*T[ir]/2.0;
-			if (dM[ir] == Mrock[ir]+Mh2os[ir])
-				Eslush[ir] = 0.0;
-			else
-				Eslush[ir] = dE[ir] - Eh2os[ir] - Erock[ir];
-		}
+	// Update energies
+	for (ir=0;ir<NR-1;ir++) {
+		(*Erock)[ir] = heatRock((*T)[ir])*(*Mrock)[ir];
+		(*Eh2os)[ir] = (*Mh2os)[ir]*qh2o*(*T)[ir]*(*T)[ir]/2.0;
+		if ((*dM)[ir] == (*Mrock)[ir]+(*Mh2os)[ir])
+			(*Eslush)[ir] = 0.0;
+		else
+			(*Eslush)[ir] = (*dE)[ir] - (*Eh2os)[ir] - (*Erock)[ir];
+	}
 
-		// Surface boundary condition (applied when phases found)
-		// Unnecessary since all parameters are already set to the values specified? The boundary condition is
-    	// really given by looking for Tdiff and updating the energies only up to NR-2, so NR-1 is always left unchanged.
-//    	Mrock[NR-1] = dM[NR-1]*frockp;
-//    	if (startdiff == 1) {
-//			Mh2os[NR-1] = dM[NR-1]*(1.0-frockp);
-//			Madhs[NR-1] = 0.0;
-//    	}
-//    	else {
-//			Mh2os[NR-1] = dM[NR-1]*(1.0-frockp)*(1.0-Xp/Xc);
-//			Madhs[NR-1] = dM[NR-1]*(1.0-frockp)*Xp/Xc;
-//    	}
-//		Mh2ol[NR-1] = 0.0;
-//		Mnh3l[NR-1] = 0.0;
-		Erock[NR-1] = Mrock[NR-1]*heatRock(Tsurf);
-		Eh2os[NR-1] = Mh2os[NR-1]*qh2o*Tsurf*Tsurf/2.0;
-		Eslush[NR-1] = Madhs[NR-1]*qadh*Tsurf*Tsurf/2.0;
-		dE[NR-1] = Erock[NR-1] + Eh2os[NR-1] + Eslush[NR-1];
+	// Surface boundary condition (applied when phases found)
+	// Unnecessary since all parameters are already set to the values specified? The boundary condition is
+	// really given by looking for Tdiff and updating the energies only up to NR-2, so NR-1 is always left unchanged.
+	(*Erock)[NR-1] = (*Mrock)[NR-1]*heatRock(Tsurf);
+	(*Eh2os)[NR-1] = (*Mh2os)[NR-1]*qh2o*Tsurf*Tsurf/2.0;
+	(*Eslush)[NR-1] = (*Madhs)[NR-1]*qadh*Tsurf*Tsurf/2.0;
+	(*dE)[NR-1] = (*Erock)[NR-1] + (*Eh2os)[NR-1] + (*Eslush)[NR-1];
 
-		// Update volumes
-		for (ir=0;ir<NR;ir++) {
-			Vrock[ir] = Mrock[ir] / (Xhydr[ir]*rhoHydrth+(1.0-Xhydr[ir])*rhoRockth); // /rhoRockth where there is no rock (Xhydr = 0)
-			Vh2os[ir] = Mh2os[ir] / rhoH2osth;
-			Vadhs[ir] = Madhs[ir] / rhoAdhsth;
-			Vh2ol[ir] = Mh2ol[ir] / rhoH2olth;
-			Vnh3l[ir] = Mnh3l[ir] / rhoNh3lth;
-		}
-
-		//-------------------------------------------------------------------
-		//                           Write output
-		//-------------------------------------------------------------------
-
-		isteps++;
-		if (isteps == nsteps) {
-			isteps = 0;
-			// Thermal outputs
-			for (ir=0;ir<NR;ir++) {
-				Thermal[0] = r[ir+1]/km2cm;
-				Thermal[1] = T[ir];
-				Thermal[2] = Mrock[ir];
-				Thermal[3] = Mh2os[ir];
-				Thermal[4] = Madhs[ir];
-				Thermal[5] = Mh2ol[ir];
-				Thermal[6] = Mnh3l[ir];
-				Thermal[7] = Nu[ir];
-				Thermal[8] = 0.0; // Fraction of amorphous ice in the original code of Desch et al. (2009)
-				Thermal[9] = kappa[ir]/1.0e5;
-				Thermal[10] = Xhydr[ir];
-				Thermal[11] = pore[ir];
-				append_output(12, Thermal, path, "Outputs/Thermal.txt");
-			}
-			Heat[0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
-			Heat[1] = Heat_radio*dtime;
-			Heat[2] = Heat_grav*dtime;
-			Heat[3] = Heat_serp*dtime;
-			Heat[4] = Heat_dehydr*dtime;
-			Heat[5] = Heat_tide*dtime;
-			append_output(6, Heat, path, "Outputs/Heats.txt");
-
-			// Crack outputs
-			append_output(NR, Crack, path, "Outputs/Crack.txt");        // Crack type
-
-			// Crack depth (km)
-			Crack_depth[0] = (double) itime*dtime/Gyr2sec;              // t in Gyr
-
-			for (ir=0;ir<NR;ir++) {
-				if (Crack[ir] > 0.0) break;
-			}
-			Crack_depth[1] = (double) (ircore-ir)/(double)NR*r_p/km2cm;
-			if (Crack_depth[1] < 0.0) Crack_depth[1] = 0.0;
-			append_output(2, Crack_depth, path, "Outputs/Crack_depth.txt");
-
-			// Water:rock ratio by mass in cracked layer. Here, we say W/R = Mliq/Mcracked_rock.
-			WRratio[0] = (double) itime*dtime/Gyr2sec;                   // t in Gyr
-			if (Mcracked_rock < 0.000001) WRratio[1] = 0.0;              // If Mcracked_rock is essentially 0, to avoid infinities
-			else WRratio[1] = Mliq/Mcracked_rock;
-			append_output(2, WRratio, path, "Outputs/Crack_WRratio.txt");
-
-			// Crack stresses
-			for (ir=0;ir<NR;ir++) {
-				Stress[ir][0] = r[ir+1]/km2cm;
-				append_output(12, Stress[ir], path, "Outputs/Crack_stresses.txt");
-			}
-
-			// Tidal rate outputs
-			for (ir=0;ir<NR;ir++) {
-				Tide_output[ir][0] = r[ir+1]/km2cm;
-				append_output(2, Tide_output[ir], path, "Outputs/Tidal_rates.txt"); // in W
-			}
-
-			// Orbital parameters
-			Orbit[0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
-			Orbit[1] = aorb/km2cm;
-			Orbit[2] = eorb;
-			append_output(3, Orbit, path, "Outputs/Orbit.txt");
-		}
-    }
+	// Update volumes
+	for (ir=0;ir<NR;ir++) {
+		(*Vrock)[ir] = (*Mrock)[ir] / ((*Xhydr)[ir]*rhoHydrth+(1.0-(*Xhydr)[ir])*rhoRockth); // /rhoRockth where there is no rock (Xhydr = 0)
+		(*Vh2os)[ir] = (*Mh2os)[ir] / rhoH2osth;
+		(*Vadhs)[ir] = (*Madhs)[ir] / rhoAdhsth;
+		(*Vh2ol)[ir] = (*Mh2ol)[ir] / rhoH2olth;
+		(*Vnh3l)[ir] = (*Mnh3l)[ir] / rhoNh3lth;
+	}
 
 	//-------------------------------------------------------------------
 	//                           Free mallocs
 	//-------------------------------------------------------------------
 
-	for (i=0;i<int_size;i++) free (integral[i]);
-	for (i=0;i<sizeaTP;i++) {
-		free (aTP[i]);
-		free (alpha[i]);
-		free (beta[i]);
-		free (silica[i]);
-		free (chrysotile[i]);
-		free (magnesite[i]);
-	}
-	for (i=0;i<12;i++) free (Stress[i]);
-	for (ir=0;ir<NR;ir++) free (Act[ir]);
-	for (i=0;i<2;i++) free (Tide_output[i]);
-	free (r);
-	free (dVol);
-	free (dM);
-	free (dM_old);
-	free (M);
-	free (dE);
-	free (Mrock);
-	free (Mh2os);
-	free (Madhs);
-	free (Mh2ol);
-	free (Mnh3l);
-	free (Erock);
-	free (Eh2os);
-	free (Eslush);
-	free (Vrock);
-	free (Vh2os);
-	free (Vadhs);
-	free (Vh2ol);
-	free (Vnh3l);
-	free (T);
-	free (T_old);
-	free (kappa);
 	free (RRflux);
+	free (M);
 	free (Qth);
-	free (Xhydr_old);
-	free (Pressure);
-	free (Crack);
-	free (Crack_size);
-	free (Act);
-	free (P_pore);
-	free (P_hydr);
-	free (Nu);
-	free (dont_dehydrate);
-	free (circ);
-	free (Mrock_init);
-	free (aTP);             // Thermal mismatch-specific
-	free (integral);
-	free (alpha);           // Pore water expansion-specific
-	free (beta);
-	free (silica);          // Dissolution/precipitation-specific
-	free (chrysotile);
-	free (magnesite);
-	free (Stress);
 	free (Brittle_strength);
 	free (strain_rate);
-	free (fracOpen);
-	free (pore);
-	free (Tide_output);
 
 	return 0;
 }
@@ -1299,8 +654,8 @@ int Thermal (int argc, char *argv[], char path[1024], int NR, double r_p, double
  *
  *--------------------------------------------------------------------*/
 
-int state (char path[1024], int itime, int ir, double E, double *frock, double *fh2os, double *fadhs, double *fh2ol, double *fnh3l,
-		double Xsalt, double *T) {
+int state (char path[1024], int itime, int im, int ir, double E, double *frock, double *fh2os, double *fadhs, double *fh2ol,
+		double *fnh3l, double Xsalt, double *T) {
 
 	int iter = 0;
 	double X = 0.0;         // Total solid (dihydrate) + liquid ammonia fraction
@@ -1374,9 +729,14 @@ int state (char path[1024], int itime, int ir, double E, double *frock, double *
 
     		char *title = (char*)malloc(1024*sizeof(char));       // Don't forget to free!
     		title[0] = '\0';
+    		char im_str[2];
+    		im_str[0] = '\0';
     		if (v_release == 1) strncat(title,path,strlen(path)-16);
     		else if (cmdline == 1) strncat(title,path,strlen(path)-18);
-    		strcat(title,"Outputs/Thermal.txt");
+    		strcat(title,"Output");
+    		sprintf(im_str, "%d", im);
+    		strcat(title, im_str);
+    		strcat(title,"/Thermal.txt");
 
     		fout = fopen(title,"a");
     		if (fout == NULL) {
@@ -2478,6 +1838,31 @@ double viscosity(double T, double Mh2ol, double Mnh3l) {
 	visc = exp(A+B/T);
 
 	return visc;
+}
+
+/*--------------------------------------------------------------------
+ *
+ * Subroutine MMR
+ *
+ * Calculates change in orbital eccentricity due to a mean-motion
+ * resonance between two moons, using the crude model of Charnoz et al.
+ * (2011), http://dx.doi.org/10.1016/j.icarus.2011.09.017
+ *
+ *--------------------------------------------------------------------*/
+
+double MMR(double *m_p, double *norb, double *aorb, int imoon, int i, double eorb) {
+
+	double d_eorb = 0.0;
+
+	double v_rel = fabs(norb[imoon]*aorb[imoon] - norb[i]*aorb[i]);	// Relative velocity (m s-1) (Greenberg et al. 1978, http://dx.doi.org/10.1016/0019-1035(78)90057-X)
+	double P = fabs(aorb[imoon] - aorb[i]);                         // Impact parameter (Greenberg et al. 1978)
+	double sinchi = pow(1.0 + P*P*pow(v_rel,4) / (Gcgs*Gcgs*pow(m_p[imoon]+m_p[i],2)) ,-0.5); // Greenberg et al. 1978
+	double delta_v = m_p[i]*v_rel / (m_p[imoon]+m_p[i]) * 2.0 * sinchi * sqrt(1.0-sinchi*sinchi); // Perpendicular velocity imparted to the moons
+
+	d_eorb = (delta_v/(norb[imoon]*aorb[imoon]) - eorb) / (2.0*PI_greek/norb[imoon]);
+	if (d_eorb < 0.0) d_eorb = 0.0; // Prevent eccentricity damping
+
+	return d_eorb;
 }
 
 /*--------------------------------------------------------------------

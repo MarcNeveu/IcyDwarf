@@ -20,15 +20,15 @@ Ring?                         1
 	Ring mass (kg)        7e19
 	Ring inner edge (km)  92000
 	Ring outer edge (km)  140000
-Density, 0 porosity (g cm-3)  1.149
+Density, 0 porosity (g cm-3)  1.237
 Porosity                      0.2
 Hydr. rock density (g cm-3)   2.9
 Dry rock density (g cm-3)     3.8 
 Chondrite type? 1:CO, otw CI  0
-Radius (km)                   198.2
+Radius (km)                   763.5
 Ammonia w.r.t. water          0
 Briny liquid? y=1, n=0        0
-Surface temperature (K)       76
+Surface temperature (K)       72
 -------------------------------
 Grid
 -------------------------------
@@ -48,7 +48,7 @@ Run thermal?                  1
 	Core ice/liq fraction 0.3
 	Start differentiated? 1
 	Tidal rhe 2Ma 3Bu 4An 4
-	Tidal heating x10?    0
+	Tidal heating x10?    1
 Core cracks
 	Calculate aTP?        0
 	Water alpha beta?     0
