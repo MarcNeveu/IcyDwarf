@@ -12,7 +12,7 @@ ICY DWARF v17.x INPUT FILE
 | Number of grid zones                          | 200                                                  |
 | Thermal simulation time step (yr)             | 50                                                   |
 | Total time of thermal simulation (Myr)        | 4000                                                 |
-| Output every (Myr)                            | 10                                                   |
+| Output every (Myr)                            | 1                                                   |
 |-----------------------------------------------|------------------------------------------------------|
 | Host planet parameters |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 |-----------------------------------------------|------------------------------------------------------|
@@ -30,7 +30,7 @@ ICY DWARF v17.x INPUT FILE
 | Density assuming zero porosity (g cm-3)       | 1.149    | 1.611    | 0.985    | 1.478    | 1.237    |
 | Surface temperature (K)                       | 76       | 59       | 68       | 70       | 72       |
 | Initial temperature (K)                       | 100      | 100      | 100      | 100      | 100      |
-| Time of formation (Myr)                       | 1000     | 1000     | 1000     | 1000     | 1000     |
+| Time of formation (Myr)                       | 1008.5   | 1006.5   | 1003.5   | 1001.5   | 1000     |
 | Ammonia w.r.t. water                          | 0        | 0        | 0        | 0        | 0        |
 | Briny liquid? y=1, n=0                        | 0        | 0        | 0        | 0        | 0        |
 | Initial degree of hydration                   | 1        | 1        | 1        | 1        | 1        |

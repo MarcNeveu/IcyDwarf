@@ -26,7 +26,7 @@
 #include "../Crack/Crack.h"
 
 int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int warnings, int NR, double dr_grid,
-		double dtime, double realtime, double tzero, int itime, double Xp, double Xsalt, double Xfines, double Xpores, double Tsurf,
+		double dtime, double realtime, int itime, double Xp, double Xsalt, double Xfines, double Xpores, double Tsurf,
 		double **r, double **dM, double **dM_old, double *Phi, double **dVol, double **dE, double **T, double **T_old, double **Pressure,
 		double rhoRockth, double rhoHydrth, double rhoH2osth, double rhoAdhsth, double rhoH2olth, double rhoNh3lth,
 		double **Mrock, double **Mrock_init, double **Mh2os, double **Madhs, double **Mh2ol, double **Mnh3l,
@@ -39,7 +39,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 		int *ircrack, int *ircore, int *irice, int *irdiff, int forced_hydcirc, double **Nu,
 		double **aorb, double *eorb, double *norb, double *m_p, double r_p, double Mprim, double Rprim, double Qprim,
 		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity,
-		int tidalmodel, int tidetimesten, int im, int nmoons, int orbevol, int hy, int chondr,
+		int tidalmodel, int tidetimesten, int im, int nmoons, int moonspawn, int orbevol, int hy, int chondr,
 		double *Heat_radio, double *Heat_grav, double *Heat_serp, double *Heat_dehydr, double *Heat_tide,
 		double ***Stress, double ***Tide_output);
 
@@ -78,7 +78,7 @@ double MMR(double *m_p, double *norb, double *aorb, int imoon, int i, double eor
 
 int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, double **Qth, int NR, double *Wtide_tot, double *Mh2os,
 		double *Madhs, double *Mh2ol, double *Mnh3l, double *dM,  double *Vrock, double *dVol, double *r, double *T, double *Xhydr,
-		double *Pressure, double *pore);
+		double *Pressure, double *pore, int im);
 
 int GaussJordan(double complex ***M, double complex ***b, int n, int m);
 int ScaledGaussJordan(long double complex ***M, int n);
@@ -94,7 +94,7 @@ long double complex y2p(long double complex x, int mod);
 long double complex y2pp(long double complex x, int mod);
 
 int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int warnings, int NR, double dr_grid,
-		double dtime, double realtime, double tzero, int itime, double Xp, double Xsalt, double Xfines, double Xpores, double Tsurf,
+		double dtime, double realtime, int itime, double Xp, double Xsalt, double Xfines, double Xpores, double Tsurf,
 		double **r, double **dM, double **dM_old, double *Phi, double **dVol, double **dE, double **T, double **T_old, double **Pressure,
 		double rhoRockth, double rhoHydrth, double rhoH2osth, double rhoAdhsth, double rhoH2olth, double rhoNh3lth,
 		double **Mrock, double **Mrock_init, double **Mh2os, double **Madhs, double **Mh2ol, double **Mnh3l,
@@ -107,7 +107,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 		int *ircrack, int *ircore, int *irice, int *irdiff, int forced_hydcirc, double **Nu,
 		double **aorb, double *eorb, double *norb, double *m_p, double r_p, double Mprim, double Rprim, double Qprim,
 		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity,
-		int tidalmodel, int tidetimesten, int im, int nmoons, int orbevol, int hy, int chondr,
+		int tidalmodel, int tidetimesten, int im, int nmoons, int moonspawn, int orbevol, int hy, int chondr,
 		double *Heat_radio, double *Heat_grav, double *Heat_serp, double *Heat_dehydr, double *Heat_tide,
 		double ***Stress, double ***Tide_output) {
 
@@ -192,7 +192,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 	// (i.e., the mass of any layer has changed by more than 5%)
 	//-------------------------------------------------------------------
 
-	if (itime == 0 || i == 1) {
+	if (itime == 0 || i == 1 || moonspawn) {
 		(*Pressure) = calculate_pressure(*Pressure, NR, *dM, *Mrock, *Mh2os, *Madhs, *Mh2ol, *Mnh3l, *r, rhoHydrth/gram, rhoRockth/gram, *Xhydr);     // Pressure
 	}
 
@@ -218,7 +218,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 
 	(*structure_changed) = 0;
 
-	if (itime > 1) { // Don't run crack() at itime = 1, because temperature changes from the initial temp can be artificially strong
+	if (itime > 1 && !moonspawn) { // Don't run crack() at itime = 1, because temperature changes from the initial temp can be artificially strong
 		for (ir=0;ir<(*ircore);ir++) {
 			if ((*T)[ir]<Tdehydr_max) {
 				strain((*Pressure)[ir], (*Xhydr)[ir], (*T)[ir], &strain_rate[ir], &Brittle_strength[ir], (*pore)[ir]);
@@ -391,14 +391,14 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 	}
 
 	// Tidal heating
-	if (itime > 0 && Mprim && (*eorb) > 0.0) {
+	if (itime > 0 && Mprim && (*eorb) > 0.0 && !moonspawn) {
 		for (ir=0;ir<NR;ir++) {
 			(*Tide_output)[ir][1] = -Qth[ir]/1.0e7; // To output the distribution of tidal heating rates in each layer = -before+after
 			strain((*Pressure)[ir], (*Xhydr)[ir], (*T)[ir], &strain_rate[ir], &Brittle_strength[ir], (*pore)[ir]);
 		}
 		Wtide_tot = 0.0;
 		tide(tidalmodel, tidetimesten, (*eorb), omega_tide, &Qth, NR, &Wtide_tot, (*Mh2os), (*Madhs), (*Mh2ol), (*Mnh3l), (*dM),
-				(*Vrock), (*dVol), (*r), (*T), (*Xhydr), (*Pressure), (*pore));
+				(*Vrock), (*dVol), (*r), (*T), (*Xhydr), (*Pressure), (*pore), im);
 		(*Heat_tide) = (*Heat_tide) + Wtide_tot;
 
 		for (ir=0;ir<NR;ir++) (*Tide_output)[ir][1] = (*Tide_output)[ir][1] + Qth[ir]/1.0e7;
@@ -420,6 +420,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 							 || fabs(jr*norb[im] - (jr+3)*norb[i]) < 1.0e-2*norb[im]) {
 								d_eorb_MMR = MMR(m_p, norb, (*aorb), im, i, (*eorb)); // MMR if within 1% of moon mean motion
 								d_eorb = d_eorb + d_eorb_MMR;
+								printf("%d Moons %d and %d in resonance, d_eorb_MMR = %g for moon %d\n", itime, im, i, d_eorb, im);
 							}
 						}
 						else {
@@ -428,6 +429,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 							 || fabs((jr+3)*norb[im] - jr*norb[i]) < 1.0e-2*norb[im]) {
 								d_eorb_MMR = MMR(m_p, norb, (*aorb), im, i, (*eorb)); // MMR if within 1% of moon mean motion
 								d_eorb = d_eorb + d_eorb_MMR;
+								printf("%d Moons %d and %d in resonance2, d_eorb_MMR = %g for moon %d\n", itime, im, i, d_eorb, im);
 							}
 						}
 					}
@@ -714,7 +716,7 @@ int state (char path[1024], int itime, int im, int ir, double E, double *frock, 
     	}
     	else {
     		printf("Thermal: Could not compute temperature\n");
-    		printf("Thermal: itime=%d, ir=%d, iter=%d\n",itime, ir, iter);
+    		printf("Thermal: itime=%d, im=%d, ir=%d, iter=%d\n",itime, im, ir, iter);
     		printf("Thermal: Tlo=%g K, Thi=%g K, Tmd=%g K\n", Tlo, Thi, Tmd);
     		printf("Thermal: Elo=%g, Ehi=%g, Emd=%g, E=%g\n", Elo, Ehi, Emd, E);
     		printf("Thermal: frock=%g, gh2os=%g, gadhs=%g, gh2ol=%g, gnh3l=%g, X=%g\n", (*frock), gh2os, gadhs, gh2ol, gnh3l, X);
@@ -742,7 +744,7 @@ int state (char path[1024], int itime, int im, int ir, double E, double *frock, 
     		}
     		else {
     	  		fprintf(fout,"Thermal: Could not compute temperature\n");
-				fprintf(fout,"Thermal: itime=%d, ir=%d\n",itime, ir);
+				fprintf(fout,"Thermal: itime=%d, im=%d, ir=%d\n",itime, im, ir);
 				fprintf(fout,"Thermal: Tlo=%g K, Thi=%g K, Tmd=%g K\n", Tlo, Thi, Tmd);
 				fprintf(fout,"Thermal: Elo=%g, Ehi=%g, Emd=%g, E=%g\n", Elo, Ehi, Emd, E);
 				fprintf(fout,"Thermal: frock=%g, gh2os=%g, gadhs=%g, gh2ol=%g, gnh3l=%g, X=%g\n", (*frock), gh2os, gadhs, gh2ol, gnh3l, X);
@@ -1873,7 +1875,7 @@ double MMR(double *m_p, double *norb, double *aorb, int imoon, int i, double eor
 
 int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, double **Qth, int NR, double *Wtide_tot, double *Mh2os,
 		double *Madhs, double *Mh2ol, double *Mnh3l, double *dM,  double *Vrock, double *dVol, double *r, double *T, double *Xhydr,
-		double *Pressure, double *pore) {
+		double *Pressure, double *pore, int im) {
 
 	int ir = 0;                          // Counters
 	int i = 0;
@@ -2127,7 +2129,7 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 		}
 	}
 
-    //-------------------------------------------------------------------
+	//-------------------------------------------------------------------
     // Calculate ytide in each layer using the propagator matrix method
 	//                   (Sabadini & Vermeersen 2004)
     //-------------------------------------------------------------------

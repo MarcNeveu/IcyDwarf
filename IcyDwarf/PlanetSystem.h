@@ -13,13 +13,13 @@
 #include "Crack/Crack.h"
 
 int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, double dtime, double *tzero,
-		double fulltime, double dtoutput, int nmoons, double Mprim, double Rprim, double Qprim, double Mring, double aring_out, double aring_in,
+		double fulltime, double dtoutput, int nmoons, double Mprim, double Rprim, double Qprim, double Mring_init, double aring_out, double aring_in,
 		double *r_p, double *rho_p, double rhoHydr, double rhoDry, double *Xp, double *Xsalt, double **Xhydr, double *porosity, double *Xpores,
 		double *Xfines, double *Tinit, double *Tsurf, int *startdiff, double *aorb_init, double *eorb_init, int tidalmodel, int tidetimesten,
 		int *orbevol, int *hy, int chondr, int *crack_input, int *crack_species);
 
 int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, double dtime, double *tzero,
-		double fulltime, double dtoutput, int nmoons, double Mprim, double Rprim, double Qprim, double Mring, double aring_out, double aring_in,
+		double fulltime, double dtoutput, int nmoons, double Mprim, double Rprim, double Qprim, double Mring_init, double aring_out, double aring_in,
 		double *r_p, double *rho_p, double rhoHydr, double rhoDry, double *Xp, double *Xsalt, double **Xhydr, double *porosity, double *Xpores,
 		double *Xfines, double *Tinit, double *Tsurf, int *startdiff, double *aorb_init, double *eorb_init, int tidalmodel, int tidetimesten,
 		int *orbevol, int *hy, int chondr, int *crack_input, int *crack_species) {
@@ -51,7 +51,8 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	double rhoAdhsth = rhoAdhs*gram;	 // Density of ammonia dihydrate ice (g/cm3)
 	double rhoH2olth = 0.0;              // Density of liquid water, just for this routine (g/cm3)
 	double rhoNh3lth = 0.0;              // Density of liquid ammonia, just for this routine (g/cm3)
-	double ringSurfaceDensity = Mring/(PI_greek*(aring_out*aring_out-aring_in*aring_in)); // Ring surface density (g cm-2)
+	double Mring = Mring_init;           // Ring mass
+	double ringSurfaceDensity = 0.0;     // Ring surface density (g cm-2)
 	double alpha_Lind = 0.0;             // Dissipation of Lindblad resonance in rings (no dim)
 	if (ringSurfaceDensity <= 2.0) alpha_Lind = 2.0e-5; else alpha_Lind = 1.0e-4; // Mostly viscosity and pressure if surf density²2 g cm-2, or self-gravity if surf density~50 g cm-2
 
@@ -61,6 +62,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	int ircore[nmoons];                  // Outermost core layer
 	int ircrack[nmoons];                 // Inner most cracked layer in contact with the ocean
 	int structure_changed[nmoons];       // Switch to call separate()
+	int moonspawn[nmoons];               // Switch: was a moon just spawned this time step?
 	double rhoIce[nmoons];               // Density of the bulk ice (g/cm3)
 	double e1[nmoons];                   // Temporary specific energy (erg/g)
 	double frock[nmoons];                // Rock mass fraction
@@ -88,6 +90,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	double Heat[nmoons][6];              // Heat[6] (erg), output
 	double Thermal_output[nmoons][12];	 // Thermal_output[12] (multiple units), output
 	double Orbit[nmoons][3];             // Orbit[3] (multiple units), output
+	double Ring[2];                      // Ring[2], output of ring mass (kg) vs. time (Gyr)
 
 	double *aorb = (double*) malloc((nmoons)*sizeof(double));       // Moon orbital semi-major axis (cm)
 	if (aorb == NULL) printf("PlanetSystem: Not enough memory to create aorb[nmoons]\n");
@@ -423,6 +426,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		ircore[im] = 0;
 		ircrack[im] = 0;
 		structure_changed[im] = 0;
+		moonspawn[im] = 0;
 		rhoIce[im] = 0.0;
 		e1[im] = 0.0;
 		frock[im] = 0.0;
@@ -450,6 +454,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		Heat[im][0] = 0.0, 	Heat[im][1] = 0.0, 	Heat[im][2] = 0.0, Heat[im][3] = 0.0, Heat[im][4] = 0.0; Heat[im][5] = 0.0;
 		aorb[im] = aorb_init[im];
 		eorb[im] = eorb_init[im];
+		norb[im] = 0.0;
 		outputpath[im][0] = '\0';
 
 		for (i=0;i<12;i++) Thermal_output[im][i] = 0.0;
@@ -558,9 +563,10 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		strcat(filename, outputpath[im]); strcat(filename, "Crack_stresses.txt"); create_output(path, filename); filename[0] = '\0';
 		strcat(filename, outputpath[im]); strcat(filename, "Tidal_rates.txt"); create_output(path, filename); filename[0] = '\0';
 		strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt"); create_output(path, filename); filename[0] = '\0';
-
-    	m_p[im] = rho_p[im]*4.0/3.0*PI_greek*r_p[im]*r_p[im]*r_p[im]; // Compute object mass from radius and density
 	}
+	create_output(path, "Outputs/Ringmass.txt");
+
+	for (im=0;im<nmoons;im++) m_p[im] = rho_p[im]*4.0/3.0*PI_greek*r_p[im]*r_p[im]*r_p[im]; // Compute object mass from radius and density
 
     // Determine the core vs. ice shell content from bulk density.
 	  // Densities of liquid water and ammonia are chosen to conserve mass and volume,
@@ -598,6 +604,9 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 
 		// Account for initial porosity
 		for (ir=0;ir<NR;ir++) r[im][ir+1] = r[im][ir] + dr_grid[im]*pow(1.0-pore[im][ir],-1.0/3.0);
+
+		// Initial ring mass is the input (final) mass + the mass of the moons
+	    Mring = Mring + m_p[im];
 
 		//-------------------------------------------------------------------
 		//                  Allow for chemical equilibrium
@@ -744,6 +753,10 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt");
 		append_output(3, Orbit[im], path, filename); filename[0] = '\0';
 	}
+	// Ring mass
+	Ring[0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
+	Ring[1] = Mring*gram;
+	append_output(2, Ring, path, "Outputs/Ringmass.txt");
 
 	//-------------------------------------------------------------------
 	//                       Initialize time loop
@@ -766,6 +779,15 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 
     	realtime = realtime + dtime;
 
+    	for (im=0;im<nmoons;im++) {
+        	moonspawn[im] = 0;
+    		if (realtime-dtime < tzero[im] && realtime >= tzero[im]) {
+    			Mring = Mring - m_p[im];
+    			moonspawn[im]++;
+    		}
+    	}
+    	ringSurfaceDensity = Mring/(PI_greek*(aring_out*aring_out-aring_in*aring_in));
+
 		// Begin parallel calculations
 #pragma omp parallel private(thread_id, nloops)
     	{
@@ -774,11 +796,11 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 
 #pragma omp for
 			for (im=0;im<nmoons;im++) {
-				if (realtime > tzero[im]) {
-					norb[im] = sqrt(Gcgs*Mprim/pow(aorb[im],3)); // Otherwise, norb[im] is zero and the moon im doesn't influence the others gravitationally
+				if (realtime >= tzero[im]) {
+		    		norb[im] = sqrt(Gcgs*Mprim/pow(aorb[im],3)); // Otherwise, norb[im] is zero and the moon im doesn't influence the others gravitationally
 
 					Thermal(argc, argv, path, outputpath[im], warnings, NR, dr_grid[im],
-							dtime, realtime, tzero[im], itime, Xp[im], Xsalt[im], Xfines[im], Xpores[im], Tsurf[im],
+							dtime, realtime, itime, Xp[im], Xsalt[im], Xfines[im], Xpores[im], Tsurf[im],
 							&r[im], &dM[im], &dM_old[im], &Phi[im], &dVol[im], &dE[im], &T[im], &T_old[im], &Pressure[im],
 							rhoRockth, rhoHydrth, rhoH2osth, rhoAdhsth, rhoH2olth, rhoNh3lth,
 							&Mrock[im], &Mrock_init[im], &Mh2os[im], &Madhs[im], &Mh2ol[im], &Mnh3l[im],
@@ -791,7 +813,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 							&ircrack[im], &ircore[im], &irice[im], &irdiff[im], forced_hydcirc, &Nu[im],
 							&aorb, &eorb[im], norb, m_p, r_p[im], Mprim, Rprim, Qprim,
 							aring_out, aring_in, alpha_Lind,  ringSurfaceDensity,
-							tidalmodel, tidetimesten, im, nmoons, orbevol[im], hy[im], chondr,
+							tidalmodel, tidetimesten, im, nmoons, moonspawn[im], orbevol[im], hy[im], chondr,
 							&Heat_radio[im], &Heat_grav[im], &Heat_serp[im], &Heat_dehydr[im], &Heat_tide[im],
 							&Stress[im], &Tide_output[im]);
 					++nloops;
@@ -878,6 +900,10 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 				strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt");
 				append_output(3, Orbit[im], path, filename); filename[0] = '\0';
 			}
+			// Ring mass
+			Ring[0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
+			Ring[1] = Mring*gram;
+			append_output(2, Ring, path, "Outputs/Ringmass.txt");
 		}
     }
 
