@@ -34,6 +34,8 @@ int main(int argc, char *argv[]){
 	int j = 0;
 	int im = 0;
 
+	int nmoons_max = 100;
+
 	// Grid inputs
     double timestep = 0.0;             // Time step of the sim (yr)
 	int NR = 0;                        // Number of grid zones
@@ -42,12 +44,10 @@ int main(int argc, char *argv[]){
     int NT_output = 0;                 // Time step for writing output
 
 	// Planet inputs
-	int moon = 0;                      // Is the simulated planet a moon? If so, consider the following parameters:
-    int nmoons = 1;
 	double Mprim = 0.0;                // Mass of the primary (host planet) (kg)
 	double Rprim = 0.0;				   // Radius of the primary (host planet) (km)
 	double Qprim = 0.0;				   // Tidal Q of the primary (host planet). For Saturn, = 2452.8, range 1570.8-4870.6 (Lainey et al. 2016)
-	int ring = 0;                      // Does the host planet have an inner ring? If so, consider the following 3 parameters:
+	int nmoons = 0;                    // User-specified number of moons
 	double Mring = 0.0;                // Mass of planet rings (kg). For Saturn, 4 to 7e19 kg (Robbins et al. 2010, http://dx.doi.org/10.1016/j.icarus.2009.09.012)
 	double aring_in = 0.0;             // Inner orbital radius of rings (km). for Saturn B ring, 92000 km
 	double aring_out = 0.0;            // Outer orbital radius of rings (km). for Saturn's A ring, 140000 km
@@ -63,23 +63,23 @@ int main(int argc, char *argv[]){
                                                   // for radiogenic heating, see Thermal-state()
 
     // Icy world inputs
-    double tzero[nmoons];                // Time of formation (Myr)
-    double r_p[nmoons];                  // Planetary radius
-	double rho_p[nmoons];                // Planetary density (g cm-3)
-    double Tsurf[nmoons];				   // Surface temperature
-    double Tinit[nmoons];                // Initial temperature
-    double nh3[nmoons];                  // Ammonia w.r.t. water
-    double salt[nmoons];                 // Salt w.r.t. water (3/30/2015: binary quantity)
-    double Hydr_init[nmoons];            // Initial degree of hydration of the rock (0=fully dry, 1=fully hydrated)
-    double Xfines[nmoons];               // Mass or volume fraction of rock in fine grains that don't settle into a core (0=none, 1=all)
-    double Xpores[nmoons];               // Mass of volume fraction of core occupied by ice and/or liquid (i.e., core porosity filled with ice and/or liquid)
-    int hy[nmoons];						   // Allow for rock hydration/dehydration?
-    double porosity[nmoons];             // Bulk porosity
-    int startdiff[nmoons];                 // Start differentiated?
-	int orbevol[nmoons];                   // Orbital evolution?
-    double aorb[nmoons];               // Moon orbital semi-major axis (km)
-	double eorb[nmoons];               // Moon orbital eccentricity
-	for (im=0;im<nmoons;im++) {
+    double r_p[nmoons_max];                // Planetary radius
+	double rho_p[nmoons_max];              // Planetary density (g cm-3)
+    double Tsurf[nmoons_max];		       // Surface temperature
+    double Tinit[nmoons_max];              // Initial temperature
+    double tzero[nmoons_max];              // Time of formation (Myr)
+    double nh3[nmoons_max];                // Ammonia w.r.t. water
+    double salt[nmoons_max];               // Salt w.r.t. water (3/30/2015: binary quantity)
+    double Xhydr_init[nmoons_max];         // Initial degree of hydration of the rock (0=fully dry, 1=fully hydrated)
+    int hy[nmoons_max];					   // Allow for rock hydration/dehydration?
+    double Xfines[nmoons_max];             // Mass or volume fraction of rock in fine grains that don't settle into a core (0=none, 1=all)
+    double Xpores[nmoons_max];             // Mass of volume fraction of core occupied by ice and/or liquid (i.e., core porosity filled with ice and/or liquid)
+    double porosity[nmoons_max];           // Bulk porosity
+    int startdiff[nmoons_max];             // Start differentiated?
+	int orbevol[nmoons_max];               // Orbital evolution?
+    double aorb[nmoons_max];               // Moon orbital semi-major axis (km)
+	double eorb[nmoons_max];               // Moon orbital eccentricity
+	for (im=0;im<nmoons_max;im++) {
 		tzero[im] = 0.0;
 		r_p[im] = 0.0;
 		rho_p[im] = 0.0;
@@ -87,7 +87,7 @@ int main(int argc, char *argv[]){
 		Tinit[im] = 0.0;
 		nh3[im] = 0.0;
 		salt[im] = 0.0;
-		Hydr_init[im] = 0.0;
+		Xhydr_init[im] = 0.0;
 		Xfines[im] = 0.0;
 		Xpores[im] = 0.0;
 		hy[im] = 0.0;
@@ -99,13 +99,13 @@ int main(int argc, char *argv[]){
 	}
 
     // Call specific subroutines
-    int calculate_thermal = 0;         // Run thermal code
-    int calculate_aTP = 0;             // Generate a table of flaw size that maximize stress (Vance et al. 2007)
-    int calculate_alpha_beta = 0;      // Calculate thermal expansivity and compressibility tables
-    int calculate_crack_species = 0;   // Calculate equilibrium constants of species that dissolve or precipitate
-    int calculate_geochemistry = 0;    // Run the PHREEQC code for the specified ranges of parameters
-    int calculate_compression = 0;     // Re-calculate last internal structure of Thermal() output by taking into account the effects of compression
-    int calculate_cryolava = 0;        // Calculate gas-driven exsolution
+    int run_thermal = 0;               // Run thermal code
+    int run_aTP = 0;                   // Generate a table of flaw size that maximize stress (Vance et al. 2007)
+    int run_alpha_beta = 0;            // Calculate thermal expansivity and compressibility tables
+    int run_crack_species = 0;         // Calculate equilibrium constants of species that dissolve or precipitate
+    int run_geochem = 0;               // Run the PHREEQC code for the specified ranges of parameters
+    int run_compression = 0;           // Re-calculate last internal structure of Thermal() output by taking into account the effects of compression
+    int run_cryolava = 0;              // Calculate gas-driven exsolution
 
     // Crack subroutine inputs
     int *crack_input = (int*) malloc(5*sizeof(int));
@@ -137,10 +137,10 @@ int main(int argc, char *argv[]){
     double CHNOSZ_T_MIN = 0.0;         // Minimum temperature for the subcrt() routine of CHNOSZ to work
                                        // Default: 235 K (Cryolava), 245 K (Crack, P>200 bar)
 
-	int n_inputs = 67;
+	int n_inputs = 200;
 
 	double *input = (double*) malloc(n_inputs*sizeof(double));
-	if (input == NULL) printf("IcyDwarf: Not enough memory to create input[67]\n");
+	if (input == NULL) printf("IcyDwarf: Not enough memory to create input[%d]\n", n_inputs);
 	for (i=0;i<n_inputs;i++) input[i] = 0.0;
 
 	//-------------------------------------------------------------------
@@ -171,59 +171,84 @@ int main(int argc, char *argv[]){
 	else
 	    printf("IcyDwarf: Couldn't retrieve executable directory. Buffer too small; need size %u\n", size);
 
+	//-------------------------------------------------------------------
+	// Read input
+	//-------------------------------------------------------------------
+
 	input = icy_dwarf_input (input, path);
 
 	i = 0;
+	//-----------------------------
 	warnings = (int) input[i]; i++;
 	msgout = (int) input[i]; i++;
-	moon = (int) input[i]; i++;
-	aorb[0] = input[i]*km2cm*moon; i++;           // Input-specified aorb if moon=1, 0 otherwise, cm
-	eorb[0] = input[i]*moon; i++;                 // Input-specified eorb if moon=1, 0 otherwise
-	orbevol[0] = input[i]; i++;
-	Mprim = input[i]/gram*moon; i++;           // Input-specified Mprim if moon=1, 0 otherwise, g
-	Rprim = input[i]*km2cm; i++;
-	Qprim = input[i]; i++;
-	ring = input[i]; i++;
-	Mring = input[i]/gram; i++;                // g
-	aring_in = input[i]*km2cm; i++;            // cm
-	aring_out = input[i]*km2cm; i++;           // cm
-	rho_p[0] = input[i]; i++;                     // g cm-3
-	porosity[0] = input[i]; i++;
-	rhoHydrRock = input[i]*gram/cm/cm/cm; i++; // kg m-3
-	rhoDryRock = input[i]*gram/cm/cm/cm; i++;  // kg m-3
-	chondr = input[i]; i++;
-	r_p[0] = input[i]*km2cm; i++;                 // cm
-	nh3[0] = input[i]; i++;
-	salt[0] = input[i]; i++;
-	Tsurf[0] = input[i]; i++;
+	//-----------------------------
 	NR = input[i]; i++;
-	total_time = input[i]*Myr2sec; i++;        // s
-	output_every = input[i]*Myr2sec; i++;      // s
-	NT_output = floor(total_time/output_every)+1;
-	calculate_thermal = (int) input[i]; i++;
-	timestep = input[i]; i++;                  // yr
-	tzero[0] = input[i]*Myr2sec; i++;             // s
-	Tinit[0] = input[i]; i++;
-	Hydr_init[0] = input[i]; i++;
-	hy[0] = input[i]; i++;
-	Xfines[0] = input[i]; i++;
-	Xpores[0] = input[i]; i++;
-	startdiff[0] = input[i]; i++;
-	tidalmodel = input[i]; i++;
-	tidetimesten = input[i]; i++;
-	calculate_aTP = (int) input[i]; i++;
-	calculate_alpha_beta = (int) input[i]; i++;
-	calculate_crack_species = (int) input[i]; i++;
-	calculate_geochemistry = (int) input[i]; i++;
+	timestep = input[i]; i++;          // yr
+	total_time = input[i]; i++;        // Myr
+	output_every = input[i]; i++;      // Myr
+	//-----------------------------
+	Mprim = input[i]; i++;             // kg
+	Rprim = input[i]; i++;             // km
+	Qprim = input[i]; i++;
+	nmoons = (int) input[i]; i++;
+	Mring = input[i]; i++;             // kg
+	aring_in = input[i]; i++;          // cm
+	aring_out = input[i]; i++;         // cm
+	//-----------------------------
+	for (im=0;im<nmoons;im++) r_p[im] = input[i+im];             // km
+	i=i+nmoons;
+	for (im=0;im<nmoons;im++) rho_p[im] = input[i+im];           // g cm-3
+	i=i+nmoons;
+	for (im=0;im<nmoons;im++) Tsurf[im] = input[i+im];           // K
+	i=i+nmoons;
+	for (im=0;im<nmoons;im++) Tinit[im] = input[i+im];           // K
+	 i=i+nmoons;
+	for (im=0;im<nmoons;im++) tzero[im] = input[i+im];           // Myr
+	 i=i+nmoons;
+	for (im=0;im<nmoons;im++) nh3[im] = input[i+im];             // Fraction w.r.t. H2O
+	i=i+nmoons;
+	for (im=0;im<nmoons;im++) salt[im] = input[i+im];            // 0 or 1
+	i=i+nmoons;
+	for (im=0;im<nmoons;im++) Xhydr_init[im] = input[i+im];
+	i=i+nmoons;
+	for (im=0;im<nmoons;im++) hy[im] = input[i+im];
+	i=i+nmoons;
+	for (im=0;im<nmoons;im++) porosity[im] = input[i+im];        // vol fraction
+	i=i+nmoons;
+	for (im=0;im<nmoons;im++) Xfines[im] = input[i+im];          // mass fraction = vol fraction
+	i=i+nmoons;
+	for (im=0;im<nmoons;im++) Xpores[im] = input[i+im];          // vol fraction
+	i=i+nmoons;
+	for (im=0;im<nmoons;im++) startdiff[im] = (int) input[i+im];
+	i=i+nmoons;
+	for (im=0;im<nmoons;im++) aorb[im] = input[i+im];            // km
+	i=i+nmoons;
+	for (im=0;im<nmoons;im++) eorb[im] = input[i+im];
+	i=i+nmoons;
+	for (im=0;im<nmoons;im++) orbevol[im] = (int) input[i+im];
+	i=i+nmoons;
+	//-----------------------------
+	rhoDryRock = input[i]; i++;        // g cm-3
+	rhoHydrRock = input[i]; i++;       // g cm-3
+	chondr = (int) input[i]; i++;
+	tidalmodel = (int) input[i]; i++;
+	tidetimesten = (int) input[i]; i++;
+	//-----------------------------
+	run_thermal = (int) input[i]; i++;
+	run_aTP = (int) input[i]; i++;
+	run_alpha_beta = (int) input[i]; i++;
+	run_crack_species = (int) input[i]; i++;
+	run_geochem = (int) input[i]; i++;
 	Tmin = input[i]; i++; Tmax = input[i]; i++; Tstep = input[i]; i++;
 	Pmin = input[i]; i++; Pmax = input[i]; i++; Pstep = input[i]; i++;
 	pHmin = input[i]; i++; pHmax = input[i]; i++; pHstep = input[i]; i++;
 	pemin = input[i]; i++; pemax = input[i]; i++; pestep = input[i]; i++;
 	WRmin = input[i]; i++; WRmax = input[i]; i++; WRstep = input[i]; i++;
-	calculate_compression = (int) input[i]; i++;
-	calculate_cryolava = (int) input[i]; i++;
-	t_cryolava = (int) input[i]/input[i-28]; i++;
-	CHNOSZ_T_MIN = input[i]; i++;
+	run_compression = (int) input[i]; i++;
+	run_cryolava = (int) input[i]; i++;
+	t_cryolava = (int) input[i]/input[i-28]; i++; // Myr
+	CHNOSZ_T_MIN = input[i]; i++;      // K
+	//-----------------------------
 	for (j=0;j<4;j++) {
 		crack_input[j] = (int) input[i]; i++;
 	}
@@ -231,23 +256,143 @@ int main(int argc, char *argv[]){
 		crack_species[j] = (int) input[i]; i++;
 	}
 
+	if (nmoons > nmoons_max) {
+		printf("Too many moons for the code to handle. Increase nmoon_max in the source code\n");
+		exit(0);
+	}
+
+	//-------------------------------------------------------------------
+	// Print input
+	//-------------------------------------------------------------------
+
+	printf("1 for Yes, 0 for No\n");
+	printf("--------------------------------------------------------------------------------------------------------\n");
+	printf("| Housekeeping |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||\n");
+	printf("|-----------------------------------------------|------------------------------------------------------|\n");
+	printf("| Warnings?                                     | %d\n", warnings);
+	printf("| Messages?                                     | %d\n", msgout);
+	printf("|-----------------------------------------------|------------------------------------------------------|\n");
+	printf("| Grid |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||\n");
+	printf("|-----------------------------------------------|------------------------------------------------------|\n");
+	printf("| Number of grid zones                          | %d\n", NR);
+	printf("| Thermal simulation time step (yr)             | %g\n", timestep);
+	printf("| Total time of thermal simulation (Myr)        | %g\n", total_time);
+	printf("| Output every (Myr)                            | %g\n", output_every);
+	printf("|-----------------------------------------------|------------------------------------------------------|\n");
+	printf("| Host planet parameters |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||\n");
+	printf("|-----------------------------------------------|------------------------------------------------------|\n");
+	printf("| Mass (kg) (0 if world is not a moon)          | %g\n", Mprim);
+	printf("| Radius (km)                                   | %g\n", Rprim);
+	printf("| Tidal Q                                       | %g\n", Qprim);
+	printf("| Number of moons                               | %d\n", nmoons);
+	printf("| Ring mass (kg) (0 if no rings)                | %g\n", Mring);
+	printf("| Ring inner edge (km)                          | %g\n", aring_in);
+	printf("| Ring outer edge (km)                          | %g\n", aring_out);
+	printf("|-----------------------------------------------|------------------------------------------------------|\n");
+	printf("| Icy world parameters |||||||||||||||||||||||||| World 1  | World 2  | World 3  | World 4  | World 5  |\n");
+	printf("|-----------------------------------------------|----------|----------|----------|----------|----------|\n");
+	printf("| Radius (km)                                   |");
+	for (im=0;im<nmoons;im++) printf(" %g \t", r_p[im]);
+	printf("\n| Density assuming zero porosity (g cm-3)       |");
+	for (im=0;im<nmoons;im++) printf(" %g \t", rho_p[im]);
+	printf("\n| Surface temperature (K)                       |");
+	for (im=0;im<nmoons;im++) printf(" %g \t", Tsurf[im]);
+	printf("\n| Initial temperature (K)                       |");
+	for (im=0;im<nmoons;im++) printf(" %g \t", Tinit[im]);
+	printf("\n| Time of formation (Myr)                       |");
+	for (im=0;im<nmoons;im++) printf(" %g \t", tzero[im]);
+	printf("\n| Ammonia w.r.t. water                          |");
+	for (im=0;im<nmoons;im++) printf(" %g \t", nh3[im]);
+	printf("\n| Briny liquid? y=1, n=0                        |");
+	for (im=0;im<nmoons;im++) printf(" %g \t", salt[im]);
+	printf("\n| Initial degree of hydration                   |");
+	for (im=0;im<nmoons;im++) printf(" %g \t", Xhydr_init[im]);
+	printf("\n| Hydrate/dehydrate?                            |");
+	for (im=0;im<nmoons;im++) printf(" %d \t", hy[im]);
+	printf("\n| Initial porosity volume fraction              |");
+	for (im=0;im<nmoons;im++) printf(" %g \t", porosity[im]);
+	printf("\n| Fraction of rock in fines                     |");
+	for (im=0;im<nmoons;im++) printf(" %g \t", Xfines[im]);
+	printf("\n| Core ice/liquid water volume fraction         |");
+	for (im=0;im<nmoons;im++) printf(" %g \t", Xpores[im]);
+	printf("\n| Start differentiated?                         |");
+	for (im=0;im<nmoons;im++) printf(" %d \t", startdiff[im]);
+	printf("\n| Initial orbital semi-major axis (km)          |");
+	for (im=0;im<nmoons;im++) printf(" %g ", aorb[im]);
+	printf("\n| Initial orbital eccentricity                  |");
+	for (im=0;im<nmoons;im++) printf(" %g \t", eorb[im]);
+	printf("\n| Allow orbit to change?                        |");
+	for (im=0;im<nmoons;im++) printf(" %d \t", orbevol[im]);
+	printf("\n|-----------------------------------------------|------------------------------------------------------|\n");
+	printf("| Dry rock density (g cm-3)                     | %g\n", rhoDryRock);
+	printf("| Hydrated rock density (g cm-3)                | %g\n", rhoHydrRock);
+	printf("| Chondrite type? CI=0 CO=1                     | %d\n", chondr);
+	printf("| Tidal rheology? Maxwell=2 Burgers=3 Andrade=4 | %d\n", tidalmodel);
+	printf("| Tidal heating x10?                            | %d\n", tidetimesten);
+	printf("|-----------------------------------------------|------------------------------------------------------|\n");
+	printf("| Subroutines ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||\n");
+	printf("|-----------------------------------------------|------------------------------------------------------|\n");
+	printf("| Run thermal code?                             | %d\n", run_thermal);
+	printf("| Generate core crack aTP table?                | %d\n", run_aTP);
+	printf("| Generate water alpha beta table?              | %d\n", run_alpha_beta);
+	printf("| Generate crack species log K with CHNOSZ?     | %d\n", run_crack_species);
+	printf("| Run geochemistry code? (min max step)         | %d\n", run_geochem);
+	printf("|   Temperature                                 | %g %g %g\n", Tmin, Tmax, Tstep);
+	printf("|   Pressure                                    | %g %g %g\n", Pmin, Pmax, Pstep);
+	printf("|   pH                                          | %g %g %g\n", pHmin, pHmax, pHstep);
+	printf("|   pe = FMQ + ...                              | %g %g %g\n", pemin, pemax, pestep);
+	printf("|   Water:rock mass ratio                       | %g %g %g\n", WRmin, WRmax, WRstep);
+	printf("| Run compression code?                         | %d\n", run_compression);
+	printf("| Run cryovolcanism code?                       | %d\n", run_cryolava);
+	printf("|   After how many Myr?                         | %d\n", t_cryolava);
+	printf("|   Minimum temperature to run CHNOSZ (K)       | %g\n", CHNOSZ_T_MIN);
+	printf("|-----------------------------------------------|------------------------------------------------------|\n");
+	printf("| Core crack options |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||\n");
+	printf("|-----------------------------------------------|------------------------------------------------------|\n");
+	printf("| Include thermal expansion/contrac mismatch?   | %d\n", crack_input[0]);
+	printf("| Include pore water expansion?                 | %d\n", crack_input[1]);
+	printf("| Include hydration/dehydration vol changes?    | %d\n", crack_input[2]);
+	printf("| Include dissolution/precipitation...?         | %d\n", crack_input[3]);
+	printf("|   ... of silica?                              | %d\n", crack_species[0]);
+	printf("|   ... of serpentine?                          | %d\n", crack_species[1]);
+	printf("|   ... of carbonate (magnesite)?               | %d\n", crack_species[2]);
+	printf("|------------------------------------------------------------------------------------------------------|\n\n");
+
+	// Conversions to cgs
+	total_time = total_time*Myr2sec;
+	output_every = output_every*Myr2sec;
+	Mprim = Mprim/gram;
+	Rprim = Rprim*km2cm;
+	Mring = Mring/gram;
+	aring_in = aring_in*km2cm;
+	aring_out = aring_out*km2cm;
+	for (im=0;im<nmoons;im++) {
+		r_p[im] = r_p[im]*km2cm;
+		tzero[im] = tzero[im]*Myr2sec;
+		aorb[im] = aorb[im]*km2cm;
+	}
+	// Conversions to SI
+	rhoDryRock = rhoDryRock*gram/cm/cm/cm;
+	rhoHydrRock = rhoHydrRock*gram/cm/cm/cm;
+	NT_output = floor(total_time/output_every)+1;
+
 	//-------------------------------------------------------------------
 	// Cracking depth calculations
 	//-------------------------------------------------------------------
 
-	if (calculate_aTP == 1) {
+	if (run_aTP == 1) {
 		printf("Calculating expansion mismatch optimal flaw size matrix...\n");
 		aTP(path, warnings, msgout);
 		printf("\n");
 	}
 
-	if (calculate_alpha_beta == 1) {
+	if (run_alpha_beta == 1) {
 		printf("Calculating alpha(T,P) and beta(T,P) tables for water using CHNOSZ...\n");
 		Crack_water_CHNOSZ(argc, argv, path, warnings, msgout);
 		printf("\n");
 	}
 
-	if (calculate_crack_species == 1) {
+	if (run_crack_species == 1) {
 		printf("Calculating log K for crack species using CHNOSZ...\n");
 		Crack_species_CHNOSZ(argc, argv, path, warnings, msgout);
 		printf("\n");
@@ -265,21 +410,22 @@ int main(int argc, char *argv[]){
 	}
 
 	for (im=0;im<nmoons;im++) {
-		for (ir=0;ir<NR;ir++) Xhydr[im][ir] = Hydr_init[im];
+		for (ir=0;ir<NR;ir++) Xhydr[im][ir] = Xhydr_init[im];
 	}
 
-	if (calculate_thermal == 1) {
+	if (run_thermal == 1) {
+		printf("Running thermal evolution code...\n");
 		PlanetSystem(argc, argv, path, warnings, NR, timestep, tzero, total_time, output_every, nmoons, Mprim, Rprim, Qprim,
-				Mring, aring_out, aring_in,
-				r_p, rho_p, rhoHydrRock, rhoDryRock, nh3, salt, Xhydr, porosity, Xpores, Xfines, Tinit, Tsurf, startdiff,
-				aorb, eorb, tidalmodel, tidetimesten, moon, orbevol, ring, hy, chondr, crack_input, crack_species);
+				Mring, aring_out, aring_in, r_p, rho_p, rhoHydrRock, rhoDryRock, nh3, salt, Xhydr, porosity, Xpores, Xfines,
+				Tinit, Tsurf, startdiff, aorb, eorb, tidalmodel, tidetimesten, orbevol, hy, chondr, crack_input, crack_species);
+		printf("\n");
 	}
 
 	//-------------------------------------------------------------------
 	// Water-rock reactions
 	//-------------------------------------------------------------------
 
-	if (calculate_geochemistry == 1) {
+	if (run_geochem == 1) {
 		printf("Running PHREEQC across the specified range of parameters...\n");
 		ParamExploration(path, Tmin, Tmax, Tstep,
 				Pmin, Pmax, Pstep,
@@ -293,7 +439,7 @@ int main(int argc, char *argv[]){
 	// Compression
 	//-------------------------------------------------------------------
 
-	if (calculate_compression == 1) {
+	if (run_compression == 1) {
 		printf("Running Compression routine...\n");
 		// Read thermal output
 		thermalout **thoutput = (thermalout**) malloc(NR*sizeof(thermalout*));        // Thermal model output
@@ -315,7 +461,7 @@ int main(int argc, char *argv[]){
 	// Cryolava calculations
 	//-------------------------------------------------------------------
 
-	if (calculate_cryolava == 1) {
+	if (run_cryolava == 1) {
 		printf("Calculating gas-driven exsolution at t=%d...\n",t_cryolava);
 
 		// Read thermal output

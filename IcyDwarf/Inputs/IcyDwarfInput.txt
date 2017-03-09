@@ -1,75 +1,78 @@
 ICY DWARF v17.x INPUT FILE
 
 1 for Yes, 0 for No
--------------------------------
-Housekeeping
--------------------------------
-Warnings?                     0
-Messages?                     0
--------------------------------
-Planet parameters
--------------------------------
-Moon?                         1
-	Orbital a (km)        160000
-	Orbital e             0.002
-	Orbital e decay?      1
-	Host planet mass (kg) 5.68e26
-	Planet radius (km)    58232
-	Host planet tidal Q   2452.8
-Ring?                         1
-	Ring mass (kg)        7e19
-	Ring inner edge (km)  92000
-	Ring outer edge (km)  140000
-Density, 0 porosity (g cm-3)  1.237
-Porosity                      0.2
-Hydr. rock density (g cm-3)   2.9
-Dry rock density (g cm-3)     3.8 
-Chondrite type? 1:CO, otw CI  0
-Radius (km)                   763.5
-Ammonia w.r.t. water          0
-Briny liquid? y=1, n=0        0
-Surface temperature (K)       72
--------------------------------
-Grid
--------------------------------
-Number of grid zones          200
-Total time of sim (Myr)       4000
-Output every (Myr)            10
--------------------------------
-Subroutines
--------------------------------
-Run thermal?                  1
-	Sim time step (yr)    50
-	Sim starts at (Myr)   1000
-	Initial temp (K)      100
-	Degree of hydration   1
-	Hydrate/dehydrate?    1
-	Fine rock fraction    0
-	Core ice/liq fraction 0.3
-	Start differentiated? 1
-	Tidal rhe 2Ma 3Bu 4An 4
-	Tidal heating x10?    1
-Core cracks
-	Calculate aTP?        0
-	Water alpha beta?     0
-	CHNOSZ species?       0
-Geochemistry? (min max step)  0
-	Temperature           0 300 50
-	Pressure              200 1400 200
-	pH                    7 14 1
-	pe = FMQ + ...        -6 6 1
-	Water:rock mass ratio 0.1 10 10
-Compression?                  0
-Cryovolcanism?                0
-	After how many Myr?   2500
-	Min temperature (K)   273
--------------------------------
-Core crack options
--------------------------------
-Thermal mismatch?             1
-Pore water expansion?         1
-Hydration/dehydration?        0
-Dissolution/ppt?              0
-	Silica?               1
-	Serpentine?           1
-	Carbonate?            1
+--------------------------------------------------------------------------------------------------------
+| Housekeeping |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+|-----------------------------------------------|------------------------------------------------------|
+| Warnings?                                     | 1                                                    |
+| Messages?                                     | 0                                                    |
+|-----------------------------------------------|------------------------------------------------------|
+| Grid |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+|-----------------------------------------------|------------------------------------------------------|
+| Number of grid zones                          | 200                                                  |
+| Thermal simulation time step (yr)             | 50                                                   |
+| Total time of thermal simulation (Myr)        | 4000                                                 |
+| Output every (Myr)                            | 10                                                   |
+|-----------------------------------------------|------------------------------------------------------|
+| Host planet parameters |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+|-----------------------------------------------|------------------------------------------------------|
+| Mass (kg) (0 if world is not a moon)          | 5.68e26                                              |
+| Radius (km)                                   | 58232                                                |
+| Tidal Q                                       | 2452.8                                               |
+| Number of moons                               | 5                                                    |
+| Ring mass (kg) (0 if no rings)                | 7e19                                                 |
+| Ring inner edge (km)                          | 92000                                                |
+| Ring outer edge (km)                          | 140000                                               |
+|-----------------------------------------------|------------------------------------------------------|
+| Icy world parameters |||||||||||||||||||||||||| World 1  | World 2  | World 3  | World 4  | World 5  |
+|-----------------------------------------------|----------|----------|----------|----------|----------|
+| Radius (km)                                   | 198.2    | 252.0    | 531.0    | 561.4    | 763.5    |
+| Density assuming zero porosity (g cm-3)       | 1.149    | 1.611    | 0.985    | 1.478    | 1.237    |
+| Surface temperature (K)                       | 76       | 59       | 68       | 70       | 72       |
+| Initial temperature (K)                       | 100      | 100      | 100      | 100      | 100      |
+| Time of formation (Myr)                       | 1000     | 1000     | 1000     | 1000     | 1000     |
+| Ammonia w.r.t. water                          | 0        | 0        | 0        | 0        | 0        |
+| Briny liquid? y=1, n=0                        | 0        | 0        | 0        | 0        | 0        |
+| Initial degree of hydration                   | 1        | 1        | 1        | 1        | 1        |
+| Hydrate/dehydrate?                            | 1        | 1        | 1        | 1        | 1        |
+| Initial porosity volume fraction              | 0.2      | 0.2      | 0.2      | 0.2      | 0.2      |
+| Fraction of rock in fines                     | 0        | 0        | 0        | 0        | 0        |
+| Core ice/liquid water volume fraction         | 0.3      | 0.3      | 0.3      | 0.3      | 0.3      |
+| Start differentiated?                         | 1        | 1        | 1        | 1        | 1        |
+| Initial orbital semi-major axis (km)          | 160000   | 160000   | 160000   | 160000   | 160000   |
+| Initial orbital eccentricity                  | 0.002    | 0.002    | 0.002    | 0.002    | 0.002    |
+| Allow orbit to change?                        | 1        | 1        | 1        | 1        | 1        |
+|-----------------------------------------------|------------------------------------------------------|
+| Dry rock density (g cm-3)                     | 3.8                                                  |
+| Hydrated rock density (g cm-3)                | 2.9                                                  |
+| Chondrite type? CI=0 CO=1                     | 0                                                    |
+| Tidal rheology? Maxwell=2 Burgers=3 Andrade=4 | 4                                                    |
+| Tidal heating x10?                            | 1                                                    |
+|-----------------------------------------------|------------------------------------------------------|
+| Subroutines ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+|-----------------------------------------------|------------------------------------------------------|
+| Run thermal code?                             | 1                                                    |
+| Generate core crack aTP table?                | 0                                                    |
+| Generate water alpha beta table?              | 0                                                    |
+| Generate crack species log K with CHNOSZ?     | 0                                                    |
+| Run geochemistry code? (min max step)         | 0                                                    |
+|   Temperature                                 | 0 300 50                                             |
+|   Pressure                                    | 200 1400 200                                         |
+|   pH                                          | 7 14 1                                               |
+|   pe = FMQ + ...                              | -6 6 1                                               |
+|   Water:rock mass ratio                       | 0.1 10 10                                            |
+| Run compression code?                         | 0                                                    |
+| Run cryovolcanism code?                       | 0                                                    |
+|   After how many Myr?                         | 2500                                                 |
+|   Minimum temperature to run CHNOSZ (K)       | 273                                                  |
+|-----------------------------------------------|------------------------------------------------------|
+| Core crack options |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+|-----------------------------------------------|------------------------------------------------------|
+| Include thermal expansion/contrac mismatch?   | 1                                                    |
+| Include pore water expansion?                 | 1                                                    |
+| Include hydration/dehydration vol changes?    | 0                                                    |
+| Include dissolution/precipitation...?         | 0                                                    |
+|   ... of silica?                              | 1                                                    |
+|   ... of serpentine?                          | 1                                                    |
+|   ... of carbonate (magnesite)?               | 1                                                    |
+|-------------------------------------------------------------------------------------------------------

@@ -39,7 +39,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 		int *ircrack, int *ircore, int *irice, int *irdiff, int forced_hydcirc, double **Nu,
 		double **aorb, double *eorb, double *norb, double *m_p, double r_p, double Mprim, double Rprim, double Qprim,
 		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity,
-		int tidalmodel, int tidetimesten, int moon, int im, int nmoons, int orbevol, int ring, int hy, int chondr,
+		int tidalmodel, int tidetimesten, int im, int nmoons, int orbevol, int hy, int chondr,
 		double *Heat_radio, double *Heat_grav, double *Heat_serp, double *Heat_dehydr, double *Heat_tide,
 		double ***Stress, double ***Tide_output);
 
@@ -52,7 +52,7 @@ int heatIce (double T, double X, double Xsalt, double *E, double *gh2os, double 
 
 double kapcond(double T, double frock, double fh2os, double fadhs, double fh2ol, double dnh3l, double Xhydr, double porosity);
 
-int decay(double t, double tzero, double **Qth, int NR, int chondr, double fracKleached, double *Mrock, double *Mh2os,
+int decay(double t, double **Qth, int NR, int chondr, double fracKleached, double *Mrock, double *Mh2os,
 		double *Mh2ol, double *Xhydr, double rhoH2olth, double rhoRockth, double rhoHydrth);
 
 int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double **dM, double **dE, double **Mrock, double **Mh2os, double **Madhs,
@@ -107,23 +107,20 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 		int *ircrack, int *ircore, int *irice, int *irdiff, int forced_hydcirc, double **Nu,
 		double **aorb, double *eorb, double *norb, double *m_p, double r_p, double Mprim, double Rprim, double Qprim,
 		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity,
-		int tidalmodel, int tidetimesten, int moon, int im, int nmoons, int orbevol, int ring, int hy, int chondr,
+		int tidalmodel, int tidetimesten, int im, int nmoons, int orbevol, int hy, int chondr,
 		double *Heat_radio, double *Heat_grav, double *Heat_serp, double *Heat_dehydr, double *Heat_tide,
 		double ***Stress, double ***Tide_output) {
 
 	int ir = 0;                          // Grid counter
 	int jr = 0;                          // Secondary grid counter
 	int i = 0;
-
 	int kmin = 0;                        // Lowest order of inner Lindblad resonance in the rings
 	int kmax = 0;                        // Highest order of inner Lindblad resonance in the rings
-
 	int irin = 0;                        // Inner convection radius in a core that contains melted ice
 	int irout = 0;                       // Outer convection radius in a core that contains melted ice
 	int irice_cv = 0;                    // Outermost slush layer, for convection purposes
 	int iriceold = 0;                    // Old outermost slush layer
 	int irdiffold = 0;                   // Old outermost differentiated layer
-
 	double Phiold = 0.0;                 // Old gravitational potential energy (erg)
 	double ravg = 0.0;                   // Average radius of a layer (cm)
 	double e1 = 0.0;                     // Temporary specific energy (erg/g)
@@ -145,7 +142,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 	double d_eorb = 0.0;                 // Change rate in moon orbital eccentricity (s-1)
 	double ringTorque = 0.0;             // Torque exerted by ring on moon (g cm2 s-2)
 	double omega_tide = 0.0;             // Tidal frequency (s-1)
-
+	double d_eorb_MMR = 0.0;             // Change rate in eccentricity due to mean-motion resonance between two moons (s-1)
 
 	double *M = (double*) malloc(NR*sizeof(double));        // Mass under a layer (g)
 	if (M == NULL) printf("Thermal: Not enough memory to create M[NR]\n");
@@ -369,7 +366,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 	//-------------------------------------------------------------------
 
 	// Radioactive decay
-	decay(realtime, tzero, &Qth, NR, chondr, (*fracKleached), *Mrock, *Mh2os, *Mh2ol, *Xhydr, rhoH2olth, rhoRockth, rhoHydrth);
+	decay(realtime, &Qth, NR, chondr, (*fracKleached), *Mrock, *Mh2os, *Mh2ol, *Xhydr, rhoH2olth, rhoRockth, rhoHydrth);
 	for (ir=0;ir<NR;ir++) (*Heat_radio) = (*Heat_radio) + Qth[ir];
 
 	// Gravitational heat release in differentiation
@@ -394,7 +391,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 	}
 
 	// Tidal heating
-	if (itime > 0 && moon && (*eorb) > 0.0) {
+	if (itime > 0 && Mprim && (*eorb) > 0.0) {
 		for (ir=0;ir<NR;ir++) {
 			(*Tide_output)[ir][1] = -Qth[ir]/1.0e7; // To output the distribution of tidal heating rates in each layer = -before+after
 			strain((*Pressure)[ir], (*Xhydr)[ir], (*T)[ir], &strain_rate[ir], &Brittle_strength[ir], (*pore)[ir]);
@@ -414,23 +411,24 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 				   + 171.0/16.0*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*(*eorb); // Dissipation inside planet, increases moon's eccentricity
 
 			// Mean-motion resonances
-			double d_eorb_MMR = 0.0; // Change rate in eccentricity due to mean-motion resonance between two moons (s-1)
 			for (i=0;i<nmoons;i++) {
-				if (i != im) {
+				if (i != im && norb[i] > 0.0) {
 					for (jr=1;jr<6;jr++) {
 						if (norb[im] < norb[i]) {
 							if (fabs(jr*norb[im] - (jr+1)*norb[i]) < 1.0e-2*norb[im]
 							 || fabs(jr*norb[im] - (jr+2)*norb[i]) < 1.0e-2*norb[im]
-							 || fabs(jr*norb[im] - (jr+3)*norb[i]) < 1.0e-2*norb[im])
+							 || fabs(jr*norb[im] - (jr+3)*norb[i]) < 1.0e-2*norb[im]) {
 								d_eorb_MMR = MMR(m_p, norb, (*aorb), im, i, (*eorb)); // MMR if within 1% of moon mean motion
 								d_eorb = d_eorb + d_eorb_MMR;
+							}
 						}
 						else {
 							if (fabs((jr+1)*norb[im] - jr*norb[i]) < 1.0e-2*norb[im]
 							 || fabs((jr+2)*norb[im] - jr*norb[i]) < 1.0e-2*norb[im]
-							 || fabs((jr+3)*norb[im] - jr*norb[i]) < 1.0e-2*norb[im])
+							 || fabs((jr+3)*norb[im] - jr*norb[i]) < 1.0e-2*norb[im]) {
 								d_eorb_MMR = MMR(m_p, norb, (*aorb), im, i, (*eorb)); // MMR if within 1% of moon mean motion
 								d_eorb = d_eorb + d_eorb_MMR;
+							}
 						}
 					}
 				}
@@ -447,7 +445,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 			d_aorb_pl = - 2.0*Wtide_tot*(*aorb)[im]*(*aorb)[im] / (Gcgs*Mprim*m_p[im])         // Dissipation inside moon, shrinks its orbit
 					  + 4.5*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-5.5); // Dissipation inside planet, expands moon's orbit
 
-			if (ring) { // Dissipation in the rings, expands moon's orbit if exterior to rings (Meyer-Vernet & Sicardy 1987, http://dx.doi.org/10.1016/0019-1035(87)90011-X)
+			if (ringSurfaceDensity) { // Dissipation in the rings, expands moon's orbit if exterior to rings (Meyer-Vernet & Sicardy 1987, http://dx.doi.org/10.1016/0019-1035(87)90011-X)
 				ringTorque = 0.0;
 				// 1- Find inner Lindblad resonances that matter (kmin, kmax)
 				kmin = floor(1.0 / (1.0-pow(aring_in/(*aorb)[im],1.5))) + 1;
@@ -470,10 +468,10 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 	    		im_str[0] = '\0';
 	    		if (v_release == 1) strncat(title,path,strlen(path)-16);
 	    		else if (cmdline == 1) strncat(title,path,strlen(path)-18);
-	    		strcat(title,"Output");
+	    		strcat(title,"Outputs/");
 	    		sprintf(im_str, "%d", im);
 	    		strcat(title, im_str);
-	    		strcat(title,"/Thermal.txt");
+	    		strcat(title,"Thermal.txt");
 
 				fout = fopen(title,"a");
 				if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
@@ -733,10 +731,10 @@ int state (char path[1024], int itime, int im, int ir, double E, double *frock, 
     		im_str[0] = '\0';
     		if (v_release == 1) strncat(title,path,strlen(path)-16);
     		else if (cmdline == 1) strncat(title,path,strlen(path)-18);
-    		strcat(title,"Output");
+    		strcat(title,"Outputs/");
     		sprintf(im_str, "%d", im);
     		strcat(title, im_str);
-    		strcat(title,"/Thermal.txt");
+    		strcat(title,"Thermal.txt");
 
     		fout = fopen(title,"a");
     		if (fout == NULL) {
@@ -1131,7 +1129,7 @@ double kapcond(double T, double frock, double fh2os, double fadhs, double fh2ol,
  *
  *--------------------------------------------------------------------*/
 
-int decay(double t, double tzero, double **Qth, int NR, int chondr, double fracKleached, double *Mrock, double *Mh2os,
+int decay(double t, double **Qth, int NR, int chondr, double fracKleached, double *Mrock, double *Mh2os,
 		double *Mh2ol, double *Xhydr, double rhoH2olth, double rhoRockth, double rhoHydrth) {
 
 	int ir = 0;
@@ -1162,20 +1160,20 @@ int decay(double t, double tzero, double **Qth, int NR, int chondr, double fracK
 
 	// Long-lived radionuclides (DeltaE for Th and U is given as parent-daughter minus 1 MeV per emitted nucleon)
 	if (chondr == 1) { // CO abundances
-		S = 0.00619 * (46.74-4.0) / 0.704 * exp(-(t+tzero)*0.6931/(0.704*Gyr2sec))  // 235 U
-		  + 0.01942 * (52.07-6.0) / 4.47  * exp(-(t+tzero)*0.6931/(4.47 *Gyr2sec))  // 238 U
-	      + 0.04293 * (42.96-4.0) / 14.0  * exp(-(t+tzero)*0.6931/(14.0 *Gyr2sec)); // 232 Th
+		S = 0.00619 * (46.74-4.0) / 0.704 * exp(-t*0.6931/(0.704*Gyr2sec))  // 235 U
+		  + 0.01942 * (52.07-6.0) / 4.47  * exp(-t*0.6931/(4.47 *Gyr2sec))  // 238 U
+	      + 0.04293 * (42.96-4.0) / 14.0  * exp(-t*0.6931/(14.0 *Gyr2sec)); // 232 Th
 	}
 	else {             // Default: CI abundances
-		S = 0.00592 * (46.74-4.0) / 0.704 * exp(-(t+tzero)*0.6931/(0.704*Gyr2sec))  // 235 U
-		  + 0.01871 * (52.07-6.0) / 4.47  * exp(-(t+tzero)*0.6931/(4.47 *Gyr2sec))  // 238 U
-		  + 0.04399 * (42.96-4.0) / 14.0  * exp(-(t+tzero)*0.6931/(14.0 *Gyr2sec)); // 232 Th
+		S = 0.00592 * (46.74-4.0) / 0.704 * exp(-t*0.6931/(0.704*Gyr2sec))  // 235 U
+		  + 0.01871 * (52.07-6.0) / 4.47  * exp(-t*0.6931/(4.47 *Gyr2sec))  // 238 U
+		  + 0.04399 * (42.96-4.0) / 14.0  * exp(-t*0.6931/(14.0 *Gyr2sec)); // 232 Th
 	}
 	// Potassium 40
-	if (chondr == 1) S_K = 2.219 * 0.6087 / 1.265 * exp(-(t+tzero)*0.6931/(1.265*Gyr2sec)); // CO abundances
-	else             S_K = 5.244 * 0.6087 / 1.265 * exp(-(t+tzero)*0.6931/(1.265*Gyr2sec)); // CI abundances
+	if (chondr == 1) S_K = 2.219 * 0.6087 / 1.265 * exp(-t*0.6931/(1.265*Gyr2sec)); // CO abundances
+	else             S_K = 5.244 * 0.6087 / 1.265 * exp(-t*0.6931/(1.265*Gyr2sec)); // CI abundances
 	// Short-lived radionuclides
-	S = S + (5.0e-5*8.410e4) * 3.117 / 0.000716 * exp(-(t+tzero)*0.6931/(0.000716*Gyr2sec)); // 26 Al
+	S = S + (5.0e-5*8.410e4) * 3.117 / 0.000716 * exp(-t*0.6931/(0.000716*Gyr2sec)); // 26 Al
 
 	S = S * si*MeV2erg/Gyr2sec*0.6931;
 	S_K = S_K * si*MeV2erg/Gyr2sec*0.6931;

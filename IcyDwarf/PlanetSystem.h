@@ -16,24 +16,23 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		double fulltime, double dtoutput, int nmoons, double Mprim, double Rprim, double Qprim, double Mring, double aring_out, double aring_in,
 		double *r_p, double *rho_p, double rhoHydr, double rhoDry, double *Xp, double *Xsalt, double **Xhydr, double *porosity, double *Xpores,
 		double *Xfines, double *Tinit, double *Tsurf, int *startdiff, double *aorb_init, double *eorb_init, int tidalmodel, int tidetimesten,
-		int moon, int *orbevol, int ring, int *hy, int chondr, int *crack_input, int *crack_species);
+		int *orbevol, int *hy, int chondr, int *crack_input, int *crack_species);
 
 int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, double dtime, double *tzero,
 		double fulltime, double dtoutput, int nmoons, double Mprim, double Rprim, double Qprim, double Mring, double aring_out, double aring_in,
 		double *r_p, double *rho_p, double rhoHydr, double rhoDry, double *Xp, double *Xsalt, double **Xhydr, double *porosity, double *Xpores,
 		double *Xfines, double *Tinit, double *Tsurf, int *startdiff, double *aorb_init, double *eorb_init, int tidalmodel, int tidetimesten,
-		int moon, int *orbevol, int ring, int *hy, int chondr, int *crack_input, int *crack_species) {
-
-	int thread_id;
-	int nloops = 0;
-
-	int i = 0;
-	int im = 0;
-	int ir = 0;
+		int *orbevol, int *hy, int chondr, int *crack_input, int *crack_species) {
 
 	//-------------------------------------------------------------------
 	//                 Declarations and initializations
 	//-------------------------------------------------------------------
+
+	int thread_id;
+	int nloops = 0;
+	int i = 0;
+	int im = 0;
+	int ir = 0;
 
 	// Variables common to all moons
 	int forced_hydcirc = 0;              // Switch to force hydrothermal circulation
@@ -41,20 +40,17 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	int ntime = 0;                       // Total number of iterations
 	int isteps = 0;                      // Output step counter
 	int nsteps = 0;                      // Total number of output steps
-
     int thermal_mismatch = 0;            // Switch for grain thermal expansion/contraction mismatch effects
 	int pore_water_expansion = 0;        // Switch for pore water expansion effects
 	int dissolution_precipitation = 0;   // Switch for rock dissolution/precipitation effects
-
-	double realtime = 0.0;               // Time elapsed (s)
-
+	double realtime = 0.0;               // Time elapsed since formation of the solar system (s)
+	double tzero_min = 0.0;              // Time of formation of the first moon to form
 	double rhoRockth = rhoDry*gram;      // Density of dry rock (g/cm3)
 	double rhoHydrth = rhoHydr*gram;     // Density of hydrated rock (g/cm3)
 	double rhoH2osth = rhoH2os*gram;	 // Density of water ice (g/cm3)
 	double rhoAdhsth = rhoAdhs*gram;	 // Density of ammonia dihydrate ice (g/cm3)
 	double rhoH2olth = 0.0;              // Density of liquid water, just for this routine (g/cm3)
 	double rhoNh3lth = 0.0;              // Density of liquid ammonia, just for this routine (g/cm3)
-
 	double ringSurfaceDensity = Mring/(PI_greek*(aring_out*aring_out-aring_in*aring_in)); // Ring surface density (g cm-2)
 	double alpha_Lind = 0.0;             // Dissipation of Lindblad resonance in rings (no dim)
 	if (ringSurfaceDensity <= 2.0) alpha_Lind = 2.0e-5; else alpha_Lind = 1.0e-4; // Mostly viscosity and pressure if surf density²2 g cm-2, or self-gravity if surf density~50 g cm-2
@@ -65,9 +61,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	int ircore[nmoons];                  // Outermost core layer
 	int ircrack[nmoons];                 // Inner most cracked layer in contact with the ocean
 	int structure_changed[nmoons];       // Switch to call separate()
-
-	double rhoIce[nmoons];                 // Density of the bulk ice (g/cm3)
-
+	double rhoIce[nmoons];               // Density of the bulk ice (g/cm3)
 	double e1[nmoons];                   // Temporary specific energy (erg/g)
 	double frock[nmoons];                // Rock mass fraction
 	double fh2os[nmoons];                // Water ice mass fraction
@@ -75,27 +69,20 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	double fh2ol[nmoons];                // Liquid water mass fraction
 	double fnh3l[nmoons];                // Liquid ammonia mass fraction
 	double temp1[nmoons];                // Temporary temperature (K)
-
 	double Heat_radio[nmoons];           // Total heats produced (erg), for output file
 	double Heat_grav[nmoons];
 	double Heat_serp[nmoons];
 	double Heat_dehydr[nmoons];
 	double Heat_tide[nmoons];
-
 	double frockpm[nmoons];              // Fraction of rock in the planet by mass
 	double frockpv[nmoons];              // Fraction of rock in the planet by volume
-
 	double dr_grid[nmoons];              // Physical thickness of a shell (cm)
 	double Phi[nmoons];                  // Gravitational potential energy (erg)
 	double ravg[nmoons];                 // Average radius of a layer (cm)
-
 	double fracKleached[nmoons];         // Fraction of K radionuclide leached (no dim)
-
 	double m_p[nmoons];                  // World mass (g)
-
 	double Mliq[nmoons];                 // Mass of liquid in the planet (g)
 	double Mcracked_rock[nmoons];        // Mass of cracked rock in the planet (g)
-
 	double Crack_depth[nmoons][2];		 // Crack_depth[2] (km), output
 	double WRratio[nmoons][2];			 // WRratio[2] (by mass, no dim), output
 	double Heat[nmoons][6];              // Heat[6] (erg), output
@@ -111,175 +98,175 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	double *norb = (double*) malloc((nmoons)*sizeof(double));       // Orbital mean motions = 2*pi/period = sqrt(GM/a3) (s-1)
 	if (norb == NULL) printf("PlanetSystem: Not enough memory to create norb[nmoons]\n");
 
-	int **dont_dehydrate = (int**) malloc(nmoons*sizeof(int*));    // Don't dehydrate a layer that just got hydrated
+	int **dont_dehydrate = (int**) malloc(nmoons*sizeof(int*));     // Don't dehydrate a layer that just got hydrated
 	if (dont_dehydrate == NULL) printf("PlanetSystem: Not enough memory to create dont_dehydrate[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
 		dont_dehydrate[im] = (int*) malloc(NR*sizeof(int));
 		if (dont_dehydrate[im] == NULL) printf("PlanetSystem: Not enough memory to create dont_dehydrate[nmoons][NR]\n");
 	}
 
-	int **circ = (int**) malloc(nmoons*sizeof(int*));              // 0=no hydrothermal circulation, 1=hydrothermal circulation
+	int **circ = (int**) malloc(nmoons*sizeof(int*));               // 0=no hydrothermal circulation, 1=hydrothermal circulation
 	if (circ == NULL) printf("PlanetSystem: Not enough memory to create circ[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
 		circ[im] = (int*) malloc(NR*sizeof(int));
 		if (circ[im] == NULL) printf("PlanetSystem: Not enough memory to create circ[nmoons][NR]\n");
 	}
 
-	double **r = (double**) malloc(nmoons*sizeof(double*));       // Layer radius, accounting for porosity (cm)
+	double **r = (double**) malloc(nmoons*sizeof(double*));         // Layer radius, accounting for porosity (cm)
 	if (r == NULL) printf("PlanetSystem: Not enough memory to create r[NR+1]\n");
 	for (im=0;im<nmoons;im++) {
 		r[im] = (double*) malloc((NR+1)*sizeof(double));
 		if (r[im] == NULL) printf("PlanetSystem: Not enough memory to create r[nmoons][NR+1]\n");
 	}
 
-	double **dVol = (double**) malloc(nmoons*sizeof(double*));     // Total volume of a layer at zero porosity (cm^3)
+	double **dVol = (double**) malloc(nmoons*sizeof(double*));      // Total volume of a layer at zero porosity (cm^3)
 	if (dVol == NULL) printf("PlanetSystem: Not enough memory to create dVol[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
 		dVol[im] = (double*) malloc(NR*sizeof(double));
 		if (dVol[im] == NULL) printf("PlanetSystem: Not enough memory to create dVol[nmoons][NR]\n");
 	}
 
-	double **dM = (double**) malloc(nmoons*sizeof(double*));       // Mass of a layer (g)
+	double **dM = (double**) malloc(nmoons*sizeof(double*));        // Mass of a layer (g)
 	if (dM == NULL) printf("PlanetSystem: Not enough memory to create dM[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
 		dM[im] = (double*) malloc(NR*sizeof(double));
 		if (dM[im] == NULL) printf("PlanetSystem: Not enough memory to create dM[nmoons][NR]\n");
 	}
 
-	double **dM_old = (double**) malloc(nmoons*sizeof(double*));   // Old mass of a layer (g)
+	double **dM_old = (double**) malloc(nmoons*sizeof(double*));    // Old mass of a layer (g)
 	if (dM_old == NULL) printf("PlanetSystem: Not enough memory to create dM_old[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
 		dM_old[im] = (double*) malloc(NR*sizeof(double));
 		if (dM_old[im] == NULL) printf("PlanetSystem: Not enough memory to create dM_old[nmoons][NR]\n");
 	}
 
-	double **M = (double**) malloc(nmoons*sizeof(double*));        // Mass under a layer (g)
+	double **M = (double**) malloc(nmoons*sizeof(double*));         // Mass under a layer (g)
 	if (M == NULL) printf("PlanetSystem: Not enough memory to create M[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
 		M[im] = (double*) malloc(NR*sizeof(double));
 		if (M[im] == NULL) printf("PlanetSystem: Not enough memory to create M[nmoons][NR]\n");
 	}
 
-	double **dE = (double**) malloc(nmoons*sizeof(double*));       // Energy of a layer (erg)
+	double **dE = (double**) malloc(nmoons*sizeof(double*));        // Energy of a layer (erg)
 	if (dE == NULL) printf("PlanetSystem: Not enough memory to create dE[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
 		dE[im] = (double*) malloc(NR*sizeof(double));
 		if (dE[im] == NULL) printf("PlanetSystem: Not enough memory to create dE[nmoons][NR]\n");
 	}
 
-	double **Mrock = (double**) malloc(nmoons*sizeof(double*));    // Mass of rock (g)
+	double **Mrock = (double**) malloc(nmoons*sizeof(double*));     // Mass of rock (g)
 	if (Mrock == NULL) printf("PlanetSystem: Not enough memory to create Mrock[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
 		Mrock[im] = (double*) malloc(NR*sizeof(double));
 		if (Mrock[im] == NULL) printf("PlanetSystem: Not enough memory to create Mrock[nmoons][NR]\n");
 	}
 
-	double **Mh2os = (double**) malloc(nmoons*sizeof(double*));    // Mass of water ice (g)
+	double **Mh2os = (double**) malloc(nmoons*sizeof(double*));     // Mass of water ice (g)
 	if (Mh2os == NULL) printf("PlanetSystem: Not enough memory to create Mh2os[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
 		Mh2os[im] = (double*) malloc(NR*sizeof(double));
 		if (Mh2os[im] == NULL) printf("PlanetSystem: Not enough memory to create Mh2os[nmoons][NR]\n");
 	}
 
-	double **Madhs = (double**) malloc(nmoons*sizeof(double*));    // Mass of ammonia dihydrate ice (g)
+	double **Madhs = (double**) malloc(nmoons*sizeof(double*));     // Mass of ammonia dihydrate ice (g)
 	if (Madhs == NULL) printf("PlanetSystem: Not enough memory to create Madhs[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
 		Madhs[im] = (double*) malloc(NR*sizeof(double));
 		if (Madhs[im] == NULL) printf("PlanetSystem: Not enough memory to create Madhs[nmoons][NR]\n");
 	}
 
-	double **Mh2ol = (double**) malloc(nmoons*sizeof(double*));    // Mass of liquid water (g)
+	double **Mh2ol = (double**) malloc(nmoons*sizeof(double*));     // Mass of liquid water (g)
 	if (Mh2ol == NULL) printf("PlanetSystem: Not enough memory to create Mh2ol[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
 		Mh2ol[im] = (double*) malloc(NR*sizeof(double));
 		if (Mh2ol[im] == NULL) printf("PlanetSystem: Not enough memory to create Mh2ol[nmoons][NR]\n");
 	}
 
-	double **Mnh3l = (double**) malloc(nmoons*sizeof(double*));    // Mass of liquid ammonia (g)
+	double **Mnh3l = (double**) malloc(nmoons*sizeof(double*));     // Mass of liquid ammonia (g)
 	if (Mnh3l == NULL) printf("PlanetSystem: Not enough memory to create Mnh3l[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
 		Mnh3l[im] = (double*) malloc(NR*sizeof(double));
 		if (Mnh3l[im] == NULL) printf("PlanetSystem: Not enough memory to create Mnh3l[nmoons][NR]\n");
 	}
 
-	double **Erock = (double**) malloc(nmoons*sizeof(double*));    // Energy of rock (erg)
+	double **Erock = (double**) malloc(nmoons*sizeof(double*));     // Energy of rock (erg)
 	if (Erock == NULL) printf("PlanetSystem: Not enough memory to create Erock[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
 		Erock[im] = (double*) malloc(NR*sizeof(double));
 		if (Erock[im] == NULL) printf("PlanetSystem: Not enough memory to create Erock[nmoons][NR]\n");
 	}
 
-	double **Eh2os = (double**) malloc(nmoons*sizeof(double*));    // Energy of water ice (erg)
+	double **Eh2os = (double**) malloc(nmoons*sizeof(double*));     // Energy of water ice (erg)
 	if (Eh2os == NULL) printf("PlanetSystem: Not enough memory to create Eh2os[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
 		Eh2os[im] = (double*) malloc(NR*sizeof(double));
 		if (Eh2os[im] == NULL) printf("PlanetSystem: Not enough memory to create Eh2os[nmoons][NR]\n");
 	}
 
-	double **Eslush = (double**) malloc(nmoons*sizeof(double*));   // Energy of slush/ocean (erg)
+	double **Eslush = (double**) malloc(nmoons*sizeof(double*));    // Energy of slush/ocean (erg)
 	if (Eslush == NULL) printf("PlanetSystem: Not enough memory to create Eslush[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
 		Eslush[im] = (double*) malloc(NR*sizeof(double));
 		if (Eslush[im] == NULL) printf("PlanetSystem: Not enough memory to create Eslush[nmoons][NR]\n");
 	}
 
-	double **Vrock = (double**) malloc(nmoons*sizeof(double*));    // Volume of rock (cm^3)
+	double **Vrock = (double**) malloc(nmoons*sizeof(double*));     // Volume of rock (cm^3)
 	if (Vrock == NULL) printf("PlanetSystem: Not enough memory to create Vrock[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
 		Vrock[im] = (double*) malloc(NR*sizeof(double));
 		if (Vrock[im] == NULL) printf("PlanetSystem: Not enough memory to create Vrock[nmoons][NR]\n");
 	}
 
-	double **Vh2os = (double**) malloc(nmoons*sizeof(double*));    // Volume of water ice (cm^3)
+	double **Vh2os = (double**) malloc(nmoons*sizeof(double*));     // Volume of water ice (cm^3)
 	if (Vh2os == NULL) printf("PlanetSystem: Not enough memory to create Vh2os[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
 		Vh2os[im] = (double*) malloc(NR*sizeof(double));
 		if (Vh2os[im] == NULL) printf("PlanetSystem: Not enough memory to create Vh2os[nmoons][NR]\n");
 	}
 
-	double **Vadhs = (double**) malloc(nmoons*sizeof(double*));    // Volume of ammonia dihydrate ice (cm^3)
+	double **Vadhs = (double**) malloc(nmoons*sizeof(double*));     // Volume of ammonia dihydrate ice (cm^3)
 	if (Vadhs == NULL) printf("PlanetSystem: Not enough memory to create Vadhs[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
 		Vadhs[im] = (double*) malloc(NR*sizeof(double));
 		if (Vadhs[im] == NULL) printf("PlanetSystem: Not enough memory to create Vadhs[nmoons][NR]\n");
 	}
 
-	double **Vh2ol = (double**) malloc(nmoons*sizeof(double*));    // Volume of liquid water (cm^3)
+	double **Vh2ol = (double**) malloc(nmoons*sizeof(double*));     // Volume of liquid water (cm^3)
 	if (Vh2ol == NULL) printf("PlanetSystem: Not enough memory to create Vh2ol[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
 		Vh2ol[im] = (double*) malloc(NR*sizeof(double));
 		if (Vh2ol[im] == NULL) printf("PlanetSystem: Not enough memory to create Vh2ol[nmoons][NR]\n");
 	}
 
-	double **Vnh3l = (double**) malloc(nmoons*sizeof(double*));    // Volume of liquid ammonia (cm^3)
+	double **Vnh3l = (double**) malloc(nmoons*sizeof(double*));     // Volume of liquid ammonia (cm^3)
 	if (Vnh3l == NULL) printf("PlanetSystem: Not enough memory to create Vnh3l[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
 		Vnh3l[im] = (double*) malloc(NR*sizeof(double));
 		if (Vnh3l[im] == NULL) printf("PlanetSystem: Not enough memory to create Vnh3l[nmoons][NR]\n");
 	}
 
-	double **T = (double**) malloc(nmoons*sizeof(double*));        // Temperature (K)
+	double **T = (double**) malloc(nmoons*sizeof(double*));         // Temperature (K)
 	if (T == NULL) printf("PlanetSystem: Not enough memory to create T[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
 		T[im] = (double*) malloc(NR*sizeof(double));
 		if (T[im] == NULL) printf("PlanetSystem: Not enough memory to create T[nmoons][NR]\n");
 	}
 
-	double **T_old = (double**) malloc(nmoons*sizeof(double*));        // Temperature at previous time step (K)
+	double **T_old = (double**) malloc(nmoons*sizeof(double*));     // Temperature at previous time step (K)
 	if (T_old == NULL) printf("PlanetSystem: Not enough memory to create T_old[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
 		T_old[im] = (double*) malloc(NR*sizeof(double));
 		if (T_old[im] == NULL) printf("PlanetSystem: Not enough memory to create T_old[nmoons][NR]\n");
 	}
 
-	double **Pressure = (double**) malloc(nmoons*sizeof(double*));   // Pressure in Pa
+	double **Pressure = (double**) malloc(nmoons*sizeof(double*));  // Pressure in Pa
 	if (Pressure == NULL) printf("Thermal: Not enough memory to create Pressure[NR]\n");
 	for (im=0;im<nmoons;im++) {
 		Pressure[im] = (double*) malloc(NR*sizeof(double));
 		if (Pressure[im] == NULL) printf("PlanetSystem: Not enough memory to create Pressure[nmoons][NR]\n");
 	}
 
-	double **Crack = (double**) malloc(nmoons*sizeof(double*));      // Crack[NR], type of cracked zone, output
+	double **Crack = (double**) malloc(nmoons*sizeof(double*));     // Crack[NR], type of cracked zone, output
 	if (Crack == NULL) printf("PlanetSystem: Not enough memory to create Crack[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
 		Crack[im] = (double*) malloc(NR*sizeof(double));
@@ -293,28 +280,28 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		if (Crack_size[im] == NULL) printf("PlanetSystem: Not enough memory to create Crack_size[nmoons][NR]\n");
 	}
 
-	double **P_pore = (double**) malloc(nmoons*sizeof(double*));     // Pore overpressure (Pa)
+	double **P_pore = (double**) malloc(nmoons*sizeof(double*));    // Pore overpressure (Pa)
 	if (P_pore == NULL) printf("PlanetSystem: Not enough memory to create P_pore[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
 		P_pore[im] = (double*) malloc(NR*sizeof(double));
 		if (P_pore[im] == NULL) printf("PlanetSystem: Not enough memory to create P_pore[nmoons][NR]\n");
 	}
 
-	double **P_hydr = (double**) malloc(nmoons*sizeof(double*));     // Pore hydration stress (Pa)
+	double **P_hydr = (double**) malloc(nmoons*sizeof(double*));    // Pore hydration stress (Pa)
 	if (P_hydr == NULL) printf("PlanetSystem: Not enough memory to create P_hydr[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
 		P_hydr[im] = (double*) malloc(NR*sizeof(double));
 		if (P_hydr[im] == NULL) printf("PlanetSystem: Not enough memory to create P_hydr[nmoons][NR]\n");
 	}
 
-	double **kappa = (double**) malloc(nmoons*sizeof(double*));    // Thermal conductivity (erg/s/cm/K)
+	double **kappa = (double**) malloc(nmoons*sizeof(double*));     // Thermal conductivity (erg/s/cm/K)
 	if (kappa == NULL) printf("PlanetSystem: Not enough memory to create kappa[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
 		kappa[im] = (double*) malloc(NR*sizeof(double));
 		if (kappa[im] == NULL) printf("PlanetSystem: Not enough memory to create kappa[nmoons][NR]\n");
 	}
 
-	double **Nu = (double**) malloc(nmoons*sizeof(double*));       // Nusselt number
+	double **Nu = (double**) malloc(nmoons*sizeof(double*));        // Nusselt number
 	if (Nu == NULL) printf("PlanetSystem: Not enough memory to create Nu[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
 		Nu[im] = (double*) malloc(NR*sizeof(double));
@@ -328,14 +315,14 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		if (Mrock_init[im] == NULL) printf("PlanetSystem: Not enough memory to create Mrock_init[nmoons][NR]\n");
 	}
 
-	double **fracOpen = (double**) malloc(nmoons*sizeof(double*)); // Fraction of crack that hasn't healed
+	double **fracOpen = (double**) malloc(nmoons*sizeof(double*));  // Fraction of crack that hasn't healed
 	if (fracOpen == NULL) printf("PlanetSystem: Not enough memory to create fracOpen[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
 		fracOpen[im] = (double*) malloc(NR*sizeof(double));
 		if (fracOpen[im] == NULL) printf("PlanetSystem: Not enough memory to create fracOpen[nmoons][NR]\n");
 	}
 
-	double **pore = (double**) malloc(nmoons*sizeof(double*)); // Volume fraction of grid cell that is pores
+	double **pore = (double**) malloc(nmoons*sizeof(double*));      // Volume fraction of grid cell that is pores
 	if (pore == NULL) printf("PlanetSystem: Not enough memory to create pore[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
 		pore[im] = (double*) malloc(NR*sizeof(double));
@@ -359,7 +346,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 			if (Stress[im][ir] == NULL) printf("PlanetSystem: Not enough memory to create Stress[nmoons][NR][12]\n");
 		}
 	}
-	double ***Act = (double***) malloc(nmoons*sizeof(double**));      // Activity of chemical products in cracks, dimensionless or (mol m-3) if << salinity
+	double ***Act = (double***) malloc(nmoons*sizeof(double**));    // Activity of chemical products in cracks, dimensionless or (mol m-3) if << salinity
 	if (Act == NULL) printf("PlanetSystem: Not enough memory to create Act[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
 		Act[im] = (double**) malloc(NR*sizeof(double*));
@@ -369,7 +356,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 			if (Act[im][ir] == NULL) printf("PlanetSystem: Not enough memory to create Act[nmoons][NR][n_species_crack]\n");
 		}
 	}
-	double **aTP = (double**) malloc(sizeaTP*sizeof(double*)); // Table of flaw sizes a that maximize the stress intensity K_I
+	double **aTP = (double**) malloc(sizeaTP*sizeof(double*));      // Table of flaw sizes a that maximize the stress intensity K_I
 	if (aTP == NULL) printf("PlanetSystem: Not enough memory to create aTP[sizeaTP]\n");
 	for (i=0;i<sizeaTP;i++) {
 		aTP[i] = (double*) malloc((sizeaTP)*sizeof(double));
@@ -381,19 +368,19 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		integral[i] = (double*) malloc(2*sizeof(double));
 		if (integral[i] == NULL) printf("PlanetSystem: Not enough memory to create integral[int_size][2]\n");
 	}
-	double **alpha = (double**) malloc(sizeaTP*sizeof(double*)); // Thermal expansivity of water as a function of T and P (K-1)
+	double **alpha = (double**) malloc(sizeaTP*sizeof(double*));    // Thermal expansivity of water as a function of T and P (K-1)
 	if (alpha == NULL) printf("PlanetSystem: Not enough memory to create alpha[sizeaTP]\n");
 	for (i=0;i<sizeaTP;i++) {
 		alpha[i] = (double*) malloc(sizeaTP*sizeof(double));
 		if (alpha[i] == NULL) printf("PlanetSystem: Not enough memory to create alpha[sizeaTP][sizeaTP]\n");
 	}
-	double **beta = (double**) malloc(sizeaTP*sizeof(double*)); // Compressibility of water as a function of T and P (bar-1)
+	double **beta = (double**) malloc(sizeaTP*sizeof(double*));     // Compressibility of water as a function of T and P (bar-1)
 	if (beta == NULL) printf("PlanetSystem: Not enough memory to create beta[sizeaTP]\n");
 	for (i=0;i<sizeaTP;i++) {
 		beta[i] = (double*) malloc(sizeaTP*sizeof(double));
 		if (beta[i] == NULL) printf("PlanetSystem: Not enough memory to create beta[sizeaTP][sizeaTP]\n");
 	}
-	double **silica = (double**) malloc(sizeaTP*sizeof(double*)); // log K of silica dissolution
+	double **silica = (double**) malloc(sizeaTP*sizeof(double*));   // log K of silica dissolution
 	if (silica == NULL) printf("PlanetSystem: Not enough memory to create silica[sizeaTP]\n");
 	for (i=0;i<sizeaTP;i++) {
 		silica[i] = (double*) malloc(sizeaTP*sizeof(double));
@@ -436,7 +423,6 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		ircore[im] = 0;
 		ircrack[im] = 0;
 		structure_changed[im] = 0;
-
 		rhoIce[im] = 0.0;
 		e1[im] = 0.0;
 		frock[im] = 0.0;
@@ -527,8 +513,6 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	pore_water_expansion = crack_input[1];
 	dissolution_precipitation = crack_input[3];
 
-	for (im=0;im<nmoons;im++) norb[im] = sqrt(Gcgs*Mprim/pow(aorb[im],3));
-
     //-------------------------------------------------------------------
     //                     Initialize physical tables
     //-------------------------------------------------------------------
@@ -563,10 +547,9 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	}
 
 	for (im=0;im<nmoons;im++) {
-		strcat(outputpath[im],"Output");
+		strcat(outputpath[im],"Outputs/");
 		sprintf(im_str,"%d",im);
 		strcat(outputpath[im],im_str);
-		strcat(outputpath[im],"/");
 		strcat(filename, outputpath[im]); strcat(filename, "Thermal.txt"); create_output(path, filename); filename[0] = '\0';
 		strcat(filename, outputpath[im]); strcat(filename, "Heats.txt"); create_output(path, filename); filename[0] = '\0';
 		strcat(filename, outputpath[im]); strcat(filename, "Crack.txt"); create_output(path, filename); filename[0] = '\0';
@@ -765,12 +748,17 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	//-------------------------------------------------------------------
 	//                       Initialize time loop
 	//-------------------------------------------------------------------
-	printf("Running thermal evolution code...\n\n");
 
     dtime = dtime*1.0e-6*Myr2sec;  // TODO Static time step. Make it dynamic, CFL-compliant?
     // dtime = 0.0010*Myr2sec / ((double) NR / 100.0) / ((double) NR / 100.0);
 
-    realtime = -dtime;
+    tzero_min = fulltime;
+    for (im=0;im<nmoons;im++) {
+    	if (tzero[im] < tzero_min) tzero_min = tzero[im];
+    }
+    realtime = tzero_min;
+    realtime = realtime - dtime;
+
     ntime = (int) (fulltime / dtime + 1.0e-3);
     nsteps = (int) (dtoutput / dtime + 1.0e-3);
 
@@ -779,38 +767,38 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
     	realtime = realtime + dtime;
 
 		// Begin parallel calculations
-#pragma omp parallel private(thread_id, nloops) // aorb, eorb, norb shouldn't be provate because simdata wasn't in ParamExploration
+#pragma omp parallel private(thread_id, nloops)
     	{
 			thread_id = omp_get_thread_num();
 			nloops = 0;
 
 #pragma omp for
 			for (im=0;im<nmoons;im++) {
-				Thermal(argc, argv, path, outputpath[im], warnings, NR, dr_grid[im],
-						dtime, realtime, tzero[im], itime, Xp[im], Xsalt[im], Xfines[im], Xpores[im], Tsurf[im],
-						&r[im], &dM[im], &dM_old[im], &Phi[im], &dVol[im], &dE[im], &T[im], &T_old[im], &Pressure[im],
-						rhoRockth, rhoHydrth, rhoH2osth, rhoAdhsth, rhoH2olth, rhoNh3lth,
-						&Mrock[im], &Mrock_init[im], &Mh2os[im], &Madhs[im], &Mh2ol[im], &Mnh3l[im],
-						&Vrock[im], &Vh2os[im], &Vadhs[im], &Vh2ol[im], &Vnh3l[im],
-						&Erock[im], &Eh2os[im], &Eslush[im],
-						&Xhydr[im], &Xhydr_old[im], &kappa[im], &pore[im], &Mliq[im], &Mcracked_rock[im],
-						&dont_dehydrate[im], &circ[im], &structure_changed[im],
-						&Crack[im], &Crack_size[im], &fracOpen[im], &P_pore[im], &P_hydr[im], &Act[im], &fracKleached[im],
-						crack_input, crack_species, aTP, integral, alpha, beta, silica, chrysotile, magnesite,
-						&ircrack[im], &ircore[im], &irice[im], &irdiff[im], forced_hydcirc, &Nu[im],
-						&aorb, &eorb[im], norb, m_p, r_p[im], Mprim, Rprim, Qprim,
-						aring_out, aring_in, alpha_Lind,  ringSurfaceDensity,
-						tidalmodel, tidetimesten, moon, im, nmoons, orbevol[im], ring, hy[im], chondr,
-						&Heat_radio[im], &Heat_grav[im], &Heat_serp[im], &Heat_dehydr[im], &Heat_tide[im],
-						&Stress[im], &Tide_output[im]);
+				if (realtime > tzero[im]) {
+					norb[im] = sqrt(Gcgs*Mprim/pow(aorb[im],3)); // Otherwise, norb[im] is zero and the moon im doesn't influence the others gravitationally
 
-				++nloops;
+					Thermal(argc, argv, path, outputpath[im], warnings, NR, dr_grid[im],
+							dtime, realtime, tzero[im], itime, Xp[im], Xsalt[im], Xfines[im], Xpores[im], Tsurf[im],
+							&r[im], &dM[im], &dM_old[im], &Phi[im], &dVol[im], &dE[im], &T[im], &T_old[im], &Pressure[im],
+							rhoRockth, rhoHydrth, rhoH2osth, rhoAdhsth, rhoH2olth, rhoNh3lth,
+							&Mrock[im], &Mrock_init[im], &Mh2os[im], &Madhs[im], &Mh2ol[im], &Mnh3l[im],
+							&Vrock[im], &Vh2os[im], &Vadhs[im], &Vh2ol[im], &Vnh3l[im],
+							&Erock[im], &Eh2os[im], &Eslush[im],
+							&Xhydr[im], &Xhydr_old[im], &kappa[im], &pore[im], &Mliq[im], &Mcracked_rock[im],
+							&dont_dehydrate[im], &circ[im], &structure_changed[im],
+							&Crack[im], &Crack_size[im], &fracOpen[im], &P_pore[im], &P_hydr[im], &Act[im], &fracKleached[im],
+							crack_input, crack_species, aTP, integral, alpha, beta, silica, chrysotile, magnesite,
+							&ircrack[im], &ircore[im], &irice[im], &irdiff[im], forced_hydcirc, &Nu[im],
+							&aorb, &eorb[im], norb, m_p, r_p[im], Mprim, Rprim, Qprim,
+							aring_out, aring_in, alpha_Lind,  ringSurfaceDensity,
+							tidalmodel, tidetimesten, im, nmoons, orbevol[im], hy[im], chondr,
+							&Heat_radio[im], &Heat_grav[im], &Heat_serp[im], &Heat_dehydr[im], &Heat_tide[im],
+							&Stress[im], &Tide_output[im]);
+					++nloops;
+				}
 			}
 			// printf("itime = %d, Thread %d performed %d iterations of the loop over moons.\n", itime, thread_id, nloops);
 		} // Rejoin threads, end parallel calculations
-
-		// Update mean motions
-		for (im=0;im<nmoons;im++) norb[im] = sqrt(Gcgs*Mprim/pow(aorb[im],3));
 
 		//-------------------------------------------------------------------
 		//                           Write outputs
