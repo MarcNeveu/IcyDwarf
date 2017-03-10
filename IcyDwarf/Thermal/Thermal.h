@@ -1333,7 +1333,7 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 	Volcell[*ircore] = Volcell[*ircore] - Vrocknew[*ircore];
 
 	//-------------------------------------------------------------------
-	// Redistribute rock that was not picked up uniformly among ice zones
+	// Redistribute rock that was not picked up (fines) uniformly among ice zones
 	//-------------------------------------------------------------------
 
 	Vice = Vice + Volcell[*ircore]; // Limit case of *ircore
@@ -1368,7 +1368,7 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 		Volume1 = Vadhsnew[jr] + Vh2olnew[jr] + Vnh3lnew[jr];
 		Volume2 = (*Vadhs)[ir] + (*Vh2ol)[ir] + (*Vnh3l)[ir];
 		if (Volume1 >= Volcell[jr] && Volume2 > 0.0) {
-			nextcell = 1;                   // Slush fills more than one layer
+			nextcell = 1;                        // Switch to indicate that slush fills more than one layer, to determine irice
 			q = (Volume1-Volcell[jr]) / Volume2; // Numerator = excess volume, Denominator = scaling factor for species moved
 			Vh2olnew[jr] = Vh2olnew[jr] - q*(*Vh2ol)[ir];
 			Vnh3lnew[jr] = Vnh3lnew[jr] - q*(*Vnh3l)[ir];
@@ -1400,7 +1400,7 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 		Volume1 = Vadhsnew[jr] + Vh2olnew[jr] + Vnh3lnew[jr];
 		Volume2 = (*Vadhs)[ir] + (*Vh2ol)[ir] + (*Vnh3l)[ir];
 		if (Volume1 >= Volcell[jr] && Volume2 > 0.0) {
-			nextcell = 1;                   // Slush fills more than one layer
+			nextcell = 1;                        // Switch to indicate that slush fills more than one layer, to determine irice
 			q = (Volume1-Volcell[jr]) / Volume2; // Numerator = excess volume, Denominator = scaling factor for species moved
 			Vh2olnew[jr] = Vh2olnew[jr] - q*(*Vh2ol)[ir];
 			Vnh3lnew[jr] = Vnh3lnew[jr] - q*(*Vnh3l)[ir];
@@ -1428,8 +1428,6 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 	//-------------------------------------------------------------------
 	//     Fill up empty volume with ice, from the center outwards
 	//-------------------------------------------------------------------
-
-	if (Xpores > 0.0) jr = 0;
 
 	for (ir=0;ir<=(*irdiff);ir++) {
 
@@ -1476,7 +1474,6 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 	}
 
 	for (ir=0;ir<=(*irdiff);ir++) {
-
 		// Rock
 		(*Vrock)[ir] = Vrocknew[ir];
 		(*Mrock)[ir] = Mrocknew[ir];
