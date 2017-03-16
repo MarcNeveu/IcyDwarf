@@ -58,11 +58,11 @@ int ParamExploration_plot(char path[1024],	int warnings, int msgout, SDL_Rendere
 	int j = 0;
 	int k = 0;
 	int nspecies = 0;
-	int nvar = 1016;                                             // Number of physico-chemical variables
+	int nvar = 1024;                                             // Number of physico-chemical variables
 	int nleg = 16;                                               // Max number of legends
 	int naq = 257;                                               // Number of aqueous species (+ physical parameters)
 	int ngases = 15;                                             // Number of gaseous species
-	int nmingas = 385;                                           // Number of minerals and gases
+	int nmingas = 389;                                           // Number of minerals and gases
 	int nelts = 31;                                              // 30 elements + 1 extra column in WaterRock/Molar_masses.txt
 	int naf = 35;                                                // 34 antifreezes in WaterRock/Antifreezes.txt
 	int ntemp = 0;                                               // Number of different temperatures in output file

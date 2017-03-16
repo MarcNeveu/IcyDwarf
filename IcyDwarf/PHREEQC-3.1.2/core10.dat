@@ -1,4 +1,4 @@
-# Marc Neveu - created Sept. 30, 2016. mneveu@asu.edu
+# Marc Neveu - created March 2, 2017. mneveu@asu.edu
 #
 # Extrapolation algorithms:
 # 64cri/cob: ? (12 aq species, all also with supcrt92)
@@ -13,6 +13,7 @@
 # APP14: http://dx.doi.org/10.1016/j.gca.2013.10.003 (25 molar volumes, see phreeqc.dat)
 # AS01: http://dx.doi.org/10.1016/S0168-6445(00)00062-0 (NO(g))
 # BH86: Barta and Hepler, 1986, Can. J.C. 64, 353. (Al+3, AlOH+2 molar volumes)
+# Catalano13: http://dx.doi.org/10.1002/jgre.20161 (23 saponites + ripidolite)
 # CWM89: http://www.worldcat.org/oclc/18559968 (20 solids, incl. 14 elemental)
 # E68: Ellis, 1968, J. Chem. Soc. A, 1138. (Li+ molar volume)
 # HDN+78: http://www.worldcatlibraries.org/oclc/13594862 (117 solids)
@@ -46,13 +47,13 @@
 # SM93: http://dx.doi.org/10.1006/icar.1993.1185 (CO, CO(NH2)2, HCN solutes)
 # SSB97: http://dx.doi.org/10.1016/S0016-7037(97)00240-8 (UO2OH+, Uraninite)
 # SSH97: http://dx.doi.org/10.1016/S0016-7037(97)00009-4 (30 solutes)
-# SSW+97: http://dx.doi.org/10.1016/S0016-7037(96)00339-0
 # SSW01: http://dx.doi.org/10.1016/S0016-7037(01)00717-7 (CO2, H2S)
 # Ste01: http://dx.doi.org/10.1016/S0009-2541(00)00263-1 (Ti(OH)4)
 # Wat81: “Ammonium Aluminosilicates: The Examination of a Mechanism for the High Temperature Condensation of Ammonia in Circumplanetary Subnebulae” MS Thesis, MIT, 1981. (NH4-feldspar, NH4-muscovite)
 # WEP+82: http://dx.doi.org/10.1063/1.555845 (87 solutes, solids, and gases)
 # WebElements: http://www.webelements.com/periodicity/molar_volume (K, U molar volumes)
 # WebMineral: http://www.webmineral.com (38 solid molar volumes)
+# Wilson+06: http://dx.doi.org/10.1016/j.gca.2005.10.003 (Chamosite, Lizardite)
 #
 # 73bar/kna: Barin, I., and Knacke, O., 1973, Thermochemical properties of inorganic substances:  Springer-Verlag, New York. (Alum-K, MgOHCl, Na2SiO3, Nahcolite)
 # 77bar/kna: Barin, I., Knacke, O., and Kubaschewski, O., 1977, Thermochemical properties of inorganic substances. Supplement:  Springer-Verlag, New York. (Natrosilite, Pseudowollastonite, Rankinite)
@@ -2558,7 +2559,7 @@ Zn+2 + SO4-2 = ZnSO4
 PHASES
 
 #------------
-# 370 solids
+# 375 solids
 #------------
 
 [(6)(CB)(CB)S]
@@ -2710,7 +2711,7 @@ Analcime
 #	Range		0-350
 	-Vm		97.1 # 96.8 in thermo.com.V8.R6+.tdat
 #	Extrapol	supcrt92, Cp integration
-#	Ref		HDN+78, 82joh/flo match
+#	Ref		HDN+78, 82joh/flo match but differ from Wilson+06 by 1 log K at 0C, 0 log K a 300C
 
 Andalusite
 	Al2SiO5 + 6 H+ = SiO2 + 2 Al+3 + 3 H2O
@@ -2889,59 +2890,59 @@ Bassetite
 #	Ref		78lan
 
 Beidellite-Ca
-        Ca.165Al2.33Si3.67O10(OH)2 + 7.32 H+ = 0.165 Ca+2 + 2.33 Al+3 + 3.67 SiO2 + 4.66 H2O
+        Ca.175Al2.35Si3.65O10(OH)2 + 7.4 H+ = 0.175 Ca+2 + 2.35 Al+3 + 3.65 SiO2 + 4.7 H2O
 	log_k		5.5914
 	-delta_H	-162.403	kJ/mol
 #	deltafH		-1370.66	kcal/mol
-	-analytic	2.3887e1 4.4178e-3 1.5296e4 -2.2343e1 -1.4025e6
+	-analytic	3.872e1 -1.431e-1 0 0 0 9.036e-5
 #	Range		0-300
-	-Vm		129.53 # thermo.com.V8.R6+.tdat
-#	Extrapol	Cp integration
-#	Ref		78wol
+	-Vm		133.081
+#	Extrapol	supcrt92, Cp integration
+#	Ref		Catalano13, 78 wol differ by 1.5 log K at 0C, 1 log K at 300C
 
-Beidellite-H
-	H.33Al2.33Si3.67O10(OH)2 + 6.99 H+ = 2.33 Al+3 + 3.67 SiO2 + 4.66 H2O
+Beidellite-Fe
+	Fe.175Al2.35Si3.65O10(OH)2 + 7.4 H+ = 0.175 Fe+2 + 2.35 Al+3 + 3.65 SiO2 + 4.7 H2O
 	log_k		4.6335
 	-delta_H	-154.65		kJ/mol
 #	deltafH		-1351.1		kcal/mol
-	-analytic	5.4070 3.4064e-3 1.6284e4 -1.6028e1 -1.5014e6
+	-analytic	3.641e1 -1.391e-1 0 0 0 8.671e-5
 #	Range		0-300
-	-Vm		130.7 # thermo.com.V8.R6+.tdat
-#	Extrapol	Cp integration
-#	Ref		78wol
+	-Vm		134.293
+#	Extrapol	supcrt92
+#	Ref		Catalano13
 
 Beidellite-K
-	K.33Al2.33Si3.67O10(OH)2 +7.32 H+ = 0.33 K+ + 2.33 Al+3 + 3.67 SiO2 + 4.66 H2O
+	K.35Al2.35Si3.65O10(OH)2 +7.4 H+ = 0.35 K+ + 2.35 Al+3 + 3.65 SiO2 + 4.7 H2O
 	log_k		5.3088
 	-delta_H	-150.834	kJ/mol
 #	deltafH		-1371.9		kcal/mol
-	-analytic	1.0792e1 3.4419e-3 1.5760e4 -1.7333e1 -1.4779e6
+	-analytic	3.307e1 -1.254e-1 0 0 0 7.660e-5
 #	Range		0-300
-	-Vm		133.7 # thermo.com.V8.R6+.tdat
-#	Extrapol	Cp integration
-#	Ref		78wol
+	-Vm		137.214
+#	Extrapol	supcrt92, Cp integration
+#	Ref		Catalano13, 78 wol differ by 2.9 log K at 0C, 1.7 log K at 300C
 
 Beidellite-Mg
-	Mg.165Al2.33Si3.67O10(OH)2 + 7.32 H+ = 0.165 Mg+2 + 2.33 Al+3 + 3.67 SiO2 + 4.66 H2O
+	Mg.175Al2.35Si3.65O10(OH)2 + 7.4 H+ = 0.175 Mg+2 + 2.35 Al+3 + 3.65 SiO2 + 4.7 H2O
 	log_k		5.5537
 	-delta_H	-165.455	kJ/mol
 #	deltafH		-1366.89	kcal/mol
-	-analytic	1.3375e1 3.0420e-3 1.5947e4 -1.8728e1 -1.4242e6
+	-analytic	3.750e1 -1.415e-1 0 0 0 8.929e-5
 #	Range		0-300
-	-Vm		123.19 # thermo.com.V8.R6+.tdat
-#	Extrapol	Cp integration
-#	Ref		78wol
+	-Vm		132.116
+#	Extrapol	supcrt92, Cp integration
+#	Ref		Catalano13, 78 wol differ by 2.4 log K at 0C, 1.4 log K at 300C
 
 Beidellite-Na
-	Na.33Al2.33Si3.67O10(OH)2 + 7.32 H+ = 0.33 Na+ + 2.33 Al+3 + 3.67 SiO2 + 4.66 H2O
+	Na.35Al2.35Si3.65O10(OH)2 + 7.4 H+ = 0.35 Na+ + 2.35 Al+3 + 3.65 SiO2 + 4.7 H2O
 	log_k		5.6473
 	-delta_H	-155.846	kJ/mol
 #	deltafH		-1369.76	kcal/mol
-	-analytic	1.1504e1 3.9871e-3 1.5818e4 -1.7762e1 -1.4485e6
+	-analytic	3.613e1 -1.347e-1 0 0 0 8.470e-5
 #	Range		0-300
-	-Vm		130.54 # thermo.com.V8.R6+.tdat
-#	Extrapol	Cp integration
-#	Ref		78wol
+	-Vm		134.522
+#	Extrapol	supcrt92, Cp integration
+#	Ref		Catalano13, differ from 78 wol and Wilson+06 (which match) by 2.8 log K at 0C, 1.3 log K at 300C
 
 Berlinite
 	AlPO4 + H+ = Al+3 + HPO4-2
@@ -3182,7 +3183,7 @@ Celadonite
 #	Range		0-300
 	-Vm		157.1
 #	Extrapol	supcrt92, Cp integration
-#	Ref		HDN+78, 78 col match
+#	Ref		HDN+78, 78wol match
 
 Chalcanthite
 	CuSO4:5H2O = Cu+2 + SO4-2 + 5 H2O
@@ -3239,16 +3240,16 @@ Chalcopyrite
 #	Extrapol	supcrt92
 #	Ref		HDN+78
 
-Chamosite-7A
-	Fe2Al2SiO5(OH)4 + 10 H+ = SiO2 + 2 Al+3 + 2 Fe+2 + 7 H2O
+Chamosite
+	Fe5Al2Si3O10(OH)8 + 16 H+ = 3 SiO2 + 2 Al+3 + 5 Fe+2 + 12 H2O
 	log_k		32.8416
 	-delta_H	-364.213	kJ/mol
 #	deltafH		-902.407	kcal/mol
-	-analytic	-2.5581e2 -7.0890e-2 2.4619e4 9.1789e1 3.8424e2
+	-analytic	1.577e2 -4.614e-1 0 0 0 3.413e-4
 #	Range		0-300
-	-Vm		106.20 # thermo.com.V8.R6+.tdat
-#	Extrapol	Cp integration
-#	Ref		78wol
+	-Vm		213.42
+#	Extrapol	supcrt92
+#	Ref		Wilson+06
 
 Chloromagnesite
 	MgCl2 = Mg+2 + 2 Cl-
@@ -3292,7 +3293,7 @@ Clinochlore-14A
 #	Range		0-350
 	-Vm		207.11
 #	Extrapol	supcrt92
-#	Ref		HDN+78
+#	Ref		HDN+78, Wilson+06 differ by 0.4 log K at 0C, 1.6 log K at 300C
 
 Clinochlore-7A
 	Mg5Al2Si3O10(OH)8 + 16 H+ = 2 Al+3 + 3 SiO2 + 5 Mg+2 + 12 H2O
@@ -3519,8 +3520,8 @@ Corundum
 	log_k		18.3121
 	-delta_H	-258.626	kJ/mol
 #	deltafH		-400.5		kcal/mol
-	-analytic	-1.4278e2 -7.8519e-2 1.3776e4 5.5881e1 2.1501e2
-	#analytic	7.095E+1 -2.187E-1 0 0 0 1.534E-4 # fit to HDN+78
+#	-analytic	-1.4278e2 -7.8519e-2 1.3776e4 5.5881e1 2.1501e2
+	-analytic 7.095E+1	-2.187E-1	0.000E+0	0.000E+0	0.000E+0	1.534E-4
 #	Range		0-350
 	-Vm		25.575
 #	Extrapol	supcrt92
@@ -4208,7 +4209,7 @@ Greenalite
 #	Range		0-350
 	-Vm		115
 #	Extrapol	supcrt92
-#	Ref		HDN+78, 78wol match
+#	Ref		HDN+78, 78wol, Wilson+06 match
 
 Grossular
 	Ca3Al2(SiO4)3 + 12 H+ = 2 Al+3 + 3 Ca+2 + 3 SiO2 + 6 H2O
@@ -4599,6 +4600,15 @@ Linnaeite
 #	Extrapol	Cp integration
 #	Ref		78vau/cra
 
+Lizardite
+	Mg3Si2O5(OH)4 + 6 H+ = 2 SiO2 + 3 Mg+2 + 5 H2O
+	log_k		30.560
+	-analytic	7.886e1 -2.108e-1 0 0 0 1.637e-4
+#	Range		0-300
+	-Vm		107.31
+#	Extrapol	supcrt92
+#	Ref		Wilson+06
+
 Lopezite
 	K2Cr2O7 + H2O =  2 CrO4-2 + 2 H+ + 2 K+
 	log_k		-17.4366
@@ -4784,7 +4794,7 @@ Minnesotaite
 #	Range		0-300
 	-Vm		147.86 # HDN+78
 #	Extrapol	Cp integration
-#	Ref		78wol
+#	Ref		78wol, Wilson+06 differ by 2.6 log K at 0C, 1.6 log K at 350C
 
 Mirabilite
 	Na2SO4:10H2O = SO4-2 + 2 Na+ + 10 H2O
@@ -4908,48 +4918,48 @@ Monticellite
 #	Ref		HDN+78
 
 Montmor-Ca
-	Ca.165Mg.33Al1.67Si4O10(OH)2 + 6 H+ = 0.165 Ca+2 + 0.33 Mg+2 + 1.67 Al+3 + 4 H2O + 4 SiO2
+	Ca.175Mg.35Al1.65Si4O10(OH)2 + 6 H+ = 0.175 Ca+2 + 0.35 Mg+2 + 1.65 Al+3 + 4 H2O + 4 SiO2
 	log_k		2.4952
 	-delta_H	-100.154	kJ/mol
 #	deltafH		-1361.5		kcal/mol
-	-analytic	6.0725 1.0644e-2 1.6024e4 -1.6334e1 -1.7982e6
+	-analytic	2.459e1	-9.080e-2 0 0 0 5.223e-5
 #	Range		0-300
-	-Vm		155.74 # Webmineral.com, density 2.35
-#	Extrapol	Cp integration
-#	Ref		88db 3
+	-Vm		136.007
+#	Extrapol	supcrt92, Cp integration
+#	Ref		Catalano13, 88db 3 match
 
 Montmor-K
-	K.33Mg.33Al1.67Si4O10(OH)2 + 6 H+ = 0.33 K+ + 0.33 Mg+2 + 1.67 Al+3 + 4 H2O + 4 SiO2
+	K.35Mg.35Al1.65Si4O10(OH)2 + 6 H+ = 0.35 K+ + 0.35 Mg+2 + 1.65 Al+3 + 4 H2O + 4 SiO2
 	log_k		2.1423
 	-delta_H	-88.184		kJ/mol
 #	deltafH		-1362.83	kcal/mol
-	-analytic	8.4757 1.1219e-2 1.5654e4 -1.6833e1 -1.8386e6
+	-analytic	2.022e1	-7.624e-2 0 0 0	4.102e-5
 #	Range		0-300
-	-Vm		158.41 # Webmineral.com, density 2.35
-#	Extrapol	Cp integration
-#	Ref		88db 3
+	-Vm		140.140
+#	Extrapol	supcrt92, Cp integration
+#	Ref		Catalano13, 88db 3 match
 
 Montmor-Mg
-	Mg.495Al1.67Si4O10(OH)2 + 6 H+ = 0.495 Mg+2 + 1.67 Al+3 + 4 H2O + 4 SiO2
+	Mg.525Al1.65Si4O10(OH)2 + 6 H+ = 0.525 Mg+2 + 1.65 Al+3 + 4 H2O + 4 SiO2
 	log_k		2.3879
 	-delta_H	-102.608	kJ/mol
 #	deltafH		-1357.87	kcal/mol
-	-analytic	-6.8505 9.0710e-3 1.6817e4 -1.1887e1 -1.8323e6
+	-analytic	2.381e1 -9.031e-2 0 0 0 5.203e-5
 #	Range		0-300
-	-Vm		154.62 # Webmineral.com, density 2.35
-#	Extrapol	Cp integration
-#	Ref		88db 3
+	-Vm		135.042
+#	Extrapol	supcrt92, Cp integration
+#	Ref		Catalano13, 88db 3 match
 
 Montmor-Na
-	Na.33Mg.33Al1.67Si4O10(OH)2 + 6 H+ = 0.33 Mg+2 + 0.33 Na+ + 1.67 Al+3 + 4 H2O + 4 SiO2
+	Na.35Mg.35Al1.65Si4O10(OH)2 + 6 H+ = 0.35 Mg+2 + 0.35 Na+ + 1.65 Al+3 + 4 H2O + 4 SiO2
 	log_k		2.4844
 	-delta_H	-93.2165	kJ/mol
 #	deltafH		-1360.69	kcal/mol
-	-analytic	1.9601 1.1342e-2 1.6051e4 -1.4718e1 -1.8160e6
+	-analytic	2.348e1	-8.604e-2 0 0 0 4.951e-5
 #	Range		0-300
-	-Vm		156.15 # Webmineral.com, density 2.35
-#	Extrapol	Cp integration
-#	Ref		88db 3
+	-Vm		137.449
+#	Extrapol	supcrt92, Cp integration
+#	Ref		Catalano13, 88db 3 match, but differ from Wilson+06 by 3.4 log K at 0C, 1.7 log K at 300C
 
 Mordenite
 	Ca.2895Na.361Al.94Si5.06O12:3.468H2O + 3.76 H+ = 0.2895 Ca+2 + 0.361 Na+ + 0.94 Al+3 + 5.06 SiO2 + 5.348 H2O
@@ -5318,48 +5328,48 @@ Niter
 #	Ref		RHF79
 
 Nontronite-Ca
-	Ca.165Fe2Al.33Si3.67H2O12 + 7.32 H+ = 0.165 Ca+2 + 0.33 Al+3 + 2 Fe+3 + 3.67 SiO2 + 4.66 H2O
+	Ca.175Fe2Al.35Si3.65H2O12 + 7.4 H+ = 0.175 Ca+2 + 0.35 Al+3 + 2 Fe+3 + 3.65 SiO2 + 4.7 H2O
 	log_k		-11.5822
 	-delta_H	-38.138		kJ/mol
 #	deltafH		-1166.7		kcal/mol
-	-analytic	1.6291e1 4.3557e-3 1.0221e4 -1.8690e1 -1.5427e6
+	-analytic	3.697 -4.892e-2 0 0 0 1.489e-5
 #	Range		0-300
-	-Vm		131.1 # thermo.com.V8.R6+.tdat
-#	Extrapol	Cp integration
-#	Ref		78wol
+	-Vm		137.780
+#	Extrapol	supcrt92, Cp integration
+#	Ref		Catalano13, 78wol differ by 2.6 log K at 0C, 0.2 log K at 300C
 
 Nontronite-K
-	K.33Fe2Al.33Si3.67H2O12 + 7.32 H+ = 0.33 Al+3 + 0.33 K+ + 2 Fe+3 + 3.67 SiO2 + 4.66 H2O
+	K.35Fe2Al.35Si3.65H2O12 + 7.4 H+ = 0.35 Al+3 + 0.35 K+ + 2 Fe+3 + 3.65 SiO2 + 4.7 H2O
 	log_k		-11.8648
 	-delta_H	-26.5822	kJ/mol
 #	deltafH		-1167.93	kcal/mol
-	-analytic	1.3630e1 4.7708e-3 1.0073e4 -1.7407e1 -1.5803e6
+	-analytic	-1.959 -3.115e-2 0 0 0 1.139e-6
 #	Range		0-300
-	-Vm		135.27 # thermo.com.V8.R6+.tdat
-#	Extrapol	Cp integration
-#	Ref		78wol
+	-Vm		141.913
+#	Extrapol	supcrt92, Cp integration
+#	Ref		Catalano13, 78wol differ by 1.1 log K at 0C, 0.5 log K at 300C
 
 Nontronite-Mg
-	Mg.165Fe2Al.33Si3.67H2O12 + 7.32 H+ = 0.165 Mg+2 + 0.33 Al+3 + 2 Fe+3 + 3.67 SiO2 + 4.66 H2O
+	Mg.175Fe2Al.35Si3.65H2O12 + 7.4 H+ = 0.175 Mg+2 + 0.35 Al+3 + 2 Fe+3 + 3.65 SiO2 + 4.7 H2O
 	log_k		-11.6200
 	-delta_H	-41.1779	kJ/mol
 #	deltafH		-1162.93	kcal/mol
-	-analytic	5.5961e1 1.0139e-2 8.0777e3 -3.3164e1 -1.4031e6
+	-analytic	2.476 -4.730e-2 0 0 0 1.382e-5
 #	Range		0-300
-	-Vm		129.76 # thermo.com.V8.R6+.tdat
-#	Extrapol	Cp integration
-#	Ref		78wol
+	-Vm		136.815
+#	Extrapol	supcrt92, Cp integration
+#	Ref		Catalano13, 78wol
 
 Nontronite-Na
-	Na.33Fe2Al.33Si3.67H2O12 + 7.32 H+ = 0.33 Al+3 + 0.33 Na+ + 2 Fe+3 + 3.67 SiO2 + 4.66 H2O
+	Na.35Fe2Al.35Si3.65H2O12 + 7.4 H+ = 0.35 Al+3 + 0.35 Na+ + 2 Fe+3 + 3.65 SiO2 + 4.7 H2O
 	log_k		-11.5263
 	-delta_H	-31.5687	kJ/mol
 #	deltafH		-1165.8		kcal/mol
-	-analytic	6.7915e1 1.2851e-2 7.1218e3 -3.7112e1 -1.3758e6
+	-analytic	1.106 -4.045e-2 0 0 0 9.229e-6
 #	Range		0-300
-	-Vm		132.11 # thermo.com.V8.R6+.tdat
-#	Extrapol	Cp integration
-#	Ref		78wol
+	-Vm		139.221
+#	Extrapol	supcrt92, Cp integration
+#	Ref		Catalano13, 78wol differ by 1.7 log K at 0C, 0.2 log K at 300C
 
 Okenite
 	CaSi2O4(OH)2:H2O + 2 H+ = Ca+2 + 2 SiO2 + 3 H2O
@@ -5392,7 +5402,7 @@ Paragonite
 #	Range		0-350
 	-Vm		132.53
 #	Extrapol	supcrt92
-#	Ref		HDN+78 differ by 2.5 log K at 0C, 0.6 log K at 350C
+#	Ref		HDN+78, differ by 2.5 log K at 0C, 0.6 log K at 350C, but match Wilson+06
 
 Pargasite
 	NaCa2Al3Mg4Si6O22(OH)2 + 22 H+ = Na+ + 2 Ca+2 + 3 Al+3 + 4 Mg+2 + 6 SiO2 + 12 H2O
@@ -5522,7 +5532,7 @@ Pyrophyllite
 #	Range		0-350
 	-Vm		126.6
 #	Extrapol	supcrt92
-#	Ref		HDN+78
+#	Ref		HDN+78, Wilson+06 match
 
 Pyrrhotite
 	FeS + H+ = Fe+2 + HS-
@@ -5579,27 +5589,16 @@ Rhodonite
 #	Extrapol	Cp integration
 #	Ref		RHF79
 
-Ripidolite-14A
+Ripidolite
 	Mg3Fe2Al2Si3O10(OH)8 + 16 H+ = 2 Al+3 + 2 Fe+2 + 3 Mg+2 + 3 SiO2 + 12 H2O
 	log_k		60.9638
 	-delta_H	-572.472	kJ/mol
 #	deltafH		-1947.87	kcal/mol
-	-analytic	-1.8376e2 -6.1934e-2 3.2458e4 6.2290e1 5.0653e2
+	-analytic	2.122e2 -6.025e-1 0 0 0 4.579e-4
 #	Range		0-300
-	-Vm		209.62 # thermo.com.V8.R6+.tdat
-#	Extrapol	Cp integration
-#	Ref		78wol
-
-Ripidolite-7A
-	Mg3Fe2Al2Si3O10(OH)8 + 16 H+ = 2 Al+3 + 2 Fe+2 + 3 Mg+2 + 3 SiO2 + 12 H2O
-	log_k		64.3371
-	-delta_H	-586.325	kJ/mol
-#	deltafH		-1944.56	kcal/mol
-	-analytic	-1.9557e2 -6.3779e-2 3.3634e4 6.7057e1 5.2489e2
-#	Range		0-300
-	-Vm		215.38 # thermo.com.V8.R6+.tdat
-#	Extrapol	Cp integration
-#	Ref		78wol
+	-Vm		208.614
+#	Extrapol	supcrt92
+#	Ref		Catalano13
 
 Rutherfordine
 	UO2CO3 + H+ = HCO3- + UO2+2
@@ -5652,60 +5651,103 @@ Sanidine_high
 #	Extrapol	supcrt92
 #	Ref		HDN+78
 
-Saponite-Ca
-	Ca.165Mg3Al.33Si3.67O10(OH)2 + 7.32 H+ = 0.165 Ca+2 + 0.33 Al+3 + 3 Mg+2 + 3.67 SiO2 + 4.66 H2O
+Saponite-Fe-Ca
+	Ca.175Fe3Al.35Si3.65O10(OH)2 + 7.4 H+ = 0.175 Ca+2 + 0.35 Al+3 + 3 Fe+2 + 3.65 SiO2 + 4.7 H2O
+	log_k		20.3624
+	-analytic	5.992e1 -1.681e-1 0 0 0 1.174e-4
+#	Range		0-300
+	-Vm		143.506
+#	Extrapol	supcrt92
+#	Ref		Catalano13
+
+Saponite-Fe-Fe
+	Fe3.175Al.35Si3.65O10(OH)2 + 7.4 H+ = 0.35 Al+3 + 3.175 Fe+2 + 3.65 SiO2 + 4.7 H2O
+	log_k		18.9359
+	-analytic	5.762e1 -1.630-1 0 0 0 1.099e-4
+#	Range		0-300
+	-Vm		142.672
+#	Extrapol	supcrt92
+#	Ref		Catalano13
+
+Saponite-Fe-K
+	K.35Fe3Al.35Si3.65O10(OH)2 + 7.4 H+ = 0.35 K+ + 0.35 Al+3 + 3 Fe+2 + 3.65 SiO2 + 4.7 H2O
+	log_k		18.7937
+	-analytic	5.427e1 -1.504e-1 0 0 0 1.037e-4
+#	Range		0-300
+	-Vm		147.639
+#	Extrapol	supcrt92
+#	Ref		Catalano13
+
+Saponite-Fe-Mg
+	Mg.175Fe3Al.35Si3.65O10(OH)2 + 7.4 H+ = 0.175 Mg+2 + 0.35 Al+3 + 3 Fe+2 + 3.65 SiO2 + 4.7 H2O
+	log_k		19.5290
+	-analytic	5.870e1 -1.665e-1 0 0 0 1.163e-4
+#	Range		0-300
+	-Vm		142.541
+#	Extrapol	supcrt92
+#	Ref		Catalano13
+
+Saponite-Fe-Na
+	Na.35Fe3Al.35Si3.65O10(OH)2 + 7.4 H+ = 0.35 Na+ + 0.35 Al+3 + 3 Fe+2 + 3.65 SiO2 + 4.7 H2O
+	log_k		19.7977
+	-analytic	5.733e1 -1.597e-1 0 0 0 1.117e-4
+#	Range		0-300
+	-Vm		144.947
+#	Extrapol	supcrt92
+#	Ref		Catalano13
+
+Saponite-Mg-Ca
+	Ca.175Mg3Al.35Si3.65O10(OH)2 + 7.4 H+ = 0.175 Ca+2 + 0.35 Al+3 + 3 Mg+2 + 3.65 SiO2 + 4.7 H2O
 	log_k		26.2900
 	-delta_H	-207.971	kJ/mol
 #	deltafH		-1436.51	kcal/mol
-	-analytic	-4.6904e1 6.2555e-3 2.2572e4 5.3198 -1.5725e6
+	-analytic	8.088e1 -2.233e-1 0 0 0 1.655e-4
 #	Range		0-300
-	-Vm		135.68 # thermo.com.V8.R6+.tdat
-#	Extrapol	Cp integration
-#	Ref		78wol
+	-Vm		141.250
+#	Extrapol	supcrt92, Cp integration
+#	Ref		Catalano13, 78wol match
 
-Saponite-H
-	H.33Mg3Al.33Si3.67O10(OH)2 + 6.99 H+ = 0.33 Al+3 + 3 Mg+2 + 3.67 SiO2 + 4.66 H2O
-	log_k		25.3321
-	-delta_H	-200.235	kJ/mol
-#	deltafH		-1416.94	kcal/mol
-	-analytic	-3.9828e1 8.9566e-3 2.2165e4 2.3941 -1.5933e6
+Saponite-Mg-Fe
+	Fe.175Mg3Al.35Si3.65O10(OH)2 + 7.4 H+ = 0.175 Fe+2 + 0.35 Al+3 + 3 Mg+2 + 3.65 SiO2 + 4.7 H2O
+	log_k		27.6789
+	-analytic	7.825e1 -2.180e-1 0 0 0 1.612e-4
 #	Range		0-300
-	-Vm		136.85 # thermo.com.V8.R6+.tdat
-#	Extrapol	Cp integration
-#	Ref		78wol
+	-Vm		140.416
+#	Extrapol	supcrt92
+#	Ref		Catalano13
 
-Saponite-K
-	K.33Mg3Al.33Si3.67O10(OH)2 + 7.32 H+ = 0.33 Al+3 + 0.33 K+ + 3 Mg+2 + 3.67 SiO2 + 4.66 H2O
+Saponite-Mg-K
+	K.35Mg3Al.35Si3.65O10(OH)2 + 7.4 H+ = 0.35 Al+3 + 0.35 K+ + 3 Mg+2 + 3.65 SiO2 + 4.7 H2O
 	log_k		26.0075
 	-delta_H	-196.402	kJ/mol
 #	deltafH		-1437.74	kcal/mol
-	-analytic	3.2113e1 1.8392e-2 1.7918e4 -2.2874e1 -1.3542e6
+	-analytic	7.522e1 -2.055e-1 0 0 0 1.517e-4
 #	Range		0-300
-	-Vm		139.85 # thermo.com.V8.R6+.tdat
-#	Extrapol	Cp integration
-#	Ref		78wol
+	-Vm		145.383
+#	Extrapol	supcrt92, Cp integration
+#	Ref		Catalano13, 78wol differ by 1.7 log K at 0C, 0.7 log K at 300C
 
-Saponite-Mg
-	Mg3.165Al.33Si3.67O10(OH)2 + 7.32 H+ = 0.33 Al+3 + 3.165 Mg+2 + 3.67 SiO2 + 4.66 H2O
+Saponite-Mg-Mg
+	Mg3.175Al.35Si3.65O10(OH)2 + 7.4 H+ = 0.35 Al+3 + 3.175 Mg+2 + 3.65 SiO2 + 4.7 H2O
 	log_k		26.2523
 	-delta_H	-210.822	kJ/mol
 #	deltafH		-1432.79	kcal/mol
-	-analytic	9.8888 1.4320e-2 1.9418e4 -1.5259e1 -1.3716e6
+	-analytic	7.965e1 -2.217e-1 0 0 0 1.644e-4
 #	Range		0-300
-	-Vm		133.66 # thermo.com.V8.R6+.tdat
-#	Extrapol	Cp integration
-#	Ref		78wol
+	-Vm		140.285
+#	Extrapol	supcrt92, Cp integration
+#	Ref		Catalano13, 78wol differ by 2.2 log K at 0C, 0.6 log K at 300C
 
-Saponite-Na
-	Na.33Mg3Al.33Si3.67O10(OH)2 + 7.32 H+ = 0.33 Al+3 + 0.33 Na+ + 3 Mg+2 + 3.67 SiO2 + 4.66 H2O
+Saponite-Mg-Na
+	Na.35Mg3Al.35Si3.65O10(OH)2 + 7.4 H+ = 0.35 Al+3 + 0.35 Na+ + 3 Mg+2 + 3.65 SiO2 + 4.7 H2O
 	log_k		26.3459
 	-delta_H	-201.401	kJ/mol
 #	deltafH		-1435.61	kcal/mol
-	-analytic	-6.7611e1 4.7327e-3 2.3586e4 1.2868e1 -1.6493e6
+	-analytic	7.829e1 -2.148e-1 0 0 0 1.598e-4
 #	Range		0-300
-	-Vm		136.69 # thermo.com.V8.R6+.tdat
-#	Extrapol	Cp integration
-#	Ref		78wol
+	-Vm		142.691
+#	Extrapol	supcrt92, Cp integration
+#	Ref		Catalano13, 78wol differ by 2.4 log K at 0C, 0.7 log K at 300C
 
 Sc
 	Sc + 3 H+ + 0.75 O2 = Sc+3 + 1.5 H2O
@@ -5947,7 +5989,7 @@ Talc
 #	Range		0-350
 	-Vm		136.25
 #	Extrapol	supcrt92
-#	Ref		HDN+78
+#	Ref		HDN+78, Wilson+06 match
 
 Tarapacaite
 	K2CrO4 = CrO4-2 + 2 K+

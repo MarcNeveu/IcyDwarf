@@ -179,10 +179,10 @@
 // WATER-ROCK PARAMETERS
 //-------------------------------------------------------------------
 
-#define nvar 1016                                          // Number of geochemical variables stored in each PHREEQC simulation
-#define naq 258                                            // Number of aqueous species (+ physical parameters)
+#define nvar 1024                                          // Number of geochemical variables stored in each PHREEQC simulation
+#define naq 257                                            // Number of aqueous species (+ physical parameters)
 #define ngases 15                                          // Number of gaseous species
-#define nmingas 385                                        // Number of minerals and gases
+#define nmingas 389                                        // Number of minerals and gases
 #define nelts 31                                           // 30 elements + 1 extra column in WaterRock/Molar_masses.txt
 
 typedef struct {

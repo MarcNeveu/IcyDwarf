@@ -20,7 +20,7 @@ Output every (Myr)            10
 Subroutines
 -------------------------------
 Thermal plot
-	IcyDwarf output       Thermal.txt
+	IcyDwarf output       4Thermal.txt
 	Max temp (K; 0=auto)  1000
 Geochemistry plot
 	Temperature           0 150 50
