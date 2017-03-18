@@ -765,7 +765,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
     dtime = dtime*1.0e-6*Myr2sec;  // TODO Static time step. Make it dynamic, CFL-compliant?
     // dtime = 0.0010*Myr2sec / ((double) NR / 100.0) / ((double) NR / 100.0);
 
-    tzero_min = fulltime;
+    tzero_min = tzero[0];
     for (im=0;im<nmoons;im++) {
     	if (tzero[im] < tzero_min) tzero_min = tzero[im];
     }

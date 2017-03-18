@@ -3520,8 +3520,7 @@ Corundum
 	log_k		18.3121
 	-delta_H	-258.626	kJ/mol
 #	deltafH		-400.5		kcal/mol
-#	-analytic	-1.4278e2 -7.8519e-2 1.3776e4 5.5881e1 2.1501e2
-	-analytic 7.095E+1	-2.187E-1	0.000E+0	0.000E+0	0.000E+0	1.534E-4
+	-analytic	-1.4278e2 -7.8519e-2 1.3776e4 5.5881e1 2.1501e2
 #	Range		0-350
 	-Vm		25.575
 #	Extrapol	supcrt92
