@@ -53,8 +53,8 @@ int main(int argc, char *argv[]){
 	double aring_out = 0.0;            // Outer orbital radius of rings (km). for Saturn's A ring, 140000 km
 
 	// Tidal model inputs
-    int tidalmodel = 3;                // 1: Elastic model; 2: Maxwell model; 3: Burgers model; 4: Andrade model
-    int tidetimesten = 0;              // Multiply tidal dissipation by 10 (McCarthy & Cooper 2016)
+    int tidalmodel = 0;                // 1: Elastic model; 2: Maxwell model; 3: Burgers model; 4: Andrade model
+    double tidetimes = 0.0;            // Multiply tidal dissipation by this factor, realistically up to 10 (McCarthy & Cooper 2016)
 
     // Geophysical inputs
 	double rhoHydrRock = 0.0;          // Density of hydrated rock endmember (kg m-3)
@@ -232,7 +232,7 @@ int main(int argc, char *argv[]){
 	rhoHydrRock = input[i]; i++;       // g cm-3
 	chondr = (int) input[i]; i++;
 	tidalmodel = (int) input[i]; i++;
-	tidetimesten = (int) input[i]; i++;
+	tidetimes = input[i]; i++;
 	//-----------------------------
 	run_thermal = (int) input[i]; i++;
 	run_aTP = (int) input[i]; i++;
@@ -328,7 +328,7 @@ int main(int argc, char *argv[]){
 	printf("| Hydrated rock density (g cm-3)                | %g\n", rhoHydrRock);
 	printf("| Chondrite type? CI=0 CO=1                     | %d\n", chondr);
 	printf("| Tidal rheology? Maxwell=2 Burgers=3 Andrade=4 | %d\n", tidalmodel);
-	printf("| Tidal heating x10?                            | %d\n", tidetimesten);
+	printf("| Tidal heating x10?                            | %g\n", tidetimes);
 	printf("|-----------------------------------------------|------------------------------------------------------|\n");
 	printf("| Subroutines ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||\n");
 	printf("|-----------------------------------------------|------------------------------------------------------|\n");
@@ -417,7 +417,7 @@ int main(int argc, char *argv[]){
 		printf("Running thermal evolution code...\n");
 		PlanetSystem(argc, argv, path, warnings, NR, timestep, tzero, total_time, output_every, nmoons, Mprim, Rprim, Qprim,
 				Mring, aring_out, aring_in, r_p, rho_p, rhoHydrRock, rhoDryRock, nh3, salt, Xhydr, porosity, Xpores, Xfines,
-				Tinit, Tsurf, startdiff, aorb, eorb, tidalmodel, tidetimesten, orbevol, hy, chondr, crack_input, crack_species);
+				Tinit, Tsurf, startdiff, aorb, eorb, tidalmodel, tidetimes, orbevol, hy, chondr, crack_input, crack_species);
 		printf("\n");
 	}
 

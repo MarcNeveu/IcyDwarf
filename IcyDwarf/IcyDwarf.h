@@ -611,7 +611,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 49) {
-				fgets(line, tab, f);  // Tides x10? (McCarthy & Cooper 2016)
+				fgets(line, tab, f);  // Tides x...? (realistically up to 10, McCarthy & Cooper 2016)
 				scan = fscanf(f, "%lg", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}

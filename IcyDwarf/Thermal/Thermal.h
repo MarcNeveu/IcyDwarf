@@ -39,7 +39,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 		int *ircrack, int *ircore, int *irice, int *irdiff, int forced_hydcirc, double **Nu,
 		double **aorb, double *eorb, double *norb, double *m_p, double r_p, double Mprim, double Rprim, double Qprim,
 		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity,
-		int tidalmodel, int tidetimesten, int im, int nmoons, int moonspawn, int orbevol, int hy, int chondr,
+		int tidalmodel, double tidetimes, int im, int nmoons, int moonspawn, int orbevol, int hy, int chondr,
 		double *Heat_radio, double *Heat_grav, double *Heat_serp, double *Heat_dehydr, double *Heat_tide,
 		double ***Stress, double ***Tide_output);
 
@@ -76,7 +76,7 @@ double viscosity(double T, double Mh2ol, double Mnh3l);
 
 double MMR(double *m_p, double *norb, double *aorb, int imoon, int i, double eorb);
 
-int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, double **Qth, int NR, double *Wtide_tot, double *Mh2os,
+int tide(int tidalmodel, double tidetimesten, double eorb, double omega_tide, double **Qth, int NR, double *Wtide_tot, double *Mh2os,
 		double *Madhs, double *Mh2ol, double *Mnh3l, double *dM,  double *Vrock, double *dVol, double *r, double *T, double *Xhydr,
 		double *Pressure, double *pore, int im);
 
@@ -107,7 +107,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 		int *ircrack, int *ircore, int *irice, int *irdiff, int forced_hydcirc, double **Nu,
 		double **aorb, double *eorb, double *norb, double *m_p, double r_p, double Mprim, double Rprim, double Qprim,
 		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity,
-		int tidalmodel, int tidetimesten, int im, int nmoons, int moonspawn, int orbevol, int hy, int chondr,
+		int tidalmodel, double tidetimes, int im, int nmoons, int moonspawn, int orbevol, int hy, int chondr,
 		double *Heat_radio, double *Heat_grav, double *Heat_serp, double *Heat_dehydr, double *Heat_tide,
 		double ***Stress, double ***Tide_output) {
 
@@ -397,7 +397,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 			strain((*Pressure)[ir], (*Xhydr)[ir], (*T)[ir], &strain_rate[ir], &Brittle_strength[ir], (*pore)[ir]);
 		}
 		Wtide_tot = 0.0;
-		tide(tidalmodel, tidetimesten, (*eorb), omega_tide, &Qth, NR, &Wtide_tot, (*Mh2os), (*Madhs), (*Mh2ol), (*Mnh3l), (*dM),
+		tide(tidalmodel, tidetimes, (*eorb), omega_tide, &Qth, NR, &Wtide_tot, (*Mh2os), (*Madhs), (*Mh2ol), (*Mnh3l), (*dM),
 				(*Vrock), (*dVol), (*r), (*T), (*Xhydr), (*Pressure), (*pore), im);
 		(*Heat_tide) = (*Heat_tide) + Wtide_tot;
 
@@ -1870,7 +1870,7 @@ double MMR(double *m_p, double *norb, double *aorb, int imoon, int i, double eor
  *
  *--------------------------------------------------------------------*/
 
-int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, double **Qth, int NR, double *Wtide_tot, double *Mh2os,
+int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, double **Qth, int NR, double *Wtide_tot, double *Mh2os,
 		double *Madhs, double *Mh2ol, double *Mnh3l, double *dM,  double *Vrock, double *dVol, double *r, double *T, double *Xhydr,
 		double *Pressure, double *pore, int im) {
 
@@ -2407,7 +2407,7 @@ int tide(int tidalmodel, int tidetimesten, double eorb, double omega_tide, doubl
 		// Note Im(k2) = -Im(y5) (Henning & Hurford 2014 eq. A9), the opposite convention of Tobie et al. (2005, eqs. 9 & 36).
 		Wtide = (4.0/3.0*PI_greek*(r[ir+1]*r[ir+1]*r[ir+1] - r[ir]*r[ir]*r[ir]))
 				* 2.1*pow(omega_tide,5)*pow(r[NR-1],4)*eorb*eorb/r[ir+1]/r[ir+1]*H_mu*cimag(shearmod[ir]);
-		if (tidetimesten) Wtide = 10.0*Wtide;
+		if (tidetimes) Wtide = tidetimes*Wtide;
 		(*Qth)[ir] = (*Qth)[ir] + Wtide;
 		(*Wtide_tot) = (*Wtide_tot) + Wtide;
 

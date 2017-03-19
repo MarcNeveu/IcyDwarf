@@ -15,13 +15,13 @@
 int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, double dtime, double *tzero,
 		double fulltime, double dtoutput, int nmoons, double Mprim, double Rprim, double Qprim, double Mring_init, double aring_out, double aring_in,
 		double *r_p, double *rho_p, double rhoHydr, double rhoDry, double *Xp, double *Xsalt, double **Xhydr, double *porosity, double *Xpores,
-		double *Xfines, double *Tinit, double *Tsurf, int *startdiff, double *aorb_init, double *eorb_init, int tidalmodel, int tidetimesten,
+		double *Xfines, double *Tinit, double *Tsurf, int *startdiff, double *aorb_init, double *eorb_init, int tidalmodel, double tidetimes,
 		int *orbevol, int *hy, int chondr, int *crack_input, int *crack_species);
 
 int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, double dtime, double *tzero,
 		double fulltime, double dtoutput, int nmoons, double Mprim, double Rprim, double Qprim, double Mring_init, double aring_out, double aring_in,
 		double *r_p, double *rho_p, double rhoHydr, double rhoDry, double *Xp, double *Xsalt, double **Xhydr, double *porosity, double *Xpores,
-		double *Xfines, double *Tinit, double *Tsurf, int *startdiff, double *aorb_init, double *eorb_init, int tidalmodel, int tidetimesten,
+		double *Xfines, double *Tinit, double *Tsurf, int *startdiff, double *aorb_init, double *eorb_init, int tidalmodel, double tidetimes,
 		int *orbevol, int *hy, int chondr, int *crack_input, int *crack_species) {
 
 	//-------------------------------------------------------------------
@@ -813,7 +813,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 							&ircrack[im], &ircore[im], &irice[im], &irdiff[im], forced_hydcirc, &Nu[im],
 							&aorb, &eorb[im], norb, m_p, r_p[im], Mprim, Rprim, Qprim,
 							aring_out, aring_in, alpha_Lind,  ringSurfaceDensity,
-							tidalmodel, tidetimesten, im, nmoons, moonspawn[im], orbevol[im], hy[im], chondr,
+							tidalmodel, tidetimes, im, nmoons, moonspawn[im], orbevol[im], hy[im], chondr,
 							&Heat_radio[im], &Heat_grav[im], &Heat_serp[im], &Heat_dehydr[im], &Heat_tide[im],
 							&Stress[im], &Tide_output[im]);
 					++nloops;
