@@ -76,7 +76,7 @@ double viscosity(double T, double Mh2ol, double Mnh3l);
 
 double MMR(double *m_p, double *norb, double *aorb, int imoon, int i, double eorb);
 
-int tide(int tidalmodel, double tidetimesten, double eorb, double omega_tide, double **Qth, int NR, double *Wtide_tot, double *Mh2os,
+int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, double **Qth, int NR, double *Wtide_tot, double *Mh2os,
 		double *Madhs, double *Mh2ol, double *Mnh3l, double *dM,  double *Vrock, double *dVol, double *r, double *T, double *Xhydr,
 		double *Pressure, double *pore, int im);
 
