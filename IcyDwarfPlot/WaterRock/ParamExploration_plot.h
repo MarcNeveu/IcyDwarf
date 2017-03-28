@@ -928,11 +928,12 @@ int PieStyle(int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npre
 	maroon.r = 128; maroon.g = 0; maroon.b = 64; maroon.a = 255;
 	spindrift.r = 102; spindrift.g = 255; spindrift.b = 204; spindrift.a = 255;
 
-	if (itopic <= 2) (*nspecies) = 3;       // Radionuclides
+	if (itopic == 1 || itopic == 2) (*nspecies) = 3;        // Th, U
+	else if (itopic == 0) (*nspecies) = 5;                  // K
 	else if (itopic == 3 || itopic == 6) (*nspecies) = 10;  // NH3 / Brucite & carbonates
-	else if (itopic == 4 || itopic == 10 || itopic == 11 || itopic == 12) (*nspecies) = 1;  // Total gases / ionic strength / pH-pe / W:R
-	else if (itopic == 5) (*nspecies) = 7;  // Gases
-	else if (itopic == 8) (*nspecies) = 15; // Mineral makeup
+	else if (itopic == 4 || itopic == 10 || itopic == 11 || itopic == 12) (*nspecies) = 1; // Total gases / ionic strength / pH-pe / W:R
+	else if (itopic == 5) (*nspecies) = 7;                  // Gases
+	else if (itopic == 8) (*nspecies) = 15;                 // Mineral makeup
 	else if (itopic == 9 || itopic == 13) (*nspecies) = 14; // Solution, freezing temp
 
 	SDL_Color color[(*nspecies)+1];
@@ -941,11 +942,13 @@ int PieStyle(int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npre
 	for (i=0;i<nleg;i++) (*leg_tex)[i] = NULL;
 
 	if (itopic == 0) { // K species
-		color[1] = gray; color[2] = purple; color[3] = yellow;
+		color[1] = gray; color[2] = purple; color[3] = orange; color[4] = aqua; color[5] = yellow;
 		(*leg_tex)[0] = renderText("mol per mol K",FontFile, black, 16, renderer);
 		(*leg_tex)[1] = renderText("Leached",FontFile, black, 16, renderer);
-		(*leg_tex)[2] = renderText("Clays",FontFile, black, 16, renderer);
-		(*leg_tex)[3] = renderText("K-feldspar",FontFile, black, 16, renderer);
+		(*leg_tex)[2] = renderText("Phlogopite",FontFile, black, 16, renderer);
+		(*leg_tex)[3] = renderText("Annite",FontFile, black, 16, renderer);
+		(*leg_tex)[4] = renderText("K-saponite",FontFile, black, 16, renderer);
+		(*leg_tex)[5] = renderText("K-feldspar",FontFile, black, 16, renderer);
 	}
 	else if (itopic == 1) { // Th species
 		color[1] = gray; color[2] = purple; color[3] = yellow;
@@ -1198,7 +1201,7 @@ int Angles(double **simdata, double **molmass, double **antifreezes, int isim, i
 	for (i=0;i<nspecies;i++) angle[i] = 0.0;
 
 	mass_water = simdata[isim][11];
-	total_Gas = simdata[isim][999];
+	total_Gas = simdata[isim][1007];
 	for (i=0;i<nspecies+1;i++) angle[i] = 0.0;
 
 	if (PT != 1) {
@@ -1225,13 +1228,10 @@ int Angles(double **simdata, double **molmass, double **antifreezes, int isim, i
 			else                // carbonaceous chondrite (CI/CM), K present as K-nontronite initially
 				total_K = (simdata[isim][766]-simdata[isim][767])*molmass[766][11]; // Nontronite-K
 			angle[1] = simdata[isim][23]*mass_water/total_K;                        // Dissolved potassium
-			for (i=naq+1;i<naq+2*(nmingas-ngases)-2;i=i+2) {                        // All solid species containing K
-				if (molmass[i][11] > 0.0) angle[2] = angle[2] + simdata[isim][i]*molmass[i][11]; // If the mineral contains potassium
-			}
-			angle[2] = angle[2] - simdata[isim][598]*molmass[598][11];              // Minus K-feldspar
-			angle[2] = angle[2]/total_K;
-
-			angle[3] = simdata[isim][598]*molmass[598][11]/total_K;                 // K-feldspar
+			angle[2] = simdata[isim][784]*molmass[784][11]/total_K; // Phlogopite
+			angle[3] = simdata[isim][292]*molmass[292][11]/total_K; // Annite
+			angle[4] = simdata[isim][826]*molmass[826][11]/total_K; // Saponite-Fe-K
+			angle[5] = simdata[isim][598]*molmass[598][11]/total_K;                 // K-feldspar
 		}
 		else if (itopic == 1) { // Th species
 			 // Correct for what seems to be a PHREEQC bug for low-abundance species:

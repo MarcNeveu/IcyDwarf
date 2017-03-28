@@ -12,25 +12,25 @@ ICY DWARF v17.x INPUT FILE
 | Number of grid zones                          | 200                                                  |
 | Thermal simulation time step (yr)             | 50                                                   |
 | Total time of thermal simulation (Myr)        | 200                                                  |
-| Output every (Myr)                            | 10                                                   |
+| Output every (Myr)                            | 1                                                    |
 |-----------------------------------------------|------------------------------------------------------|
 | Host planet parameters |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 |-----------------------------------------------|------------------------------------------------------|
 | Mass (kg) (0 if world is not a moon)          | 5.68e26                                              |
 | Radius (km)                                   | 58232                                                |
 | Tidal Q                                       | 2452.8                                               |
-| Number of moons                               | 1                                                    |
+| Number of moons                               | 3                                                    |
 | Ring mass (kg) (0 if no rings)                | 7e19                                                 |
 | Ring inner edge (km)                          | 92000                                                |
 | Ring outer edge (km)                          | 140000                                               |
 |-----------------------------------------------|------------------------------------------------------|
 | Icy world parameters |||||||||||||||||||||||||| World 1  | World 2  | World 3  | World 4  | World 5  |
 |-----------------------------------------------|----------|----------|----------|----------|----------|
-| Radius (km)                                   | 252.0    | 252.0    | 531.0    | 561.4    | 763.5    |
-| Density assuming zero porosity (g cm-3)       | 1.611    | 1.611    | 1.127    | 1.478    | 1.237    |
-| Surface temperature (K)                       | 59       | 59       | 68       | 70       | 72       |
-| Initial temperature (K)                       | 200      | 100      | 100      | 100      | 100      |
-| Time of formation (Myr)                       | 4380     | 4400     | 4300     | 4000     | 2000     |
+| Radius (km)                                   | 186.5    | 252.0    | 520.0    | 556.5    | 762.2    |
+| Density assuming zero porosity (g cm-3)       | 1.378    | 1.611    | 1.049    | 1.517    | 1.267    |
+| Surface temperature (K)                       | 76       | 59       | 68       | 70       | 72       |
+| Initial temperature (K)                       | 120      | 200      | 142      | 118      | 117      |
+| Time of formation (Myr)                       | 4520     | 4380     | 4380     | 4000     | 2100     |
 | Ammonia w.r.t. water                          | 0        | 0        | 0        | 0        | 0        |
 | Briny liquid? y=1, n=0                        | 0        | 0        | 0        | 0        | 0        |
 | Initial degree of hydration                   | 1        | 1        | 1        | 1        | 1        |
@@ -40,14 +40,14 @@ ICY DWARF v17.x INPUT FILE
 | Core ice/liquid water volume fraction         | 0.25     | 0.25     | 0.25     | 0.25     | 0.25     |
 | Start differentiated?                         | 1        | 1        | 1        | 1        | 1        |
 | Initial orbital semi-major axis (km)          | 160000   | 160000   | 160000   | 160000   | 160000   |
-| Initial orbital eccentricity                  | 0.018    | 0.018    | 0.010    | 0.002    | 0.002    |
+| Initial orbital eccentricity                  | 0.016    | 0.016    | 0.016    | 0.016    | 0.016    |
 | Allow orbit to change?                        | 1        | 1        | 1        | 1        | 1        |
 |-----------------------------------------------|------------------------------------------------------|
 | Dry rock density (g cm-3)                     | 3.8                                                  |
 | Hydrated rock density (g cm-3)                | 2.9                                                  |
 | Chondrite type? CI=0 CO=1                     | 0                                                    |
 | Tidal rheology? Maxwell=2 Burgers=3 Andrade=4 | 4                                                    |
-| Tidal heating times...?                       | 1                                                    |
+| Tidal heating x...?                           | 3                                                    |
 |-----------------------------------------------|------------------------------------------------------|
 | Subroutines ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 |-----------------------------------------------|------------------------------------------------------|
