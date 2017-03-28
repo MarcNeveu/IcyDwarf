@@ -46,7 +46,9 @@ int main(int argc, char *argv[]){
 	// Planet inputs
 	double Mprim = 0.0;                // Mass of the primary (host planet) (kg)
 	double Rprim = 0.0;				   // Radius of the primary (host planet) (km)
-	double Qprim = 0.0;				   // Tidal Q of the primary (host planet). For Saturn, = 2452.8, range 1570.8-4870.6 (Lainey et al. 2016)
+	double Qprimi = 0.0;			   // Initial tidal Q of the primary (host planet)
+	double Qprimf = 0.0;               // Final tidal Q of the primary
+	int Qmode = 0;                     // How Q changes over time between Qprimi and Qprimf. 0:linearly; 1:exponential decay; 2:exponential change
 	int nmoons = 0;                    // User-specified number of moons
 	double Mring = 0.0;                // Mass of planet rings (kg). For Saturn, 4 to 7e19 kg (Robbins et al. 2010, http://dx.doi.org/10.1016/j.icarus.2009.09.012)
 	double aring_in = 0.0;             // Inner orbital radius of rings (km). for Saturn B ring, 92000 km
@@ -189,7 +191,7 @@ int main(int argc, char *argv[]){
 	//-----------------------------
 	Mprim = input[i]; i++;             // kg
 	Rprim = input[i]; i++;             // km
-	Qprim = input[i]; i++;
+	Qprimi = input[i]; i++; Qprimf = input[i]; i++; Qmode = (int) input[i]; i++;
 	nmoons = (int) input[i]; i++;
 	Mring = input[i]; i++;             // kg
 	aring_in = input[i]; i++;          // cm
@@ -283,7 +285,7 @@ int main(int argc, char *argv[]){
 	printf("|-----------------------------------------------|------------------------------------------------------|\n");
 	printf("| Mass (kg) (0 if world is not a moon)          | %g\n", Mprim);
 	printf("| Radius (km)                                   | %g\n", Rprim);
-	printf("| Tidal Q                                       | %g\n", Qprim);
+	printf("| Tidal Q (initial,today,{0:lin 1:exp 2:1-exp}) | %g %g %d\n", Qprimi, Qprimf, Qmode);
 	printf("| Number of moons                               | %d\n", nmoons);
 	printf("| Ring mass (kg) (0 if no rings)                | %g\n", Mring);
 	printf("| Ring inner edge (km)                          | %g\n", aring_in);
@@ -328,7 +330,7 @@ int main(int argc, char *argv[]){
 	printf("| Hydrated rock density (g cm-3)                | %g\n", rhoHydrRock);
 	printf("| Chondrite type? CI=0 CO=1                     | %d\n", chondr);
 	printf("| Tidal rheology? Maxwell=2 Burgers=3 Andrade=4 | %d\n", tidalmodel);
-	printf("| Tidal heating x10?                            | %g\n", tidetimes);
+	printf("| Tidal heating x...                            | %g\n", tidetimes);
 	printf("|-----------------------------------------------|------------------------------------------------------|\n");
 	printf("| Subroutines ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||\n");
 	printf("|-----------------------------------------------|------------------------------------------------------|\n");
@@ -415,8 +417,8 @@ int main(int argc, char *argv[]){
 
 	if (run_thermal == 1) {
 		printf("Running thermal evolution code...\n");
-		PlanetSystem(argc, argv, path, warnings, NR, timestep, tzero, total_time, output_every, nmoons, Mprim, Rprim, Qprim,
-				Mring, aring_out, aring_in, r_p, rho_p, rhoHydrRock, rhoDryRock, nh3, salt, Xhydr, porosity, Xpores, Xfines,
+		PlanetSystem(argc, argv, path, warnings, NR, timestep, tzero, total_time, output_every, nmoons, Mprim, Rprim, Qprimi, Qprimf,
+				Qmode, Mring, aring_out, aring_in, r_p, rho_p, rhoHydrRock, rhoDryRock, nh3, salt, Xhydr, porosity, Xpores, Xfines,
 				Tinit, Tsurf, startdiff, aorb, eorb, tidalmodel, tidetimes, orbevol, hy, chondr, crack_input, crack_species);
 		printf("\n");
 	}

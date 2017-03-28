@@ -418,7 +418,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 							if (fabs((double)jr * norb[im] - (double)(jr+1) * norb[i]) < 1.0e-2*2.0*PI_greek/dtime // MMR if orbital periods stay commensurate by <1%
 							 || fabs((double)jr * norb[im] - (double)(jr+2) * norb[i]) < 1.0e-2*2.0*PI_greek/dtime // over 1 time step:
 							 || fabs((double)jr * norb[im] - (double)(jr+3) * norb[i]) < 1.0e-2*2.0*PI_greek/dtime) { // j*n1 - (j+k)*n2 < 0.01*n1 / # orbits in 1 time step: dt/(2 pi/n1)
-								d_eorb_MMR = MMR(m_p, norb, (*aorb), im, i, (*eorb)) / (double)jr;                 // /jr: relatively how often conjunctions happen
+								d_eorb_MMR = MMR(m_p, norb, (*aorb), im, i, (*eorb)) / (double)jr;                 // /jr: to convert synodic period to conjunction period
 								d_eorb = d_eorb + d_eorb_MMR;
 
 								FILE *fout;
@@ -446,7 +446,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 							if (fabs((double)(jr+1) * norb[im] - (double)jr * norb[i]) < 1.0e-2*2.0*PI_greek/dtime // MMR if orbital periods stay commensurate by <1%
 							 || fabs((double)(jr+2) * norb[im] - (double)jr * norb[i]) < 1.0e-2*2.0*PI_greek/dtime // over 1 time step:
 							 || fabs((double)(jr+3) * norb[im] - (double)jr * norb[i]) < 1.0e-2*2.0*PI_greek/dtime) { // j*n1 - (j+k)*n2 < 0.01*n1 / # orbits in 1 time step: dt/(2 pi/n1)
-								d_eorb_MMR = MMR(m_p, norb, (*aorb), im, i, (*eorb)) / (double)(jr+1);             // /(jr+1): (or +2 or +3): relatively how often conjunctions happen
+								d_eorb_MMR = MMR(m_p, norb, (*aorb), im, i, (*eorb)) / (double)(jr+1);             // /(jr+1): (or +2 or +3): to convert synodic period to conjunction period
 								d_eorb = d_eorb + d_eorb_MMR;
 
 								FILE *fout;
@@ -454,15 +454,9 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 								// "Release/IcyDwarf" characters) and specifying the right path end.
 					    		char *title = (char*)malloc(1024*sizeof(char));       // Don't forget to free!
 					    		title[0] = '\0';
-					    		char im_str[2];
-					    		im_str[0] = '\0';
 					    		if (v_release == 1) strncat(title,path,strlen(path)-16);
 					    		else if (cmdline == 1) strncat(title,path,strlen(path)-18);
-					    		strcat(title,"Outputs/");
-					    		sprintf(im_str, "%d", im);
-					    		strcat(title, im_str);
-					    		strcat(title,"Resonances.txt");
-
+					    		strcat(title,"Outputs/Resonances.txt");
 								fout = fopen(title,"a");
 								if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
 								else fprintf(fout,"%d Moons %d (n=%g s-1) and %d (n=%g s-1), %g:%d=jr, d_eorb_MMR=%g for moon %d\n", itime, im, norb[im], i, norb[i], (double)jr*norb[i]/norb[im], jr, d_eorb_MMR, im);

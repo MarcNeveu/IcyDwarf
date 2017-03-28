@@ -12,24 +12,26 @@
 #include "Thermal/Thermal.h"
 #include "Crack/Crack.h"
 
-int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, double dtime, double *tzero,
-		double fulltime, double dtoutput, int nmoons, double Mprim, double Rprim, double Qprim, double Mring_init, double aring_out, double aring_in,
-		double *r_p, double *rho_p, double rhoHydr, double rhoDry, double *Xp, double *Xsalt, double **Xhydr, double *porosity, double *Xpores,
-		double *Xfines, double *Tinit, double *Tsurf, int *startdiff, double *aorb_init, double *eorb_init, int tidalmodel, double tidetimes,
-		int *orbevol, int *hy, int chondr, int *crack_input, int *crack_species);
+int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, double dtime, double *tzero, double fulltime,
+		double dtoutput, int nmoons, double Mprim, double Rprim, double Qprimi, double Qprimf, int Qmode, double Mring_init,
+		double aring_out, double aring_in, double *r_p, double *rho_p, double rhoHydr, double rhoDry, double *Xp, double *Xsalt,
+		double **Xhydr, double *porosity, double *Xpores, double *Xfines, double *Tinit, double *Tsurf, int *startdiff,
+		double *aorb_init, double *eorb_init, int tidalmodel, double tidetimes, int *orbevol, int *hy, int chondr, int *crack_input,
+		int *crack_species);
 
-int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, double dtime, double *tzero,
-		double fulltime, double dtoutput, int nmoons, double Mprim, double Rprim, double Qprim, double Mring_init, double aring_out, double aring_in,
-		double *r_p, double *rho_p, double rhoHydr, double rhoDry, double *Xp, double *Xsalt, double **Xhydr, double *porosity, double *Xpores,
-		double *Xfines, double *Tinit, double *Tsurf, int *startdiff, double *aorb_init, double *eorb_init, int tidalmodel, double tidetimes,
-		int *orbevol, int *hy, int chondr, int *crack_input, int *crack_species) {
+int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, double dtime, double *tzero, double fulltime,
+		double dtoutput, int nmoons, double Mprim, double Rprim, double Qprimi, double Qprimf, int Qmode, double Mring_init,
+		double aring_out, double aring_in, double *r_p, double *rho_p, double rhoHydr, double rhoDry, double *Xp, double *Xsalt,
+		double **Xhydr, double *porosity, double *Xpores, double *Xfines, double *Tinit, double *Tsurf, int *startdiff,
+		double *aorb_init, double *eorb_init, int tidalmodel, double tidetimes, int *orbevol, int *hy, int chondr, int *crack_input,
+		int *crack_species) {
 
 	//-------------------------------------------------------------------
 	//                 Declarations and initializations
 	//-------------------------------------------------------------------
 
-	int thread_id;
-	int nloops = 0;
+//	int thread_id;
+//	int nloops = 0;
 	int i = 0;
 	int im = 0;
 	int ir = 0;
@@ -45,12 +47,14 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	int dissolution_precipitation = 0;   // Switch for rock dissolution/precipitation effects
 	double realtime = 0.0;               // Time elapsed since formation of the solar system (s)
 	double tzero_min = 0.0;              // Time of formation of the first moon to form
+	double today = 4568.2*Myr2sec;       // Time elapsed between the formation of Ca-Al inclusions and the present (Bouvier & Wadhwa 2010, http://dx.doi.org/10.1038/ngeo941)
 	double rhoRockth = rhoDry*gram;      // Density of dry rock (g/cm3)
 	double rhoHydrth = rhoHydr*gram;     // Density of hydrated rock (g/cm3)
 	double rhoH2osth = rhoH2os*gram;	 // Density of water ice (g/cm3)
 	double rhoAdhsth = rhoAdhs*gram;	 // Density of ammonia dihydrate ice (g/cm3)
 	double rhoH2olth = 0.0;              // Density of liquid water, just for this routine (g/cm3)
 	double rhoNh3lth = 0.0;              // Density of liquid ammonia, just for this routine (g/cm3)
+	double Qprim = 0.0;                  // Tidal Q of the primary (host planet). For Saturn today, = 2452.8, range 1570.8-4870.6 (Lainey et al. 2016)
 	double Mring = Mring_init;           // Ring mass
 	double ringSurfaceDensity = 0.0;     // Ring surface density (g cm-2)
 	double alpha_Lind = 0.0;             // Dissipation of Lindblad resonance in rings (no dim)
@@ -90,7 +94,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	double Heat[nmoons][6];              // Heat[6] (erg), output
 	double Thermal_output[nmoons][12];	 // Thermal_output[12] (multiple units), output
 	double Orbit[nmoons][3];             // Orbit[3] (multiple units), output
-	double Ring[2];                      // Ring[2], output of ring mass (kg) vs. time (Gyr)
+	double Primary[3];                   // Primary[3], output of primary's tidal Q and ring mass (kg) vs. time (Gyr)
 
 	double *aorb = (double*) malloc((nmoons)*sizeof(double));       // Moon orbital semi-major axis (cm)
 	if (aorb == NULL) printf("PlanetSystem: Not enough memory to create aorb[nmoons]\n");
@@ -564,7 +568,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		strcat(filename, outputpath[im]); strcat(filename, "Tidal_rates.txt"); create_output(path, filename); filename[0] = '\0';
 		strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt"); create_output(path, filename); filename[0] = '\0';
 	}
-	create_output(path, "Outputs/Ringmass.txt");
+	create_output(path, "Outputs/Primary.txt");
 	create_output(path, "Outputs/Resonances.txt");
 
 	for (im=0;im<nmoons;im++) m_p[im] = rho_p[im]*4.0/3.0*PI_greek*r_p[im]*r_p[im]*r_p[im]; // Compute object mass from radius and density
@@ -608,6 +612,19 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 
 		// Initial ring mass is the input (final) mass + the mass of the moons
 	    Mring = Mring + m_p[im];
+
+	    // Initial tidal Q
+    	switch(Qmode) {
+    	case 0: // Q changes linearly
+    		Qprim = Qprimi + (Qprimf-Qprimi) / (today-tzero_min) * (realtime-tzero_min);
+    		break;
+    	case 1: // Q decays exponentially
+    		Qprim = Qprimi * exp( log(Qprimf/Qprimi) / (today-tzero_min) * (realtime-tzero_min) );
+    		break;
+    	case 2: // Q changes exponentially
+    		Qprim = Qprimi + 1.0 - exp( log(Qprimi-Qprimf+1.0) / (today-tzero_min) * (realtime-tzero_min) );
+    		break;
+    	}
 
 		//-------------------------------------------------------------------
 		//                  Allow for chemical equilibrium
@@ -755,9 +772,10 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		append_output(3, Orbit[im], path, filename); filename[0] = '\0';
 	}
 	// Ring mass
-	Ring[0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
-	Ring[1] = Mring*gram;
-	append_output(2, Ring, path, "Outputs/Ringmass.txt");
+	Primary[0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
+	Primary[1] = Qprimi;
+	Primary[2] = Mring*gram;
+	append_output(3, Primary, path, "Outputs/Primary.txt");
 
 	//-------------------------------------------------------------------
 	//                       Initialize time loop
@@ -787,13 +805,42 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
     			moonspawn[im]++;
     		}
     	}
+
     	ringSurfaceDensity = Mring/(PI_greek*(aring_out*aring_out-aring_in*aring_in));
 
+    	switch(Qmode) {
+    	case 0: // Q changes linearly
+    		Qprim = Qprimi + (Qprimf-Qprimi) / (today-tzero_min) * (realtime-tzero_min);
+    		break;
+    	case 1: // Q decays exponentially
+    		Qprim = Qprimi * exp( log(Qprimf/Qprimi) / (today-tzero_min) * (realtime-tzero_min) );
+    		break;
+    	case 2: // Q changes exponentially
+    		Qprim = Qprimi + 1.0 - exp( log(Qprimi-Qprimf+1.0) / (today-tzero_min) * (realtime-tzero_min) );
+    		break;
+    	}
+    	if (Qprim <= 0.0) {
+			FILE *fout;
+			// Turn working directory into full file path by moving up two directories to IcyDwarf (e.g., removing
+			// "Release/IcyDwarf" characters) and specifying the right path end.
+    		char *title = (char*)malloc(1024*sizeof(char));       // Don't forget to free!
+    		title[0] = '\0';
+    		if (v_release == 1) strncat(title,path,strlen(path)-16);
+    		else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+    		strcat(title,"Outputs/Primary.txt");
+			fout = fopen(title,"a");
+			if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
+			else fprintf(fout,"Tidal Q of primary = %g is negative. Change Q parameters or simulation timing.\n", Qprim);
+			fclose (fout);
+			free (title);
+			exit(0);
+    	}
+
 		// Begin parallel calculations
-#pragma omp parallel private(thread_id, nloops)
+#pragma omp parallel // private(thread_id, nloops)
     	{
-			thread_id = omp_get_thread_num();
-			nloops = 0;
+//			thread_id = omp_get_thread_num();
+//			nloops = 0;
 
 #pragma omp for
 			for (im=0;im<nmoons;im++) {
@@ -817,7 +864,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 							tidalmodel, tidetimes, im, nmoons, moonspawn[im], orbevol[im], hy[im], chondr,
 							&Heat_radio[im], &Heat_grav[im], &Heat_serp[im], &Heat_dehydr[im], &Heat_tide[im],
 							&Stress[im], &Tide_output[im]);
-					++nloops;
+//					++nloops;
 				}
 			}
 			// printf("itime = %d, Thread %d performed %d iterations of the loop over moons.\n", itime, thread_id, nloops);
@@ -902,9 +949,10 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 				append_output(3, Orbit[im], path, filename); filename[0] = '\0';
 			}
 			// Ring mass
-			Ring[0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
-			Ring[1] = Mring*gram;
-			append_output(2, Ring, path, "Outputs/Ringmass.txt");
+			Primary[0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
+			Primary[1] = Qprim;
+			Primary[2] = Mring*gram;
+			append_output(3, Primary, path, "Outputs/Primary.txt");
 		}
     }
 

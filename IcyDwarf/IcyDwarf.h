@@ -422,9 +422,12 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 20) {
-				fgets(line, tab, f);  // Host planet tidal Q
-				scan = fscanf(f, "%lg", &input[i]), i++;
-				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+				fgets(line, tab, f);  // Host planet initial tidal Q, final tidal Q, mode of tidal Q change
+				for (j=0;j<3;j++) {
+					scan = fscanf(f, "%lg", &input[i]), i++;
+					if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+					fgets(line, 1, f);
+				}
 			}
 			else if (line_no == 21) { // Number of moons
 				fgets(line, tab, f);
