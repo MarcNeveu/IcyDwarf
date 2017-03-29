@@ -405,11 +405,88 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 
 		for (ir=0;ir<NR;ir++) (*Tide_output)[ir][1] = (*Tide_output)[ir][1] + Qth[ir]/1.0e7;
 
-		// Update orbital parameters (Barnes et al. 2008):
+		// Update orbital parameters (Goldreich & Soter 1966; Peale et al. 1980; Murray & Dermott 1999; Barnes et al. 2008; Charnoz et al. 2011; Henning & Hurford 2014):
 		if (orbevol == 1 && Wtide_tot > 0.0) {
 
+//			// Calculate tidal dissipation in the host planet (k2prim & Qprim)
+//			int NRprim=10000;
+//			double rcoreprim = 0.0; // 10000.0*km2cm; // Radius of the core inside the primary
+//
+//			double *rprim = (double*) malloc((NRprim+1)*sizeof(double));      // Radius of each layer inside the primary
+//			if (rprim == NULL) printf("Thermal: Not enough memory to create rprim[NR+1]\n");
+//
+//			double *rhoprim = (double*) malloc(NRprim*sizeof(double));        // Density of each primary layer
+//			if (rhoprim == NULL) printf("Thermal: Not enough memory to create rhoprim[NRprim]\n");
+//
+//			double *gprim = (double*) malloc(NRprim*sizeof(double));          // Gravitational acceleration in each primary layer
+//			if (gprim == NULL) printf("Thermal: Not enough memory to create gprim[NRprim]\n");
+//
+//			double complex *shearmodprim = (double complex*) malloc(NRprim*sizeof(double complex)); // Complex shear modulus of each layer inside the primary
+//			if (shearmodprim == NULL) printf("Thermal: Not enough memory to create shearmodprim[NRprim]\n");
+//
+//			double complex **ytideprim = (double complex**) malloc(NRprim*sizeof(double complex*)); // Radial displacement functions for each layer inside the primary
+//			if (ytideprim == NULL) printf("Thermal: Not enough memory to create ytideprim[NRprim][6]\n");
+//			for (ir=0;ir<NRprim;ir++) {
+//				ytideprim[ir] = (double complex*) malloc(6*sizeof(double complex));
+//				if (ytideprim[ir] == NULL) printf("Thermal: Not enough memory to create ytideprim[NRprim][6]\n");
+//			}
+//
+//			double mu_rigid_prim = 0.0;       // Rigidity (shear modulus) inside the primary
+//			double mu_visc_prim = 0.0;        // Viscosity inside the primary
+//			double K_prim = 0.0;              // Bulk modulus inside the primary
+//
+//			int ircoreprim = 0;               // Outermost primary core layer
+//			double q = PI_greek*0.95;          // Polytrope parameter of Kramm et al. (2011) equation 7
+//
+//			rprim[0] = 0.0;
+//			for (ir=0;ir<NRprim;ir++) {
+//				rprim[ir+1] = Rprim*(double)(ir+1)/(double)NRprim;
+//				if (rprim[ir] < rcoreprim && rprim[ir+1] >= rcoreprim) ircoreprim = ir;
+//			}
+//
+//			// Density distribution of n=1 polytrope (Kramm et al. 2011 equations 7 and 8, http://doi.org/10.1051/0004-6361/201015803)
+//			for (ir=NRprim-1;ir>ircoreprim;ir--) {
+//				rhoprim[ir] = Mprim/(4.0/3.0*PI_greek*pow(Rprim,3)); //sin(q)*(1.0-rprim[ir+1]/Rprim) / (q*rprim[ir+1]/Rprim);
+//			}
+//
+//			for (ir=ircoreprim;ir>=0;ir--) {
+//				rhoprim[ir] = rhoprim[ircoreprim+1];
+//			}
+//
+//			for (ir=0;ir<NRprim;ir++) {
+//				printf("R=%g km \t rho=%g g cm-3\n", rprim[ir+1]/km2cm, rhoprim[ir]);
+//				gprim[ir] = 4.0/3.0*PI_greek*Gcgs*rhoprim[ir]*rprim[ir+1];
+//				mu_rigid_prim = 1.0e6; //1000.0*1.0e9*Pa2ba; // Lainey et al. 2015
+//				mu_visc_prim = 1.0e16; //1.0e15*Pa2ba;        // Lainey et al. 2015
+//				K_prim = mu_rigid_prim/0.5;         // Lainey et al. 2015, try different values for the denominator between 0.001 and 1.0
+//
+//				// Assume Maxwell viscoelastic model (Henning et al. 2009), with steady-state response
+//				shearmodprim[ir] = mu_rigid_prim*omega_tide*omega_tide*mu_visc_prim*mu_visc_prim
+//									 / (mu_rigid_prim*mu_rigid_prim + omega_tide*omega_tide*mu_visc_prim*mu_visc_prim)
+//							     + mu_rigid_prim*mu_rigid_prim*omega_tide*mu_visc_prim
+//							         / (mu_rigid_prim*mu_rigid_prim + omega_tide*omega_tide*mu_visc_prim*mu_visc_prim) * I;
+//			}
+//			propmtx(NRprim, rprim, rhoprim, gprim, shearmodprim, &ytideprim);
+//
+//			// Note Im(k2) = -Im(y5) (Henning & Hurford 2014 eq. A9), the opposite convention of Tobie et al. (2005, eqs. 9 & 36).
+//			k2prim = cabs(1.0 - ytideprim[NRprim-1][4]);
+//			Qprim = cimag(ytideprim[NRprim-1][4])/k2prim;
+//
+//			printf("k2=%g Q=%g\n", k2prim, Qprim);
+//
+//			// Benchmark against Lainey et al. (2015)
+//			for (ir=0;ir<NRprim;ir++) {
+//				printf ("%g \t %g \t %g \t %g \t %g \t %g \t %g\n", rprim[ir+1]/km2cm,
+//						cabs(ytideprim[ir][0])/cm, cabs(ytideprim[ir][1])/cm,
+//						cabs(ytideprim[ir][2])*gram/cm/cm/cm, cabs(ytideprim[ir][3])*gram/cm/cm/cm,
+//						cabs(ytideprim[ir][4]), cabs(ytideprim[ir][5])/(-r_p/5.0));
+//			}
+//
+//			// Need to free all arrays
+//			exit(0);
+
 			// Update eccentricity
-			d_eorb = - Wtide_tot*(*aorb)[im] / (Gcgs*Mprim*m_p[im]*(*eorb))                                // Dissipation inside moon, decreases its eccentricity (equation 4.170 of Murray & Dermott 1999)
+			d_eorb = - Wtide_tot*(*aorb)[im] / (Gcgs*Mprim*m_p[im]*(*eorb))                                     // Dissipation inside moon, decreases its eccentricity (equation 4.170 of Murray & Dermott 1999)
 				   + 57.0/8.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*(*eorb); // Dissipation inside planet, increases moon's eccentricity
 
 			// Moom-moon perturbations (Charnoz et al. 2011)
