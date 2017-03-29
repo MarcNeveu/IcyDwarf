@@ -37,7 +37,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 		double **Crack, double **Crack_size, double **fracOpen, double **P_pore, double **P_hydr, double ***Act, double *fracKleached,
 		int *crack_input, int *crack_species, double **aTP, double **integral, double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite,
 		int *ircrack, int *ircore, int *irice, int *irdiff, int forced_hydcirc, double **Nu,
-		double **aorb, double *eorb, double *norb, double *m_p, double r_p, double Mprim, double Rprim, double Qprim,
+		double **aorb, double *eorb, double *norb, double *m_p, double r_p, double Mprim, double Rprim, double k2prim, double Qprim,
 		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity,
 		int tidalmodel, double tidetimes, int im, int nmoons, int moonspawn, int orbevol, int hy, int chondr,
 		double *Heat_radio, double *Heat_grav, double *Heat_serp, double *Heat_dehydr, double *Heat_tide,
@@ -80,6 +80,8 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
 		double *Madhs, double *Mh2ol, double *Mnh3l, double *dM,  double *Vrock, double *dVol, double *r, double *T, double *Xhydr,
 		double *Pressure, double *pore, int im);
 
+int propmtx(int NR, double *r, double *rho, double *g, double complex *shearmod, double complex ***ytide);
+
 int GaussJordan(double complex ***M, double complex ***b, int n, int m);
 int ScaledGaussJordan(long double complex ***M, int n);
 int SVdcmp(long double ***M, int m, int n, long double **w, long double ***v);
@@ -105,7 +107,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 		double **Crack, double **Crack_size, double **fracOpen, double **P_pore, double **P_hydr, double ***Act, double *fracKleached,
 		int *crack_input, int *crack_species, double **aTP, double **integral, double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite,
 		int *ircrack, int *ircore, int *irice, int *irdiff, int forced_hydcirc, double **Nu,
-		double **aorb, double *eorb, double *norb, double *m_p, double r_p, double Mprim, double Rprim, double Qprim,
+		double **aorb, double *eorb, double *norb, double *m_p, double r_p, double Mprim, double Rprim, double k2prim, double Qprim,
 		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity,
 		int tidalmodel, double tidetimes, int im, int nmoons, int moonspawn, int orbevol, int hy, int chondr,
 		double *Heat_radio, double *Heat_grav, double *Heat_serp, double *Heat_dehydr, double *Heat_tide,
@@ -407,8 +409,8 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 		if (orbevol == 1 && Wtide_tot > 0.0) {
 
 			// Update eccentricity
-			d_eorb = - Wtide_tot*(*aorb)[im] / (Gcgs*Mprim*m_p[im]*(*eorb))                                // Dissipation inside moon, decreases its eccentricity
-				   + 171.0/16.0*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*(*eorb); // Dissipation inside planet, increases moon's eccentricity
+			d_eorb = - Wtide_tot*(*aorb)[im] / (Gcgs*Mprim*m_p[im]*(*eorb))                                // Dissipation inside moon, decreases its eccentricity (equation 4.170 of Murray & Dermott 1999)
+				   + 57.0/8.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*(*eorb); // Dissipation inside planet, increases moon's eccentricity
 
 			// Moom-moon perturbations (Charnoz et al. 2011)
 			for (i=0;i<nmoons;i++) {
@@ -477,7 +479,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 
 			// Update semimajor axis
 			d_aorb_pl = - 2.0*Wtide_tot*(*aorb)[im]*(*aorb)[im] / (Gcgs*Mprim*m_p[im])         // Dissipation inside moon, shrinks its orbit
-					  + 4.5*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-5.5); // Dissipation inside planet, expands moon's orbit
+					  + 3.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-5.5); // Dissipation inside planet, expands moon's orbit
 
 			if (ringSurfaceDensity) { // Dissipation in the rings, expands moon's orbit if exterior to rings (Meyer-Vernet & Sicardy 1987, http://dx.doi.org/10.1016/0019-1035(87)90011-X)
 				ringTorque = 0.0;
@@ -1908,8 +1910,6 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
 
 	int ir = 0;                          // Counters
 	int i = 0;
-	int j = 0;
-	int k = 0;
 
 	double frock = 0.0;                  // Volume fraction of rock (dimensionless)
 	double phi = 0.0;                    // Ice volume fraction (dimensionless)
@@ -1943,13 +1943,6 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
 	double complex *shearmod = (complex double*) malloc((NR)*sizeof(double complex)); // Frequency-dependent complex rigidity (g cm-1 s-2)
 	if (shearmod == NULL) printf("Thermal: Not enough memory to create shearmod[NR]\n");
 
-	double complex **dum = (double complex**) malloc(6*sizeof(double complex*)); // Dummy right-hand vector for Gauss-Jordan inversion of compressible propagator matrix
-	if (dum == NULL) printf("Thermal: Not enough memory to create dum[6][1]\n");
-	for (i=0;i<6;i++) {
-		dum[i] = (double complex*) malloc(1*sizeof(double complex));
-		if (dum[i] == NULL) printf("Thermal: Not enough memory to create dum[6][1]\n");
-	}
-
 	/* Vector of 6 radial functions (Sabadini & Vermeersen 2004; Roberts & Nimmo 2008; Henning & Hurford 2014):
 	 *  y1: radial displacement (index 0)
 	 *  y2: tangential displacement (index 1)
@@ -1964,82 +1957,14 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
 		ytide[ir] = (double complex*) malloc(6*sizeof(double complex));
 		if (ytide[ir] == NULL) printf("Thermal: Not enough memory to create ytide[NR][6]\n");
 	}
-	// Btemp: temporary storage matrix used in the calculation of Bpropmtx
-	double complex **Btemp = (double complex**) malloc(6*sizeof(double complex*));
-	if (Btemp == NULL) printf("Thermal: Not enough memory to create Btemp[6][3]\n");
-	for (i=0;i<6;i++) {
-		Btemp[i] = (double complex*) malloc(3*sizeof(double complex));
-		if (Btemp[i] == NULL) printf("Thermal: Not enough memory to create Btemp[6][3]\n");
-	}
-	// Mbc: 3x3 subset of Bpropmtx[NR-1] used in applying the 6 surface and central boundary conditions to find csol = ytide[0]
-	double complex **Mbc = (double complex**) malloc(3*sizeof(double complex*));
-	if (Mbc == NULL) printf("Thermal: Not enough memory to create Mbc[3][3]\n");
-	for (i=0;i<3;i++) {
-		Mbc[i] = (double complex*) malloc(3*sizeof(double complex));
-		if (Mbc[i] == NULL) printf("Thermal: Not enough memory to create Mbc[3][3]\n");
-	}
-	// bsurf: surface boundary condition, defined as a 3x1 array for compatibility with GaussJordan()
-	double complex **bsurf = (double complex**) malloc(3*sizeof(double complex*));
-	if (bsurf == NULL) printf("Thermal: Not enough memory to create bsurf[3][1]\n");
-	for (i=0;i<3;i++) {
-		bsurf[i] = (double complex*) malloc(1*sizeof(double complex));
-		if (bsurf[i] == NULL) printf("Thermal: Not enough memory to create bsurf[3][1]\n");
-	}
-	// Ypropmtx: propagator matrix (Sabadini & Vermeersen 2004; Roberts & Nimmo 2008; Henning & Hurford 2014)
-	double complex ***Ypropmtx = (double complex***) malloc(NR*sizeof(double complex**));
-	if (Ypropmtx == NULL) printf("Thermal: Not enough memory to create Ypropmtx[NR][6][6]\n");
-	for (ir=0;ir<NR;ir++) {
-		Ypropmtx[ir] = (double complex**) malloc(6*sizeof(double complex*));
-		if (Ypropmtx[ir] == NULL) printf("Thermal: Not enough memory to create Ypropmtx[NR][6][6]\n");
-		for (i=0;i<6;i++) {
-			Ypropmtx[ir][i] = (double complex*) malloc(6*sizeof(double complex));
-			if (Ypropmtx[ir][i] == NULL) printf("Thermal: Not enough memory to create Ypropmtx[NR][6][6]\n");
-		}
-	}
-	// Ypropinv: inverse of Ypropmtx
-	double complex ***Ypropinv = (double complex***) malloc(NR*sizeof(double complex**));
-	if (Ypropinv == NULL) printf("Thermal: Not enough memory to create Ypropbar[NR][6][6]\n");
-	for (ir=0;ir<NR;ir++) {
-		Ypropinv[ir] = (double complex**) malloc(6*sizeof(double complex*));
-		if (Ypropinv[ir] == NULL) printf("Thermal: Not enough memory to create Ypropbar[NR][6][6]\n");
-		for (i=0;i<6;i++) {
-			Ypropinv[ir][i] = (double complex*) malloc(6*sizeof(double complex));
-			if (Ypropinv[ir][i] == NULL) printf("Thermal: Not enough memory to create Ypropbar[NR][6][6]\n");
-		}
-	}
-	// Bpropmtx: compound matrix, = Y[ir]*Y[ir-1]^-1*Bpropmtx[ir-1]
-	double complex ***Bpropmtx = (double complex***) malloc(NR*sizeof(double complex**));
-	if (Bpropmtx == NULL) printf("Thermal: Not enough memory to create Bpropmtx[NR][6][3]\n");
-	for (ir=0;ir<NR;ir++) {
-		Bpropmtx[ir] = (double complex**) malloc(6*sizeof(double complex*));
-		if (Bpropmtx[ir] == NULL) printf("Thermal: Not enough memory to create Bpropmtx[NR][6][3]\n");
-		for (i=0;i<6;i++) {
-			Bpropmtx[ir][i] = (double complex*) malloc(3*sizeof(double complex));
-			if (Bpropmtx[ir][i] == NULL) printf("Thermal: Not enough memory to create Bpropmtx[NR][6][3]\n");
-		}
-	}
 
 	// Zero all the arrays
 	for (ir=0;ir<NR;ir++) {
 		rho[ir] = 0.0;
 		g[ir] = 0.0;
 		shearmod[ir] = 0.0 + 0.0*I;
-    	for (i=0;i<6;i++) {
-    		ytide[ir][i] = 0.0 + 0.0*I;
-    		for (j=0;j<6;j++) {
-    			Ypropmtx[ir][i][j] = 0.0 + 0.0*I;
-    			Ypropinv[ir][i][j] = 0.0 + 0.0*I;
-    		}
-    		for (j=0;j<3;j++) Bpropmtx[ir][i][j] = 0.0 + 0.0*I;
-    	}
+    	for (i=0;i<6;i++) ytide[ir][i] = 0.0 + 0.0*I;
 	}
-    for (i=0;i<6;i++) {
-    	dum[i][0] = 0.0 + 0.0*I;
-    	for (j=0;j<3;j++) Btemp[i][j] = 0.0 + 0.0*I;
-    }
-    for (i=0;i<3;i++) {
-    	for (j=0;j<3;j++) Mbc[i][j] = 0.0 + 0.0*I;
-    }
 
 // Benchmark against Shoji et al. (2013): Tidal heating plots in viscosity-rigidity space (also comment out mu1 15 lines below)
 //int p = 0;
@@ -2158,10 +2083,155 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
 		}
 	}
 
-	//-------------------------------------------------------------------
-    // Calculate ytide in each layer using the propagator matrix method
-	//                   (Sabadini & Vermeersen 2004)
     //-------------------------------------------------------------------
+    //      Calculate ytide displacement functions in each layer
+    //-------------------------------------------------------------------
+
+	propmtx(NR, r, rho, g, shearmod, &ytide);
+
+    //-------------------------------------------------------------------
+    //      Find H_mu, then tidal heating rate (Tobie et al. 2005)
+    //-------------------------------------------------------------------
+
+	for (ir=1;ir<NR;ir++) {
+		// Tobie et al. 2005, doi:10.1016/j.icarus.2005.04.006, equation 33. Note y2 and y3 are inverted here.
+		H_mu = 4.0/3.0 * (r[ir+1]*r[ir+1]/pow(cabs(K + 4.0/3.0*shearmod[ir]),2))
+			 * pow( cabs( ytide[ir][2] - (K-2.0/3.0*shearmod[ir])/r[ir+1] * (2.0*ytide[ir][0]-6.0*ytide[ir][1]) ) ,2)
+			 - 4.0/3.0 * r[ir+1] * creal( (conj(ytide[ir][0])-conj(ytide[ir-1][0]))/(r[ir+1]-r[ir]) * (2.0*ytide[ir][0]-6.0*ytide[ir][1]) )
+			 + 1.0/3.0 * pow( cabs(2.0*ytide[ir][0]-6.0*ytide[ir][1]) ,2)
+			 + 6.0*r[ir+1]*r[ir+1]*pow(cabs(ytide[ir][3]),2)/pow(cabs(shearmod[ir]),2)
+			 + 24.0 * pow(cabs(ytide[ir][1]),2);
+
+		// Calculate volumetric heating rate, multiply by layer volume (Tobie et al. 2005, equation 37).
+		// Note Im(k2) = -Im(y5) (Henning & Hurford 2014 eq. A9), the opposite convention of Tobie et al. (2005, eqs. 9 & 36).
+		Wtide = (4.0/3.0*PI_greek*(r[ir+1]*r[ir+1]*r[ir+1] - r[ir]*r[ir]*r[ir]))
+				* 2.1*pow(omega_tide,5)*pow(r[NR-1],4)*eorb*eorb/r[ir+1]/r[ir+1]*H_mu*cimag(shearmod[ir]);
+		if (tidetimes) Wtide = tidetimes*Wtide;
+		(*Qth)[ir] = (*Qth)[ir] + Wtide;
+		(*Wtide_tot) = (*Wtide_tot) + Wtide;
+
+		// Benchmark against Roberts (2015)
+//		printf("%g \t %g \n", r[ir]/km2cm, Wtide/dVol[ir]/cm/cm/cm/1.0e7);
+
+		Wtide = 0.0;
+	}
+
+// End plots in viscosity-rigidity space
+//		printf("%g \t",log((*Wtide_tot)/1.0e7)/log(10.0));
+//		(*Wtide_tot) = 0.0;
+//		for (ir=0;ir<NR;ir++) {
+//			for (i=0;i<6;i++) {
+//				ytide[ir][i] = 0.0;
+//				for (j=0;j<3;j++) Bpropmtx[ir][i][j] = 0.0;
+//			}
+//		}
+//	}
+//	printf("\n");
+//}
+//exit(0);
+
+	for (ir=0;ir<NR;ir++) free (ytide[ir]);
+	free (shearmod);
+	free (rho);
+	free (g);
+	free (ytide);
+
+	return 0;
+}
+
+/*--------------------------------------------------------------------
+ *
+ * Subroutine propmtx
+ *
+ * Calculate ytide displacement functions in each layer of a planetary
+ * body using the propagator matrix method (Sabadini & Vermeersen 2004)
+ *
+ *--------------------------------------------------------------------*/
+
+int propmtx(int NR, double *r, double *rho, double *g, double complex *shearmod, double complex ***ytide) {
+
+	int ir = 0;
+	int i = 0; int j = 0; int k = 0;
+
+	// dum: Dummy right-hand vector for Gauss-Jordan inversion of compressible propagator matrix
+	double complex **dum = (double complex**) malloc(6*sizeof(double complex*));
+	if (dum == NULL) printf("Thermal: Not enough memory to create dum[6][1]\n");
+	for (i=0;i<6;i++) {
+		dum[i] = (double complex*) malloc(1*sizeof(double complex));
+		if (dum[i] == NULL) printf("Thermal: Not enough memory to create dum[6][1]\n");
+	}
+	// Btemp: temporary storage matrix used in the calculation of Bpropmtx
+	double complex **Btemp = (double complex**) malloc(6*sizeof(double complex*));
+	if (Btemp == NULL) printf("Thermal: Not enough memory to create Btemp[6][3]\n");
+	for (i=0;i<6;i++) {
+		Btemp[i] = (double complex*) malloc(3*sizeof(double complex));
+		if (Btemp[i] == NULL) printf("Thermal: Not enough memory to create Btemp[6][3]\n");
+	}
+	// Mbc: 3x3 subset of Bpropmtx[NR-1] used in applying the 6 surface and central boundary conditions to find csol = ytide[0]
+	double complex **Mbc = (double complex**) malloc(3*sizeof(double complex*));
+	if (Mbc == NULL) printf("Thermal: Not enough memory to create Mbc[3][3]\n");
+	for (i=0;i<3;i++) {
+		Mbc[i] = (double complex*) malloc(3*sizeof(double complex));
+		if (Mbc[i] == NULL) printf("Thermal: Not enough memory to create Mbc[3][3]\n");
+	}
+	// bsurf: surface boundary condition, defined as a 3x1 array for compatibility with GaussJordan()
+	double complex **bsurf = (double complex**) malloc(3*sizeof(double complex*));
+	if (bsurf == NULL) printf("Thermal: Not enough memory to create bsurf[3][1]\n");
+	for (i=0;i<3;i++) {
+		bsurf[i] = (double complex*) malloc(1*sizeof(double complex));
+		if (bsurf[i] == NULL) printf("Thermal: Not enough memory to create bsurf[3][1]\n");
+	}
+	// Ypropmtx: propagator matrix (Sabadini & Vermeersen 2004; Roberts & Nimmo 2008; Henning & Hurford 2014)
+	double complex ***Ypropmtx = (double complex***) malloc(NR*sizeof(double complex**));
+	if (Ypropmtx == NULL) printf("Thermal: Not enough memory to create Ypropmtx[NR][6][6]\n");
+	for (ir=0;ir<NR;ir++) {
+		Ypropmtx[ir] = (double complex**) malloc(6*sizeof(double complex*));
+		if (Ypropmtx[ir] == NULL) printf("Thermal: Not enough memory to create Ypropmtx[NR][6][6]\n");
+		for (i=0;i<6;i++) {
+			Ypropmtx[ir][i] = (double complex*) malloc(6*sizeof(double complex));
+			if (Ypropmtx[ir][i] == NULL) printf("Thermal: Not enough memory to create Ypropmtx[NR][6][6]\n");
+		}
+	}
+	// Ypropinv: inverse of Ypropmtx
+	double complex ***Ypropinv = (double complex***) malloc(NR*sizeof(double complex**));
+	if (Ypropinv == NULL) printf("Thermal: Not enough memory to create Ypropbar[NR][6][6]\n");
+	for (ir=0;ir<NR;ir++) {
+		Ypropinv[ir] = (double complex**) malloc(6*sizeof(double complex*));
+		if (Ypropinv[ir] == NULL) printf("Thermal: Not enough memory to create Ypropbar[NR][6][6]\n");
+		for (i=0;i<6;i++) {
+			Ypropinv[ir][i] = (double complex*) malloc(6*sizeof(double complex));
+			if (Ypropinv[ir][i] == NULL) printf("Thermal: Not enough memory to create Ypropbar[NR][6][6]\n");
+		}
+	}
+	// Bpropmtx: compound matrix, = Y[ir]*Y[ir-1]^-1*Bpropmtx[ir-1]
+	double complex ***Bpropmtx = (double complex***) malloc(NR*sizeof(double complex**));
+	if (Bpropmtx == NULL) printf("Thermal: Not enough memory to create Bpropmtx[NR][6][3]\n");
+	for (ir=0;ir<NR;ir++) {
+		Bpropmtx[ir] = (double complex**) malloc(6*sizeof(double complex*));
+		if (Bpropmtx[ir] == NULL) printf("Thermal: Not enough memory to create Bpropmtx[NR][6][3]\n");
+		for (i=0;i<6;i++) {
+			Bpropmtx[ir][i] = (double complex*) malloc(3*sizeof(double complex));
+			if (Bpropmtx[ir][i] == NULL) printf("Thermal: Not enough memory to create Bpropmtx[NR][6][3]\n");
+		}
+	}
+
+	// Initialize all the arrays
+	for (ir=0;ir<NR;ir++) {
+    	for (i=0;i<6;i++) {
+    		for (j=0;j<6;j++) {
+    			Ypropmtx[ir][i][j] = 0.0 + 0.0*I;
+    			Ypropinv[ir][i][j] = 0.0 + 0.0*I;
+    		}
+    		for (j=0;j<3;j++) Bpropmtx[ir][i][j] = 0.0 + 0.0*I;
+    	}
+	}
+    for (i=0;i<6;i++) {
+    	dum[i][0] = 0.0 + 0.0*I;
+    	for (j=0;j<3;j++) Btemp[i][j] = 0.0 + 0.0*I;
+    }
+    for (i=0;i<3;i++) {
+    	for (j=0;j<3;j++) Mbc[i][j] = 0.0 + 0.0*I;
+    }
 
 	for (ir=0;ir<NR;ir++) {
 
@@ -2408,7 +2478,7 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
 	// Calculate ytide
 	for (ir=0;ir<NR;ir++) {
 		for (i=0;i<6;i++) {
-			for (j=0;j<3;j++) ytide[ir][i] = ytide[ir][i] + Bpropmtx[ir][i][j]*bsurf[j][0];
+			for (j=0;j<3;j++) (*ytide)[ir][i] = (*ytide)[ir][i] + Bpropmtx[ir][i][j]*bsurf[j][0];
 		}
 	}
 
@@ -2422,49 +2492,7 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
 //		exit(0);
 //	}
 
-    //-------------------------------------------------------------------
-    //      Find H_mu, then tidal heating rate (Tobie et al. 2005)
-    //-------------------------------------------------------------------
-
-	for (ir=1;ir<NR;ir++) {
-		// Tobie et al. 2005, doi:10.1016/j.icarus.2005.04.006, equation 33. Note y2 and y3 are inverted here.
-		H_mu = 4.0/3.0 * (r[ir+1]*r[ir+1]/pow(cabs(K + 4.0/3.0*shearmod[ir]),2))
-			 * pow( cabs( ytide[ir][2] - (K-2.0/3.0*shearmod[ir])/r[ir+1] * (2.0*ytide[ir][0]-6.0*ytide[ir][1]) ) ,2)
-			 - 4.0/3.0 * r[ir+1] * creal( (conj(ytide[ir][0])-conj(ytide[ir-1][0]))/(r[ir+1]-r[ir]) * (2.0*ytide[ir][0]-6.0*ytide[ir][1]) )
-			 + 1.0/3.0 * pow( cabs(2.0*ytide[ir][0]-6.0*ytide[ir][1]) ,2)
-			 + 6.0*r[ir+1]*r[ir+1]*pow(cabs(ytide[ir][3]),2)/pow(cabs(shearmod[ir]),2)
-			 + 24.0 * pow(cabs(ytide[ir][1]),2);
-
-		// Calculate volumetric heating rate, multiply by layer volume (Tobie et al. 2005, equation 37).
-		// Note Im(k2) = -Im(y5) (Henning & Hurford 2014 eq. A9), the opposite convention of Tobie et al. (2005, eqs. 9 & 36).
-		Wtide = (4.0/3.0*PI_greek*(r[ir+1]*r[ir+1]*r[ir+1] - r[ir]*r[ir]*r[ir]))
-				* 2.1*pow(omega_tide,5)*pow(r[NR-1],4)*eorb*eorb/r[ir+1]/r[ir+1]*H_mu*cimag(shearmod[ir]);
-		if (tidetimes) Wtide = tidetimes*Wtide;
-		(*Qth)[ir] = (*Qth)[ir] + Wtide;
-		(*Wtide_tot) = (*Wtide_tot) + Wtide;
-
-		// Benchmark against Roberts (2015)
-//		printf("%g \t %g \n", r[ir]/km2cm, Wtide/dVol[ir]/cm/cm/cm/1.0e7);
-
-		Wtide = 0.0;
-	}
-
-// End plots in viscosity-rigidity space
-//		printf("%g \t",log((*Wtide_tot)/1.0e7)/log(10.0));
-//		(*Wtide_tot) = 0.0;
-//		for (ir=0;ir<NR;ir++) {
-//			for (i=0;i<6;i++) {
-//				ytide[ir][i] = 0.0;
-//				for (j=0;j<3;j++) Bpropmtx[ir][i][j] = 0.0;
-//			}
-//		}
-//	}
-//	printf("\n");
-//}
-//exit(0);
-
 	for (ir=0;ir<NR;ir++) {
-		free (ytide[ir]);
 		for (i=0;i<6;i++) {
 			free (Ypropmtx[ir][i]);
 			free (Ypropinv[ir][i]);
@@ -2482,10 +2510,6 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
 		free (Mbc[i]);
 		free (bsurf[i]);
 	}
-	free (shearmod);
-	free (rho);
-	free (g);
-	free (ytide);
 	free (Ypropmtx);
 	free (Ypropinv);
 	free (Bpropmtx);

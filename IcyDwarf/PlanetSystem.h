@@ -95,6 +95,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	double Thermal_output[nmoons][12];	 // Thermal_output[12] (multiple units), output
 	double Orbit[nmoons][3];             // Orbit[3] (multiple units), output
 	double Primary[3];                   // Primary[3], output of primary's tidal Q and ring mass (kg) vs. time (Gyr)
+	double k2prim = 1.5;                 // k2 tidal Love number of primary (1.5 for homogeneous fluid body)
 
 	double *aorb = (double*) malloc((nmoons)*sizeof(double));       // Moon orbital semi-major axis (cm)
 	if (aorb == NULL) printf("PlanetSystem: Not enough memory to create aorb[nmoons]\n");
@@ -859,7 +860,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 							&Crack[im], &Crack_size[im], &fracOpen[im], &P_pore[im], &P_hydr[im], &Act[im], &fracKleached[im],
 							crack_input, crack_species, aTP, integral, alpha, beta, silica, chrysotile, magnesite,
 							&ircrack[im], &ircore[im], &irice[im], &irdiff[im], forced_hydcirc, &Nu[im],
-							&aorb, &eorb[im], norb, m_p, r_p[im], Mprim, Rprim, Qprim,
+							&aorb, &eorb[im], norb, m_p, r_p[im], Mprim, Rprim, k2prim, Qprim,
 							aring_out, aring_in, alpha_Lind,  ringSurfaceDensity,
 							tidalmodel, tidetimes, im, nmoons, moonspawn[im], orbevol[im], hy[im], chondr,
 							&Heat_radio[im], &Heat_grav[im], &Heat_serp[im], &Heat_dehydr[im], &Heat_tide[im],
