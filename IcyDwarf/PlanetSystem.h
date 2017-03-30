@@ -95,7 +95,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	double Thermal_output[nmoons][12];	 // Thermal_output[12] (multiple units), output
 	double Orbit[nmoons][3];             // Orbit[3] (multiple units), output
 	double Primary[3];                   // Primary[3], output of primary's tidal Q and ring mass (kg) vs. time (Gyr)
-	double k2prim = 1.5;                 // k2 tidal Love number of primary (1.5 for homogeneous body)
+	double k2prim = 0.39;                // k2 tidal Love number of primary (1.5 for homogeneous body)
 
 	double *aorb = (double*) malloc((nmoons)*sizeof(double));       // Moon orbital semi-major axis (cm)
 	if (aorb == NULL) printf("PlanetSystem: Not enough memory to create aorb[nmoons]\n");

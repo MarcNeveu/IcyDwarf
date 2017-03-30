@@ -80,7 +80,7 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
 		double *Madhs, double *Mh2ol, double *Mnh3l, double *dM,  double *Vrock, double *dVol, double *r, double *T, double *Xhydr,
 		double *Pressure, double *pore, int im);
 
-int propmtx(int NR, double *r, double *rho, double *g, double complex *shearmod, double complex ***ytide);
+int propmtx(int NR, double *r, double *rho, double *g, double complex *shearmod, double complex ***ytide, int ircore);
 
 int GaussJordan(double complex ***M, double complex ***b, int n, int m);
 int ScaledGaussJordan(long double complex ***M, int n);
@@ -409,11 +409,14 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 		if (orbevol == 1 && Wtide_tot > 0.0) {
 
 //			// Calculate tidal dissipation in the host planet (k2prim & Qprim)
-//			int NRprim=10000;
-//			double rcoreprim = 0.0; // 10000.0*km2cm; // Radius of the core inside the primary
+//			int NRprim=200;
+//			double rcoreprim = 10000.0*km2cm; // Radius of the core inside the primary
 //
 //			double *rprim = (double*) malloc((NRprim+1)*sizeof(double));      // Radius of each layer inside the primary
-//			if (rprim == NULL) printf("Thermal: Not enough memory to create rprim[NR+1]\n");
+//			if (rprim == NULL) printf("Thermal: Not enough memory to create rprim[NRprim+1]\n");
+//
+//			double *cumulMprim = (double*) malloc(NRprim*sizeof(double));     // Mass inside each primary layer
+//			if (cumulMprim == NULL) printf("Thermal: Not enough memory to create cumulMprim[NRprim]\n");
 //
 //			double *rhoprim = (double*) malloc(NRprim*sizeof(double));        // Density of each primary layer
 //			if (rhoprim == NULL) printf("Thermal: Not enough memory to create rhoprim[NRprim]\n");
@@ -430,13 +433,20 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 //				ytideprim[ir] = (double complex*) malloc(6*sizeof(double complex));
 //				if (ytideprim[ir] == NULL) printf("Thermal: Not enough memory to create ytideprim[NRprim][6]\n");
 //			}
+//			// Zero all the arrays
+//			for (ir=0;ir<NRprim;ir++) {
+//				rhoprim[ir] = 0.0;
+//				cumulMprim[ir] = 0.0;
+//				gprim[ir] = 0.0;
+//				shearmodprim[ir] = 0.0 + 0.0*I;
+//		    	for (i=0;i<6;i++) ytideprim[ir][i] = 0.0 + 0.0*I;
+//			}
 //
 //			double mu_rigid_prim = 0.0;       // Rigidity (shear modulus) inside the primary
 //			double mu_visc_prim = 0.0;        // Viscosity inside the primary
-//			double K_prim = 0.0;              // Bulk modulus inside the primary
 //
 //			int ircoreprim = 0;               // Outermost primary core layer
-//			double q = PI_greek*0.95;          // Polytrope parameter of Kramm et al. (2011) equation 7
+//			double q = PI_greek*0.99;         // Polytrope parameter of Kramm et al. (2011) equation 7
 //
 //			rprim[0] = 0.0;
 //			for (ir=0;ir<NRprim;ir++) {
@@ -446,33 +456,48 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 //
 //			// Density distribution of n=1 polytrope (Kramm et al. 2011 equations 7 and 8, http://doi.org/10.1051/0004-6361/201015803)
 //			for (ir=NRprim-1;ir>ircoreprim;ir--) {
-//				rhoprim[ir] = Mprim/(4.0/3.0*PI_greek*pow(Rprim,3)); //sin(q)*(1.0-rprim[ir+1]/Rprim) / (q*rprim[ir+1]/Rprim);
+//				rhoprim[ir] = sin(q)*(1.0-rprim[ir]/Rprim) / (q*rprim[ir]/Rprim); // rprim[ir] instead of rprim[ir+1] so the density at the surface is not 0
+////				rhoprim[ir] = Mprim / (4.0/3.0*PI_greek*pow(Rprim,3));
 //			}
-//
 //			for (ir=ircoreprim;ir>=0;ir--) {
 //				rhoprim[ir] = rhoprim[ircoreprim+1];
 //			}
 //
-//			for (ir=0;ir<NRprim;ir++) {
-//				printf("R=%g km \t rho=%g g cm-3\n", rprim[ir+1]/km2cm, rhoprim[ir]);
-//				gprim[ir] = 4.0/3.0*PI_greek*Gcgs*rhoprim[ir]*rprim[ir+1];
-//				mu_rigid_prim = 1.0e6; //1000.0*1.0e9*Pa2ba; // Lainey et al. 2015
-//				mu_visc_prim = 1.0e16; //1.0e15*Pa2ba;        // Lainey et al. 2015
-//				K_prim = mu_rigid_prim/0.5;         // Lainey et al. 2015, try different values for the denominator between 0.001 and 1.0
+////			double sum = 0.0;
+////			for (ir=0;ir<NRprim;ir++) sum = sum + rhoprim[ir];
+////			sum = sum/(double)NRprim;
+////			printf("Bulk density: %g, actual: %g\n", sum, Mprim/(4.0/3.0*PI_greek*pow(Rprim,3)));
+////			for (ir=0;ir<NRprim;ir++) rhoprim[ir] = rhoprim[ir]*Mprim/(4.0/3.0*PI_greek*pow(Rprim,3))/sum;
+////			sum = 0.0;
+////			for (ir=0;ir<NRprim;ir++) sum = sum + rhoprim[ir];
+////			sum = sum/(double)NRprim;
+////			printf("Bulk density: %g\n", sum);
 //
+//			for (ir=0;ir<NRprim;ir++) {
+//				if (ir==0) cumulMprim[ir] = 4.0/3.0*PI_greek*pow(rprim[ir+1],3);
+//				else cumulMprim[ir] = cumulMprim[ir-1] + 4.0/3.0*PI_greek*(pow(rprim[ir+1],3)-pow(rprim[ir],3));
+//				gprim[ir] = Gcgs*cumulMprim[ir]/rprim[ir+1]/rprim[i+1];
+//				if (ir < ircoreprim) {
+//					mu_visc_prim = 1.0e15*Pa2ba;        // Lainey et al. 2015
+//					mu_rigid_prim = 1000.0*1.0e9*Pa2ba; // Lainey et al. 2015 Fig. 2; also try 0.001*K to 1*K (Fig. 3)
+//				}
+//				else {
+//					mu_visc_prim = 1.0e0*Pa2ba;
+//					mu_rigid_prim = 1.0e2*Pa2ba;
+//				}
 //				// Assume Maxwell viscoelastic model (Henning et al. 2009), with steady-state response
 //				shearmodprim[ir] = mu_rigid_prim*omega_tide*omega_tide*mu_visc_prim*mu_visc_prim
 //									 / (mu_rigid_prim*mu_rigid_prim + omega_tide*omega_tide*mu_visc_prim*mu_visc_prim)
 //							     + mu_rigid_prim*mu_rigid_prim*omega_tide*mu_visc_prim
 //							         / (mu_rigid_prim*mu_rigid_prim + omega_tide*omega_tide*mu_visc_prim*mu_visc_prim) * I;
 //			}
+//			for (ir=0;ir<NRprim;ir++) printf("%g \t %g \t %g \t %g \t %g  \n", rprim[ir+1]/km2cm, rhoprim[ir], gprim[ir], creal(shearmodprim[ir]), cimag(shearmodprim[ir]));
+//
 //			propmtx(NRprim, rprim, rhoprim, gprim, shearmodprim, &ytideprim);
 //
 //			// Note Im(k2) = -Im(y5) (Henning & Hurford 2014 eq. A9), the opposite convention of Tobie et al. (2005, eqs. 9 & 36).
-//			k2prim = cabs(1.0 - ytideprim[NRprim-1][4]);
-//			Qprim = cimag(ytideprim[NRprim-1][4])/k2prim;
-//
-//			printf("k2=%g Q=%g\n", k2prim, Qprim);
+//			k2prim = cabs(-1.0 - ytideprim[NRprim-1][4]);
+//			Qprim = k2prim/cimag(ytideprim[NRprim-1][4]);
 //
 //			// Benchmark against Lainey et al. (2015)
 //			for (ir=0;ir<NRprim;ir++) {
@@ -481,7 +506,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 //						cabs(ytideprim[ir][2])*gram/cm/cm/cm, cabs(ytideprim[ir][3])*gram/cm/cm/cm,
 //						cabs(ytideprim[ir][4]), cabs(ytideprim[ir][5])/(-r_p/5.0));
 //			}
-//
+//			printf("k2=%g Q=%g\n", k2prim, Qprim);
 //			// Need to free all arrays
 //			exit(0);
 
@@ -2011,13 +2036,16 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
 	double D_Andrade = 0.0;
 	double H_mu = 0.0;    				 // Sensitivity of the radial strain energy integral to the shear modulus mu
 
-	double *rho = (double*) malloc((NR)*sizeof(double)); // Mean layer density (g cm-3)
+	double *rho = (double*) malloc(NR*sizeof(double)); // Mean layer density (g cm-3)
 	if (rho == NULL) printf("Thermal: Not enough memory to create rho[NR]\n");
 
-	double *g = (double*) malloc((NR)*sizeof(double)); // Mean gravity in layer (cm s-2)
+	double *M = (double*) malloc(NR*sizeof(double));   // Mass inside a layer (g)
+	if (M == NULL) printf("Thermal: Not enough memory to create M[NR]\n");
+
+	double *g = (double*) malloc(NR*sizeof(double));   // Mean gravity in layer (cm s-2)
 	if (g == NULL) printf("Thermal: Not enough memory to create g[NR]\n");
 
-	double complex *shearmod = (complex double*) malloc((NR)*sizeof(double complex)); // Frequency-dependent complex rigidity (g cm-1 s-2)
+	double complex *shearmod = (complex double*) malloc(NR*sizeof(double complex)); // Frequency-dependent complex rigidity (g cm-1 s-2)
 	if (shearmod == NULL) printf("Thermal: Not enough memory to create shearmod[NR]\n");
 
 	/* Vector of 6 radial functions (Sabadini & Vermeersen 2004; Roberts & Nimmo 2008; Henning & Hurford 2014):
@@ -2038,6 +2066,7 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
 	// Zero all the arrays
 	for (ir=0;ir<NR;ir++) {
 		rho[ir] = 0.0;
+		M[ir] = 0.0;
 		g[ir] = 0.0;
 		shearmod[ir] = 0.0 + 0.0*I;
     	for (i=0;i<6;i++) ytide[ir][i] = 0.0 + 0.0*I;
@@ -2065,7 +2094,9 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
 
 	for (ir=0;ir<NR;ir++) {
 		rho[ir] = dM[ir]/(4.0/3.0*PI_greek*(r[ir+1]*r[ir+1]*r[ir+1] - r[ir]*r[ir]*r[ir]));
-		g[ir] = 4.0/3.0*PI_greek*Gcgs*rho[ir]*r[ir+1];
+		if (ir==0) M[ir] = dM[ir];
+		else M[ir] = M[ir-1] + dM[ir];
+		g[ir] = Gcgs*M[ir]/r[ir+1]/r[ir+1];
 
 		// Steady-state viscosity
 		if (ir<NR-1) {
@@ -2114,13 +2145,40 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
 			mu_rigid = 1.0e4;
 		}
 
-		// Benchmark against Tobie et al. (2005)
-//		rho[ir] = 3.5;
-//		g[ir] = 4.0/3.0*PI_greek*Gcgs*rho[ir]*r[ir+1];
-//		mu_rigid = rho[ir]*4500.0*4500.0/cm/cm;
-//		mu_visc = 1.0e21;
-//		K = rho[ir]*8000.0*8000.0/cm/cm - 4.0/3.0*mu_rigid;
+//		// Benchmark against Tobie et al. (2005)
+//		int homogeneous = 1; // If homogeneous=0, add the last argument to propmtx(NR, r, rho, g, shearmod, &ytide, ((double)NR * pow((3.5-3.3)/(5.15-3.3),1.0/3.0)));
+//		int ircore = 0;
+//		if (!homogeneous) ircore = (int) ((double)NR * pow((3.5-3.3)/(5.15-3.3),1.0/3.0));
+//		r[ir+1] = 1600.0*km2cm*(double)(ir+1)/(double)NR;
+//		if (homogeneous) rho[ir] = 3.5; // Homogeneous body
+//		else {
+//			if (ir < ircore) rho[ir] = 5.15; // Differentiated body
+//			else rho[ir] = 3.3;
+//		}
+//		M[ir] = 0.0;
+//		if (ir==0) M[ir] = 4.0/3.0*PI_greek*rho[ir]*pow(r[ir],3);
+//		else M[ir] = M[ir-1] + 4.0/3.0*PI_greek*rho[ir]*(pow(r[ir],3)-pow(r[ir-1],3));
+//		g[ir] = Gcgs*M[ir]/r[ir+1]/r[ir+1];
+//		if (homogeneous) {
+//			mu_rigid = rho[ir]*4500.0*4500.0/cm/cm;
+//			mu_visc = 1.0e20*Pa2ba;
+//			K = rho[ir]*8000.0*8000.0/cm/cm - 4.0/3.0*mu_rigid;
+//		}
+//		else {
+//			if (ir < ircore) {
+//				mu_rigid = 1.0e0/cm/cm;
+//				mu_visc = 1.0e0*Pa2ba;
+//				K = rho[ir]*6000.0*6000.0/cm/cm - 4.0/3.0*mu_rigid;
+//			}
+//			else {
+//				mu_rigid = rho[ir]*4500.0*4500.0/cm/cm;
+//				mu_visc = 1.0e20*Pa2ba;
+//				K = rho[ir]*8000.0*8000.0/cm/cm - 4.0/3.0*mu_rigid;
+//			}
+//		}
 //		omega_tide = 2.05e-5;
+//		shearmod[ir] = mu_rigid*omega_tide*omega_tide*mu_visc*mu_visc / (mu_rigid*mu_rigid + omega_tide*omega_tide*mu_visc*mu_visc)
+//					 + mu_rigid*mu_rigid*omega_tide*mu_visc / (mu_rigid*mu_rigid + omega_tide*omega_tide*mu_visc*mu_visc) * I;
 
 		switch(tidalmodel) {
 
@@ -2164,7 +2222,15 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
     //      Calculate ytide displacement functions in each layer
     //-------------------------------------------------------------------
 
-	propmtx(NR, r, rho, g, shearmod, &ytide);
+	propmtx(NR, r, rho, g, shearmod, &ytide, 0); // Nonzero last argument is for benchmark against Tobie et al. (2005)
+
+	// Benchmark against Tobie et al. (2005)
+//	for (ir=0;ir<NR;ir++) {
+//		printf ("%g \t %g \t %g \t %g \t %g \t %g \t %g\n", r[ir+1]/km2cm,
+//				creal(ytide[ir][0])/cm, creal(ytide[ir][1])/cm,
+//				creal(ytide[ir][2])*gram/cm/cm/cm, creal(ytide[ir][3])*gram/cm/cm/cm,
+//				creal(ytide[ir][4]), creal(ytide[ir][5])/(-r[NR-1]/5.0));
+//	}
 
     //-------------------------------------------------------------------
     //      Find H_mu, then tidal heating rate (Tobie et al. 2005)
@@ -2181,6 +2247,8 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
 
 		// Calculate volumetric heating rate, multiply by layer volume (Tobie et al. 2005, equation 37).
 		// Note Im(k2) = -Im(y5) (Henning & Hurford 2014 eq. A9), the opposite convention of Tobie et al. (2005, eqs. 9 & 36).
+		// And k2 = |-y5-1| (Roberts & Nimmo 2008 equation A8), not 1-y5 as in Henning & Hurford (2014) equation A9
+		// If shearmod << 1, k2Å3/2 (fluid-dominated); if shearmod->°, k2->0 (strength-dominated) (Henning et al. 2009 p. 1006)
 		Wtide = (4.0/3.0*PI_greek*(r[ir+1]*r[ir+1]*r[ir+1] - r[ir]*r[ir]*r[ir]))
 				* 2.1*pow(omega_tide,5)*pow(r[NR-1],4)*eorb*eorb/r[ir+1]/r[ir+1]*H_mu*cimag(shearmod[ir]);
 		if (tidetimes) Wtide = tidetimes*Wtide;
@@ -2205,12 +2273,12 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
 //	}
 //	printf("\n");
 //}
-//exit(0);
 
 	for (ir=0;ir<NR;ir++) free (ytide[ir]);
 	free (shearmod);
 	free (rho);
-	free (g);
+	free (M);
+	free(g);
 	free (ytide);
 
 	return 0;
@@ -2223,9 +2291,12 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
  * Calculate ytide displacement functions in each layer of a planetary
  * body using the propagator matrix method (Sabadini & Vermeersen 2004)
  *
+ * Last argument, ircore, is nonzero only for benchmarking against the
+ * solutions of Tobie et al. (2005)
+ *
  *--------------------------------------------------------------------*/
 
-int propmtx(int NR, double *r, double *rho, double *g, double complex *shearmod, double complex ***ytide) {
+int propmtx(int NR, double *r, double *rho, double *g, double complex *shearmod, double complex ***ytide, int ircore) {
 
 	int ir = 0;
 	int i = 0; int j = 0; int k = 0;
@@ -2310,7 +2381,7 @@ int propmtx(int NR, double *r, double *rho, double *g, double complex *shearmod,
     	for (j=0;j<3;j++) Mbc[i][j] = 0.0 + 0.0*I;
     }
 
-	for (ir=0;ir<NR;ir++) {
+	for (ir=ircore;ir<NR;ir++) {
 
 		// Compute Ypropmtx, the incompressible propagator matrix
 		Ypropmtx[ir][0][0] = pow(r[ir+1],3)/7.0;
@@ -2514,16 +2585,20 @@ int propmtx(int NR, double *r, double *rho, double *g, double complex *shearmod,
 //	}
 
 	// Central boundary conditions (3). They are inconsequential on the rest of the solution, so false assumptions are OK.
-	Bpropmtx[0][2][0] = 1.0; // Roberts & Nimmo (2008): liquid innermost zone.
-	Bpropmtx[0][3][1] = 1.0;
-	Bpropmtx[0][5][2] = 1.0;
+	Bpropmtx[ircore][2][0] = 1.0; // Roberts & Nimmo (2008): liquid innermost zone.
+	Bpropmtx[ircore][3][1] = 1.0;
+	Bpropmtx[ircore][5][2] = 1.0;
 
-//	Bpropmtx[0][0][0] = 1.0; // Alternative: Henning & Hurford (2014): solid innermost zone
-//	Bpropmtx[0][1][1] = 1.0;
-//	Bpropmtx[0][2][2] = 1.0;
+//	Bpropmtx[ircore][0][0] = 1.0; // Alternative: Henning & Hurford (2014): solid innermost zone
+//	Bpropmtx[ircore][1][1] = 1.0;
+//	Bpropmtx[ircore][2][2] = 1.0;
+
+//	Bpropmtx[ircore][0][0] = 0.05; // Boundary conditions for Tobie et al. (2005) benchmark
+//	Bpropmtx[ircore][1][1] = 0.01;
+//	Bpropmtx[ircore][5][2] = 1.0;
 
 	// Propagate solution
-	for (ir=1;ir<NR;ir++) {
+	for (ir=1+ircore;ir<NR;ir++) {
 		for (i=0;i<6;i++) {
 			for (j=0;j<3;j++) Btemp[i][j] = 0.0 + 0.0*I;
 		}
