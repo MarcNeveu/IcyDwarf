@@ -409,8 +409,8 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 		if (orbevol == 1 && Wtide_tot > 0.0) {
 
 //			// Calculate tidal dissipation in the host planet (k2prim & Qprim)
-//			int NRprim=100;
-//			double rcoreprim = 0.0; //10000.0*km2cm; // Radius of the core inside the primary
+//			int NRprim=200;
+//			double rcoreprim = 12000.0*km2cm; // Radius of the core inside the primary
 //
 //			double *rprim = (double*) malloc((NRprim+1)*sizeof(double));      // Radius of each layer inside the primary
 //			if (rprim == NULL) printf("Thermal: Not enough memory to create rprim[NRprim+1]\n");
@@ -444,7 +444,8 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 //
 //			double mu_rigid_prim = 0.0;       // Rigidity (shear modulus) inside the primary
 //			double mu_visc_prim = 0.0;        // Viscosity inside the primary
-//
+//			double q = 0.7*PI_greek;          // Polytropic parameter (Kramm et al. 2011)
+//			double A = 11.0;                  // Core density (Kramm et al. 2011)
 //			int ircoreprim = 0;               // Outermost primary core layer
 //
 //			rprim[0] = 0.0;
@@ -454,23 +455,17 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 //			}
 //
 //			// Density distribution of n=1 polytrope (Kramm et al. 2011 equations 7 and 8, http://doi.org/10.1051/0004-6361/201015803)
-//			for (ir=NRprim-1;ir>ircoreprim;ir--) {
-//				rhoprim[ir] = (1.0-rprim[ir]/Rprim) / (rprim[ir]/Rprim); // rprim[ir] instead of rprim[ir+1] so the density at the surface is not 0
-////				rhoprim[ir] = Mprim / (4.0/3.0*PI_greek*pow(Rprim,3));
-//			}
-//			for (ir=ircoreprim;ir>=0;ir--) {
-//				rhoprim[ir] = rhoprim[ircoreprim+1];
-//			}
+//			for (ir=NRprim-1;ir>ircoreprim;ir--)
+////				rhoprim[ir] = sin(q)/q * (1.0-rprim[ir]/Rprim) / (rprim[ir]/Rprim); // rprim[ir] instead of rprim[ir+1] so the density at the surface is not 0
+//				rhoprim[ir] = 0.32 + sin(q)/q * (1.0-rprim[ir]/Rprim) / (rprim[ir]/Rprim);
+//			for (ir=ircoreprim;ir>=0;ir--) rhoprim[ir] = A;
 //
-//			double sum = 0.0;
-//			for (ir=0;ir<NRprim;ir++) sum = sum + rhoprim[ir];
-//			sum = sum/(double)NRprim;
-//			printf("Bulk density: %g, actual: %g\n", sum, Mprim/(4.0/3.0*PI_greek*pow(Rprim,3)));
-//			for (ir=0;ir<NRprim;ir++) rhoprim[ir] = rhoprim[ir]*Mprim/(4.0/3.0*PI_greek*pow(Rprim,3))/sum;
-//			sum = 0.0;
-//			for (ir=0;ir<NRprim;ir++) sum = sum + rhoprim[ir];
-//			sum = sum/(double)NRprim;
-//			printf("Bulk density: %g\n", sum);
+//			// Constant density distribution
+////			for (ir=0;ir<NRprim;ir++) rhoprim[ir] = Mprim / (4.0/3.0*PI_greek*pow(Rprim,3));
+//
+//			// Constant-density core, constant-density envelope
+////			for (ir=NRprim-1;ir>ircoreprim;ir--) rhoprim[ir] = 0.32;
+////			for (ir=ircoreprim;ir>=0;ir--) rhoprim[ir] = 18.0;
 //
 //			for (ir=0;ir<NRprim;ir++) {
 //				if (ir==0) cumulMprim[ir] = 4.0/3.0*PI_greek*rhoprim[ir]*pow(rprim[ir+1],3);
@@ -484,7 +479,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 //					mu_visc_prim = 1.0e10*Pa2ba;
 //					mu_rigid_prim = 1.0e10*Pa2ba;
 //				}
-//				// Assume Maxwell viscoelastic model (Henning et al. 2009), with steady-state response
+//				// Assume Maxwell viscoelastic model (Lainey et al. 2015)
 //				shearmodprim[ir] = mu_rigid_prim*omega_tide*omega_tide*mu_visc_prim*mu_visc_prim
 //									 / (mu_rigid_prim*mu_rigid_prim + omega_tide*omega_tide*mu_visc_prim*mu_visc_prim)
 //							     + mu_rigid_prim*mu_rigid_prim*omega_tide*mu_visc_prim
@@ -492,20 +487,40 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 //			}
 //			for (ir=0;ir<NRprim;ir++) printf("%g \t %g \t %g \t %g \t %g \t %g \n", rprim[ir+1]/km2cm, rhoprim[ir], cumulMprim[ir], gprim[ir]*cm, creal(shearmodprim[ir]), cimag(shearmodprim[ir]));
 //			printf("\n");
+//
 //			propmtx(NRprim, rprim, rhoprim, gprim, shearmodprim, &ytideprim, 0);
 //
 //			// Note Im(k2) = -Im(y5) (Henning & Hurford 2014 eq. A9), the opposite convention of Tobie et al. (2005, eqs. 9 & 36).
 //			k2prim = cabs(-1.0 - ytideprim[NRprim-1][4]);
 //			Qprim = k2prim/cimag(ytideprim[NRprim-1][4]);
 //
-//			// Benchmark against Lainey et al. (2015)
-//			for (ir=0;ir<NRprim;ir++) {
-//				printf ("%g \t %g \t %g \t %g \t %g \t %g \t %g\n", rprim[ir+1]/km2cm,
-//						cabs(ytideprim[ir][0])/cm, cabs(ytideprim[ir][1])/cm,
-//						cabs(ytideprim[ir][2])*gram/cm/cm/cm, cabs(ytideprim[ir][3])*gram/cm/cm/cm,
-//						cabs(ytideprim[ir][4]), cabs(ytideprim[ir][5])/(-r_p/5.0));
-//			}
-//			printf("k2=%g Q=%g\n", k2prim, Qprim);
+//			// Alternative evaluation of Qprim by Remus et al. (2015) equation 20, without computing dissipation in the envelope:
+//			double alphadiss = 0.0;
+//			if (ircoreprim > 0) alphadiss = 1.0 + 2.5*(rhoprim[ircoreprim-1]/rhoprim[ircoreprim+1]-1.0) * pow(rprim[ircoreprim]/Rprim,3);
+//			else alphadiss = 1.0 + 2.5*(rhoprim[0]/rhoprim[ircoreprim+1]-1.0) * pow(rprim[ircoreprim]/Rprim,3);
+//			double Gprim = (alphadiss+1.5) / (alphadiss + 1.5*pow(rprim[ircoreprim]/Rprim,5));
+//			Qprim = k2prim / ( pow(rprim[ircoreprim]/Rprim,5) * Gprim * cimag(ytideprim[ircoreprim][4]) );
+//			printf("k2prim(core)=%g, Qprim(core)=%g, Gprim=%g, (rcore/R)^5=%g\n",
+//					cabs(-1.0 - ytideprim[ircoreprim][4]),
+//					cabs(-1.0 - ytideprim[ircoreprim][4])/cimag(ytideprim[ircoreprim][4]),
+//					Gprim,
+//					pow(rprim[ircoreprim]/Rprim,5));
+//
+////			// Benchmark against Lainey et al. (2015)
+////			for (ir=0;ir<NRprim;ir++) {
+////				printf ("%g \t %g \t %g \t %g \t %g \t %g \t %g\n", rprim[ir+1]/km2cm,
+////						cabs(ytideprim[ir][0])/cm, cabs(ytideprim[ir][1])/cm,
+////						cabs(ytideprim[ir][2])*gram/cm/cm/cm, cabs(ytideprim[ir][3])*gram/cm/cm/cm,
+////						cabs(ytideprim[ir][4]), cabs(ytideprim[ir][5])/(-r_p/5.0));
+////			}
+//			printf("Bulk:actual mass=%g, rho(rcore)/rhocore=%g, gsurf=%g, 19mu/2rhogR=%g, k2=%g (actual 0.39), Q=%g\n",
+//					cumulMprim[NRprim-1]/Mprim,
+//					rhoprim[ircoreprim+1]/A,
+//					gprim[NRprim-1],
+//					19.0*cabs(shearmodprim[NRprim-1])/(2.0*cumulMprim[NRprim-1]
+//					               /(4.0/3.0*PI_greek*pow(Rprim,3))*gprim[NRprim-1]*rprim[NRprim-1]),
+//					k2prim,
+//					Qprim);
 //			// Need to free all arrays
 //			exit(0);
 
@@ -513,7 +528,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 			d_eorb = - Wtide_tot*(*aorb)[im] / (Gcgs*Mprim*m_p[im]*(*eorb))                                     // Dissipation inside moon, decreases its eccentricity (equation 4.170 of Murray & Dermott 1999)
 				   + 57.0/8.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*(*eorb); // Dissipation inside planet, increases moon's eccentricity
 
-			// Moom-moon perturbations (Charnoz et al. 2011)
+			// Moon-moon perturbations (Charnoz et al. 2011)
 			for (i=0;i<nmoons;i++) {
 				if (i != im && norb[i] > 0.0) {
 					for (jr=1;jr<6;jr++) {
@@ -2071,7 +2086,7 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
     	for (i=0;i<6;i++) ytide[ir][i] = 0.0 + 0.0*I;
 	}
 
-// Benchmark against Shoji et al. (2013): Tidal heating plots in viscosity-rigidity space (also comment out mu1 15 lines below)
+//// Benchmark against Shoji et al. (2013): Tidal heating plots in viscosity-rigidity space (also comment out mu's below)
 //int p = 0;
 //int q = 0;
 //for (p=0;p<50;p++) {
@@ -2260,14 +2275,11 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
 		Wtide = 0.0;
 	}
 
-// End plots in viscosity-rigidity space
-//		printf("%g \t",log((*Wtide_tot)/1.0e7)/log(10.0));
+// // End plots in viscosity-rigidity space
+//		printf("%g \t",log10((*Wtide_tot)/1.0e7));
 //		(*Wtide_tot) = 0.0;
 //		for (ir=0;ir<NR;ir++) {
-//			for (i=0;i<6;i++) {
-//				ytide[ir][i] = 0.0;
-//				for (j=0;j<3;j++) Bpropmtx[ir][i][j] = 0.0;
-//			}
+//			for (i=0;i<6;i++) ytide[ir][i] = 0.0;
 //		}
 //	}
 //	printf("\n");
