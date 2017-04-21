@@ -151,7 +151,7 @@ int main(int argc, char *argv[]){
 
 	printf("\n");
 	printf("-------------------------------------------------------------------\n");
-	printf("IcyDwarf v17.3\n");
+	printf("IcyDwarf v17.4\n");
 	if (v_release == 1) printf("Release mode\n");
 	else if (cmdline == 1) printf("Command line mode\n");
 	printf("-------------------------------------------------------------------\n");
@@ -248,7 +248,7 @@ int main(int argc, char *argv[]){
 	WRmin = input[i]; i++; WRmax = input[i]; i++; WRstep = input[i]; i++;
 	run_compression = (int) input[i]; i++;
 	run_cryolava = (int) input[i]; i++;
-	t_cryolava = (int) input[i]/input[i-28]; i++; // Myr
+	t_cryolava = (int) input[i]/output_every; i++; // Myr
 	CHNOSZ_T_MIN = input[i]; i++;      // K
 	//-----------------------------
 	for (j=0;j<4;j++) {
@@ -346,7 +346,7 @@ int main(int argc, char *argv[]){
 	printf("|   Water:rock mass ratio                       | %g %g %g\n", WRmin, WRmax, WRstep);
 	printf("| Run compression code?                         | %d\n", run_compression);
 	printf("| Run cryovolcanism code?                       | %d\n", run_cryolava);
-	printf("|   After how many Myr?                         | %d\n", t_cryolava);
+	printf("|   After how many output steps?                | %d\n", t_cryolava);
 	printf("|   Minimum temperature to run CHNOSZ (K)       | %g\n", CHNOSZ_T_MIN);
 	printf("|-----------------------------------------------|------------------------------------------------------|\n");
 	printf("| Core crack options |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||\n");
@@ -464,7 +464,7 @@ int main(int argc, char *argv[]){
 	//-------------------------------------------------------------------
 
 	if (run_cryolava == 1) {
-		printf("Calculating gas-driven exsolution at t=%d...\n",t_cryolava);
+		printf("Calculating gas-driven exsolution at t=%d...\n", t_cryolava);
 
 		// Read thermal output
 		thermalout **thoutput = (thermalout**) malloc(NR*sizeof(thermalout*));        // Thermal model output

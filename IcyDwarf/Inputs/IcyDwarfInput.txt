@@ -11,51 +11,51 @@ ICY DWARF v17.x INPUT FILE
 |-----------------------------------------------|------------------------------------------------------|
 | Number of grid zones                          | 200                                                  |
 | Thermal simulation time step (yr)             | 50                                                   |
-| Total time of thermal simulation (Myr)        | 200                                                  |
-| Output every (Myr)                            | 1                                                    |
+| Total time of thermal simulation (Myr)        | 5000                                                 |
+| Output every (Myr)                            | 10                                                   |
 |-----------------------------------------------|------------------------------------------------------|
 | Host planet parameters |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 |-----------------------------------------------|------------------------------------------------------|
 | Mass (kg) (0 if world is not a moon)          | 5.68e26                                              |
 | Radius (km)                                   | 58232                                                |
-| Tidal Q (initial,today,{0:lin 1:exp 2:1-exp}) | 18000 2452.8 2                                       |
-| Number of moons                               | 3                                                    |
-| Ring mass (kg) (0 if no rings)                | 7e19                                                 |
-| Ring inner edge (km)                          | 92000                                                |
-| Ring outer edge (km)                          | 140000                                               |
+| Tidal Q (initial,today,{0:lin 1:exp 2:1-exp}) | 2452.8 2452.8 0                                      |
+| Number of moons                               | 1                                                    |
+| Ring mass (kg) (0 if no rings)                | 0                                                    |
+| Ring inner edge (km)                          | 0                                                    |
+| Ring outer edge (km)                          | 0                                                    |
 |-----------------------------------------------|------------------------------------------------------|
 | Icy world parameters |||||||||||||||||||||||||| World 1  | World 2  | World 3  | World 4  | World 5  |
 |-----------------------------------------------|----------|----------|----------|----------|----------|
-| Radius (km)                                   | 186.5    | 252.0    | 520.0    | 556.5    | 762.2    |
-| Density assuming zero porosity (g cm-3)       | 1.378    | 1.611    | 1.049    | 1.517    | 1.267    |
-| Surface temperature (K)                       | 76       | 59       | 68       | 70       | 72       |
-| Initial temperature (K)                       | 120      | 200      | 142      | 118      | 117      |
-| Time of formation (Myr)                       | 4520     | 4380     | 4380     | 4000     | 2100     |
+| Radius (km)                                   | 252.0    | 252.0    | 520.0    | 556.5    | 762.2    |
+| Density assuming zero porosity (g cm-3)       | 1.611    | 1.611    | 1.049    | 1.517    | 1.267    |
+| Surface temperature (K)                       | 59       | 59       | 68       | 70       | 72       |
+| Initial temperature (K)                       | 100      | 200      | 142      | 118      | 117      |
+| Time of formation (Myr)                       | 5        | 4380     | 4380     | 4000     | 2100     |
 | Ammonia w.r.t. water                          | 0        | 0        | 0        | 0        | 0        |
 | Briny liquid? y=1, n=0                        | 0        | 0        | 0        | 0        | 0        |
-| Initial degree of hydration                   | 1        | 1        | 1        | 1        | 1        |
+| Initial degree of hydration                   | 0.1      | 1        | 1        | 1        | 1        |
 | Hydrate/dehydrate?                            | 1        | 1        | 1        | 1        | 1        |
-| Initial porosity volume fraction              | 0.2      | 0.2      | 0.2      | 0.2      | 0.2      |
+| Initial porosity volume fraction              | 0.5      | 0.2      | 0.2      | 0.2      | 0.2      |
 | Fraction of rock in fines                     | 0        | 0        | 0        | 0        | 0        |
-| Core ice/liquid water volume fraction         | 0.25     | 0.25     | 0.25     | 0.25     | 0.25     |
-| Start differentiated?                         | 1        | 1        | 1        | 1        | 1        |
-| Initial orbital semi-major axis (km)          | 160000   | 160000   | 160000   | 160000   | 160000   |
-| Initial orbital eccentricity                  | 0.016    | 0.016    | 0.016    | 0.016    | 0.016    |
-| Allow orbit to change?                        | 1        | 1        | 1        | 1        | 1        |
+| Core ice/liquid water volume fraction         | 0        | 0.25     | 0.25     | 0.25     | 0.25     |
+| Start differentiated?                         | 0        | 1        | 1        | 1        | 1        |
+| Initial orbital semi-major axis (km)          | 237948   | 160000   | 160000   | 160000   | 160000   |
+| Initial orbital eccentricity                  | 0.0047   | 0.016    | 0.016    | 0.016    | 0.016    |
+| Allow orbit to change?                        | 0        | 1        | 1        | 1        | 1        |
 |-----------------------------------------------|------------------------------------------------------|
 | Dry rock density (g cm-3)                     | 3.8                                                  |
 | Hydrated rock density (g cm-3)                | 2.9                                                  |
 | Chondrite type? CI=0 CO=1                     | 0                                                    |
 | Tidal rheology? Maxwell=2 Burgers=3 Andrade=4 | 4                                                    |
-| Tidal heating x...                            | 3                                                    |
+| Tidal heating x...                            | 10                                                   |
 |-----------------------------------------------|------------------------------------------------------|
 | Subroutines ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 |-----------------------------------------------|------------------------------------------------------|
-| Run thermal code?                             | 1                                                    |
+| Run thermal code?                             | 0                                                    |
 | Generate core crack aTP table?                | 0                                                    |
 | Generate water alpha beta table?              | 0                                                    |
 | Generate crack species log K with CHNOSZ?     | 0                                                    |
-| Run geochemistry code? (min max step)         | 0                                                    |
+| Run geochemistry code? (min max step)         | 1                                                    |
 |   Temperature                                 | 0 300 50                                             |
 |   Pressure                                    | 200 1400 200                                         |
 |   pH                                          | 7 14 1                                               |
