@@ -53,7 +53,7 @@ int ParamExploration_plot(char path[1024],	int warnings, int msgout, SDL_Rendere
 		double pHmin, double pHmax, double pHstep, double pemin, double pemax, double pestep, double WRmin, double WRmax, double WRstep,
 		int chondrite, int comet) {
 
-	int blendpe = 1;                                             // Blend P-T plot over all pe (for runs where only a few simulations converged)
+	int blendpe = 0;                                             // Blend P-T plot over all pe (for runs where only a few simulations converged)
 	int i = 0;
 	int j = 0;
 	int k = 0;
@@ -930,7 +930,8 @@ int PieStyle(int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npre
 
 	if (itopic == 1 || itopic == 2) (*nspecies) = 3;        // Th, U
 	else if (itopic == 0) (*nspecies) = 5;                  // K
-	else if (itopic == 3 || itopic == 6) (*nspecies) = 10;  // NH3 / Brucite & carbonates
+	else if (itopic == 3) (*nspecies) = 10;                 // N / Brucite & carbonates
+	else if (itopic == 6) (*nspecies) = 11;                 // Starting speciated solution
 	else if (itopic == 4 || itopic == 10 || itopic == 11 || itopic == 12) (*nspecies) = 1; // Total gases / ionic strength / pH-pe / W:R
 	else if (itopic == 5) (*nspecies) = 7;                  // Gases
 	else if (itopic == 8) (*nspecies) = 15;                 // Mineral makeup
@@ -1011,20 +1012,20 @@ int PieStyle(int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npre
 //		(*leg_tex)[10] = renderText("Siderite",FontFile, black, 16, renderer);
 //	}
 	else if (itopic == 6) { // Initial solution compo
-		color[1] = pink; color[2] = aqua; color[3] = purple; color[4] = white; color[5] = green; color[6] = red; color[7] = gold;
-		color[8] = light_green; color[9] = maroon; color[10] = spindrift;
-		if (massnotmol == 0.0) (*leg_tex)[0] = renderText("mol per mol solids",FontFile, black, 16, renderer);
-		else (*leg_tex)[0] = renderText("g per g solids",FontFile, black, 16, renderer);
+		color[1] = black; color[2] = gray; color[3] = white; color[4] = light_green; color[5] = cyan; color[6] = spindrift;
+		color[7] = green; color[8] = purple; color[9] = aqua; color[10] = yellow; color[11] = orange;
+		(*leg_tex)[0] = renderText("mol per mol solutes",FontFile, black, 16, renderer);
 		(*leg_tex)[1] = renderText("CH4",FontFile, black, 16, renderer);
 		(*leg_tex)[2] = renderText("C2H6",FontFile, black, 16, renderer);
-		(*leg_tex)[3] = renderText("HCO3-",FontFile, black, 16, renderer);
-		(*leg_tex)[4] = renderText("CO2",FontFile, black, 16, renderer);
-		(*leg_tex)[5] = renderText("Cl-",FontFile, black, 16, renderer);
-		(*leg_tex)[6] = renderText("NH3",FontFile, black, 16, renderer);
-		(*leg_tex)[7] = renderText("NH4+",FontFile, black, 16, renderer);
-		(*leg_tex)[8] = renderText("N2",FontFile, black, 16, renderer);
-		(*leg_tex)[9] = renderText("H2S",FontFile, black, 16, renderer);
-		(*leg_tex)[10] = renderText("HS-",FontFile, black, 16, renderer);
+		(*leg_tex)[3] = renderText("C3H8",FontFile, black, 16, renderer);
+		(*leg_tex)[4] = renderText("HCO3-",FontFile, black, 16, renderer);
+		(*leg_tex)[5] = renderText("CO2",FontFile, black, 16, renderer);
+		(*leg_tex)[6] = renderText("Cl-",FontFile, black, 16, renderer);
+		(*leg_tex)[7] = renderText("NH3",FontFile, black, 16, renderer);
+		(*leg_tex)[8] = renderText("NH4+",FontFile, black, 16, renderer);
+		(*leg_tex)[9] = renderText("N2",FontFile, black, 16, renderer);
+		(*leg_tex)[10] = renderText("H2S",FontFile, black, 16, renderer);
+		(*leg_tex)[11] = renderText("HS-",FontFile, black, 16, renderer);
 	}
 	else if (itopic == 8) { // Minerals
 		color[1] = gray; color[2] = light_green; color[3] = aqua; color[4] = cyan; color[5] = green; color[6] = purple;
@@ -1323,15 +1324,16 @@ int Angles(double **simdata, double **molmass, double **antifreezes, int isim, i
 			double total_Sol = 0.0; // Total final moles of solutes
 			for (i=10;i<14;i++) total_Sol = total_Sol + simdata[isim][i];
 			angle[1] = simdata[isim][20]/total_Sol;   // CH4
-			angle[2] = simdata[isim][21]/total_Sol;   // C2H6
-			angle[3] = simdata[isim][23]/total_Sol;   // HCO3-
-			angle[4] = simdata[isim][24]/total_Sol;   // CO2
-			angle[5] = simdata[isim][25]/total_Sol;   // Cl-
-			angle[6] = simdata[isim][27]/total_Sol;   // NH3
-			angle[7] = simdata[isim][26]/total_Sol;   // NH4+
-	        angle[8] = simdata[isim][28]/total_Sol;   // N2
-	        angle[9] = simdata[isim][29]/total_Sol;   // H2S
-	        angle[10] = simdata[isim][30]/total_Sol;  // HS-
+			angle[2] = 2.0*simdata[isim][21]/total_Sol;   // C2H6
+			angle[3] = 3.0*simdata[isim][22]/total_Sol;   // C3H8
+			angle[4] = simdata[isim][23]/total_Sol;   // HCO3-
+			angle[5] = simdata[isim][24]/total_Sol;   // CO2
+			angle[6] = simdata[isim][25]/total_Sol;   // Cl-
+			angle[7] = simdata[isim][27]/total_Sol;   // NH3
+			angle[8] = simdata[isim][26]/total_Sol;   // NH4+
+	        angle[9] = 2.0*simdata[isim][28]/total_Sol;   // N2
+	        angle[10] = simdata[isim][29]/total_Sol;  // H2S
+	        angle[11] = simdata[isim][30]/total_Sol;  // HS-
 		}
 		else if (itopic == 8) { // Minerals
 			angle[1] = simdata[isim][288]*(1.0+massnotmol*(molmass[288][nelts-1]-1.0))    // Andradite (Ca3Fe2(SiO4)3)
