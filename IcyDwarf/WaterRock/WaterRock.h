@@ -84,7 +84,7 @@ int WaterRock (char path[1024], double T, double P, double WR, double *fracKleac
 		WR = 0.5; // To avoid high ionic strengths. We assume the liquid interacts only with rock surface, so WR>bulk WR
 	}
 
-	WritePHREEQCInput(infile, T, P, pH, FMQ, WR, &tempinput);
+	WritePHREEQCInput(infile, T, P, pH, 0.0, FMQ, WR, &tempinput);
 
 	phreeqc = CreateIPhreeqc(); // Run PHREEQC
 	if (LoadDatabase(phreeqc,dbase) != 0) OutputErrorString(phreeqc);

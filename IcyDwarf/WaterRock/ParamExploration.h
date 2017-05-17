@@ -15,7 +15,7 @@
 #include "../IcyDwarf.h"
 
 int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, double Pmin, double Pmax, double Pstep,
-		double pHmin, double pHmax, double pHstep, double pemin, double pemax, double pestep, double WRmin, double WRmax, double WRstep);
+		double pemin, double pemax, double pestep, double WRmin, double WRmax, double WRstep);
 
 int EHandler(int phreeqc);
 
@@ -27,10 +27,11 @@ int ExtractWrite(int instance, double** data);
 
 const char* ConCat(const char *str1, const char *str2);
 
-int WritePHREEQCInput(const char *TemplateFile, double temp, double pressure, double pH, double pe, double WR, char *tempinput[1024]);
+int WritePHREEQCInput(const char *TemplateFile, double temp, double pressure, double pH, double rel_pe, double pe, double WR,
+		char **tempinput);
 
 int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, double Pmin, double Pmax, double Pstep,
-		double pHmin, double pHmax, double pHstep, double pemin, double pemax, double pestep, double WRmin, double WRmax, double WRstep) {
+		double pemin, double pemax, double pestep, double WRmin, double WRmax, double WRstep) {
 
 	int thread_id;
 	int phreeqc = 0;
@@ -136,7 +137,10 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 			for(iWR=0;iWR<=nWRiter;iWR++) { // Using log because of multiplicative step. log ratio = ln ratio.
 				WR = WRmax/pow(WRstep,(double) iWR);
 
-#pragma omp parallel private(thread_id, phreeqc, pH, FMQ, nloops)
+				printf("P=%g (%d of %d) T=%g (%d of %d) W:R=%g (%d of %d), parallel calculations over %d values of pe\n",
+						P, iPressure+1, nPressureIter+1, T, itemp+1, nTempIter+1, WR, iWR+1, nWRiter+1, npeIter+1);
+
+#pragma omp parallel private(thread_id, phreeqc, pH, pe, FMQ, nloops)
 					{
 				char *tempinput = (char*)malloc(1024);
 				tempinput[0] = '\0';
@@ -149,8 +153,6 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 						simdata[i][j] = 0.0;
 					}
 				}
-				printf("P=%g (%d of %d) T=%g (%d of %d) W:R=%g (%d of %d), parallel calculations over %d values of pe\n",
-						P, iPressure+1, nPressureIter+1, T, itemp+1, nTempIter+1, WR, iWR+1, nWRiter+1, npeIter+1);
 
 #pragma omp for
 				for (ipe=0;ipe<=npeIter;ipe++) {
@@ -159,7 +161,8 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 					// Run PHREEQC on Sol file (solution only) to get the pH that balances charge
 					pH = 7.0;                   // Starting assumption, will be adjusted for charge balance
 					FMQ = -pH + 0.25*(logfO2+logKO2H2O); // FMQ pe for pH=7
-					WritePHREEQCInput(solfile, T, P, pH, FMQ+pe, WR, &tempinput);
+					printf("FMQ pe is %g at T=%g C, P=%g bar, and pH %g\n",FMQ,T,P,pH);
+					WritePHREEQCInput(solfile, T, P, pH, 4.0*pe, FMQ+pe, WR, &tempinput);
 					phreeqc = CreateIPhreeqc(); // Run PHREEQC sol file
 					if (LoadDatabase(phreeqc,dbase) != 0) OutputErrorString(phreeqc);
 					SetSelectedOutputFileOn(phreeqc,1);
@@ -172,20 +175,20 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 
 					FMQ = -pH + 0.25*(logfO2+logKO2H2O);              // Recalculate FMQ pe with new pH
 					printf("FMQ pe is %g at T=%g C, P=%g bar, and pH %g\n",FMQ,T,P,pH);
-					WritePHREEQCInput(infile, T, P, pH, FMQ+pe, WR, &tempinput);
+					WritePHREEQCInput(infile, T, P, pH, 4.0*pe, FMQ+pe, WR, &tempinput);
 					phreeqc = CreateIPhreeqc(); // Run PHREEQC again, this time on complete input file
 					if (LoadDatabase(phreeqc,dbase) != 0) OutputErrorString(phreeqc);
 					SetSelectedOutputFileOn(phreeqc,1);
 					if (RunFile(phreeqc,tempinput) != 0) OutputErrorString(phreeqc);
 					simdata[ipe][1] = P;
+					simdata[ipe][3] = pe*4.0;
 					simdata[ipe][4] = FMQ;
-					simdata[ipe][5] = pe*4.0;
 					ExtractWrite(phreeqc, &simdata[ipe]);
 
 					++nloops;
 					if (DestroyIPhreeqc(phreeqc) != IPQ_OK) OutputErrorString(phreeqc);
 				}
-				printf("Thread %d performed %d iterations of the pH loop.\n", thread_id, nloops);
+				printf("Thread %d performed %d iterations of the pe loop.\n", thread_id, nloops);
 
 				free(tempinput);
 				} // Rejoin threads
@@ -279,19 +282,25 @@ int ExtractWrite(int instance, double** data) {
 	GetSelectedOutputValue(instance,1,3,&v);           // temp
 	(*data)[0] = v.dVal;
 
-	GetSelectedOutputValue(instance,1,1,&v);           // pH
+	GetSelectedOutputValue(instance,1,5,&v);           // W:R
 	(*data)[2] = v.dVal;
 
-	GetSelectedOutputValue(instance,1,2,&v);           // pe
-	(*data)[3] = v.dVal;
+	GetSelectedOutputValue(instance,1,1,&v);           // pH
+	(*data)[5] = v.dVal;
 
-	GetSelectedOutputValue(instance,1,5,&v);           // W:R
+	GetSelectedOutputValue(instance,1,2,&v);           // pe
 	(*data)[6] = v.dVal;
 
-	for (i=1;i<nvar-6-28;i++) {                        // Rest of parameters
+	GetSelectedOutputValue(instance,2,1,&v);           // Final pH
+	(*data)[35] = v.dVal;
+
+	GetSelectedOutputValue(instance,2,2,&v);           // Final pe
+	(*data)[36] = v.dVal;
+
+	for (i=4;i<nvar-6-27;i++) {                        // Rest of parameters
 		GetSelectedOutputValue(instance,2,i,&v);
-		if (fabs(v.dVal) < 1.0e-50) (*data)[i+6+28] = 0.0;
-		else (*data)[i+6+28] = v.dVal;
+		if (fabs(v.dVal) < 1.0e-50) (*data)[i+6+27] = 0.0;
+		else (*data)[i+6+27] = v.dVal;
 	}
 	return 0;
 }
@@ -319,7 +328,8 @@ const char* ConCat(const char *str1, const char *str2) {
  * Modifies P, T, pH, pe, W:R
  *
  *--------------------------------------------------------------------*/
-int WritePHREEQCInput(const char *TemplateFile, double temp, double pressure, double pH, double pe, double WR, char **tempinput) {
+int WritePHREEQCInput(const char *TemplateFile, double temp, double pressure, double pH, double rel_pe, double pe, double WR,
+		char **tempinput) {
 
 	// Open input file
 	FILE *fin;
@@ -327,11 +337,13 @@ int WritePHREEQCInput(const char *TemplateFile, double temp, double pressure, do
 	char temp_str[10];
 	char pressure_str[10];
 	char pH_str[10];
+	char rel_pe_str[10];
 	char pe_str[10];
 	char WR_str[10];
 	temp_str[0] = '\0';
 	pressure_str[0] = '\0';
 	pH_str[0] = '\0';
+	rel_pe_str[0] = '\0';
 	pe_str[0] = '\0';
 	WR_str[0] = '\0';
 	int line_length = 300;
@@ -341,6 +353,7 @@ int WritePHREEQCInput(const char *TemplateFile, double temp, double pressure, do
 	sprintf(temp_str,"%g",temp);
 	sprintf(pressure_str,"%g",pressure);
 	sprintf(pH_str,"%g",pH);
+	sprintf(rel_pe_str,"%g",rel_pe);
 	sprintf(pe_str,"%g",pe);
 	sprintf(WR_str,"%g",WR);
 
@@ -349,10 +362,8 @@ int WritePHREEQCInput(const char *TemplateFile, double temp, double pressure, do
 	strcat(*tempinput,temp_str);
 	strcat(*tempinput,"P");
 	strcat(*tempinput,pressure_str);
-	strcat(*tempinput,"pH");
-	strcat(*tempinput,pH_str);
-	strcat(*tempinput,"pe");
-	strcat(*tempinput,pe_str);
+	strcat(*tempinput,"rel_pe");
+	strcat(*tempinput,rel_pe_str);
 	strcat(*tempinput,"WR");
 	strcat(*tempinput,WR_str);
 

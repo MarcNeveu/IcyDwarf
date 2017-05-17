@@ -659,7 +659,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 					fgets(line, 1, f);
 				}
 			}
-			else if (line_no == 60) { // pHmin, pHmax, pHstep
+			else if (line_no == 60) { // pemin, pemax, pestep
 				fgets(line, tab, f);
 				for (j=0;j<3;j++) {
 					scan = fscanf(f, "%lg", &input[i]), i++;
@@ -667,7 +667,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 					fgets(line, 1, f);
 				}
 			}
-			else if (line_no == 61) { // pemin, pemax, pestep
+			else if (line_no == 61) { // WRmin, WRmax, WRstep
 				fgets(line, tab, f);
 				for (j=0;j<3;j++) {
 					scan = fscanf(f, "%lg", &input[i]), i++;
@@ -675,65 +675,57 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 					fgets(line, 1, f);
 				}
 			}
-			else if (line_no == 62) { // WRmin, WRmax, WRstep
-				fgets(line, tab, f);
-				for (j=0;j<3;j++) {
-					scan = fscanf(f, "%lg", &input[i]), i++;
-					if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
-					fgets(line, 1, f);
-				}
-			}
-			else if (line_no == 63) {
+			else if (line_no == 62) {
 				fgets(line, tab, f);  // Run compression code?
 				scan = fscanf(f, "%lg", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
-			else if (line_no == 64) {
+			else if (line_no == 63) {
 				fgets(line, tab, f);  // Run cryovolcanism code?
 				scan = fscanf(f, "%lg", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
-			else if (line_no == 65) {
+			else if (line_no == 64) {
 				fgets(line, tab, f);  // After how many Myr?
 				scan = fscanf(f, "%lg", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
-			else if (line_no == 66) {
+			else if (line_no == 65) {
 				fgets(line, tab, f);  // Minimum temperature to run CHNOSZ (K)
 				scan = fscanf(f, "%lg", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
-			else if (line_no == 70) {
+			else if (line_no == 69) {
 				fgets(line, tab, f);  // Account for thermal expansion/contraction mismatch in cracking calculations?
 				scan = fscanf(f, "%lg", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
-			else if (line_no == 71) {
+			else if (line_no == 70) {
 				fgets(line, tab, f);  // Account for pore water pressurization in cracking calculations?
 				scan = fscanf(f, "%lg", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
-			else if (line_no == 72) {
+			else if (line_no == 71) {
 				fgets(line, tab, f);  // Account for volume changes due to hydration and dehydration in cracking calculations?
 				scan = fscanf(f, "%lg", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
-			else if (line_no == 73) {
+			else if (line_no == 72) {
 				fgets(line, tab, f);  // Account for dissolution and precipitation in cracking calculations?
 				scan = fscanf(f, "%lg", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
-			else if (line_no == 74) {
+			else if (line_no == 73) {
 				fgets(line, tab, f);  // Dissolution/precipitation of silica?
 				scan = fscanf(f, "%lg", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
-			else if (line_no == 75) {
+			else if (line_no == 74) {
 				fgets(line, tab, f);  // Dissolution/precipitation of serpentine?
 				scan = fscanf(f, "%lg", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
-			else if (line_no == 76) {
+			else if (line_no == 75) {
 				fgets(line, tab, f);  // Dissolution/precipitation of carbonate (magnesite)?
 				scan = fscanf(f, "%lg", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);

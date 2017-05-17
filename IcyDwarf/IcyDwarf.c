@@ -122,10 +122,6 @@ int main(int argc, char *argv[]){
 	double Pmin = 0.0;
 	double Pstep = 0.0;
 
-	double pHmax = 0.0;
-	double pHmin = 0.0;
-	double pHstep = 0.0;
-
 	double pemax = 0.0;
 	double pemin = 0.0;
 	double pestep = 0.0;
@@ -151,7 +147,7 @@ int main(int argc, char *argv[]){
 
 	printf("\n");
 	printf("-------------------------------------------------------------------\n");
-	printf("IcyDwarf v17.4\n");
+	printf("IcyDwarf v17.5\n");
 	if (v_release == 1) printf("Release mode\n");
 	else if (cmdline == 1) printf("Command line mode\n");
 	printf("-------------------------------------------------------------------\n");
@@ -243,7 +239,6 @@ int main(int argc, char *argv[]){
 	run_geochem = (int) input[i]; i++;
 	Tmin = input[i]; i++; Tmax = input[i]; i++; Tstep = input[i]; i++;
 	Pmin = input[i]; i++; Pmax = input[i]; i++; Pstep = input[i]; i++;
-	pHmin = input[i]; i++; pHmax = input[i]; i++; pHstep = input[i]; i++;
 	pemin = input[i]; i++; pemax = input[i]; i++; pestep = input[i]; i++;
 	WRmin = input[i]; i++; WRmax = input[i]; i++; WRstep = input[i]; i++;
 	run_compression = (int) input[i]; i++;
@@ -341,7 +336,6 @@ int main(int argc, char *argv[]){
 	printf("| Run geochemistry code? (min max step)         | %d\n", run_geochem);
 	printf("|   Temperature                                 | %g %g %g\n", Tmin, Tmax, Tstep);
 	printf("|   Pressure                                    | %g %g %g\n", Pmin, Pmax, Pstep);
-	printf("|   pH                                          | %g %g %g\n", pHmin, pHmax, pHstep);
 	printf("|   pe = FMQ + ...                              | %g %g %g\n", pemin, pemax, pestep);
 	printf("|   Water:rock mass ratio                       | %g %g %g\n", WRmin, WRmax, WRstep);
 	printf("| Run compression code?                         | %d\n", run_compression);
@@ -431,7 +425,6 @@ int main(int argc, char *argv[]){
 		printf("Running PHREEQC across the specified range of parameters...\n");
 		ParamExploration(path, Tmin, Tmax, Tstep,
 				Pmin, Pmax, Pstep,
-				pHmin, pHmax, pHstep,
 				pemin, pemax, pestep,
 				WRmin, WRmax, WRstep);
 		printf("\n");

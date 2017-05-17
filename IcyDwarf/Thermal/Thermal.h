@@ -2008,6 +2008,29 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
 			creep(T[NR-2], Pressure[NR-2], &creep_rate, 1.0-Vrock[NR-2]/dVol[NR-2], pore[NR-2], Xhydr[NR-2]);
 			mu_visc = Pa2ba*Pressure[NR-2]/(2.0*creep_rate);
 		}
+
+		// Alternative, simplified formulation
+//		if (1.0-Vrock[ir]/dVol[ir] > 0.3) mu_visc = (1.0e15)*exp(25.0*(273.0/T[ir]-1.0));
+//		else {
+//			if (ir<NR-1) {
+//				creep(T[ir], Pressure[ir], &creep_rate, 0.0, pore[ir], 1.0); // Rutter & Brodie (1988)
+//				mu_visc = exp((
+//						  (0.3-(1.0-Vrock[ir]/dVol[ir])) * log( Pa2ba*Pressure[ir]/(2.0*creep_rate) )
+//						+      (1.0-Vrock[ir]/dVol[ir])  * log( (1.0e15)*exp(25.0*(273.0/T[ir]-1.0)) ) // 1.0e14 in SI (Thomas et al. LPSC 1987)
+//						)/0.3);
+//			}
+//			else {
+//				creep(T[NR-2], Pressure[NR-2], &creep_rate, 0.0, pore[NR-2], 1.0);
+//				mu_visc = exp((
+//						  (0.3-(1.0-Vrock[ir]/dVol[ir])) * log( Pa2ba*Pressure[NR-2]/(2.0*creep_rate) )
+//						+      (1.0-Vrock[ir]/dVol[ir])  * log( (1.0e15)*exp(25.0*(273.0/T[ir]-1.0)) ) // 1.0e14 in SI (Thomas et al. LPSC 1987)
+//						)/0.3);
+//			}
+//		}
+
+//		mu_visc_rock = 6.0e7/cm/cm*(4800.0/gram*cm*cm*cm)*exp(3.0e5/(R_G*T[ir])); // Driscoll & Barnes (2015)
+//		mu_visc_rock = 1.0e20/gram*cm; // Tobie et al. (2005), reached at 1570 K by Driscoll & Barnes (2015)
+
 		// If there is ammonia in partially melted layers, decrease viscosity according to Fig. 6 of Arakawa & Maeno (1994)
 		if (Mh2os[ir] > 0.0 && Mnh3l[ir]+Madhs[ir] >= 0.01*Mh2os[ir] && T[ir] > 140.0) {
 			if (T[ir] < 176.0) mu_visc = mu_visc*1.0e-3;
@@ -2015,7 +2038,6 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
 			else if (T[ir] < 271.0) mu_visc = mu_visc*1.0e-15;
 			if (mu_visc < 1.0e3) mu_visc = 1.0e3;
 		}
-//		mu_visc_ice = (1.0e15)*exp(25.0*(273.0/T[ir]-1.0))/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // 1.0e14 in SI (Thomas et al. LPSC 1987; Desch et al. 2009)
 //		if (Mh2os[ir]+Madhs[ir]+Mh2ol[ir]+Mnh3l[ir] > 0.0) { // Benchmark against Roberts (2015)
 //			frock = Vrock[ir]/dVol[ir];
 //			phi = 1.0-frock;
@@ -2023,9 +2045,6 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
 //			else mu_visc = 1.0e14*Pa2ba;
 //		}
 //		else mu_visc = 1.0e20*Pa2ba;
-
-//		mu_visc_rock = 6.0e7/cm/cm*(4800.0/gram*cm*cm*cm)*exp(3.0e5/(R_G*T[ir])); // Driscoll & Barnes (2015)
-//		mu_visc_rock = 1.0e20/gram*cm; // Tobie et al. (2005), reached at 1570 K by Driscoll & Barnes (2015)
 
 		// Steady-state shear modulus
 		mu_rigid_ice = 4.0e9/gram*cm;

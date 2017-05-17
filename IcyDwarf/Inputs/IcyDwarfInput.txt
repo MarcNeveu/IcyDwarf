@@ -56,9 +56,8 @@ ICY DWARF v17.x INPUT FILE
 | Generate water alpha beta table?              | 0                                                    |
 | Generate crack species log K with CHNOSZ?     | 0                                                    |
 | Run geochemistry code? (min max step)         | 1                                                    |
-|   Temperature                                 | 0 300 50                                             |
-|   Pressure                                    | 200 1400 200                                         |
-|   pH                                          | 7 14 1                                               |
+|   Temperature                                 | 0 200 50                                             |
+|   Pressure                                    | 0 1000 200                                           |
 |   pe = FMQ + ...                              | -6 6 1                                               |
 |   Water:rock mass ratio                       | 0.1 10 10                                            |
 | Run compression code?                         | 0                                                    |

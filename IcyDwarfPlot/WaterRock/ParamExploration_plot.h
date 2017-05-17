@@ -994,21 +994,37 @@ int PieStyle(int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npre
 		(*leg_tex)[6] = renderText("H2",FontFile, black, 16, renderer);
 		(*leg_tex)[7] = renderText("H2O",FontFile, black, 16, renderer);
 	}
-	else if (itopic == 6) { // Brucite-carbonates
+//	else if (itopic == 6) { // Brucite-carbonates
+//		color[1] = pink; color[2] = aqua; color[3] = purple; color[4] = white; color[5] = green; color[6] = red; color[7] = gold;
+//		color[8] = light_green; color[9] = maroon; color[10] = spindrift;
+//		if (massnotmol == 0.0) (*leg_tex)[0] = renderText("mol per mol solids",FontFile, black, 16, renderer);
+//		else (*leg_tex)[0] = renderText("g per g solids",FontFile, black, 16, renderer);
+//		(*leg_tex)[1] = renderText("Brucite",FontFile, black, 16, renderer);
+//		(*leg_tex)[2] = renderText("Magnesite",FontFile, black, 16, renderer);
+//		(*leg_tex)[3] = renderText("Hydromagnesite",FontFile, black, 16, renderer);
+//		(*leg_tex)[4] = renderText("Huntite",FontFile, black, 16, renderer);
+//		(*leg_tex)[5] = renderText("Dolomite",FontFile, black, 16, renderer);
+//		(*leg_tex)[6] = renderText("NH4HCO3",FontFile, black, 16, renderer);
+//		(*leg_tex)[7] = renderText("KNaCO3",FontFile, black, 16, renderer);
+//		(*leg_tex)[8] = renderText("Calcite",FontFile, black, 16, renderer);
+//		(*leg_tex)[9] = renderText("MnCO3",FontFile, black, 16, renderer);
+//		(*leg_tex)[10] = renderText("Siderite",FontFile, black, 16, renderer);
+//	}
+	else if (itopic == 6) { // Initial solution compo
 		color[1] = pink; color[2] = aqua; color[3] = purple; color[4] = white; color[5] = green; color[6] = red; color[7] = gold;
 		color[8] = light_green; color[9] = maroon; color[10] = spindrift;
 		if (massnotmol == 0.0) (*leg_tex)[0] = renderText("mol per mol solids",FontFile, black, 16, renderer);
 		else (*leg_tex)[0] = renderText("g per g solids",FontFile, black, 16, renderer);
-		(*leg_tex)[1] = renderText("Brucite",FontFile, black, 16, renderer);
-		(*leg_tex)[2] = renderText("Magnesite",FontFile, black, 16, renderer);
-		(*leg_tex)[3] = renderText("Hydromagnesite",FontFile, black, 16, renderer);
-		(*leg_tex)[4] = renderText("Huntite",FontFile, black, 16, renderer);
-		(*leg_tex)[5] = renderText("Dolomite",FontFile, black, 16, renderer);
-		(*leg_tex)[6] = renderText("NH4HCO3",FontFile, black, 16, renderer);
-		(*leg_tex)[7] = renderText("KNaCO3",FontFile, black, 16, renderer);
-		(*leg_tex)[8] = renderText("Calcite",FontFile, black, 16, renderer);
-		(*leg_tex)[9] = renderText("MnCO3",FontFile, black, 16, renderer);
-		(*leg_tex)[10] = renderText("Siderite",FontFile, black, 16, renderer);
+		(*leg_tex)[1] = renderText("CH4",FontFile, black, 16, renderer);
+		(*leg_tex)[2] = renderText("C2H6",FontFile, black, 16, renderer);
+		(*leg_tex)[3] = renderText("HCO3-",FontFile, black, 16, renderer);
+		(*leg_tex)[4] = renderText("CO2",FontFile, black, 16, renderer);
+		(*leg_tex)[5] = renderText("Cl-",FontFile, black, 16, renderer);
+		(*leg_tex)[6] = renderText("NH3",FontFile, black, 16, renderer);
+		(*leg_tex)[7] = renderText("NH4+",FontFile, black, 16, renderer);
+		(*leg_tex)[8] = renderText("N2",FontFile, black, 16, renderer);
+		(*leg_tex)[9] = renderText("H2S",FontFile, black, 16, renderer);
+		(*leg_tex)[10] = renderText("HS-",FontFile, black, 16, renderer);
 	}
 	else if (itopic == 8) { // Minerals
 		color[1] = gray; color[2] = light_green; color[3] = aqua; color[4] = cyan; color[5] = green; color[6] = purple;
@@ -1164,7 +1180,7 @@ int PieStyle(int itopic, SDL_Surface **pies, char *FontFile, int ntemp, int npre
 				if (blendpe == 1) {
 					for (i=0;i<npe;i++) { // Simulation failed
 						isim = ipH + ipe*npH + iWR*npH*npe + itemp*npH*npe*nWR + ipressure*npH*npe*nWR*ntemp;
-						if (simdata[isim][11] > 0.0) break; // If the simulation is successful, break
+						if (simdata[isim][38] > 0.0) break; // If the simulation is successful, break
 						ipe++;
 						if (ipe == npe) ipe = 0;
 					}
@@ -1200,7 +1216,7 @@ int Angles(double **simdata, double **molmass, double **antifreezes, int isim, i
 	double angle[nspecies+1];
 	for (i=0;i<nspecies;i++) angle[i] = 0.0;
 
-	mass_water = simdata[isim][11];
+	mass_water = simdata[isim][38];
 	total_Gas = simdata[isim][1007];
 	for (i=0;i<nspecies+1;i++) angle[i] = 0.0;
 
@@ -1227,7 +1243,7 @@ int Angles(double **simdata, double **molmass, double **antifreezes, int isim, i
 				total_K = (simdata[isim][598]-simdata[isim][599])*molmass[598][11]; // Initial K-feldspar
 			else                // carbonaceous chondrite (CI/CM), K present as K-nontronite initially
 				total_K = (simdata[isim][766]-simdata[isim][767])*molmass[766][11]; // Nontronite-K
-			angle[1] = simdata[isim][23]*mass_water/total_K;                        // Dissolved potassium
+			angle[1] = simdata[isim][51]*mass_water/total_K;                        // Dissolved potassium
 			angle[2] = simdata[isim][784]*molmass[784][11]/total_K; // Phlogopite
 			angle[3] = simdata[isim][292]*molmass[292][11]/total_K; // Annite
 			angle[4] = simdata[isim][826]*molmass[826][11]/total_K; // Saponite-Fe-K
@@ -1239,7 +1255,7 @@ int Angles(double **simdata, double **molmass, double **antifreezes, int isim, i
 			if (simdata[isim][909] > 0.0) simdata[isim][909] = 0.0;
 			double total_Th = 0.0;
 			total_Th = (simdata[isim][908]-simdata[isim][909])*molmass[908][24];    // Initial thorianite ThO2
-			angle[1] = simdata[isim][36]*mass_water/total_Th;                       // Dissolved Th
+			angle[1] = simdata[isim][64]*mass_water/total_Th;                       // Dissolved Th
 			for (i=naq+1;i<naq+2*(nmingas-ngases)-2;i=i+2) {                        // All solid species containing Th
 				if (molmass[i][24] > 0.0) angle[2] = angle[2] + simdata[isim][i]*molmass[i][24];
 			}
@@ -1251,10 +1267,10 @@ int Angles(double **simdata, double **molmass, double **antifreezes, int isim, i
 			// 1- U is only added as UO2, so UO2 can't be added during the reaction. Yet sometimes there is an arbitrary addition.
 			if (simdata[isim][971] > 0.0) simdata[isim][971] = 0.0;
 			// 2- The amount of UO2 lost can't be lower than the U dissolved, yet sometimes it is.
-			if (-simdata[isim][971] < simdata[isim][38]*mass_water) simdata[isim][971] = -simdata[isim][38]*mass_water;
+			if (-simdata[isim][971] < simdata[isim][66]*mass_water) simdata[isim][971] = -simdata[isim][66]*mass_water;
 			double total_U = 0.0;
 			total_U = (simdata[isim][970]-simdata[isim][971])*molmass[970][26];     // Initial uraninite UO2
-			angle[1] = simdata[isim][38]*mass_water/total_U;                        // Dissolved U
+			angle[1] = simdata[isim][66]*mass_water/total_U;                        // Dissolved U
 			for (i=naq+1;i<naq+2*(nmingas-ngases)-2;i=i+2) {                        // All solid species containing U
 				if (molmass[i][26] > 0.0) angle[2] = angle[2] + simdata[isim][i]*molmass[i][26];
 			}
@@ -1265,7 +1281,7 @@ int Angles(double **simdata, double **molmass, double **antifreezes, int isim, i
 			// Initial dissolved N + pyridine. Dissolved N, if specified in ppm in the input, depends on the mass of C, N, S.
 			// That's too complicated to figure out analytically, just copy-paste from any PHREEQC speciation run of the template input.
 			double total_N = 0.0;
-			if (comet == 1) total_N = 1.110e+00*simdata[isim][6] + simdata[isim][794]-simdata[isim][795]; // Solution N + pyridine
+			if (comet == 1) total_N = 1.110e+00*simdata[isim][2] + simdata[isim][794]-simdata[isim][795]; // Solution N + pyridine
 			else total_N = simdata[isim][794]-simdata[isim][795]; // Pyridine
 			angle[1] = simdata[isim][204]*mass_water/total_N;     // NH3(aq)
 			angle[2] = simdata[isim][736]/total_N;                // NH4-feldspar
@@ -1287,25 +1303,38 @@ int Angles(double **simdata, double **molmass, double **antifreezes, int isim, i
 			angle[6] = simdata[isim][1015]/total_Gas;  // H2
 			angle[7] = simdata[isim][1016]/total_Gas;  // H2O
 		}
-		else if (itopic == 6) { // Carbonates
-			angle[1] = 0.0; // Open slot
-			angle[2] = simdata[isim][636]*(1.0+massnotmol*(molmass[636][nelts-1]-1.0));   // Magnesite
-			angle[3] = simdata[isim][582]*(1.0+massnotmol*(molmass[582][nelts-1]-1.0));   // Hydromagnesite
-			angle[4] = simdata[isim][580]*(1.0+massnotmol*(molmass[580][nelts-1]-1.0));   // Huntite
-			angle[5] = simdata[isim][476]*(1.0+massnotmol*(molmass[476][nelts-1]-1.0))
-			         + simdata[isim][478]*(1.0+massnotmol*(molmass[478][nelts-1]-1.0))
-			         + simdata[isim][480]*(1.0+massnotmol*(molmass[480][nelts-1]-1.0));   // Dolomite
-			angle[6] = simdata[isim][742]*(1.0+massnotmol*(molmass[742][nelts-1]-1.0));   // NH4HCO3
-			angle[7] = 0.0; // Open slot
-	        angle[8] = simdata[isim][364]*(1.0+massnotmol*(molmass[364][nelts-1]-1.0));   // Calcite
-	        angle[9] = simdata[isim][808]*(1.0+massnotmol*(molmass[808][nelts-1]-1.0));   // Rhodochrosite (MnCO3)
-	        angle[10] = simdata[isim][854]*(1.0+massnotmol*(molmass[854][nelts-1]-1.0));  // Siderite (FeCO3)
-			for (i=naq+1;i<naq+(nmingas-ngases)*2-2;i=i+2) total_Min = total_Min + simdata[isim][i]*(1.0+massnotmol*(molmass[i][nelts-1]-1.0));
-			for (i=1;i<11;i++) angle[i] = angle[i]/total_Min;
+//		else if (itopic == 6) { // Carbonates
+//			angle[1] = 0.0; // Open slot
+//			angle[2] = simdata[isim][636]*(1.0+massnotmol*(molmass[636][nelts-1]-1.0));   // Magnesite
+//			angle[3] = simdata[isim][582]*(1.0+massnotmol*(molmass[582][nelts-1]-1.0));   // Hydromagnesite
+//			angle[4] = simdata[isim][580]*(1.0+massnotmol*(molmass[580][nelts-1]-1.0));   // Huntite
+//			angle[5] = simdata[isim][476]*(1.0+massnotmol*(molmass[476][nelts-1]-1.0))
+//			         + simdata[isim][478]*(1.0+massnotmol*(molmass[478][nelts-1]-1.0))
+//			         + simdata[isim][480]*(1.0+massnotmol*(molmass[480][nelts-1]-1.0));   // Dolomite
+//			angle[6] = simdata[isim][742]*(1.0+massnotmol*(molmass[742][nelts-1]-1.0));   // NH4HCO3
+//			angle[7] = 0.0; // Open slot
+//	        angle[8] = simdata[isim][364]*(1.0+massnotmol*(molmass[364][nelts-1]-1.0));   // Calcite
+//	        angle[9] = simdata[isim][808]*(1.0+massnotmol*(molmass[808][nelts-1]-1.0));   // Rhodochrosite (MnCO3)
+//	        angle[10] = simdata[isim][854]*(1.0+massnotmol*(molmass[854][nelts-1]-1.0));  // Siderite (FeCO3)
+//			for (i=naq+1;i<naq+(nmingas-ngases)*2-2;i=i+2) total_Min = total_Min + simdata[isim][i]*(1.0+massnotmol*(molmass[i][nelts-1]-1.0));
+//			for (i=1;i<11;i++) angle[i] = angle[i]/total_Min;
+//		}
+		else if (itopic == 6) { // Initial solution
+			double total_Sol = 0.0; // Total final moles of solutes
+			for (i=10;i<14;i++) total_Sol = total_Sol + simdata[isim][i];
+			angle[1] = simdata[isim][20]/total_Sol;   // CH4
+			angle[2] = simdata[isim][21]/total_Sol;   // C2H6
+			angle[3] = simdata[isim][23]/total_Sol;   // HCO3-
+			angle[4] = simdata[isim][24]/total_Sol;   // CO2
+			angle[5] = simdata[isim][25]/total_Sol;   // Cl-
+			angle[6] = simdata[isim][27]/total_Sol;   // NH3
+			angle[7] = simdata[isim][26]/total_Sol;   // NH4+
+	        angle[8] = simdata[isim][28]/total_Sol;   // N2
+	        angle[9] = simdata[isim][29]/total_Sol;   // H2S
+	        angle[10] = simdata[isim][30]/total_Sol;  // HS-
 		}
 		else if (itopic == 8) { // Minerals
 			angle[1] = simdata[isim][288]*(1.0+massnotmol*(molmass[288][nelts-1]-1.0))    // Andradite (Ca3Fe2(SiO4)3)
-					 + simdata[isim][284]*(1.0+massnotmol*(molmass[284][nelts-1]-1.0))    // Analcime (Na.96Al.96Si2.04O6:H2O)
 			         + simdata[isim][932]*(1.0+massnotmol*(molmass[932][nelts-1]-1.0))    // Tremolite (Ca2Mg5Si8O22(OH)2)
 			         + simdata[isim][732]*(1.0+massnotmol*(molmass[732][nelts-1]-1.0))    // Nepheline (NaAlSiO4)
 			         + simdata[isim][424]*(1.0+massnotmol*(molmass[424][nelts-1]-1.0))    // Corundum
@@ -1323,11 +1352,10 @@ int Angles(double **simdata, double **molmass, double **antifreezes, int isim, i
 			         + simdata[isim][556]*(1.0+massnotmol*(molmass[556][nelts-1]-1.0));     // Greenalite
 			angle[5] = simdata[isim][390]*(1.0+massnotmol*(molmass[390][nelts-1]-1.0))      // Chlorite clays: Clinochlore-14A
 					 + simdata[isim][382]*(1.0+massnotmol*(molmass[382][nelts-1]-1.0));     // Chamosite
-			angle[6] = simdata[isim][636]*(1.0+massnotmol*(molmass[636][nelts-1]-1.0))      // Carbonates: Magnesite
-					 + simdata[isim][480]*(1.0+massnotmol*(molmass[480][nelts-1]-1.0))      // Dolomite_ord
+			angle[6] = simdata[isim][480]*(1.0+massnotmol*(molmass[480][nelts-1]-1.0))      // Carbonates: Dolomite_ord
 			         + simdata[isim][364]*(1.0+massnotmol*(molmass[364][nelts-1]-1.0))      // Calcite
 			         + simdata[isim][808]*(1.0+massnotmol*(molmass[808][nelts-1]-1.0));     // Rhodochrosite (MnCO3)
-			angle[7] = simdata[isim][574]*(1.0+massnotmol*(molmass[574][nelts-1]-1.0));     // Hematite
+			angle[7] = simdata[isim][586]*(1.0+massnotmol*(molmass[586][nelts-1]-1.0));     // Hydroxyapatite
 			angle[8] = simdata[isim][638]*(1.0+massnotmol*(molmass[638][nelts-1]-1.0));     // Magnetite
 			angle[9] = simdata[isim][520]*(1.0+massnotmol*(molmass[520][nelts-1]-1.0))      // Fe
 			         + simdata[isim][528]*(1.0+massnotmol*(molmass[528][nelts-1]-1.0))      // FeO
@@ -1350,13 +1378,11 @@ int Angles(double **simdata, double **molmass, double **antifreezes, int isim, i
 //					  + simdata[isim][564]*(1.0+massnotmol*(molmass[564][nelts-1]-1.0));    // Halite
 			angle[13] = simdata[isim][784]*(1.0+massnotmol*(molmass[784][nelts-1]-1.0))     // Phlogopite
 				      + simdata[isim][292]*(1.0+massnotmol*(molmass[292][nelts-1]-1.0));    // Annite
-//					  + simdata[isim][586]*(1.0+massnotmol*(molmass[586][nelts-1]-1.0));    // Hydroxyapatite
 			angle[14] = simdata[isim][938]*(1.0+massnotmol*(molmass[938][nelts-1]-1.0))     // Sulfides: Troilite
 			          + simdata[isim][796]*(1.0+massnotmol*(molmass[796][nelts-1]-1.0))     //           Pyrite
 //			          + simdata[isim][662]*(1.0+massnotmol*(molmass[662][nelts-1]-1.0))     //           Millerite for init CM compo
 			          + simdata[isim][380]*(1.0+massnotmol*(molmass[380][nelts-1]-1.0))     //           Chalcopyrite (CuFeS2)
 			          + simdata[isim][340]*(1.0+massnotmol*(molmass[340][nelts-1]-1.0))     //           Bornite (Cu5FeS4)
-			          + simdata[isim][376]*(1.0+massnotmol*(molmass[376][nelts-1]-1.0))     //           Chalcocite (Cu2S)
 			          + simdata[isim][270]*(1.0+massnotmol*(molmass[270][nelts-1]-1.0))     //           Alabandite (MnS)
 			          + simdata[isim][870]*(1.0+massnotmol*(molmass[870][nelts-1]-1.0))     //           Sphalerite
 			          + simdata[isim][570]*(1.0+massnotmol*(molmass[570][nelts-1]-1.0))     //           Heazlewoodite (Ni3S2)
@@ -1369,23 +1395,23 @@ int Angles(double **simdata, double **molmass, double **antifreezes, int isim, i
 			for(i=1;i<16;i++) angle[i] = angle[i]/total_Min;
 		}
 		else if (itopic == 9 || itopic == 13) { // Solution, freezing temp
-			double total_Sol = 0.0; // Final mass of solution
-			for (i=12;i<40;i++) total_Sol = total_Sol + simdata[isim][i];
-			total_Sol = total_Sol + 2.0*simdata[isim][63];  // H2
-			angle[1] = simdata[isim][12]/total_Sol;         // Al
-			angle[2] = simdata[isim][45]/total_Sol;         // C(4)
-			angle[3] = simdata[isim][43]/total_Sol;         // C(-4)
-			angle[4] = simdata[isim][15]/total_Sol;         // Ca
-			angle[5] = simdata[isim][16]/total_Sol;         // Cl
-			angle[6] = simdata[isim][31]/total_Sol;         // P
-			angle[7] = simdata[isim][25]/total_Sol;         // Mg
-			angle[8] = simdata[isim][69]/total_Sol;         // N(0)
-			angle[9] = simdata[isim][68]/total_Sol;         // N(-3)
-			angle[10] = simdata[isim][29]/total_Sol;        // Na
-			angle[11] = simdata[isim][79]/total_Sol;        // S(6)
-			angle[12] = simdata[isim][74]/total_Sol;        // S(-2)
-			angle[13] = simdata[isim][34]/total_Sol;        // Si
-			angle[14] = 2.0*simdata[isim][63]/total_Sol;    // H = 2*H2
+			double total_Sol = 0.0; // Total final moles of solutes
+			for (i=40;i<68;i++) total_Sol = total_Sol + simdata[isim][i];
+			total_Sol = total_Sol + simdata[isim][91];
+			angle[1] = simdata[isim][40]/total_Sol;         // Al
+			angle[2] = simdata[isim][73]/total_Sol;         // C(4)
+			angle[3] = simdata[isim][71]/total_Sol;         // C(-4)
+			angle[4] = simdata[isim][43]/total_Sol;         // Ca
+			angle[5] = simdata[isim][44]/total_Sol;         // Cl
+			angle[6] = simdata[isim][59]/total_Sol;         // P
+			angle[7] = simdata[isim][53]/total_Sol;         // Mg
+			angle[8] = simdata[isim][97]/total_Sol;         // N(0)
+			angle[9] = simdata[isim][96]/total_Sol;         // N(-3)
+			angle[10] = simdata[isim][57]/total_Sol;        // Na
+			angle[11] = simdata[isim][107]/total_Sol;       // S(6)
+			angle[12] = simdata[isim][102]/total_Sol;       // S(-2)
+			angle[13] = simdata[isim][62]/total_Sol;        // Si
+			angle[14] = simdata[isim][91]/total_Sol; // H2
 		}
 
 		// Plot pies
@@ -1409,56 +1435,56 @@ int Angles(double **simdata, double **molmass, double **antifreezes, int isim, i
 		}
 		else if (itopic == 10) { // Ionic strength
 			key.r = 255; key.b = 0; key.a = 255;
-			if (simdata[isim][10]/100.0 > 1.0) key.g = 0;
-			else key.g = (int) ((1.0-simdata[isim][10]/100.0)*255.0);
-			Pie(2.0*M_PI, 0.0, ipie, jpie, kpie, 2.0*log(10.0*simdata[isim][10]), &(*pies), key, 0, PT, 0); // log = natural logarithm ln
+			if (simdata[isim][37]/100.0 > 1.0) key.g = 0;
+			else key.g = (int) ((1.0-simdata[isim][37]/100.0)*255.0);
+			Pie(2.0*M_PI, 0.0, ipie, jpie, kpie, 2.0*log(10.0*simdata[isim][37]), &(*pies), key, 0, PT, 0); // log = natural logarithm ln
 
 			char nb[20];
-			scanNumber(&nb, simdata[isim][10]);        // Right-justified
+			scanNumber(&nb, simdata[isim][37]);        // Right-justified
 			(*num_tex)[ipie*njpie*nkpie+jpie*nkpie+kpie] = renderText(nb, FontFile, black, 12, renderer);
 			(*num_tex2)[ipie*njpie*nkpie+jpie*nkpie+kpie] = renderText(nb, FontFile, white, 12, renderer);
 		}
 		else if (itopic == 11) { // pH-pe
 			key.r = 255; key.b = 0;
 			if (PT) key.a = 255; else key.a = 255;
-			if (simdata[isim][7]/14.0 > 1.0) key.g = 0;
-			else if (simdata[isim][7]/7.0 < 1.0) key.g = 255;
-			else key.g = (int) ((1.0-(simdata[isim][7]/7.0-1.0))*255.0);
+			if (simdata[isim][35]/14.0 > 1.0) key.g = 0;
+			else if (simdata[isim][35]/7.0 < 1.0) key.g = 255;
+			else key.g = (int) ((1.0-(simdata[isim][35]/7.0-1.0))*255.0);
 			// Equilibrium log fO2 = Init log fO2 + 4(pH_f + pe_f - pH_i - pe_i)
-			Pie(2.0*M_PI, 0.0, ipie, jpie, kpie, 10.0+simdata[isim][5]+4.0*(simdata[isim][7]+simdata[isim][8]-simdata[isim][2]-simdata[isim][3]), &(*pies), key, 0, PT, 0); // log = natural logarithm ln
+			Pie(2.0*M_PI, 0.0, ipie, jpie, kpie, 10.0+simdata[isim][3]+4.0*(simdata[isim][35]+simdata[isim][36]-simdata[isim][6]-simdata[isim][5]), &(*pies), key, 0, PT, 0); // log = natural logarithm ln
 
 			if (PT) {
 				char nb_pH[20];
 				char nb_pe[20];
-				scanNumber(&nb_pH, simdata[isim][7]);
-				scanNumber(&nb_pe, simdata[isim][5]+4.0*(simdata[isim][7]+simdata[isim][8]-simdata[isim][2]-simdata[isim][3]));
+				scanNumber(&nb_pH, simdata[isim][35]);
+				scanNumber(&nb_pe, simdata[isim][3]+4.0*(simdata[isim][35]+simdata[isim][36]-simdata[isim][6]-simdata[isim][5]));
 				(*num_tex)[ipie*njpie*nkpie+jpie*nkpie+kpie] = renderText(nb_pH, FontFile, black, 14, renderer);
 				(*num_tex2)[ipie*njpie*nkpie+jpie*nkpie+kpie] = renderText(nb_pe, FontFile, blue, 14, renderer);
 			}
 		}
 		else if (itopic == 12) { // W:R
-			if (simdata[isim][11] < 0.01) {
+			if (simdata[isim][38] < 0.01) {
 				key.r = 200;
 				key.g = 100;
 				key.b = 0;
 				key.a = 255;
 			}
-			else if (simdata[isim][11] > 10.0) {
+			else if (simdata[isim][38] > 10.0) {
 				key.r = 100;
 				key.g = 135;
 				key.b = 255;
 				key.a = 255;
 			}
 			else {
-				key.r = (Uint8) (200.0*(1.0-0.5*(log(simdata[isim][11])/log(10.0)+2.0)/3.0)); // log = natural logarithm ln
-				key.g = (Uint8) (100.0*(1.0+0.35*(log(simdata[isim][11])/log(10.0)+2.0)/3.0));
-				key.b = (Uint8) (255.0*(log(simdata[isim][11])/log(10.0)+2.0)/3.0);
+				key.r = (Uint8) (200.0*(1.0-0.5*(log(simdata[isim][38])/log(10.0)+2.0)/3.0)); // log = natural logarithm ln
+				key.g = (Uint8) (100.0*(1.0+0.35*(log(simdata[isim][38])/log(10.0)+2.0)/3.0));
+				key.b = (Uint8) (255.0*(log(simdata[isim][38])/log(10.0)+2.0)/3.0);
 				key.a = 255;
 			}
 			Pie(2.0*M_PI, 0.0, ipie, jpie, kpie, pie_radius, &(*pies), key, 0, PT, 0);
 
 			char nb[20];
-			scanNumber(&nb, simdata[isim][11]);        // Right-justified
+			scanNumber(&nb, simdata[isim][38]);        // Right-justified
 			(*num_tex)[ipie*njpie*nkpie+jpie*nkpie+kpie] = renderText(nb, FontFile, black, 12, renderer);
 			(*num_tex2)[ipie*njpie*nkpie+jpie*nkpie+kpie] = renderText(nb, FontFile, white, 12, renderer);
 		}
@@ -1472,13 +1498,13 @@ int Angles(double **simdata, double **molmass, double **antifreezes, int isim, i
 				(*num_tex2)[ipie*njpie*nkpie+jpie*nkpie+kpie] = renderText(nb, FontFile, white, 12, renderer);
 			}
 			if (((itopic >=0 && itopic <= 3) || itopic == 8 || itopic == 9) && PT) { // For solution or mineral makeup, color-code validity (ionic strength) at top right
-				if (simdata[isim][10] < 0.1) {
+				if (simdata[isim][37] < 0.1) {
 					key.r = 0;
 					key.g = 255;
 					key.b = 125;
 					key.a = 255;
 				}
-				else if (simdata[isim][10] < 1.0) {
+				else if (simdata[isim][37] < 1.0) {
 					key.r = 255;
 					key.g = 255;
 					key.b = 102;
@@ -1643,12 +1669,12 @@ int Freeze(double **simdata, double **antifreezes, int nelts, int naf, int isim,
 	for (i=0;i<nelts-3;i++) sol[i] = 0.0;
 
 	// Initialize sol
-	for (i=0;i<nelts-3;i++) sol[i] = simdata[isim][i+12];
+	for (i=0;i<nelts-3;i++) sol[i] = simdata[isim][i+40];
 
-	Cred = simdata[isim][41] + simdata[isim][42] + simdata[isim][43]; // C(-2), C(-3), C(-4)
-	Nred = simdata[isim][68]; // N(-3)
-	Nox5 = simdata[isim][71]; // N(5)
-	Sred = simdata[isim][74]; // S(-2)
+	Cred = simdata[isim][69] + simdata[isim][70] + simdata[isim][71]; // C(-2), C(-3), C(-4)
+	Nred = simdata[isim][96]; // N(-3)
+	Nox5 = simdata[isim][99]; // N(5)
+	Sred = simdata[isim][102]; // S(-2)
 
 	// Go through the list of antifreezes from highest to lowest eutectic temperature
 	for (i=naf-1;i>=0;i--) {
@@ -1661,25 +1687,25 @@ int Freeze(double **simdata, double **antifreezes, int nelts, int naf, int isim,
 			if (antifreezes[i][j] > 0.0 &&
 					(sol[j] <= 0.0                                                  // Antifreeze not in solution
 					|| (j==2 && Cred > 0.99*sol[j])                                 // C is reduced
-					|| (i==21 && simdata[isim][116] < 1.0e-5*sol[i])                // Negligible CH2O (if not, case not well handled)
-					|| (i==0 && simdata[isim][104] <= 0.0)                          // No CH3OH
+					|| (i==21 && simdata[isim][144] < 1.0e-5*sol[i])                // Negligible CH2O (if not, case not well handled)
+					|| (i==0 && simdata[isim][132] <= 0.0)                          // No CH3OH
 				    || ((i==9 || i==16 || i==17) && j==16 && Nox5 < 1.0e-5*sol[16]) // Negligible oxidized N
 				    || (j==16 && Nred < 0.99*sol[j] && Nox5 < 0.99*sol[j])          // N is not overwhelmingly oxidized or oxidized
 				    || (j==20 && Sred > 0.99*sol[j])                                // S is reduced
-				    || (i==6 && simdata[isim][50] < 1.0e-5*sol[4])					// No ClO4
-				    || (i==2 && simdata[isim][7] > 7)                               // No H+ if pH > 7
+				    || (i==6 && simdata[isim][78] < 1.0e-5*sol[4])					// No ClO4
+				    || (i==2 && simdata[isim][35] > 7)                              // No H+ if pH > 7
 				    )) {
 				notinsol = 1;
 				if (verbose == 1 && antifreezes[i][j] > 0.0) {
 					if (sol[j] <= 0.0) printf("Antifreeze not in solution\n");
 					if (j==2 && Cred > 0.99*sol[j]) printf("C is reduced\n");
-					if (i==21 && simdata[isim][116] < 1.0e-5*sol[i]) printf("Negligible CH2O\n");
-					if (i==0 && simdata[isim][104] <= 0.0) printf("No CH3OH");
+					if (i==21 && simdata[isim][144] < 1.0e-5*sol[i]) printf("Negligible CH2O\n");
+					if (i==0 && simdata[isim][132] <= 0.0) printf("No CH3OH");
 					if ((i==9 || i==16 || i==17) && j==16 && Nox5 < 1.0e-5*sol[j]) printf("Negligible oxidized N\n");
 					if (j==16 && Nred < 0.99*sol[j] && Nox5 < 0.99*sol[j]) printf("N is not overwhelmingly oxidized\n");
 					if (j==20 && Sred > 0.99*sol[j]) printf("S is reduced\n");
-					if (i==6 && simdata[isim][50] < 1.0e-5*sol[4]) printf("Negligible ClO4");
-					if (i==2 && simdata[isim][7] > 7) printf("Negligible H+: pH > 7");
+					if (i==6 && simdata[isim][78] < 1.0e-5*sol[4]) printf("Negligible ClO4");
+					if (i==2 && simdata[isim][35] > 7) printf("Negligible H+: pH > 7");
 				}
 				if (verbose == 1) printf("Antifreeze %d not in solution, moving on\n",i);
 				break;
