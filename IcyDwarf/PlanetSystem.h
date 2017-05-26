@@ -568,9 +568,9 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		strcat(filename, outputpath[im]); strcat(filename, "Crack_stresses.txt"); create_output(path, filename); filename[0] = '\0';
 		strcat(filename, outputpath[im]); strcat(filename, "Tidal_rates.txt"); create_output(path, filename); filename[0] = '\0';
 		strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt"); create_output(path, filename); filename[0] = '\0';
+		strcat(filename, outputpath[im]); strcat(filename, "Resonances.txt"); create_output(path, filename); filename[0] = '\0';
 	}
 	create_output(path, "Outputs/Primary.txt");
-	create_output(path, "Outputs/Resonances.txt");
 
 	for (im=0;im<nmoons;im++) m_p[im] = rho_p[im]*4.0/3.0*PI_greek*r_p[im]*r_p[im]*r_p[im]; // Compute object mass from radius and density
 

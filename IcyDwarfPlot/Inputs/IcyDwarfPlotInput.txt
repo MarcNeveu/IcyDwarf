@@ -14,13 +14,13 @@ Radius (km)                   561.4
 Grid
 -------------------------------
 Number of grid zones          200
-Total time of sim (Myr)       4000
+Total time of sim (Myr)       4500
 Output every (Myr)            10
 -------------------------------
 Subroutines
 -------------------------------
 Thermal plot
-	IcyDwarf output       4Thermal.txt
+	IcyDwarf output       1Thermal.txt
 	Max temp (K; 0=auto)  1000
 Geochemistry plot
 	Temperature           0 200 50
@@ -29,4 +29,4 @@ Geochemistry plot
 	pe = FMQ + ...        -6 6 1
 	Water:rock mass ratio 0.1 10 10
 	Rock type 0:OC def:CC 0
-	Fluid 1:comet def:H2O 1
+	Fluid 1:comet def:H2O 0
