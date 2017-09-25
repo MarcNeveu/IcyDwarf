@@ -488,6 +488,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	    	Crack_size[im][ir] = 0.0;
 	    	P_pore[im][ir] = 0.0;
 	    	P_hydr[im][ir] = 0.0;
+	    	kappa[im][ir] = 0.0;
 	    	Nu[im][ir] = 1.0;
 	    	dont_dehydrate[im][ir] = 0;
 	    	circ[im][ir] = 0;

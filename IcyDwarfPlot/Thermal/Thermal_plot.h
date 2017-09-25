@@ -186,7 +186,7 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 	int ir_ocean = 0;
 	int ir_ice = 0;
 
-	printf("Time \t Core (km) \t Ocean (km) \t Ice (km)\n");
+	printf("Time \t Ocean (km) \t Core (km) \t Ice (km)\n");
 	for (t=0;t<NT_output;t++) {
 		r_core = 0.0;
 		r_ice = thoutput[NR-1][t].radius;
@@ -210,14 +210,14 @@ int Thermal_plot (char path[1024], int Tmax_input, int NR, int NT_output, double
 				break;
 			}
 		}
-		// Find r_ice
-		for (r=r_ocean;r<NR-1;r++) {
-			if (thoutput[r][t].mrock == 0.0 && thoutput[r+1][t].mrock >= 0.0) {
-				r_ice = thoutput[r][t].radius;
-				ir_ice = r;
-				break;
-			}
-		}
+//		// Find r_ice
+//		for (r=ir_ocean;r<NR-1;r++) {
+//			if (thoutput[r][t].mrock == 0.0 && thoutput[r+1][t].mrock >= 0.0) {
+//				r_ice = thoutput[r][t].radius;
+//				ir_ice = r;
+//				break;
+//			}
+//		}
 		printf("%g \t %g \t %g \t %g \n", (double)t/100.0, r_ocean, r_core, r_ice);
 	}
 

@@ -1755,10 +1755,10 @@ int hydrate(double T, double **dM, double *dVol, double **Mrock, double **Mh2os,
 
 /*--------------------------------------------------------------------
  *
- * Subroutine HydCirc
+ * Subroutine convect
  *
  * Calculates the parameterized thermal conductivity in layers
- * experiencing hydrothermal circulation, using the Rayleigh and
+ * experiencing convective heat transport, using the Rayleigh and
  * Nusselt numbers.
  *
  *--------------------------------------------------------------------*/
@@ -1788,7 +1788,7 @@ int convect(int ir1, int ir2, double *T, double *r, int NR, double *Pressure, do
 
 	Ra = g1*dT*dr*pow((1.0-fineMassFrac)*rhofluid + fineMassFrac*(Xhydr[ircore+1]*rhoHydrth+(1.0-Xhydr[ircore+1])*rhoRockth),2)/kap1;
 
-	if (cvmode <= 1) {
+	if (cvmode <= 1) { // Hydrothermal circulation
 		alf1 = alfh2oavg;
 		cp1 = ((1.0-fineMassFrac)*ch2ol + fineMassFrac*(heatRock(T[jr]+2.0)-heatRock(T[jr]-2.0))*0.25); // For rock, cp = d(energy)/d(temp), here taken over 4 K surrounding T[jr]
 		mu_visc = Pa2ba*viscosity(T[jr],Mh2ol[ir1],Mnh3l[ir1])/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // Mueller, S. et al. (2010) Proc Roy Soc A 466, 1201-1228.
@@ -1798,13 +1798,13 @@ int convect(int ir1, int ir2, double *T, double *r, int NR, double *Pressure, do
 		if (Crack_size_avg == 0) Crack_size_avg = smallest_crack_size; // If hydration and dissolution cracking are not active, assume arbitrary crack size
 		dr1 = sqrt(permeability)*Crack_size_avg/cm;
 	}
-	else if (cvmode == 2) {
+	else if (cvmode == 2) { // Fluid between two rigid (solid) plates
 		alf1 = alfh2oavg; // Thermal expansion of rock is neglected
 		cp1 = ((1.0-fineMassFrac)*ch2ol + fineMassFrac*(heatRock(T[jr]+2.0)-heatRock(T[jr]-2.0))*0.25); // For rock, cp = d(energy)/d(temp), here taken over 4 K surrounding T[jr]
 		mu_visc = Pa2ba*viscosity(T[jr],Mh2ol[jr],Mnh3l[jr])/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // Mueller, S. et al. (2010) Proc Roy Soc A 466, 1201-1228.
 		dr1 = dr;
 	}
-	else if (cvmode == 3) {
+	else if (cvmode == 3) { // Subsolidus convection
 		alf1 = (-0.5 + 6.0*(T[jr]-50.0)/200.0) * 1.0e-5; // Not as in D09!
 		cp1 = (1.0-fineMassFrac)*qh2o*T[jr] + fineMassFrac*(heatRock(T[jr]+2.0)-heatRock(T[jr]-2.0))*0.25; // For rock, cp = d(energy)/d(temp), here taken over 4 K surrounding T[jr]
 

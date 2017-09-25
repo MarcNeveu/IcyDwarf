@@ -5194,7 +5194,7 @@ NH4-feldspar # Buddingtonite (sometimes with +0.5 H2O, especially at low temp)
 	log_k		-2.7243
 	-analytic	-7.434e1 3.080e-1 0 0 0 -2.270e-4
 #	Range		25-325
-	-Vm		114.78 # Webmineral.com
+	-Vm		114.78 # Webmineral.com (Hovis04: 109.08-112.23)
 #	Extrapol	N17
 #	Ref		Wat81
 
