@@ -106,6 +106,9 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	double *norb = (double*) malloc((nmoons)*sizeof(double));       // Orbital mean motions = 2*pi/period = sqrt(GM/a3) (s-1)
 	if (norb == NULL) printf("PlanetSystem: Not enough memory to create norb[nmoons]\n");
 
+	double *dnorb_dt = (double*) malloc((nmoons)*sizeof(double));   // d/dt[Orbital mean motions = 2*pi/period = sqrt(GM/a3) (s-1)]
+	if (dnorb_dt == NULL) printf("PlanetSystem: Not enough memory to create dnorb_dt[nmoons]\n");
+
 	int **dont_dehydrate = (int**) malloc(nmoons*sizeof(int*));     // Don't dehydrate a layer that just got hydrated
 	if (dont_dehydrate == NULL) printf("PlanetSystem: Not enough memory to create dont_dehydrate[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
@@ -460,6 +463,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		aorb[im] = aorb_init[im];
 		eorb[im] = eorb_init[im];
 		norb[im] = 0.0;
+		dnorb_dt[im] = 0.0;
 		outputpath[im][0] = '\0';
 
 		for (i=0;i<12;i++) Thermal_output[im][i] = 0.0;
@@ -847,7 +851,9 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 #pragma omp for
 			for (im=0;im<nmoons;im++) {
 				if (realtime >= tzero[im]) {
+					dnorb_dt[im] = norb[im];
 		    		norb[im] = sqrt(Gcgs*Mprim/pow(aorb[im],3)); // Otherwise, norb[im] is zero and the moon im doesn't influence the others gravitationally
+		    		dnorb_dt[im] = (dnorb_dt[im]-norb[im])/dtime;
 
 					Thermal(argc, argv, path, outputpath[im], warnings, NR, dr_grid[im],
 							dtime, realtime, itime, Xp[im], Xsalt[im], Xfines[im], Xpores[im], Tsurf[im],
@@ -861,7 +867,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 							&Crack[im], &Crack_size[im], &fracOpen[im], &P_pore[im], &P_hydr[im], &Act[im], &fracKleached[im],
 							crack_input, crack_species, aTP, integral, alpha, beta, silica, chrysotile, magnesite,
 							&ircrack[im], &ircore[im], &irice[im], &irdiff[im], forced_hydcirc, &Nu[im],
-							&aorb, &eorb[im], norb, m_p, r_p[im], Mprim, Rprim, k2prim, Qprim,
+							&aorb, &eorb[im], norb, dnorb_dt, m_p, r_p[im], Mprim, Rprim, k2prim, Qprim,
 							aring_out, aring_in, alpha_Lind,  ringSurfaceDensity,
 							tidalmodel, tidetimes, im, nmoons, moonspawn[im], orbevol[im], hy[im], chondr,
 							&Heat_radio[im], &Heat_grav[im], &Heat_serp[im], &Heat_dehydr[im], &Heat_tide[im],
@@ -1017,6 +1023,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	free (aorb);
 	free (eorb);
 	free (norb);
+	free (dnorb_dt);
 	free (dont_dehydrate);
 	free (circ);
 	free (r);

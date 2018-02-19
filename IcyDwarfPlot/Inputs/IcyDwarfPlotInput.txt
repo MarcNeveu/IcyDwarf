@@ -20,13 +20,13 @@ Output every (Myr)            10
 Subroutines
 -------------------------------
 Thermal plot
-	IcyDwarf output       1Thermal.txt
+	IcyDwarf output       5Thermal.txt
 	Max temp (K; 0=auto)  1000
 Geochemistry plot
-	Temperature           0 200 50
-	Pressure              0 1000 200
+	Temperature           0 150 50
+	Pressure              0 1000 250
 	pH                    7 7 1
-	pe = FMQ + ...        -6 6 1
-	Water:rock mass ratio 0.1 10 10
+	pe = FMQ + ...        0 8 2
+	Water:rock mass ratio 1 5 5
 	Rock type 0:OC def:CC 0
 	Fluid 1:comet def:H2O 0
