@@ -19,7 +19,7 @@ ICY DWARF v17.x INPUT FILE
 | Mass (kg) (0 if world is not a moon)          | 5.68e26                                              |
 | Radius (km)                                   | 58232                                                |
 | Tidal Q (initial,today,{0:lin 1:exp 2:1-exp}) | 2452.8 2452.8 0                                      |
-| Number of moons                               | 1                                                    |
+| Number of moons                               | 2                                                    |
 | Ring mass (kg) (0 if no rings)                | 0                                                    |
 | Ring inner edge (km)                          | 0                                                    |
 | Ring outer edge (km)                          | 0                                                    |
@@ -30,7 +30,7 @@ ICY DWARF v17.x INPUT FILE
 | Density assuming zero porosity (g cm-3)       | 1.611    | 1.611    | 1.049    | 1.517    | 1.267    |
 | Surface temperature (K)                       | 59       | 59       | 68       | 70       | 72       |
 | Initial temperature (K)                       | 100      | 200      | 142      | 118      | 117      |
-| Time of formation (Myr)                       | 5        | 4380     | 4380     | 4000     | 2100     |
+| Time of formation (Myr)                       | 4380     | 4380     | 4380     | 4000     | 2100     |
 | Ammonia w.r.t. water                          | 0        | 0        | 0        | 0        | 0        |
 | Briny liquid? y=1, n=0                        | 0        | 0        | 0        | 0        | 0        |
 | Initial degree of hydration                   | 0.1      | 1        | 1        | 1        | 1        |
@@ -39,8 +39,8 @@ ICY DWARF v17.x INPUT FILE
 | Fraction of rock in fines                     | 0        | 0        | 0        | 0        | 0        |
 | Core ice/liquid water volume fraction         | 0        | 0.25     | 0.25     | 0.25     | 0.25     |
 | Start differentiated?                         | 0        | 1        | 1        | 1        | 1        |
-| Initial orbital semi-major axis (km)          | 237948   | 160000   | 160000   | 160000   | 160000   |
-| Initial orbital eccentricity                  | 0.0047   | 0.016    | 0.016    | 0.016    | 0.016    |
+| Initial orbital semi-major axis (km)          | 237948   | 230000   | 160000   | 160000   | 160000   |
+| Initial orbital eccentricity                  | 0.2      | 0.16     | 0.016    | 0.016    | 0.016    |
 | Allow orbit to change?                        | 0        | 1        | 1        | 1        | 1        |
 |-----------------------------------------------|------------------------------------------------------|
 | Dry rock density (g cm-3)                     | 3.8                                                  |
@@ -51,11 +51,11 @@ ICY DWARF v17.x INPUT FILE
 |-----------------------------------------------|------------------------------------------------------|
 | Subroutines ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 |-----------------------------------------------|------------------------------------------------------|
-| Run thermal code?                             | 0                                                    |
+| Run thermal code?                             | 1                                                    |
 | Generate core crack aTP table?                | 0                                                    |
 | Generate water alpha beta table?              | 0                                                    |
 | Generate crack species log K with CHNOSZ?     | 0                                                    |
-| Run geochemistry code? (min max step)         | 1                                                    |
+| Run geochemistry code? (min max step)         | 0                                                    |
 |   Temperature                                 | 0 150 50                                             |
 |   Pressure                                    | 0 1000 250                                           |
 |   pe = FMQ + ...                              | 0 8 2                                                |

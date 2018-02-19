@@ -368,7 +368,7 @@ int WritePHREEQCInput(const char *TemplateFile, double temp, double pressure, do
 	strcat(*tempinput,WR_str);
 
 	fin = fopen (TemplateFile,"r");
-	if (fin == NULL) printf("ParamExploration: Missing input file.\n");
+	if (fin == NULL) printf("ParamExploration: Missing input file %s.\n", TemplateFile);
 	fout = fopen (*tempinput,"w");
 	if (fout == NULL) printf("ParamExploration: Missing output file.\n");
 

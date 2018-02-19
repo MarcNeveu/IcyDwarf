@@ -427,23 +427,21 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 			d_eorb = - Wtide_tot*(*aorb)[im] / (Gcgs*Mprim*m_p[im]*(*eorb))                                     // Dissipation inside moon, decreases its eccentricity (equation 4.170 of Murray & Dermott 1999)
 				   + 57.0/8.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*(*eorb); // Dissipation inside planet, increases moon's eccentricity
 
-			int resonance = 0; // TODO move
 			// Moon-moon perturbations (Charnoz et al. 2011)
 			for (i=0;i<nmoons;i++) {
 				if (i != im && norb[i] > 0.0) {
 					for (jr=1;jr<6;jr++) {
 						if (norb[im] > norb[i]) {
-							for (k=1;k<=3;k++) { // TODO Borderies & Goldreich (1984) OK up to k=2, but need expression from Greenberg (1973) with k=1 only
-								// Determine probability of capture in resonance with moon i further out
-								if (norb[im] > norb[i] && dnorb_dt[im] < 2.0*dnorb_dt[i])
-									PCapture[i] = MMR_PCapture(m_p, norb, (*aorb), im, i, (*eorb), (double)jr, Mprim);
-								else PCapture[i] = 0.0;
+							for (k=1;k<=1;k++) { // TODO Borderies & Goldreich (1984) OK up to k=2, but need expression from Greenberg (1973) with k=1 only
 								// MMR if orbital periods stay commensurate by <1% over 1 time step: j*n1 - (j+k)*n2 < 0.01*n1 / # orbits in 1 time step: dt/(2 pi/n1)
 								if (fabs((double)jr * norb[im] - (double)(jr+k) * norb[i]) < 1.0e-2*2.0*PI_greek/dtime) {
-									if ((double) ((rand()+0)%(100+1))/100.0 < PCapture[i] || resonance == 1) { // TODO make sure rand is used accurately
-										resonance = 1; // TODO decrease dtime if resonance == 1.
+									// Determine probability of capture in resonance with moon i further out
+									if (norb[im] > norb[i] && (double)jr*dnorb_dt[im] < (double)(jr+k)*dnorb_dt[i]) // Peale (1976) equation (25), see also Yoder (1973), Sinclair (1972), Lissauer et al. (1984)
+										PCapture[i] = MMR_PCapture(m_p, norb, (*aorb), im, i, (*eorb), (double)jr, Mprim);
+									else PCapture[i] = 0.0;
+									// Resonance if random number below capture proba. If already captured, and proba of resonance has become too low (e.g. by e increase due to resonance), resonance is escaped
+									if ((double) ((rand()+0)%(100+1))/100.0 < PCapture[i])
 										d_eorb_MMR = MMR_AvgHam(m_p, norb, (*aorb), im, i, (*eorb));
-									}
 									// d_eorb_MMR = MMR(m_p, norb, (*aorb), im, i, (*eorb)) / (double)jr; // /jr: to convert synodic period to conjunction period
 									d_eorb = d_eorb + d_eorb_MMR;
 
@@ -466,9 +464,6 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 									else fprintf(fout,"%g Moons %d (n=%g s-1) and %d (n=%g s-1), jr=%d:%g, d_eorb_MMR=%g for moon %d\n", (double)itime*dtime/Myr2sec, im, norb[im], i, norb[i], jr, (double)jr*norb[im]/norb[i], d_eorb_MMR, im);
 									fclose (fout);
 									free (title);
-								}
-								else {
-									resonance = 0; // Get out of resonance, back to secular evolution
 								}
 							}
 						}
@@ -1964,9 +1959,10 @@ double MMR_PCapture(double *m_p, double *norb, double *aorb, int imoon, int i, d
 	// Calculate b_Lapj from equation (1) of Suli et al. (2004), equivalent to the equation before eq. (43) of Brouwer and Clemence (1961)
 	b_Lapj = 1.0;
 	temp = 1.0;
-	for (m=0;m<10;m++) { // Compute series to order 10
+	for (m=0;m<200;m++) { // Compute series to order 200 max
 		temp = temp * (0.5+(double)m)/(1.0+(double)m) * (0.5+j+(double)m)/(j+1.0+(double)m) * pow(alpha,2);
 		b_Lapj = b_Lapj + temp;
+		if (temp < 0.01) break; // Cut when increase per term <1%. More imprecise if a1 close to a2.
 	}
 	b_Lapj = b_Lapj * pow(alpha,j);
 	for (m=0;m<j;m++) b_Lapj = b_Lapj * (0.5+(double)m)/((double)m+1.0);
@@ -1976,9 +1972,10 @@ double MMR_PCapture(double *m_p, double *norb, double *aorb, int imoon, int i, d
 	// b_Lapj is a sum of terms. The first has power j, the second j+2, etc. So we need to multiply each new term by j, j+2, etc., and overall multiply Db_Lapj by pow(alpha,j-1) only.
 	Db_Lapj = j;
 	temp = 1.0;
-	for (m=0;m<10;m++) { // Compute series to order 10
+	for (m=0;m<200;m++) { // Compute series to order 200 max
 		temp = temp * (0.5+(double)m)/(1.0+(double)m) * (0.5+j+(double)m)/(j+1.0+(double)m) * pow(alpha,2);
-		Db_Lapj = Db_Lapj + temp * (j+((double)m+1.0)*2.0);
+		Db_Lapj = Db_Lapj + temp * (double)(j+(m+1)*2);
+		if (temp < 0.01) break; // Cut when increase per term <1%. More imprecise if a1 close to a2.
 	}
 	Db_Lapj = Db_Lapj * pow(alpha,j-1);
 	for (m=0;m<j;m++) Db_Lapj = Db_Lapj * (0.5+(double)m)/((double)m+1.0);
@@ -1986,11 +1983,11 @@ double MMR_PCapture(double *m_p, double *norb, double *aorb, int imoon, int i, d
 
 	Ck = (2.0*j+1.0)*b_Lapj + alpha*Db_Lapj;  // Greenberg (1973) equation 3. b is Laplace coefficient from Brouwer and Clemence (1961). TODO is this where Ck(a2/a1) can lead R to be such that Pk=0?
 	if (j == 1) Ck = Ck - 1.0/alpha/alpha;    // Greenberg (1973) equation 3
-	Dk = pow(3.0*(j+(double)k)*(j+(double)k) / (pow(2.0,(double)((9*k-8)/2))*m_p[imoon]/Mprim*Ck), (double)((k+1)/3)); // Borderies and Goldreich (1984), equation 6
-    R = Dk*e*e;                               // Borderies and Goldreich (1984), equation 4
+	Dk = pow(3.0*(j+(double)k)*(j+(double)k) / (pow(2.0,(9.0*(double)k-8.0)/2.0)*m_p[imoon]/Mprim*Ck), ((double)k+1.0)/3.0); // Borderies and Goldreich (1984), equation 6
+	R = Dk*e*e;                               // Borderies and Goldreich (1984), equation 4
 
 	if (R <= 3.0) Pk = 1.0;
-	else Pk = 0.9/pow(4-2,1.2+0.1);              // Eyeball fit to Fig. 3 of Borderies and Goldreich (1984) // TODO improve
+	else Pk = 1.0/(pow(R-3.0+1.0,2.4))-0.43*(log(R)-log(3.0))/log(10.0)-0.37*(exp(-R+3.0)-1.0); // Manual fit to Fig. 3 of Borderies and Goldreich (1984). Works only for j+1:j resonances! // TODO improve
 
 	return Pk;
 }
