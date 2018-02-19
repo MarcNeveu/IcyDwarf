@@ -76,7 +76,7 @@ double viscosity(double T, double Mh2ol, double Mnh3l);
 
 double MMR(double *m_p, double *norb, double *aorb, int imoon, int i, double eorb);
 
-double MMR_PCapture(double *m_p, double *norb, double *aorb, int imoon, int i, double e, double j, double Mprim);
+double MMR_PCapture(double *m_p, double *norb, double *aorb, int imoon, int i, double e, double j, int k, double Mprim);
 
 double MMR_AvgHam(double *m_p, double *norb, double *aorb, int imoon, int i, double eorb);
 
@@ -421,7 +421,6 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 
 			// Calculate tidal dissipation in the host planet (k2prim & Qprim)
 //			tideprim(Rprim, Mprim, omega_tide, &k2prim, &Qprim);
-//			exit(0);
 
 			// Update eccentricity
 			d_eorb = - Wtide_tot*(*aorb)[im] / (Gcgs*Mprim*m_p[im]*(*eorb))                                     // Dissipation inside moon, decreases its eccentricity (equation 4.170 of Murray & Dermott 1999)
@@ -432,12 +431,12 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 				if (i != im && norb[i] > 0.0) {
 					for (jr=1;jr<6;jr++) {
 						if (norb[im] > norb[i]) {
-							for (k=1;k<=1;k++) { // TODO Borderies & Goldreich (1984) OK up to k=2, but need expression from Greenberg (1973) with k=1 only
+							for (k=1;k<=2;k++) { // Borderies & Goldreich (1984) derivation valid for j:j+k resonances up to k=2
 								// MMR if orbital periods stay commensurate by <1% over 1 time step: j*n1 - (j+k)*n2 < 0.01*n1 / # orbits in 1 time step: dt/(2 pi/n1)
 								if (fabs((double)jr * norb[im] - (double)(jr+k) * norb[i]) < 1.0e-2*2.0*PI_greek/dtime) {
 									// Determine probability of capture in resonance with moon i further out
 									if (norb[im] > norb[i] && (double)jr*dnorb_dt[im] < (double)(jr+k)*dnorb_dt[i]) // Peale (1976) equation (25), see also Yoder (1973), Sinclair (1972), Lissauer et al. (1984)
-										PCapture[i] = MMR_PCapture(m_p, norb, (*aorb), im, i, (*eorb), (double)jr, Mprim);
+										PCapture[i] = MMR_PCapture(m_p, norb, (*aorb), im, i, (*eorb), (double)jr, k, Mprim);
 									else PCapture[i] = 0.0;
 									// Resonance if random number below capture proba. If already captured, and proba of resonance has become too low (e.g. by e increase due to resonance), resonance is escaped
 									if ((double) ((rand()+0)%(100+1))/100.0 < PCapture[i])
@@ -1941,17 +1940,16 @@ double MMR(double *m_p, double *norb, double *aorb, int imoon, int i, double eor
  *
  *--------------------------------------------------------------------*/
 
-double MMR_PCapture(double *m_p, double *norb, double *aorb, int imoon, int i, double e, double j, double Mprim) { //TODO Cast j as double when calling the function
+double MMR_PCapture(double *m_p, double *norb, double *aorb, int imoon, int i, double e, double j, int k, double Mprim) { //TODO Cast j as double when calling the function
 
-	int k = 0; // j+k:j
 	int m = 0; // Counter
-	double Pk = 0.0;                                        // Probability of capture into resonance
-	double alpha = 0.0;                                     // alpha = a1/a2
-	double Ck = 0.0;                                        // Function of alpha = a2/a1. TODO Get it from Henrard (1982) or Henrard and Lemaitre (1983)?
-	double Dk = 0.0;                                        // See Borderies and Goldreich (1984), equation 6
-	double R = 0.0;                                         // R = Dk*e^2 (Borderies and Goldreich, 1984, equation 4)
-	double b_Lapj = 0.0;                                    // Laplace coefficient of order j (e.g. Brouwer and Clemence 1961; Suli et al. 2004)
-	double Db_Lapj = 0.0;                                   // First derivative of b_Lapj with respect to alpha
+	double Pk = 0.0;         // Probability of capture into resonance
+	double alpha = 0.0;      // alpha = a1/a2
+	double Ck = 0.0;         // Function of alpha = a2/a1.
+	double Dk = 0.0;         // See Borderies and Goldreich (1984), equation 6
+	double R = 0.0;          // R = Dk*e^2 (Borderies and Goldreich, 1984, equation 4)
+	double b_Lapj = 0.0;     // Laplace coefficient of order j (e.g. Brouwer and Clemence 1961; Suli et al. 2004)
+	double Db_Lapj = 0.0;    // First derivative of b_Lapj with respect to alpha
 	double temp = 0.0;
 
 	alpha = aorb[imoon]/aorb[i];
@@ -1986,8 +1984,15 @@ double MMR_PCapture(double *m_p, double *norb, double *aorb, int imoon, int i, d
 	Dk = pow(3.0*(j+(double)k)*(j+(double)k) / (pow(2.0,(9.0*(double)k-8.0)/2.0)*m_p[imoon]/Mprim*Ck), ((double)k+1.0)/3.0); // Borderies and Goldreich (1984), equation 6
 	R = Dk*e*e;                               // Borderies and Goldreich (1984), equation 4
 
-	if (R <= 3.0) Pk = 1.0;
-	else Pk = 1.0/(pow(R-3.0+1.0,2.4))-0.43*(log(R)-log(3.0))/log(10.0)-0.37*(exp(-R+3.0)-1.0); // Manual fit to Fig. 3 of Borderies and Goldreich (1984). Works only for j+1:j resonances! // TODO improve
+	if (k==1) { // j:j+1
+		if (R <= 3.0) Pk = 1.0;
+		else Pk = 1.0/(pow(R-3.0+1.0,2.4))-0.43*(log(R)-log(3.0))/log(10.0)-0.37*(exp(-R+3.0)-1.0); // Manual fit to Fig. 3 of Borderies and Goldreich (1984)
+	}
+	else { // j:j+2
+		if (R <= 0.5) Pk = 1.0;
+		else Pk = 1.0/(pow(R-0.5+1.0,1.9))-0.24*(log(R)-log(0.5))/log(10.0)-0.50*(exp(-R+0.5)-1.0); // Manual fit to Fig. 4 of Borderies and Goldreich (1984)
+	}
+	if (Pk < 0.0) Pk = 0.0;
 
 	return Pk;
 }

@@ -40,7 +40,7 @@ ICY DWARF v17.x INPUT FILE
 | Core ice/liquid water volume fraction         | 0        | 0.25     | 0.25     | 0.25     | 0.25     |
 | Start differentiated?                         | 0        | 1        | 1        | 1        | 1        |
 | Initial orbital semi-major axis (km)          | 237948   | 230000   | 160000   | 160000   | 160000   |
-| Initial orbital eccentricity                  | 0.2      | 0.16     | 0.016    | 0.016    | 0.016    |
+| Initial orbital eccentricity                  | 0.02     | 0.016    | 0.016    | 0.016    | 0.016    |
 | Allow orbit to change?                        | 0        | 1        | 1        | 1        | 1        |
 |-----------------------------------------------|------------------------------------------------------|
 | Dry rock density (g cm-3)                     | 3.8                                                  |
