@@ -665,6 +665,12 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 		(*Mnh3l)[ir] = (*dM)[ir]*fnh3l;
 	}
 
+	// Update irice
+	(*irice) = (*ircore);
+	for (ir=(*ircore);ir<NR;ir++) {
+		if ((*Mh2ol)[ir] > 0.0) (*irice) = ir;
+	}
+
 	// Update energies
 	for (ir=0;ir<NR-1;ir++) {
 		(*Erock)[ir] = heatRock((*T)[ir])*(*Mrock)[ir];
