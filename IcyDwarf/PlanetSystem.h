@@ -123,6 +123,13 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		if (circ[im] == NULL) printf("PlanetSystem: Not enough memory to create circ[nmoons][NR]\n");
 	}
 
+	int **resonance = (int**) malloc(nmoons*sizeof(int*));          // Tracks states of mean-motion resonances between moons
+	if (resonance == NULL) printf("PlanetSystem: Not enough memory to create resonance[nmoons]\n");
+	for (im=0;im<nmoons;im++) {
+		resonance[im] = (int*) malloc(nmoons*sizeof(int));
+		if (resonance[im] == NULL) printf("PlanetSystem: Not enough memory to create resonance[nmoons]\n");
+	}
+
 	double **r = (double**) malloc(nmoons*sizeof(double*));         // Layer radius, accounting for porosity (cm)
 	if (r == NULL) printf("PlanetSystem: Not enough memory to create r[NR+1]\n");
 	for (im=0;im<nmoons;im++) {
@@ -465,6 +472,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		norb[im] = 0.0;
 		dnorb_dt[im] = 0.0;
 		outputpath[im][0] = '\0';
+		for (ir=0;ir<nmoons;ir++) resonance[i][ir] = 0;
 
 		for (i=0;i<12;i++) Thermal_output[im][i] = 0.0;
 	    for (ir=0;ir<NR;ir++) {
@@ -783,6 +791,10 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	Primary[2] = Mring*gram;
 	append_output(3, Primary, path, "Outputs/Primary.txt");
 
+	// Resonances
+//	for (im=0;im<nmoons;im++) append_output(nmoons, (double *)resonance[im], path, "Outputs/Resonances.txt");
+//	for (im=0;im<nmoons;im++) append_output(nmoons, PCapture[im], path, "Outputs/Resonances.txt");
+
 	//-------------------------------------------------------------------
 	//                       Initialize time loop
 	//-------------------------------------------------------------------
@@ -842,6 +854,11 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 			exit(0);
     	}
 
+    	// Make moon-moon resonances consistent (if a in resonance with b, then b in resonance with a), that's why we half proba of capture in Thermal()
+		for (im=0;im<nmoons;im++) {
+			for (i=0;i<nmoons;i++) if (resonance[im][i]) resonance[i][im] = 1;
+		}
+
 		// Begin parallel calculations
 #pragma omp parallel // private(thread_id, nloops)
     	{
@@ -868,8 +885,8 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 							crack_input, crack_species, aTP, integral, alpha, beta, silica, chrysotile, magnesite,
 							&ircrack[im], &ircore[im], &irice[im], &irdiff[im], forced_hydcirc, &Nu[im],
 							&aorb, &eorb, norb, dnorb_dt, m_p, r_p[im], Mprim, Rprim, k2prim, Qprim,
-							aring_out, aring_in, alpha_Lind,  ringSurfaceDensity,
-							tidalmodel, tidetimes, im, nmoons, moonspawn[im], orbevol[im], hy[im], chondr,
+							aring_out, aring_in, alpha_Lind, ringSurfaceDensity,
+							tidalmodel, tidetimes, im, nmoons, &resonance, moonspawn[im], orbevol[im], hy[im], chondr,
 							&Heat_radio[im], &Heat_grav[im], &Heat_serp[im], &Heat_dehydr[im], &Heat_tide[im],
 							&Stress[im], &Tide_output[im]);
 //					++nloops;
@@ -1012,7 +1029,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		free (fracOpen[im]);
 		free (pore[im]);
 		free (Xhydr_old[im]);
-
+		free (resonance[im]);
 		for (i=0;i<12;i++) free (Stress[im][i]);
 		for (ir=0;ir<NR;ir++) free (Act[im][ir]);
 		for (i=0;i<2;i++) free (Tide_output[im][i]);
@@ -1068,6 +1085,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	free (chrysotile);
 	free (magnesite);
 	free (Tide_output);
+	free (resonance);
 
 	return 0;
 }

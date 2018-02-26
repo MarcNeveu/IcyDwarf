@@ -447,6 +447,7 @@ int creep (double T, double P, double *creep_rate, double Xice, double porosity,
 		}
 		// Scaling from Roberts (2015)
 		(*creep_rate) = exp(((0.3-Xice)*log(Xhydr*creep_rate_hydr + (1.0-Xhydr)*creep_rate_dry) + Xice*log(creep_rate_ice))/0.3);
+//		(*creep_rate) = Xhydr*creep_rate_hydr + (1.0-Xhydr)*creep_rate_dry;
 	}
 
 	return 0;
