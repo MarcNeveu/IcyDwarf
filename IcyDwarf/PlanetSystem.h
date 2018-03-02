@@ -45,20 +45,21 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
     int thermal_mismatch = 0;            // Switch for grain thermal expansion/contraction mismatch effects
 	int pore_water_expansion = 0;        // Switch for pore water expansion effects
 	int dissolution_precipitation = 0;   // Switch for rock dissolution/precipitation effects
+	int reso_print = 0;                  // Switch to print output if there is a change in the state of mean-motion resonances between moons
 	double realtime = 0.0;               // Time elapsed since formation of the solar system (s)
 	double tzero_min = 0.0;              // Time of formation of the first moon to form
 	double today = 4568.2*Myr2sec;       // Time elapsed between the formation of Ca-Al inclusions and the present (Bouvier & Wadhwa 2010, http://dx.doi.org/10.1038/ngeo941)
 	double rhoRockth = rhoDry*gram;      // Density of dry rock (g/cm3)
 	double rhoHydrth = rhoHydr*gram;     // Density of hydrated rock (g/cm3)
-	double rhoH2osth = rhoH2os*gram;	 // Density of water ice (g/cm3)
-	double rhoAdhsth = rhoAdhs*gram;	 // Density of ammonia dihydrate ice (g/cm3)
+	double rhoH2osth = rhoH2os*gram;	    // Density of water ice (g/cm3)
+	double rhoAdhsth = rhoAdhs*gram;	    // Density of ammonia dihydrate ice (g/cm3)
 	double rhoH2olth = 0.0;              // Density of liquid water, just for this routine (g/cm3)
 	double rhoNh3lth = 0.0;              // Density of liquid ammonia, just for this routine (g/cm3)
 	double Qprim = 0.0;                  // Tidal Q of the primary (host planet). For Saturn today, = 2452.8, range 1570.8-4870.6 (Lainey et al. 2016)
 	double Mring = Mring_init;           // Ring mass
 	double ringSurfaceDensity = 0.0;     // Ring surface density (g cm-2)
 	double alpha_Lind = 0.0;             // Dissipation of Lindblad resonance in rings (no dim)
-	if (ringSurfaceDensity <= 2.0) alpha_Lind = 2.0e-5; else alpha_Lind = 1.0e-4; // Mostly viscosity and pressure if surf density²2 g cm-2, or self-gravity if surf density~50 g cm-2
+	if (ringSurfaceDensity <= 2.0) alpha_Lind = 2.0e-5; else alpha_Lind = 1.0e-4; // Mostly viscosity and pressure if surf densityï¿½2 g cm-2, or self-gravity if surf density~50 g cm-2
 
 	// Variables individual to each moon
 	int irdiff[nmoons];                  // Outermost differentiated layer
@@ -123,11 +124,18 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		if (circ[im] == NULL) printf("PlanetSystem: Not enough memory to create circ[nmoons][NR]\n");
 	}
 
-	int **resonance = (int**) malloc(nmoons*sizeof(int*));          // Tracks states of mean-motion resonances between moons
+	double **resonance = (double**) malloc(nmoons*sizeof(double*)); // Tracks states of mean-motion resonances between moons
 	if (resonance == NULL) printf("PlanetSystem: Not enough memory to create resonance[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
-		resonance[im] = (int*) malloc(nmoons*sizeof(int));
+		resonance[im] = (double*) malloc(nmoons*sizeof(double));
 		if (resonance[im] == NULL) printf("PlanetSystem: Not enough memory to create resonance[nmoons]\n");
+	}
+
+	double **resonance_old = (double**) malloc(nmoons*sizeof(double*)); // Previous states of mean-motion resonances between moons
+	if (resonance_old == NULL) printf("PlanetSystem: Not enough memory to create resonance_old[nmoons][nmoons]\n");
+	for (im=0;im<nmoons;im++) {
+		resonance_old[im] = (double*) malloc(nmoons*sizeof(double));
+		if (resonance_old[im] == NULL) printf("PlanetSystem: Not enough memory to create resonance_old[nmoons][nmoons]\n");
 	}
 
 	double **r = (double**) malloc(nmoons*sizeof(double*));         // Layer radius, accounting for porosity (cm)
@@ -354,6 +362,13 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		if (Xhydr_old[im] == NULL) printf("PlanetSystem: Not enough memory to create Xhydr_old[nmoons][NR]\n");
 	}
 
+	double **PCapture = (double**) malloc(nmoons*sizeof(double*));     // Probability of capture into resonance
+	if (PCapture == NULL) printf("PlanetSystem: Not enough memory to create PCapture[nmoons]\n");
+	for (im=0;im<nmoons;im++) {
+		PCapture[im] = (double*) malloc(nmoons*sizeof(double));
+		if (PCapture[im] == NULL) printf("PlanetSystem: Not enough memory to create PCapture[nmoons][nmoons]\n");
+	}
+
 	double ***Stress = (double***) malloc(nmoons*sizeof(double**)); // Stress[nmoons][NR][12], output
 	if (Stress == NULL) printf("PlanetSystem: Not enough memory to create Stress[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
@@ -472,7 +487,12 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		norb[im] = 0.0;
 		dnorb_dt[im] = 0.0;
 		outputpath[im][0] = '\0';
-		for (ir=0;ir<nmoons;ir++) resonance[i][ir] = 0;
+
+		for (ir=0;ir<nmoons;ir++) {
+			PCapture[im][ir] = 0.0;
+			resonance[im][ir] = 0.0;
+			resonance_old[im][ir] = 0.0;
+		}
 
 		for (i=0;i<12;i++) Thermal_output[im][i] = 0.0;
 	    for (ir=0;ir<NR;ir++) {
@@ -581,9 +601,10 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		strcat(filename, outputpath[im]); strcat(filename, "Crack_stresses.txt"); create_output(path, filename); filename[0] = '\0';
 		strcat(filename, outputpath[im]); strcat(filename, "Tidal_rates.txt"); create_output(path, filename); filename[0] = '\0';
 		strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt"); create_output(path, filename); filename[0] = '\0';
-		strcat(filename, outputpath[im]); strcat(filename, "Resonances.txt"); create_output(path, filename); filename[0] = '\0';
 	}
 	create_output(path, "Outputs/Primary.txt");
+	create_output(path, "Outputs/Resonances.txt");
+	create_output(path, "Outputs/PCapture.txt");
 
 	for (im=0;im<nmoons;im++) m_p[im] = rho_p[im]*4.0/3.0*PI_greek*r_p[im]*r_p[im]*r_p[im]; // Compute object mass from radius and density
 
@@ -792,8 +813,8 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	append_output(3, Primary, path, "Outputs/Primary.txt");
 
 	// Resonances
-//	for (im=0;im<nmoons;im++) append_output(nmoons, (double *)resonance[im], path, "Outputs/Resonances.txt");
-//	for (im=0;im<nmoons;im++) append_output(nmoons, PCapture[im], path, "Outputs/Resonances.txt");
+	for (im=0;im<nmoons;im++) append_output(nmoons, resonance[im], path, "Outputs/Resonances.txt");
+	for (im=0;im<nmoons;im++) append_output(nmoons, PCapture[im], path, "Outputs/PCapture.txt");
 
 	//-------------------------------------------------------------------
 	//                       Initialize time loop
@@ -838,25 +859,25 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
     		break;
     	}
     	if (Qprim <= 0.0) {
-			FILE *fout;
-			// Turn working directory into full file path by moving up two directories to IcyDwarf (e.g., removing
-			// "Release/IcyDwarf" characters) and specifying the right path end.
+		FILE *fout;
+		// Turn working directory into full file path by moving up two directories to IcyDwarf (e.g., removing
+		// "Release/IcyDwarf" characters) and specifying the right path end.
     		char *title = (char*)malloc(1024*sizeof(char));       // Don't forget to free!
     		title[0] = '\0';
     		if (v_release == 1) strncat(title,path,strlen(path)-16);
     		else if (cmdline == 1) strncat(title,path,strlen(path)-18);
     		strcat(title,"Outputs/Primary.txt");
-			fout = fopen(title,"a");
-			if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
-			else fprintf(fout,"Tidal Q of primary = %g is negative. Change Q parameters or simulation timing.\n", Qprim);
-			fclose (fout);
-			free (title);
-			exit(0);
+		fout = fopen(title,"a");
+		if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
+		else fprintf(fout,"Tidal Q of primary = %g is negative. Change Q parameters or simulation timing.\n", Qprim);
+		fclose (fout);
+		free (title);
+		exit(0);
     	}
 
     	// Make moon-moon resonances consistent (if a in resonance with b, then b in resonance with a), that's why we half proba of capture in Thermal()
 		for (im=0;im<nmoons;im++) {
-			for (i=0;i<nmoons;i++) if (resonance[im][i]) resonance[i][im] = 1;
+			for (i=0;i<nmoons;i++) if (resonance[im][i] == 1.0) resonance[i][im] = 1.0;
 		}
 
 		// Begin parallel calculations
@@ -869,8 +890,8 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 			for (im=0;im<nmoons;im++) {
 				if (realtime >= tzero[im]) {
 					dnorb_dt[im] = norb[im];
-		    		norb[im] = sqrt(Gcgs*Mprim/pow(aorb[im],3)); // Otherwise, norb[im] is zero and the moon im doesn't influence the others gravitationally
-		    		dnorb_dt[im] = (dnorb_dt[im]-norb[im])/dtime;
+					norb[im] = sqrt(Gcgs*Mprim/pow(aorb[im],3)); // Otherwise, norb[im] is zero and the moon im doesn't influence the others gravitationally
+					dnorb_dt[im] = (dnorb_dt[im]-norb[im])/dtime;
 
 					Thermal(argc, argv, path, outputpath[im], warnings, NR, dr_grid[im],
 							dtime, realtime, itime, Xp[im], Xsalt[im], Xfines[im], Xpores[im], Tsurf[im],
@@ -886,7 +907,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 							&ircrack[im], &ircore[im], &irice[im], &irdiff[im], forced_hydcirc, &Nu[im],
 							&aorb, &eorb, norb, dnorb_dt, m_p, r_p[im], Mprim, Rprim, k2prim, Qprim,
 							aring_out, aring_in, alpha_Lind, ringSurfaceDensity,
-							tidalmodel, tidetimes, im, nmoons, &resonance, moonspawn[im], orbevol[im], hy[im], chondr,
+							tidalmodel, tidetimes, im, nmoons, &resonance, &PCapture[im], moonspawn[im], orbevol[im], hy[im], chondr,
 							&Heat_radio[im], &Heat_grav[im], &Heat_serp[im], &Heat_dehydr[im], &Heat_tide[im],
 							&Stress[im], &Tide_output[im]);
 //					++nloops;
@@ -899,6 +920,44 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		//                           Write outputs
 		//-------------------------------------------------------------------
 
+    		// Print change in status of resonances every time it happens
+    		for (im=0;im<nmoons;im++) {
+    			for (i=0;i<nmoons;i++) {
+    				if (resonance[im][i] != resonance_old[im][i]) {
+    					reso_print = 1;
+    					resonance_old[im][i] = resonance[im][i];
+    				}
+    			}
+    		}
+    		if (reso_print) {
+    			FILE *fout;
+    	    		char *title = (char*)malloc(1024*sizeof(char)); title[0] = '\0';
+    	    		if (v_release == 1) strncat(title,path,strlen(path)-16); else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+    	    		strcat(title,"Outputs/Resonances.txt");
+    			fout = fopen(title,"a");
+    			if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
+    			else fprintf(fout,"Time %g Gyr\n", realtime/Gyr2sec);
+    			fclose (fout);
+    			free (title);
+
+    			for (im=0;im<nmoons;im++) append_output(nmoons, resonance[im], path, "Outputs/Resonances.txt");
+    		}
+    		if (reso_print) {
+    			FILE *fout;
+    	    		char *title = (char*)malloc(1024*sizeof(char)); title[0] = '\0';
+    	    		if (v_release == 1) strncat(title,path,strlen(path)-16); else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+    	    		strcat(title,"Outputs/PCapture.txt");
+    			fout = fopen(title,"a");
+    			if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
+    			else fprintf(fout,"Time %g Gyr\n", realtime/Gyr2sec);
+    			fclose (fout);
+    			free (title);
+
+    			for (im=0;im<nmoons;im++) append_output(nmoons, PCapture[im], path, "Outputs/PCapture.txt");
+    			reso_print = 0;
+    		}
+
+    		// Print other outputs at regular, user-specified intervals
 		isteps++;
 		if (isteps == nsteps) {
 			isteps = 0;
@@ -1030,6 +1089,8 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		free (pore[im]);
 		free (Xhydr_old[im]);
 		free (resonance[im]);
+		free (resonance_old[im]);
+		free (PCapture[im]);
 		for (i=0;i<12;i++) free (Stress[im][i]);
 		for (ir=0;ir<NR;ir++) free (Act[im][ir]);
 		for (i=0;i<2;i++) free (Tide_output[im][i]);
@@ -1086,6 +1147,8 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	free (magnesite);
 	free (Tide_output);
 	free (resonance);
+	free (resonance_old);
+	free (PCapture);
 
 	return 0;
 }
