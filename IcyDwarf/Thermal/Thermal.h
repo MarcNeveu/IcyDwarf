@@ -447,7 +447,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 							// MMR if orbital periods stay commensurate by <1% over 1 time step: j*n1 - (j+k)*n2 < 0.01*n1 / # orbits in 1 time step: dt/(2 pi/n1)
 							if (norb[im] > norb[i] && fabs((double)jr * norb[im] - (double)(jr+k) * norb[i]) < 1.0e-2*2.0*PI_greek/dtime) {
 								// Determine probability of capture in resonance with moon i further out
-								if ((double)jr*dnorb_dt[im] < (double)(jr+k)*dnorb_dt[i]) // Peale (1976) equation (25), see also Yoder (1973), Sinclair (1972), Lissauer et al. (1984)
+								if (fabs((double)jr*dnorb_dt[im]) < fabs((double)(jr+k)*dnorb_dt[i])) // Peale (1976) equation (25), see also Yoder (1973), Sinclair (1972), Lissauer et al. (1984)
 									(*PCapture)[i] = MMR_PCapture(m_p, norb, (*aorb), im, i, (*eorb)[im], (double)jr, k, Mprim);
 								else (*PCapture)[i] = 0.0;
 								// Resonance if random number below capture proba. If already captured, and proba of resonance has become too low (e.g. by e increase due to resonance), resonance is escaped
