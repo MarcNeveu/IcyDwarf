@@ -891,7 +891,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 				if (realtime >= tzero[im]) {
 					dnorb_dt[im] = norb[im];
 					norb[im] = sqrt(Gcgs*Mprim/pow(aorb[im],3)); // Otherwise, norb[im] is zero and the moon im doesn't influence the others gravitationally
-					dnorb_dt[im] = (dnorb_dt[im]-norb[im])/dtime;
+					dnorb_dt[im] = (norb[im]-dnorb_dt[im])/dtime;
 
 					Thermal(argc, argv, path, outputpath[im], warnings, NR, dr_grid[im],
 							dtime, realtime, itime, Xp[im], Xsalt[im], Xfines[im], Xpores[im], Tsurf[im],
