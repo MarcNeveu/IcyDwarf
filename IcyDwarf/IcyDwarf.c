@@ -15,6 +15,7 @@
 
 #include "IcyDwarf.h"
 #include "PlanetSystem.h"
+#include "Orbit.h"
 #include "Compression/Compression.h"
 #include "Crack/Crack.h"
 #include "Crack/Crack_tables.h"

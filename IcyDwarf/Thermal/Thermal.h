@@ -10,6 +10,7 @@
  *      number of grid zones, duration of the sim, initial time of sim (for 26Al).
  *      Outputs temperature and structure profiles (ice, rock, liquid water, liquid NH3, ADH ice),
  *      as well as thermal conductivities and degrees of hydration in the rock.
+ *      Many more since...
  *
  *      References:
  *    - Desch et al. (2009) Thermal evolution of Kuiper belt objects, with implications for cryovolcanism.
@@ -17,6 +18,7 @@
  *    - Rubin et al. (2014) The effect of Rayleigh-Taylor instabilities on the thickness of
  *      undifferentiated crusts on Kuiper belt objects. Icarus 236, 122-135. http://dx.doi.org/10.1016/j.icarus.
  *      2014.03.047
+ *    - Several more since...
  */
 
 #ifndef THERMAL_H_
@@ -30,18 +32,14 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 		double **r, double **dM, double **dM_old, double *Phi, double **dVol, double **dE, double **T, double **T_old, double **Pressure,
 		double rhoRockth, double rhoHydrth, double rhoH2osth, double rhoAdhsth, double rhoH2olth, double rhoNh3lth,
 		double **Mrock, double **Mrock_init, double **Mh2os, double **Madhs, double **Mh2ol, double **Mnh3l,
-		double **Vrock, double **Vh2os, double **Vadhs, double **Vh2ol, double **Vnh3l,
-		double **Erock, double **Eh2os, double **Eslush,
+		double **Vrock, double **Vh2os, double **Vadhs, double **Vh2ol, double **Vnh3l, double **Erock, double **Eh2os, double **Eslush,
 		double **Xhydr, double **Xhydr_old, double **kappa, double **pore, double *Mliq, double *Mcracked_rock,
-		int **dont_dehydrate, int **circ, int *structure_changed,
-		double **Crack, double **Crack_size, double **fracOpen, double **P_pore, double **P_hydr, double ***Act, double *fracKleached,
-		int *crack_input, int *crack_species, double **aTP, double **integral, double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite,
-		int *ircrack, int *ircore, int *irice, int *irdiff, int forced_hydcirc, double **Nu,
-		double **aorb, double **eorb, double *norb, double *dnorb_dt, double *m_p, double r_p, double Mprim, double Rprim, double k2prim, double Qprim,
-		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity,
-		int tidalmodel, double tidetimes, int im, int nmoons, double ***resonance, double **PCapture, int moonspawn, int orbevol, int hy, int chondr,
-		double *Heat_radio, double *Heat_grav, double *Heat_serp, double *Heat_dehydr, double *Heat_tide,
-		double ***Stress, double ***Tide_output);
+		int **dont_dehydrate, int **circ, int *structure_changed, double **Crack, double **Crack_size, double **fracOpen, double **P_pore,
+		double **P_hydr, double ***Act, double *fracKleached, int *crack_input, int *crack_species, double **aTP, double **integral,
+		double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite, int *ircrack, int *ircore, int *irice,
+		int *irdiff, int forced_hydcirc, double **Nu, int tidalmodel, double tidetimes, int im, int moonspawn, double Mprim, double **eorb,
+		double *norb, double *Wtide_tot, int hy, int chondr, double *Heat_radio, double *Heat_grav, double *Heat_serp, double *Heat_dehydr,
+		double *Heat_tide, double ***Stress, double ***Tide_output);
 
 int state (char path[1024], int itime, int im, int ir, double E, double *frock, double *fh2os, double *fadhs, double *fh2ol,
 		double *fnh3l, double Xsalt, double *T);
@@ -74,18 +72,6 @@ int convect(int ir1, int ir2, double *T, double *r, int NR, double *Pressure, do
 
 double viscosity(double T, double Mh2ol, double Mnh3l);
 
-double MMR(double *m_p, double *norb, double *aorb, int imoon, int i, double eorb);
-
-double MMR_PCapture(double *m_p, double *norb, double *aorb, int imoon, int i, double e, double j, int k, double Mprim);
-
-double Laplace_coef(double alpha, double j, double s);
-
-double DLaplace_coef(double alpha, double j, double s);
-
-double D2Laplace_coef(double alpha, double j, double s);
-
-int MMR_AvgHam(double n0, double n1, double a0, double a1, double e0, double e1, double **de, double m0, double m1, int jr, double Mprim, int outer);
-
 int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, double **Qth, int NR, double *Wtide_tot, double *Mh2os,
 		double *Madhs, double *Mh2ol, double *Mnh3l, double *dM,  double *Vrock, double *dVol, double *r, double *T, double *Xhydr,
 		double *Pressure, double *pore, int im);
@@ -112,34 +98,25 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 		double **r, double **dM, double **dM_old, double *Phi, double **dVol, double **dE, double **T, double **T_old, double **Pressure,
 		double rhoRockth, double rhoHydrth, double rhoH2osth, double rhoAdhsth, double rhoH2olth, double rhoNh3lth,
 		double **Mrock, double **Mrock_init, double **Mh2os, double **Madhs, double **Mh2ol, double **Mnh3l,
-		double **Vrock, double **Vh2os, double **Vadhs, double **Vh2ol, double **Vnh3l,
-		double **Erock, double **Eh2os, double **Eslush,
+		double **Vrock, double **Vh2os, double **Vadhs, double **Vh2ol, double **Vnh3l, double **Erock, double **Eh2os, double **Eslush,
 		double **Xhydr, double **Xhydr_old, double **kappa, double **pore, double *Mliq, double *Mcracked_rock,
-		int **dont_dehydrate, int **circ, int *structure_changed,
-		double **Crack, double **Crack_size, double **fracOpen, double **P_pore, double **P_hydr, double ***Act, double *fracKleached,
-		int *crack_input, int *crack_species, double **aTP, double **integral, double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite,
-		int *ircrack, int *ircore, int *irice, int *irdiff, int forced_hydcirc, double **Nu,
-		double **aorb, double **eorb, double *norb, double *dnorb_dt, double *m_p, double r_p, double Mprim, double Rprim, double k2prim, double Qprim,
-		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity,
-		int tidalmodel, double tidetimes, int im, int nmoons, double ***resonance, double **PCapture, int moonspawn, int orbevol, int hy, int chondr,
-		double *Heat_radio, double *Heat_grav, double *Heat_serp, double *Heat_dehydr, double *Heat_tide,
-		double ***Stress, double ***Tide_output) {
+		int **dont_dehydrate, int **circ, int *structure_changed, double **Crack, double **Crack_size, double **fracOpen, double **P_pore,
+		double **P_hydr, double ***Act, double *fracKleached, int *crack_input, int *crack_species, double **aTP, double **integral,
+		double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite, int *ircrack, int *ircore, int *irice,
+		int *irdiff, int forced_hydcirc, double **Nu, int tidalmodel, double tidetimes, int im, int moonspawn, double Mprim, double **eorb,
+		double *norb, double *Wtide_tot, int hy, int chondr, double *Heat_radio, double *Heat_grav, double *Heat_serp, double *Heat_dehydr,
+		double *Heat_tide, double ***Stress, double ***Tide_output) {
 
 	int ir = 0;                          // Grid counter
 	int jr = 0;                          // Secondary grid counter
 	int i = 0;
-	int k = 0;
-	int kmin = 0;                        // Lowest order of inner Lindblad resonance in the rings
-	int kmax = 0;                        // Highest order of inner Lindblad resonance in the rings
+
 	int irin = 0;                        // Inner convection radius in a core that contains melted ice
 	int irout = 0;                       // Outer convection radius in a core that contains melted ice
 	int irice_cv = 0;                    // Outermost slush layer, for convection purposes
 	int iriceold = 0;                    // Old outermost slush layer
 	int irdiffold = 0;                   // Old outermost differentiated layer
-	int it = 0;                          // Time counter
-	int speedup = 1000;                  // Ratio of geophysical and orbital evolution timestep during resonances
 
-	double dice = 0.0;                   // Random number
 	double Phiold = 0.0;                 // Old gravitational potential energy (erg)
 	double ravg = 0.0;                   // Average radius of a layer (cm)
 	double e1 = 0.0;                     // Temporary specific energy (erg/g)
@@ -155,15 +132,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 	double fineMassFrac = 0.0;           // Mass fraction of fines (no dim)
 	double fineVolFrac = 0.0;            // Volume fraction of fines (no dim)
 	double creep_rate = 0.0;             // Strain rate in s-1 for ice, rock, or a mixture. Stress is hydrostatic pressure/(1-porosity)
-	double Wtide_tot = 0.0;              // Total tidal heating rate, summed in all layers (erg s-1)
-	double d_aorb_pl = 0.0;              // Change rate in moon orbital semi-major axis due to interactions with primary (cm s-1)
-	double d_aorb_ring = 0.0;            // Change rate in moon orbital semi-major axis due to interactions with ring (cm s-1)
-	double d_eorb = 0.0;                 // Change rate in moon orbital eccentricity (s-1)
-	double ringTorque = 0.0;             // Torque exerted by ring on moon (g cm2 s-2)
 	double omega_tide = 0.0;             // Tidal frequency (s-1)
-	double d_eorb_MMR = 0.0;             // Change rate in eccentricity due to mean-motion resonance between two moons (s-1)
-	double ecc0 = 0.0;                     // Temporary eccentricities used in orbital evolution calculations
-	double ecc1 = 0.0;
 
 	double *de = (double*) malloc(2*sizeof(double));         // de/dt
 	if (de == NULL) printf("Thermal: Not enough memory to create de[2]\n");
@@ -185,10 +154,10 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 
 	// Zero all the arrays
     for (ir=0;ir<NR;ir++) {
-    	M[ir] = 0.0;
-    	Qth[ir] = 0.0;
-    	Brittle_strength[ir] = 0.0;
-    	strain_rate[ir] = 0.0;
+		M[ir] = 0.0;
+		Qth[ir] = 0.0;
+		Brittle_strength[ir] = 0.0;
+		strain_rate[ir] = 0.0;
     }
     for (ir=0;ir<NR+1;ir++) RRflux[ir] = 0.0;
 
@@ -420,136 +389,12 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 			(*Tide_output)[ir][1] = -Qth[ir]/1.0e7; // To output the distribution of tidal heating rates in each layer = -before+after
 			strain((*Pressure)[ir], (*Xhydr)[ir], (*T)[ir], &strain_rate[ir], &Brittle_strength[ir], (*pore)[ir]);
 		}
-		Wtide_tot = 0.0;
-		tide(tidalmodel, tidetimes, (*eorb)[im], omega_tide, &Qth, NR, &Wtide_tot, (*Mh2os), (*Madhs), (*Mh2ol), (*Mnh3l), (*dM),
+		(*Wtide_tot) = 0.0;
+		tide(tidalmodel, tidetimes, (*eorb)[im], omega_tide, &Qth, NR, &(*Wtide_tot), (*Mh2os), (*Madhs), (*Mh2ol), (*Mnh3l), (*dM),
 				(*Vrock), (*dVol), (*r), (*T), (*Xhydr), (*Pressure), (*pore), im);
-		(*Heat_tide) = (*Heat_tide) + Wtide_tot;
+		(*Heat_tide) = (*Heat_tide) + (*Wtide_tot);
 
 		for (ir=0;ir<NR;ir++) (*Tide_output)[ir][1] = (*Tide_output)[ir][1] + Qth[ir]/1.0e7;
-
-		// Update orbital parameters (Goldreich & Soter 1966; Peale et al. 1980; Murray & Dermott 1999; Barnes et al. 2008; Charnoz et al. 2011; Henning & Hurford 2014):
-		if (orbevol == 1 && Wtide_tot > 0.0) {
-
-			// Calculate tidal dissipation in the host planet (k2prim & Qprim)
-//			tideprim(Rprim, Mprim, omega_tide, &k2prim, &Qprim);
-
-			// Update eccentricity
-//			d_eorb = - Wtide_tot*(*aorb)[im] / (Gcgs*Mprim*m_p[im]*(*eorb)[im])                                     // Dissipation inside moon, decreases its eccentricity (equation 4.170 of Murray & Dermott 1999)
-//				   + 57.0/8.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*(*eorb)[im]; // Dissipation inside planet, increases moon's eccentricity
-			// For benchmark with Meyer & Wisdom (2008)
-			d_eorb = 21.0/2.0*8.6e-5*sqrt(Gcgs*Mprim)*pow(r_p  ,5)*Mprim/m_p[im]*pow((*aorb)[im],-6.5)*(*eorb)[im] // Dissipation inside moon, decreases its eccentricity (equation 4.170 of Murray & Dermott 1999)
-				   + 57.0/8.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*(*eorb)[im]; // Dissipation inside planet, increases moon's eccentricity
-
-			// Moon-moon perturbations (Charnoz et al. 2011)
-			for (i=0;i<nmoons;i++) {
-				if (i != im && norb[i] > 0.0) {
-					// Find if there is an orbital resonance and the probability of capture
-					for (jr=1;jr<6;jr++) {
-						for (k=1;k<=2;k++) { // Borderies & Goldreich (1984) derivation valid for j:j+k resonances up to k=2
-							// MMR if orbital periods stay commensurate by <1% over 1 time step: j*n1 - (j+k)*n2 < 0.01*n1 / # orbits in 1 time step: dt/(2 pi/n1)
-							if (norb[im] > norb[i] && fabs((double)jr * norb[im] - (double)(jr+k) * norb[i]) < 1.0e-2*2.0*PI_greek/dtime) {
-								// Determine probability of capture in resonance with moon i further out
-								if ((double)jr*dnorb_dt[im] < (double)(jr+k)*dnorb_dt[i]) // Peale (1976) equation (25), see also Yoder (1973), Sinclair (1972), Lissauer et al. (1984)
-									(*PCapture)[i] = MMR_PCapture(m_p, norb, (*aorb), im, i, (*eorb)[im], (double)jr, k, Mprim);
-								else (*PCapture)[i] = 0.0;
-								// Resonance if random number below capture proba. If already captured, and proba of resonance has become too low (e.g. by e increase due to resonance), resonance is escaped
-								dice = (double) ((rand()+0)%(100+1))/100.0;
-								printf("itime=%d, PCapture=%g, PCapture/2=%g, dice=%g\n", itime, (*PCapture)[i], (*PCapture)[i]/2, dice);
-								if (dice < (*PCapture)[i]/2.0) {
-									(*resonance)[im][i] = 1.0; // Divide proba by 2, because we throw the dice twice in parallel, e.g. Dione on Enceladus and Enceladus on Dione
-									printf("Resonance\n");
-								}
-							}
-						}
-					}
-			        // Compute change in eccentricity due to moon-moon interaction
-					if ((*resonance)[im][i] == 1.0) {
-						if (norb[im] > norb[i]) {// Inner moon
-							// Compute moon-moon interactions every few orbits. For a time step of 50 years, 1000x speedup is 18.25 days. As long as no more than a few orbits take place during that time, we're OK.
-							ecc0 = (*eorb)[im];
-							ecc1 = (*eorb)[i];
-
-							d_eorb_MMR = 0.0;
-							for (it=0;it<speedup;it++) {
-								printf("%d d_eorb_MMR=%g, ecc0=%g, ecc1=%g\n", it, d_eorb_MMR, ecc0, ecc1);
-								if (it>50) exit(0);
-								MMR_AvgHam(norb[im], norb[i], (*aorb)[im], (*aorb)[i], ecc0, ecc1, &de, m_p[im], m_p[i], jr, Mprim, 0);
-								ecc0 = ecc0 + de[0]*dtime/(double)speedup;
-								ecc1 = ecc1 + de[1]*dtime/(double)speedup;
-								d_eorb_MMR = d_eorb_MMR + de[0];
-							}
-							d_eorb = d_eorb + d_eorb_MMR;
-						}
-						else { // Outer moon
-							ecc0 = (*eorb)[i];
-							ecc1 = (*eorb)[im];
-
-							d_eorb_MMR = 0.0;
-							for (it=0;it<speedup;it++) {
-								MMR_AvgHam(norb[i], norb[im], (*aorb)[i], (*aorb)[im], ecc0, ecc1, &de, m_p[i], m_p[im], jr, Mprim, 1);
-								ecc0 = ecc0 + de[0]*dtime/(double)speedup;
-								ecc1 = ecc1 + de[1]*dtime/(double)speedup;
-								d_eorb_MMR = d_eorb_MMR + de[1];
-							}
-							d_eorb = d_eorb + d_eorb_MMR;
-						}
-//                       d_eorb_MMR = MMR(m_p, norb, (*aorb), im, i, (*eorb)[im]) / (double)jr; // Ecc forcing function of Charnoz et al. (2011). /jr: to convert synodic period to conjunction period
-					}
-				}
-			}
-
-			if (-dtime*d_eorb < (*eorb)[im]) (*eorb)[im] = (*eorb)[im] + dtime*d_eorb;
-			else { // Set eccentricity to zero at which point there is no more dissipation, update Wtide_tot accordingly
-				d_eorb = -(*eorb)[im]/dtime;
-				Wtide_tot = (- d_eorb + 171.0/16.0*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*(*eorb)[im])
-						  * Gcgs*Mprim*m_p[im]*(*eorb)[im] / (*aorb)[im];
-				(*eorb)[im] = 0.0;
-			}
-
-			// Update semimajor axis
-//			d_aorb_pl = - 2.0*Wtide_tot*(*aorb)[im]*(*aorb)[im] / (Gcgs*Mprim*m_p[im])         // Dissipation inside moon, shrinks its orbit
-//					  + 3.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-5.5); // Dissipation inside planet, expands moon's orbit
-			// For benchmark with Meyer & Wisdom (2008)
-			d_aorb_pl =21.0*8.6e-5*sqrt(Gcgs*Mprim)*pow(r_p  ,5)*Mprim/m_p[im]*pow((*aorb)[im],-5.5)*(*eorb)[im]*(*eorb)[im] // Dissipation inside moon, shrinks its orbit
-					  + 3.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-5.5); // Dissipation inside planet, expands moon's orbit
-
-			if (ringSurfaceDensity) { // Dissipation in the rings, expands moon's orbit if exterior to rings (Meyer-Vernet & Sicardy 1987, http://dx.doi.org/10.1016/0019-1035(87)90011-X)
-				ringTorque = 0.0;
-				// 1- Find inner Lindblad resonances that matter (kmin, kmax)
-				kmin = floor(1.0 / (1.0-pow(aring_in/(*aorb)[im],1.5))) + 1;
-				kmax = floor(1.0 / (1.0-pow(aring_out/(*aorb)[im],1.5)));
-
-				if (kmin <= kmax && kmax <= floor(1.0/sqrt(alpha_Lind))) {
-					for (i=kmin;i<=kmax;i++) ringTorque = ringTorque + PI_greek*PI_greek/3.0*ringSurfaceDensity*Gcgs*m_p[im]*m_p[im]*i*(i-1)*(*aorb)[im]/Mprim;
-				}
-				d_aorb_ring = 2.0*ringTorque/m_p[im]*sqrt((*aorb)[im]/(Gcgs*Mprim)); // Charnoz et al. (2011) eq. 2, http://dx.doi.org/10.1016/j.icarus.2011.09.017
-			}
-			if (-dtime*(d_aorb_pl + d_aorb_ring) < (*aorb)[im]) (*aorb)[im] =(*aorb)[im] + dtime*(d_aorb_pl+d_aorb_ring);
-			else {
-				FILE *fout;
-
-				// Turn working directory into full file path by moving up two directories to IcyDwarf (e.g., removing
-				// "Release/IcyDwarf" characters) and specifying the right path end.
-				char *title = (char*)malloc(1024*sizeof(char));       // Don't forget to free!
-				title[0] = '\0';
-				char im_str[2];
-				im_str[0] = '\0';
-				if (v_release == 1) strncat(title,path,strlen(path)-16);
-				else if (cmdline == 1) strncat(title,path,strlen(path)-18);
-				strcat(title,"Outputs/");
-				sprintf(im_str, "%d", im);
-				strcat(title, im_str);
-				strcat(title,"Thermal.txt");
-
-				fout = fopen(title,"a");
-				if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
-				else fprintf(fout,"Thermal: itime=%d, -dtime*d_aorb_pl = %g - -dtime*d_aorb_ring (= %g) > aorb = %g, moon crashes into planet\n",
-						itime, -dtime*d_aorb_pl, -dtime*d_aorb_ring, (*aorb)[im]);
-				fclose (fout);
-				free (title);
-				exit(0);
-			}
-		}
 	}
 
 	//-------------------------------------------------------------------
@@ -1908,294 +1753,6 @@ double viscosity(double T, double Mh2ol, double Mnh3l) {
 	visc = exp(A+B/T);
 
 	return visc;
-}
-
-/*--------------------------------------------------------------------
- *
- * Subroutine MMR
- *
- * Calculates change in orbital eccentricity due to a mean-motion
- * resonance between two moons, using the crude model of Charnoz et al.
- * (2011), http://dx.doi.org/10.1016/j.icarus.2011.09.017
- *
- *--------------------------------------------------------------------*/
-
-double MMR(double *m_p, double *norb, double *aorb, int imoon, int i, double eorb) {
-
-	double d_eorb = 0.0;
-
-	double v_rel = fabs(norb[imoon]*aorb[imoon] - norb[i]*aorb[i]);	// Relative velocity (m s-1) (Greenberg et al. 1978, http://dx.doi.org/10.1016/0019-1035(78)90057-X)
-	double P = fabs(aorb[imoon] - aorb[i]);                         // Impact parameter (Greenberg et al. 1978)
-	double sinchi = pow(1.0 + P*P*pow(v_rel,4) / (Gcgs*Gcgs*pow(m_p[imoon]+m_p[i],2)) ,-0.5); // Greenberg et al. 1978
-	double delta_v = m_p[i]*v_rel / (m_p[imoon]+m_p[i]) * 2.0 * sinchi * sqrt(1.0-sinchi*sinchi); // Perpendicular velocity imparted to the moons
-
-	d_eorb = (delta_v/(norb[imoon]*aorb[imoon]) - eorb) / (2.0*PI_greek/norb[imoon]);
-	if (d_eorb < 0.0) d_eorb = 0.0; // Prevent eccentricity damping
-
-	return d_eorb;
-}
-
-/*--------------------------------------------------------------------
- *
- * Subroutine MMR_PCapture
- *
- * Calculates the probability of capture in a mean-motion
- * resonance (j+k):j between two moons (Borderies & Goldreich, 1984;
- * Greenberg, 1973). Assumptions:
- * - k=1 or k=2
- * - The inner moon is assumed much more massive than the outer moon
- *   so that we neglect both the perturbation of the inner moons' orbit
- *   by the outer moon and the outer moon's tidal evolution.
- *
- *--------------------------------------------------------------------*/
-
-double MMR_PCapture(double *m_p, double *norb, double *aorb, int imoon, int i, double e, double j, int k, double Mprim) { //TODO Cast j as double when calling the function
-
-	double Pk = 0.0;         // Probability of capture into resonance
-	double alpha = 0.0;      // alpha = a2/a1, 2=outer, 1=inner
-	double Ck = 0.0;         // Function of alpha = a2/a1.
-	double Dk = 0.0;         // See Borderies and Goldreich (1984), equation 6
-	double R = 0.0;          // R = Dk*e^2 (Borderies and Goldreich, 1984, equation 4)
-	double b_Lapj = 0.0;     // Laplace coefficient of order j (e.g. Brouwer and Clemence 1961; Suli et al. 2004)
-	double Db_Lapj = 0.0;    // First derivative of b_Lapj with respect to alpha
-
-	alpha = aorb[imoon]/aorb[i]; // inner/outer
-
-	b_Lapj = Laplace_coef(alpha, (int)j, 0.5);
-	Db_Lapj = DLaplace_coef(alpha, (int)j, 0.5);
-
-	Ck = (2.0*j+1.0)*b_Lapj + alpha*Db_Lapj;  // Greenberg (1973) equation 3. b is Laplace coefficient from Brouwer and Clemence (1961). TODO is this where Ck(a2/a1) can lead R to be such that Pk=0?
-	if (j == 1) Ck = Ck - 1.0/alpha/alpha;    // Greenberg (1973) equation 3
-	Dk = pow(3.0*(j+(double)k)*(j+(double)k) / (pow(2.0,(9.0*(double)k-8.0)/2.0)*m_p[imoon]/Mprim*Ck), ((double)k+1.0)/3.0); // Borderies and Goldreich (1984), equation 6
-	R = Dk*e*e;                               // Borderies and Goldreich (1984), equation 4
-
-	if (k==1) { // j:j+1
-		if (R <= 3.0) Pk = 1.0;
-		else Pk = 1.0/(pow(R-3.0+1.0,2.4))-0.43*(log(R)-log(3.0))/log(10.0)-0.37*(exp(-R+3.0)-1.0); // Manual fit to Fig. 3 of Borderies and Goldreich (1984)
-	}
-	else { // j:j+2
-		if (R <= 0.5) Pk = 1.0;
-		else Pk = 1.0/(pow(R-0.5+1.0,1.9))-0.24*(log(R)-log(0.5))/log(10.0)-0.50*(exp(-R+0.5)-1.0); // Manual fit to Fig. 4 of Borderies and Goldreich (1984)
-	}
-	if (Pk < 0.0) Pk = 0.0;
-
-	return Pk;
-}
-
-/*--------------------------------------------------------------------
- *
- * Subroutine Laplace_coef
- *
- * Calculates Laplace coefficient from series expression given in
- * equation (1) of Suli et al. (2004), equivalent to the equation
- * before eq. (43) of Brouwer and Clemence (1961).
- *
- *--------------------------------------------------------------------*/
-
-double Laplace_coef(double alpha, double j, double s) {
-
-	int m = 0;           // Counter
-	double b_Lapj = 1.0; // Laplace coefficient
-	double temp = 1.0;   // Previous series term
-
-	for (m=0;m<200;m++) { // Compute series to order 200 max
-		temp = temp * (s+(double)m)/(1.0+(double)m) * (s+j+(double)m)/(j+1.0+(double)m) * pow(alpha,2);
-		b_Lapj = b_Lapj + temp;
-		if (temp < 1.0e-6) break; // Cut when increase per term < threshold.
-	}
-	b_Lapj = b_Lapj * pow(alpha,j);
-	for (m=0;m<(int)j;m++) b_Lapj = b_Lapj * (s+(double)m)/((double)m+1.0);
-	b_Lapj = 2.0*b_Lapj;
-
-	return b_Lapj;
-}
-
-/*--------------------------------------------------------------------
- *
- * Subroutine DLaplace_coef
- *
- * Calculates first derivative of Laplace coefficient with respect to
- * alpha = ratio of semimajor axes from series expression given in
- * equation (1) of Suli et al. (2004), equivalent to the equation
- * before eq. (43) of Brouwer and Clemence (1961). Manual derivation
- * is easy since b_Lapj is a polynomial function of alpha.
- *
- *--------------------------------------------------------------------*/
-
-double DLaplace_coef(double alpha, double j, double s) {
-
-	int m = 0;          // Counter
-	double Db_Lapj = j; // First derivative of Laplace coefficient with respect to alpha
-	double temp = 1.0;  // Previous series term
-
-	// b_Lapj is a sum of terms. The first has power j, the second j+2, etc. So we need to multiply each new term by j, j+2, ..., j+(m+1)*2
-	// and overall multiply Db_Lapj by pow(alpha,j-1) only.
-	for (m=0;m<200;m++) { // Compute series to order 200 max
-		temp = temp * (s+(double)m)/(1.0+(double)m) * (s+j+(double)m)/(j+1.0+(double)m) * pow(alpha,2);
-		Db_Lapj = Db_Lapj + temp * (j+((double)m+1.0)*2.0);
-		if (temp * (j+((double)m+1.0)*2.0) < 1.0e-6) break; // Cut when increase per term < threshold.
-	}
-	Db_Lapj = Db_Lapj * pow(alpha,j-1);
-	for (m=0;m<(int)j;m++) Db_Lapj = Db_Lapj * (s+(double)m)/((double)m+1.0);
-	Db_Lapj = 2.0*Db_Lapj;
-
-	return Db_Lapj;
-}
-
-/*--------------------------------------------------------------------
- *
- * Subroutine D2Laplace_coef
- *
- * Calculates second derivative of Laplace coefficient with respect to
- * alpha = ratio of semimajor axes from series expression given in
- * equation (1) of Suli et al. (2004), equivalent to the equation
- * before eq. (43) of Brouwer and Clemence (1961). Manual derivation
- * is easy since b_Lapj is a polynomial function of alpha.
- *
- *--------------------------------------------------------------------*/
-
-double D2Laplace_coef(double alpha, double j, double s) {
-
-	int m = 0;                   // Counter
-	double D2b_Lapj = j*(j-1.0); // Second derivative of Laplace coefficient with respect to alpha
-	double temp = 1.0;           // Previous series term
-
-	// b_Lapj is a sum of terms. The first has power j, the second j+2, etc. So we need to multiply each new term by j(j-1), (j+2)(j+1), ..., (j+(m+1)*2)(j+(m+1)*2-1)
-	// and overall multiply Db_Lapj by pow(alpha,j-2) only.
-	for (m=0;m<200;m++) { // Compute series to order 200 max
-		temp = temp * (s+(double)m)/(1.0+(double)m) * (s+j+(double)m)/(j+1.0+(double)m) * pow(alpha,2);
-		D2b_Lapj = D2b_Lapj + temp * (j+((double)m+1.0)*2.0) * (j+((double)m+1.0)*2.0-1.0);
-		if (temp * (j+((double)m+1.0)*2.0) * (j+((double)m+1.0)*2.0-1.0) < 1.0e-6) break; // Cut when increase per term < threshold.
-	}
-	D2b_Lapj = D2b_Lapj * pow(alpha,j-1);
-	for (m=0;m<(int)j;m++) D2b_Lapj = D2b_Lapj * (s+(double)m)/((double)m+1.0);
-	D2b_Lapj = 2.0*D2b_Lapj;
-
-	return D2b_Lapj;
-}
-
-/*--------------------------------------------------------------------
- *
- * Subroutine MMR_AvgHam
- *
- * Calculates change in orbital eccentricity due to a mean-motion
- * resonance between two moons, using the averaged hamiltonian method
- * Implements equations in the Appendix of Meyer & Wisdom (2008).
- * Tidal damping terms are ignored here, since they are accounted for
- * elsewhere in the code. This removes the state variable a~.
- *
- *--------------------------------------------------------------------*/
-
-int MMR_AvgHam(double n0, double n1, double a0, double a1, double e0, double e1, double **de, double m0, double m1, int jr, double Mprim, int outer) {
-
-	int lower = 0;       // Used for variable randomization
-	int upper = 100;     // Used for variable randomization
-	int im = 0;          // Moon counter
-
-	// 0=inner moon, and 1=outer moon
-	double lambda[2];    // Mean longitude for each moon
-	double omega[2];     // Longitude of pericenter for each moon
-	double sigma[2];     // Resonant variable, called phi_k in Borderies & Goldreich (1984, equation 2) with slightly different linear combination
-	double L[2];         // Angular momentum for each moon
-	double Lambda[2];    // Combination of L and Sigma, below, close to L if e small (Meyer & Wisdom 2008 equation A.5-6), constant of the motion in the absence of tides
-	double Sigma[2];     // Combination of L and e, very small if e small (Meyer & Wisdom 2008 equation A.7)
-	double h[2];         // State variable
-	double k[2];         // State variable
-	double a_[2];        // State variable, constant of the motion in the absence of tides
-	double dh[2];        // dh/dt
-	double dk[2];        // dk/dt
-	double dHk[2];       // Combination of mean motions
-	double m[2];         // Moon mass
-	double e[2];         // Moon eccentricity
-	double a[2];         // Moon semi-major axis (osculating)
-	double n[2];         // Moon mean motion
-	double n_[2];        // Moon mean motion (osculating)
-	double j = (double)jr;
-	double p = 2.0*j;
-	double alpha = 0.0;  // Outer moon semimajor axis / inner moon semimajor axis
-	double Cs_ee = 0.0;  // Disturbing function coefficients (equations A.33-39 of Meyer & Wisdom 2008)
-	double Cs_eep = 0.0;
-	double Cr_e = 0.0;
-	double Cr_ep = 0.0;
-	double Cr_ee = 0.0;
-	double Cr_eep = 0.0;
-	double Cr_epep = 0.0;
-
-	// Initialize parameters
-	for (im=0;im<2;im++) {
-		lambda[im] = 0.0;
-		omega[im] = 0.0;
-		sigma[im] = 0.0;
-		L[im] = 0.0;
-		Lambda[im] = 0.0;
-		Sigma[im] = 0.0;
-		h[im] = 0.0;
-		k[im] = 0.0;
-		a_[im] = 0.0;
-		n_[im] = 0.0;
-		dh[im] = 0.0;
-		dk[im] = 0.0;
-		dHk[im] = 0.0;
-	}
-	m[0] = m0; m[1] = m1;
-	e[0] = e0; e[1] = e1;
-	a[0] = a0; a[1] = a1;
-	n[0] = n0; n[1] = n1;
-	for (im=0;im<2;im++) {
-		dHk[im] = (1.0-j)*n[0] + j*n[1];
-		L[im] = sqrt(m[im]*Gcgs*m[im]*Mprim*a[im]);
-		Sigma[im] = L[im] * (1.0-sqrt(1.0-e[im]*e[im]));
-	}
-	Lambda[0] = L[0] - (1.0-j)*(Sigma[0]+Sigma[1]);
-	Lambda[1] = L[1] - j*(Sigma[0]+Sigma[1]);
-
-	for (im=0;im<2;im++) n_[im] = m[im]*pow(Gcgs*m[im]*Mprim,2)/pow(Lambda[im],3);
-
-	// Assign randomized values to orbital parameters
-	for (im=0;im<2;im++) {
-//		lambda[im] = 2.0*PI_greek*(double) ((rand() + lower)%(upper+1))/100.0;
-//		omega[im] = 2.0*PI_greek*(double) ((rand() + lower)%(upper+1))/100.0;
-		lambda[im] = 2.42;
-		omega[im] = 3.26;
-	}
-
-	// Calculate resonant variables
-	for (im=0;im<2;im++) sigma[im] = j*lambda[im] + (1.0-j)*lambda[im] - omega[im];
-
-	for (im=0;im<2;im++) {
-		h[im] = e[im]*cos(sigma[im]);
-		k[im] = e[im]*sin(sigma[im]);
-		a_[im] = Lambda[im]*Lambda[im]/(Gcgs*m[im]*m[im]*Mprim);
-	}
-
-	// Calculate disturbing function coefficients (equations A.33-39 of Meyer & Wisdom 2008)
-	alpha = a[0]/a[1];
-	Cs_ee   = 0.125 * (                                                              2.0*DLaplace_coef(alpha, 0.0, 0.5) + D2Laplace_coef(alpha, 0.0, 0.5));
-	Cs_eep  =  0.25 * (                 2.0*Laplace_coef(alpha, 1.0, 0.5) -          2.0*DLaplace_coef(alpha, 1.0, 0.5) - D2Laplace_coef(alpha, 1.0, 0.5));
-	Cr_e    =   0.5 * (              -2.0*j*Laplace_coef(alpha, j  , 0.5) -            j*DLaplace_coef(alpha, j  , 0.5)                                  );
-	Cr_ep   =   0.5 * (         (2.0*j-1.0)*Laplace_coef(alpha, j-1, 0.5) +              DLaplace_coef(alpha, j-1, 0.5)                                  );
-	if (j == 2) Cr_ep = Cr_ep + 2.0*alpha;
-	Cr_ee   = 0.125 * (    (-5.0*p+4.0*p*p)*Laplace_coef(alpha, p  , 0.5) + (-2.0+4.0*p)*DLaplace_coef(alpha, p  , 0.5) + D2Laplace_coef(alpha, p  , 0.5));
-	Cr_eep  =  0.25 * ((-2.0+6.0*p-4.0*p*p)*Laplace_coef(alpha, p-1, 0.5) +  (2.0-4.0*p)*DLaplace_coef(alpha, p-1, 0.5) - D2Laplace_coef(alpha, p-1, 0.5));
-	Cr_epep = 0.125 * ( (2.0-7.0*p+4.0*p*p)*Laplace_coef(alpha, p-2, 0.5) + (-2.0+4.0*p)*DLaplace_coef(alpha, p-2, 0.5) + D2Laplace_coef(alpha, p-2, 0.5));
-
-	// Equations of motion
-	dk[0] =  dHk[0]*h[0] - Gcgs*m[0]*m[1]/(a_[1]*Lambda[0]) * (    Cs_eep*h[1] + 2.0*Cs_ee *h[0] + Cr_e  + 2.0*Cr_ee  *h[0] + Cr_eep*h[1]);
-	dh[0] = -dHk[0]*k[0] - Gcgs*m[0]*m[1]/(a_[1]*Lambda[0]) * (   -Cs_eep*k[1] - 2.0*Cs_ee *k[0]         + 2.0*Cr_ee  *k[0] + Cr_eep*k[1]);
-	dk[1] =  dHk[1]*h[1] - Gcgs*m[0]*m[1]/(a_[1]*Lambda[1]) * ( 2.0*Cs_ee*h[1] +     Cs_eep*h[0] + Cr_ep + 2.0*Cr_epep*h[1] + Cr_eep*h[0]);
-	dh[1] = -dHk[1]*k[1] - Gcgs*m[0]*m[1]/(a_[1]*Lambda[1]) * (-2.0*Cs_ee*k[1] +     Cs_eep*k[0]         + 2.0*Cr_epep*k[1] + Cr_eep*k[0]);
-
-	/* Calculate change in eccentricity
-	 * h = e cos sig
-     * k = e sin sig
-     * h2+k2 = e2 cos2 sig + e2 sin2 sig = e2 (cos2 sig + sin2 sig) = e2
-     * 2 h dh + 2 k dk = 2 e de
-     * de = (h dh + k dk) / e
-     */
-
-	for (im=0;im<2;im++) (*de)[im] = (h[im]*dh[im] + k[im]*dk[im]) / e[im]; // That's de/dt
-
-	return 0;
 }
 
 /*--------------------------------------------------------------------

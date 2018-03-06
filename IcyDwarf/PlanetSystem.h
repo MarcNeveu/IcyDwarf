@@ -9,6 +9,7 @@
 #define PLANETSYSTEM_H_
 
 #include "./IcyDwarf.h"
+#include "./Orbit.h"
 #include "Thermal/Thermal.h"
 #include "Crack/Crack.h"
 
@@ -59,7 +60,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	double Mring = Mring_init;           // Ring mass
 	double ringSurfaceDensity = 0.0;     // Ring surface density (g cm-2)
 	double alpha_Lind = 0.0;             // Dissipation of Lindblad resonance in rings (no dim)
-	if (ringSurfaceDensity <= 2.0) alpha_Lind = 2.0e-5; else alpha_Lind = 1.0e-4; // Mostly viscosity and pressure if surf density�2 g cm-2, or self-gravity if surf density~50 g cm-2
+	if (ringSurfaceDensity <= 2.0) alpha_Lind = 2.0e-5; else alpha_Lind = 1.0e-4; // Mostly viscosity and pressure if surf density≈2 g cm-2, or self-gravity if surf density~50 g cm-2
 
 	// Variables individual to each moon
 	int irdiff[nmoons];                  // Outermost differentiated layer
@@ -90,13 +91,15 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	double m_p[nmoons];                  // World mass (g)
 	double Mliq[nmoons];                 // Mass of liquid in the planet (g)
 	double Mcracked_rock[nmoons];        // Mass of cracked rock in the planet (g)
-	double Crack_depth[nmoons][2];		 // Crack_depth[2] (km), output
-	double WRratio[nmoons][2];			 // WRratio[2] (by mass, no dim), output
+	double Crack_depth[nmoons][2];		// Crack_depth[2] (km), output
+	double WRratio[nmoons][2];			// WRratio[2] (by mass, no dim), output
 	double Heat[nmoons][6];              // Heat[6] (erg), output
-	double Thermal_output[nmoons][12];	 // Thermal_output[12] (multiple units), output
-	double Orbit[nmoons][3];             // Orbit[3] (multiple units), output
+	double Thermal_output[nmoons][12];	// Thermal_output[12] (multiple units), output
+	double Orbit_output[nmoons][3];      // Orbit_output[3] (multiple units), output
 	double Primary[3];                   // Primary[3], output of primary's tidal Q and ring mass (kg) vs. time (Gyr)
 	double k2prim = 0.39;                // k2 tidal Love number of primary (1.5 for homogeneous body)
+	double J2prim = 16290.71e-6;         // 2nd zonal harmonic of Saturn gravity field (±0.27e-6, Jacobson et al., 2006)
+	double J4prim = -935.83e-6;          // 4th zonal harmonic of Saturn gravity field (±2.77e-6, Jacobson et al., 2006)
 
 	double *aorb = (double*) malloc((nmoons)*sizeof(double));       // Moon orbital semi-major axis (cm)
 	if (aorb == NULL) printf("PlanetSystem: Not enough memory to create aorb[nmoons]\n");
@@ -104,11 +107,23 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	double *eorb = (double*) malloc((nmoons)*sizeof(double));       // Moon orbital eccentricity
 	if (eorb == NULL) printf("PlanetSystem: Not enough memory to create eorb[nmoons]\n");
 
-	double *norb = (double*) malloc((nmoons)*sizeof(double));       // Orbital mean motions = 2*pi/period = sqrt(GM/a3) (s-1)
+	double *deorb_tot = (double*) malloc((nmoons)*sizeof(double));   // d/dt eccentricity
+	if (deorb_tot == NULL) printf("PlanetSystem: Not enough memory to create deorb_tot[nmoons]\n");
+
+	double *norb = (double*) malloc((nmoons)*sizeof(double));       // Orbital mean motions = 2*pi/period = sqrt(GM/a3) (s-1) = d/dt(lambda)
 	if (norb == NULL) printf("PlanetSystem: Not enough memory to create norb[nmoons]\n");
 
 	double *dnorb_dt = (double*) malloc((nmoons)*sizeof(double));   // d/dt[Orbital mean motions = 2*pi/period = sqrt(GM/a3) (s-1)]
 	if (dnorb_dt == NULL) printf("PlanetSystem: Not enough memory to create dnorb_dt[nmoons]\n");
+
+	double *lambda = (double*) malloc((nmoons)*sizeof(double));     // Mean longitude for each moon = long pericenter + mean anomaly = mean longitude init + norb*time
+	if (lambda == NULL) printf("PlanetSystem: Not enough memory to create lambda[nmoons]\n");
+
+	double *omega = (double*) malloc((nmoons)*sizeof(double));      // Longitude of pericenter for each moon = angle between periapse and longitude of ascending node, ω, + longitude of ascending node, Ω
+	if (omega == NULL) printf("PlanetSystem: Not enough memory to create omega[nmoons]\n");
+
+	double *Wtide_tot = (double*) malloc((nmoons)*sizeof(double));  // Total tidal heating rate in each moon, summed in all layers (erg s-1)
+	if (Wtide_tot == NULL) printf("PlanetSystem: Not enough memory to create Wtide_tot[nmoons]\n");
 
 	int **dont_dehydrate = (int**) malloc(nmoons*sizeof(int*));     // Don't dehydrate a layer that just got hydrated
 	if (dont_dehydrate == NULL) printf("PlanetSystem: Not enough memory to create dont_dehydrate[nmoons]\n");
@@ -431,6 +446,12 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		magnesite[i] = (double*) malloc(sizeaTP*sizeof(double));
 		if (magnesite[i] == NULL) printf("PlanetSystem: Not enough memory to create magnesite[sizeaTP][sizeaTP]\n");
 	}
+	double **deorb = (double**) malloc((nmoons)*sizeof(double*)); // Change rate in moon orbital eccentricity (s-1)
+	if (deorb == NULL) printf("PlanetSystem: Not enough memory to create d_eorb[nmoons]\n");
+	for (im=0;im<nmoons;im++) {
+		deorb[im] = (double*) malloc(nmoons*sizeof(double));
+		if (deorb[im] == NULL) printf("PlanetSystem: Not enough memory to create d_eorb[nmoons][nmoons]\n");
+	}
 
 	double ***Tide_output = (double***) malloc(nmoons*sizeof(double**)); // Output: radial and temporal distribution of tidal heating rates (erg s-1)
 	if (Tide_output == NULL) printf("PlanetSystem: Not enough memory to create Tide_output[nmoons]\n");
@@ -486,12 +507,17 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		eorb[im] = eorb_init[im];
 		norb[im] = 0.0;
 		dnorb_dt[im] = 0.0;
+		deorb_tot[im] = 0.0;
+		lambda[im] = 0.0; // As good an initial value as any, but could randomize
+		omega[im] = 0.0; // As good an initial value as any, but could randomize
+		Wtide_tot[im] = 0.0;
 		outputpath[im][0] = '\0';
 
 		for (ir=0;ir<nmoons;ir++) {
 			PCapture[im][ir] = 0.0;
 			resonance[im][ir] = 0.0;
 			resonance_old[im][ir] = 0.0;
+			deorb[im][ir] = 0.0;
 		}
 
 		for (i=0;i<12;i++) Thermal_output[im][i] = 0.0;
@@ -800,11 +826,11 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		}
 
 		// Orbital parameters
-		Orbit[im][0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
-		Orbit[im][1] = aorb[im]/km2cm;
-		Orbit[im][2] = eorb[im];
+		Orbit_output[im][0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
+		Orbit_output[im][1] = aorb[im]/km2cm;
+		Orbit_output[im][2] = eorb[im];
 		strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt");
-		append_output(3, Orbit[im], path, filename); filename[0] = '\0';
+		append_output(3, Orbit_output[im], path, filename); filename[0] = '\0';
 	}
 	// Ring mass
 	Primary[0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
@@ -825,7 +851,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 
     tzero_min = tzero[0];
     for (im=0;im<nmoons;im++) {
-    	if (tzero[im] < tzero_min) tzero_min = tzero[im];
+    		if (tzero[im] < tzero_min) tzero_min = tzero[im];
     }
     realtime = tzero_min;
     realtime = realtime - dtime;
@@ -835,49 +861,44 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 
     for (itime=0;itime<=ntime;itime++) {
 
-    	realtime = realtime + dtime;
+		realtime = realtime + dtime;
 
-    	for (im=0;im<nmoons;im++) {
-        	moonspawn[im] = 0;
-    		if (realtime-dtime < tzero[im] && realtime >= tzero[im]) {
-    			Mring = Mring - m_p[im];
-    			moonspawn[im]++;
-    		}
-    	}
-
-    	ringSurfaceDensity = Mring/(PI_greek*(aring_out*aring_out-aring_in*aring_in));
-
-    	switch(Qmode) {
-    	case 0: // Q changes linearly
-    		Qprim = Qprimi + (Qprimf-Qprimi) / (today-tzero_min) * (realtime-tzero_min);
-    		break;
-    	case 1: // Q decays exponentially
-    		Qprim = Qprimi * exp( log(Qprimf/Qprimi) / (today-tzero_min) * (realtime-tzero_min) );
-    		break;
-    	case 2: // Q changes exponentially
-    		Qprim = Qprimi + 1.0 - exp( log(Qprimi-Qprimf+1.0) / (today-tzero_min) * (realtime-tzero_min) );
-    		break;
-    	}
-    	if (Qprim <= 0.0) {
-		FILE *fout;
-		// Turn working directory into full file path by moving up two directories to IcyDwarf (e.g., removing
-		// "Release/IcyDwarf" characters) and specifying the right path end.
-    		char *title = (char*)malloc(1024*sizeof(char));       // Don't forget to free!
-    		title[0] = '\0';
-    		if (v_release == 1) strncat(title,path,strlen(path)-16);
-    		else if (cmdline == 1) strncat(title,path,strlen(path)-18);
-    		strcat(title,"Outputs/Primary.txt");
-		fout = fopen(title,"a");
-		if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
-		else fprintf(fout,"Tidal Q of primary = %g is negative. Change Q parameters or simulation timing.\n", Qprim);
-		fclose (fout);
-		free (title);
-		exit(0);
-    	}
-
-    	// Make moon-moon resonances consistent (if a in resonance with b, then b in resonance with a), that's why we half proba of capture in Thermal()
 		for (im=0;im<nmoons;im++) {
-			for (i=0;i<nmoons;i++) if (resonance[im][i] == 1.0) resonance[i][im] = 1.0;
+			moonspawn[im] = 0;
+			if (realtime-dtime < tzero[im] && realtime >= tzero[im]) {
+				Mring = Mring - m_p[im];
+				moonspawn[im]++;
+			}
+		}
+
+		ringSurfaceDensity = Mring/(PI_greek*(aring_out*aring_out-aring_in*aring_in));
+
+		switch(Qmode) {
+		case 0: // Q changes linearly
+			Qprim = Qprimi + (Qprimf-Qprimi) / (today-tzero_min) * (realtime-tzero_min);
+			break;
+		case 1: // Q decays exponentially
+			Qprim = Qprimi * exp( log(Qprimf/Qprimi) / (today-tzero_min) * (realtime-tzero_min) );
+			break;
+		case 2: // Q changes exponentially
+			Qprim = Qprimi + 1.0 - exp( log(Qprimi-Qprimf+1.0) / (today-tzero_min) * (realtime-tzero_min) );
+			break;
+		}
+		if (Qprim <= 0.0) {
+			FILE *fout;
+			// Turn working directory into full file path by moving up two directories to IcyDwarf (e.g., removing
+			// "Release/IcyDwarf" characters) and specifying the right path end.
+			char *title = (char*)malloc(1024*sizeof(char)); // Don't forget to free!
+			title[0] = '\0';
+			if (v_release == 1) strncat(title,path,strlen(path)-16);
+			else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+			strcat(title,"Outputs/Primary.txt");
+			fout = fopen(title,"a");
+			if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
+			else fprintf(fout,"Tidal Q of primary = %g is negative. Change Q parameters or simulation timing.\n", Qprim);
+			fclose (fout);
+			free (title);
+			exit(0);
 		}
 
 		// Begin parallel calculations
@@ -888,32 +909,77 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 
 #pragma omp for
 			for (im=0;im<nmoons;im++) {
-				if (realtime >= tzero[im]) {
+				if (realtime >= tzero[im] && orbevol[im]) {
 					dnorb_dt[im] = norb[im];
 					norb[im] = sqrt(Gcgs*Mprim/pow(aorb[im],3)); // Otherwise, norb[im] is zero and the moon im doesn't influence the others gravitationally
+					// TODO Add a non-Keplerian term due to planetary oblateness?
 					dnorb_dt[im] = (norb[im]-dnorb_dt[im])/dtime;
 
+					Orbit (argc, argv, path, im, &deorb[im], dtime, itime, nmoons, m_p, r_p, &resonance, &PCapture, &aorb, &eorb, norb, dnorb_dt, &lambda, &omega,
+							Wtide_tot, Mprim, Rprim, J2prim, J4prim, k2prim, Qprim, aring_out, aring_in, alpha_Lind, ringSurfaceDensity);
+				}
+//				++nloops;
+			}
+//			printf("itime = %d, Thread %d performed %d iterations of the orbit loop over moons.\n", itime, thread_id, nloops); nloops = 0;
+
+			// Update eccentricities, which cannot be negative
+#pragma omp for
+			for (im=0;im<nmoons;im++) {
+				if (realtime >= tzero[im] && orbevol[im]) {
+					deorb_tot[im] = 0.0;
+					for (ir=0;ir<nmoons;ir++) deorb_tot[im] = deorb_tot[im] + deorb[ir][im];
+
+					if (-dtime*deorb_tot[im] < eorb[im]) eorb[im] = eorb[im] + dtime*deorb_tot[im];
+					else { // Set eccentricity to zero at which point there is no more dissipation, update Wtide_tot accordingly
+						deorb_tot[im] = -eorb[im]/dtime;
+						Wtide_tot[im] = (- deorb_tot[im] + 171.0/16.0*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow(aorb[im],-6.5)*eorb[im])
+								  * Gcgs*Mprim*m_p[im]*eorb[im] / aorb[im];
+						eorb[im] = 0.0;
+					}
+					if (eorb[im] > 1.0) {
+						printf("Time %g Myr, eccentricity of moon %d = %g > 1. Stopping.\n", (double)itime*dtime/Myr2sec, im, eorb[im]);
+						FILE *fout;
+						// Turn working directory into full file path by moving up two directories to IcyDwarf (e.g., removing
+						// "Release/IcyDwarf" characters) and specifying the right path end.
+						char *title = (char*)malloc(1024*sizeof(char)); // Don't forget to free!
+						title[0] = '\0';
+						if (v_release == 1) strncat(title,path,strlen(path)-16);
+						else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+						strcat(title,"Outputs/Resonances.txt");
+						fout = fopen(title,"a");
+						if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
+						else fprintf(fout,"Time %g Myr, eccentricity of moon %d = %g > 1. Stopping.\n", (double)itime*dtime/Myr2sec, im, eorb[im]);
+						fclose (fout);
+						free (title);
+						exit(0);
+					}
+					printf("itime %d \t im %d \t eorb %g\n", itime, im, eorb[im]);
+				}
+//				++nloops;
+			}
+//			printf("itime = %d, Thread %d performed %d iterations of the ecc loop over moons.\n", itime, thread_id, nloops); nloops = 0;
+
+#pragma omp for
+			for (im=0;im<nmoons;im++) {
+				if (realtime >= tzero[im]) {
 					Thermal(argc, argv, path, outputpath[im], warnings, NR, dr_grid[im],
 							dtime, realtime, itime, Xp[im], Xsalt[im], Xfines[im], Xpores[im], Tsurf[im],
 							&r[im], &dM[im], &dM_old[im], &Phi[im], &dVol[im], &dE[im], &T[im], &T_old[im], &Pressure[im],
 							rhoRockth, rhoHydrth, rhoH2osth, rhoAdhsth, rhoH2olth, rhoNh3lth,
 							&Mrock[im], &Mrock_init[im], &Mh2os[im], &Madhs[im], &Mh2ol[im], &Mnh3l[im],
-							&Vrock[im], &Vh2os[im], &Vadhs[im], &Vh2ol[im], &Vnh3l[im],
-							&Erock[im], &Eh2os[im], &Eslush[im],
+							&Vrock[im], &Vh2os[im], &Vadhs[im], &Vh2ol[im], &Vnh3l[im], &Erock[im], &Eh2os[im], &Eslush[im],
 							&Xhydr[im], &Xhydr_old[im], &kappa[im], &pore[im], &Mliq[im], &Mcracked_rock[im],
 							&dont_dehydrate[im], &circ[im], &structure_changed[im],
 							&Crack[im], &Crack_size[im], &fracOpen[im], &P_pore[im], &P_hydr[im], &Act[im], &fracKleached[im],
 							crack_input, crack_species, aTP, integral, alpha, beta, silica, chrysotile, magnesite,
 							&ircrack[im], &ircore[im], &irice[im], &irdiff[im], forced_hydcirc, &Nu[im],
-							&aorb, &eorb, norb, dnorb_dt, m_p, r_p[im], Mprim, Rprim, k2prim, Qprim,
-							aring_out, aring_in, alpha_Lind, ringSurfaceDensity,
-							tidalmodel, tidetimes, im, nmoons, &resonance, &PCapture[im], moonspawn[im], orbevol[im], hy[im], chondr,
+							tidalmodel, tidetimes, im, moonspawn[im], Mprim, &eorb, norb, &Wtide_tot[im], hy[im], chondr,
 							&Heat_radio[im], &Heat_grav[im], &Heat_serp[im], &Heat_dehydr[im], &Heat_tide[im],
 							&Stress[im], &Tide_output[im]);
 //					++nloops;
 				}
 			}
-			// printf("itime = %d, Thread %d performed %d iterations of the loop over moons.\n", itime, thread_id, nloops);
+//			printf("itime = %d, Thread %d performed %d iterations of the thermal loop over moons.\n", itime, thread_id, nloops);
 		} // Rejoin threads, end parallel calculations
 
 		//-------------------------------------------------------------------
@@ -1026,11 +1092,11 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 				}
 
 				// Orbital parameters
-				Orbit[im][0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
-				Orbit[im][1] = aorb[im]/km2cm;
-				Orbit[im][2] = eorb[im];
+				Orbit_output[im][0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
+				Orbit_output[im][1] = aorb[im]/km2cm;
+				Orbit_output[im][2] = eorb[im];
 				strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt");
-				append_output(3, Orbit[im], path, filename); filename[0] = '\0';
+				append_output(3, Orbit_output[im], path, filename); filename[0] = '\0';
 			}
 			// Ring mass
 			Primary[0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
@@ -1091,6 +1157,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		free (resonance[im]);
 		free (resonance_old[im]);
 		free (PCapture[im]);
+		free (deorb[im]);
 		for (i=0;i<12;i++) free (Stress[im][i]);
 		for (ir=0;ir<NR;ir++) free (Act[im][ir]);
 		for (i=0;i<2;i++) free (Tide_output[im][i]);
@@ -1102,6 +1169,8 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	free (eorb);
 	free (norb);
 	free (dnorb_dt);
+	free (lambda);
+	free (omega);
 	free (dont_dehydrate);
 	free (circ);
 	free (r);
@@ -1149,6 +1218,9 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	free (resonance);
 	free (resonance_old);
 	free (PCapture);
+	free (Wtide_tot);
+	free (deorb);
+	free (deorb_tot);
 
 	return 0;
 }
