@@ -1,3 +1,305 @@
 0 	0 	
 0 	0 	
-Time 0.00155 Myr, eccentricity of moon 1 = 70.734 > 1. Stopping.
+Time 4.568 Gyr
+0 	0 	
+1 	0 	
+Time 4.56803 Gyr
+0 	0 	
+0 	0 	
+Time 4.56803 Gyr
+0 	0 	
+1 	0 	
+Time 4.56803 Gyr
+0 	0 	
+0 	0 	
+Time 4.56803 Gyr
+0 	0 	
+1 	0 	
+Time 4.56807 Gyr
+0 	0 	
+0 	0 	
+Time 4.56807 Gyr
+0 	0 	
+1 	0 	
+Time 4.56808 Gyr
+0 	0 	
+0 	0 	
+Time 4.56808 Gyr
+0 	0 	
+1 	0 	
+Time 4.56808 Gyr
+0 	0 	
+0 	0 	
+Time 4.56808 Gyr
+0 	0 	
+1 	0 	
+Time 4.56813 Gyr
+0 	0 	
+0 	0 	
+Time 4.56813 Gyr
+0 	0 	
+1 	0 	
+Time 4.56814 Gyr
+0 	0 	
+0 	0 	
+Time 4.56814 Gyr
+0 	0 	
+1 	0 	
+Time 4.56815 Gyr
+0 	0 	
+0 	0 	
+Time 4.56815 Gyr
+0 	0 	
+1 	0 	
+Time 4.56816 Gyr
+0 	0 	
+0 	0 	
+Time 4.56816 Gyr
+0 	0 	
+1 	0 	
+Time 4.56817 Gyr
+0 	0 	
+0 	0 	
+Time 4.56817 Gyr
+0 	0 	
+1 	0 	
+Time 4.56829 Gyr
+0 	0 	
+0 	0 	
+Time 4.56829 Gyr
+0 	0 	
+1 	0 	
+Time 4.5683 Gyr
+0 	0 	
+0 	0 	
+Time 4.5683 Gyr
+0 	0 	
+1 	0 	
+Time 4.56832 Gyr
+0 	0 	
+0 	0 	
+Time 4.56832 Gyr
+0 	0 	
+1 	0 	
+Time 4.56832 Gyr
+0 	0 	
+0 	0 	
+Time 4.56832 Gyr
+0 	0 	
+1 	0 	
+Time 4.56834 Gyr
+0 	0 	
+0 	0 	
+Time 4.56834 Gyr
+0 	0 	
+1 	0 	
+Time 4.56835 Gyr
+0 	0 	
+0 	0 	
+Time 4.56835 Gyr
+0 	0 	
+1 	0 	
+Time 4.56836 Gyr
+0 	0 	
+0 	0 	
+Time 4.56836 Gyr
+0 	0 	
+1 	0 	
+Time 4.56836 Gyr
+0 	0 	
+0 	0 	
+Time 4.56836 Gyr
+0 	0 	
+1 	0 	
+Time 4.56838 Gyr
+0 	0 	
+0 	0 	
+Time 4.56838 Gyr
+0 	0 	
+1 	0 	
+Time 4.56838 Gyr
+0 	0 	
+0 	0 	
+Time 4.56838 Gyr
+0 	0 	
+1 	0 	
+Time 4.56838 Gyr
+0 	0 	
+0 	0 	
+Time 4.56838 Gyr
+0 	0 	
+1 	0 	
+Time 4.56839 Gyr
+0 	0 	
+0 	0 	
+Time 4.56839 Gyr
+0 	0 	
+1 	0 	
+Time 4.56839 Gyr
+0 	0 	
+0 	0 	
+Time 4.56839 Gyr
+0 	0 	
+1 	0 	
+Time 4.56842 Gyr
+0 	0 	
+0 	0 	
+Time 4.56842 Gyr
+0 	0 	
+1 	0 	
+Time 4.56842 Gyr
+0 	0 	
+0 	0 	
+Time 4.56842 Gyr
+0 	0 	
+1 	0 	
+Time 4.56848 Gyr
+0 	0 	
+0 	0 	
+Time 4.56848 Gyr
+0 	0 	
+1 	0 	
+Time 4.56855 Gyr
+0 	0 	
+0 	0 	
+Time 4.56855 Gyr
+0 	0 	
+1 	0 	
+Time 4.56858 Gyr
+0 	0 	
+0 	0 	
+Time 4.56858 Gyr
+0 	0 	
+1 	0 	
+Time 4.56858 Gyr
+0 	0 	
+0 	0 	
+Time 4.56858 Gyr
+0 	0 	
+1 	0 	
+Time 4.56858 Gyr
+0 	0 	
+0 	0 	
+Time 4.56858 Gyr
+0 	0 	
+1 	0 	
+Time 4.56858 Gyr
+0 	0 	
+0 	0 	
+Time 4.56858 Gyr
+0 	0 	
+1 	0 	
+Time 4.56859 Gyr
+0 	0 	
+0 	0 	
+Time 4.56859 Gyr
+0 	0 	
+1 	0 	
+Time 4.56859 Gyr
+0 	0 	
+0 	0 	
+Time 4.56859 Gyr
+0 	0 	
+1 	0 	
+Time 4.56862 Gyr
+0 	0 	
+0 	0 	
+Time 4.56862 Gyr
+0 	0 	
+1 	0 	
+Time 4.56864 Gyr
+0 	0 	
+0 	0 	
+Time 4.56864 Gyr
+0 	0 	
+1 	0 	
+Time 4.56864 Gyr
+0 	0 	
+0 	0 	
+Time 4.56864 Gyr
+0 	0 	
+1 	0 	
+Time 4.56868 Gyr
+0 	0 	
+0 	0 	
+Time 4.56868 Gyr
+0 	0 	
+1 	0 	
+Time 4.56875 Gyr
+0 	0 	
+0 	0 	
+Time 4.56875 Gyr
+0 	0 	
+1 	0 	
+Time 4.56876 Gyr
+0 	0 	
+0 	0 	
+Time 4.56876 Gyr
+0 	0 	
+1 	0 	
+Time 4.56876 Gyr
+0 	0 	
+0 	0 	
+Time 4.56876 Gyr
+0 	0 	
+1 	0 	
+Time 4.56878 Gyr
+0 	0 	
+0 	0 	
+Time 4.56878 Gyr
+0 	0 	
+1 	0 	
+Time 4.56878 Gyr
+0 	0 	
+0 	0 	
+Time 4.56878 Gyr
+0 	0 	
+1 	0 	
+Time 4.56879 Gyr
+0 	0 	
+0 	0 	
+Time 4.56879 Gyr
+0 	0 	
+1 	0 	
+Time 4.56881 Gyr
+0 	0 	
+0 	0 	
+Time 4.56881 Gyr
+0 	0 	
+1 	0 	
+Time 4.56881 Gyr
+0 	0 	
+0 	0 	
+Time 4.56881 Gyr
+0 	0 	
+1 	0 	
+Time 4.56881 Gyr
+0 	0 	
+0 	0 	
+Time 4.56881 Gyr
+0 	0 	
+1 	0 	
+Time 4.56881 Gyr
+0 	0 	
+0 	0 	
+Time 4.56881 Gyr
+0 	0 	
+1 	0 	
+Time 4.56881 Gyr
+0 	0 	
+0 	0 	
+Time 4.56881 Gyr
+0 	0 	
+1 	0 	
+Time 4.56881 Gyr
+0 	0 	
+0 	0 	
+Time 4.56881 Gyr
+0 	0 	
+1 	0 	
+Time 4.56881 Gyr
+0 	0 	
+0 	0 	
+Time 4.56881 Gyr
+0 	0 	
+1 	0 	

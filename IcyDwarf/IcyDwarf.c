@@ -39,6 +39,7 @@ int main(int argc, char *argv[]){
 
 	// Grid inputs
     double timestep = 0.0;             // Time step of the sim (yr)
+    double speedup = 0.0;              // Speedup factor of the thermal evolution sim (if thermal-orbital sim taks too much time)
 	int NR = 0;                        // Number of grid zones
 	double total_time = 0.0;           // Total time of sim
 	double output_every = 0.0;         // Output frequency
@@ -46,10 +47,13 @@ int main(int argc, char *argv[]){
 
 	// Planet inputs
 	double Mprim = 0.0;                // Mass of the primary (host planet) (kg)
-	double Rprim = 0.0;				   // Radius of the primary (host planet) (km)
-	double Qprimi = 0.0;			   // Initial tidal Q of the primary (host planet)
+	double Rprim = 0.0;				  // Radius of the primary (host planet) (km)
+	double Qprimi = 0.0;			      // Initial tidal Q of the primary (host planet)
 	double Qprimf = 0.0;               // Final tidal Q of the primary
 	int Qmode = 0;                     // How Q changes over time between Qprimi and Qprimf. 0:linearly; 1:exponential decay; 2:exponential change
+	double k2prim = 0.0;               // k2 tidal Love number of primary (Saturn: 0.39, Gavrilov & Zharkov 1977?, 1.5 for homogeneous body)
+	double J2prim = 0.0;               // 2nd zonal harmonic of gravity field (Saturn: 16290.71±0.27e-6, Jacobson et al., 2006)
+	double J4prim = 0.0;               // 4th zonal harmonic of gravity field (-935.83±2.77e-6, Jacobson et al., 2006)
 	int nmoons = 0;                    // User-specified number of moons
 	double Mring = 0.0;                // Mass of planet rings (kg). For Saturn, 4 to 7e19 kg (Robbins et al. 2010, http://dx.doi.org/10.1016/j.icarus.2009.09.012)
 	double aring_in = 0.0;             // Inner orbital radius of rings (km). for Saturn B ring, 92000 km
@@ -183,12 +187,14 @@ int main(int argc, char *argv[]){
 	//-----------------------------
 	NR = input[i]; i++;
 	timestep = input[i]; i++;          // yr
+	speedup = input[i]; i++;
 	total_time = input[i]; i++;        // Myr
 	output_every = input[i]; i++;      // Myr
 	//-----------------------------
 	Mprim = input[i]; i++;             // kg
 	Rprim = input[i]; i++;             // km
 	Qprimi = input[i]; i++; Qprimf = input[i]; i++; Qmode = (int) input[i]; i++;
+	k2prim = input[i]; i++; J2prim = input[i]; i++; J4prim = input[i]; i++;
 	nmoons = (int) input[i]; i++;
 	Mring = input[i]; i++;             // kg
 	aring_in = input[i]; i++;          // cm
@@ -273,7 +279,8 @@ int main(int argc, char *argv[]){
 	printf("| Grid |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||\n");
 	printf("|-----------------------------------------------|------------------------------------------------------|\n");
 	printf("| Number of grid zones                          | %d\n", NR);
-	printf("| Thermal simulation time step (yr)             | %g\n", timestep);
+	printf("| Thermal-orbital simulation time step (yr)     | %g\n", timestep);
+	printf("| Thermal simulation speedup factor             | %g\n", speedup);
 	printf("| Total time of thermal simulation (Myr)        | %g\n", total_time);
 	printf("| Output every (Myr)                            | %g\n", output_every);
 	printf("|-----------------------------------------------|------------------------------------------------------|\n");
@@ -282,6 +289,7 @@ int main(int argc, char *argv[]){
 	printf("| Mass (kg) (0 if world is not a moon)          | %g\n", Mprim);
 	printf("| Radius (km)                                   | %g\n", Rprim);
 	printf("| Tidal Q (initial,today,{0:lin 1:exp 2:1-exp}) | %g %g %d\n", Qprimi, Qprimf, Qmode);
+	printf("| Love number k2; zonal gravity harmonics J2, J4| %g %g %g\n", k2prim, J2prim, J4prim);
 	printf("| Number of moons                               | %d\n", nmoons);
 	printf("| Ring mass (kg) (0 if no rings)                | %g\n", Mring);
 	printf("| Ring inner edge (km)                          | %g\n", aring_in);
@@ -412,9 +420,9 @@ int main(int argc, char *argv[]){
 
 	if (run_thermal == 1) {
 		printf("Running thermal evolution code...\n");
-		PlanetSystem(argc, argv, path, warnings, NR, timestep, tzero, total_time, output_every, nmoons, Mprim, Rprim, Qprimi, Qprimf,
-				Qmode, Mring, aring_out, aring_in, r_p, rho_p, rhoHydrRock, rhoDryRock, nh3, salt, Xhydr, porosity, Xpores, Xfines,
-				Tinit, Tsurf, startdiff, aorb, eorb, tidalmodel, tidetimes, orbevol, hy, chondr, crack_input, crack_species);
+		PlanetSystem(argc, argv, path, warnings, NR, timestep, speedup, tzero, total_time, output_every, nmoons, Mprim, Rprim, Qprimi, Qprimf,
+				Qmode, k2prim, J2prim, J4prim, Mring, aring_out, aring_in, r_p, rho_p, rhoHydrRock, rhoDryRock, nh3, salt, Xhydr, porosity, Xpores,
+				Xfines, Tinit, Tsurf, startdiff, aorb, eorb, tidalmodel, tidetimes, orbevol, hy, chondr, crack_input, crack_species);
 		printf("\n");
 	}
 

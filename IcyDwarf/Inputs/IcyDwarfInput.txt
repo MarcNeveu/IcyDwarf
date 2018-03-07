@@ -10,15 +10,17 @@ ICY DWARF v18.x INPUT FILE
 | Grid |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 |-----------------------------------------------|------------------------------------------------------|
 | Number of grid zones                          | 200                                                  |
-| Thermal simulation time step (yr)             | 50                                                   |
-| Total time of thermal simulation (Myr)        | 3000                                                 |
-| Output every (Myr)                            | 1                                                    |
+| Thermal-orbital simulation time step (yr)     | 0.0005                                               |
+| Thermal simulation speedup factor             | 10000                                                |
+| Total time of thermal simulation (Myr)        | 0.3                                                  |
+| Output every (Myr)                            | 0.0001                                               |
 |-----------------------------------------------|------------------------------------------------------|
 | Host planet parameters |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 |-----------------------------------------------|------------------------------------------------------|
 | Mass (kg) (0 if world is not a moon)          | 5.68e26                                              |
 | Radius (km)                                   | 58232                                                |
 | Tidal Q (initial,today,{0:lin 1:exp 2:1-exp}) | 18000 18000 0                                        |
+| Love number k2; zonal gravity harmonics J2, J4| 0.39 16290.71e-6 -935.83e-6                          |
 | Number of moons                               | 2                                                    |
 | Ring mass (kg) (0 if no rings)                | 0                                                    |
 | Ring inner edge (km)                          | 0                                                    |

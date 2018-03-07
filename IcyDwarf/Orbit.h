@@ -13,10 +13,10 @@
 
 #include "./IcyDwarf.h"
 
-int Orbit (int argc, char *argv[], char path[1024], int im, double **d_eorb,
+int Orbit (int argc, char *argv[], char path[1024], int im,
 		double dtime, int itime, int nmoons, double *m_p, double *r_p, double ***resonance, double ***PCapture,
-		double **aorb, double **eorb, double *norb, double *dnorb_dt, double **lambda, double **omega, double *Wtide_tot,
-		double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim,
+		double **aorb, double *eorb, double **d_eorb, double *norb, double *dnorb_dt, double *lambda, double **dlambda, double *omega,
+		double **domega, double Wtide_tot, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim,
 		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity);
 
 double MMR(double *m_p, double *norb, double *aorb, int imoon, int i, double eorb);
@@ -29,13 +29,14 @@ double DLaplace_coef(double alpha, double j, double s);
 
 double D2Laplace_coef(double alpha, double j, double s);
 
-int MMR_AvgHam(double n0, double n1, double a0, double a1, double *e0, double *e1, double *de0, double *de1, double m0, double m1, double *lambda0, double *lambda1,
-		double *omega0, double *omega1, int jr, double Mprim, double Rprim, double J2prim, double J4prim, double dt);
+int MMR_AvgHam(double n0, double n1, double a0, double a1, double e0, double e1, double *de0, double *de1, double m0, double m1,
+		double lambda0, double lambda1, double *dlambda0, double *dlambda1, double omega0, double omega1, double *domega0, double *domega1,
+		int jr, double Mprim, double Rprim, double J2prim, double J4prim, double dt);
 
-int Orbit (int argc, char *argv[], char path[1024], int im, double **d_eorb,
+int Orbit (int argc, char *argv[], char path[1024], int im,
 		double dtime, int itime, int nmoons, double *m_p, double *r_p, double ***resonance, double ***PCapture,
-		double **aorb, double **eorb, double *norb, double *dnorb_dt, double **lambda, double **omega, double *Wtide_tot,
-		double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim,
+		double **aorb, double *eorb, double **d_eorb, double *norb, double *dnorb_dt, double *lambda, double **dlambda, double *omega,
+		double **domega, double Wtide_tot, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim,
 		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity) {
 
 	int i = 0;
@@ -45,21 +46,11 @@ int Orbit (int argc, char *argv[], char path[1024], int im, double **d_eorb,
 	int outer = 0;                       // Index of outer moon
 	int kmin = 0;                        // Lowest order of inner Lindblad resonance in the rings
 	int kmax = 0;                        // Highest order of inner Lindblad resonance in the rings
-	int it = 0;                          // Time counter
-	int slowdown = 1e4;                  // Ratio of geophysical and orbital evolution timestep during resonances
 
 	double dice = 0.0;                   // Random number
 	double ringTorque = 0.0;             // Torque exerted by ring on moon (g cm2 s-2)
 	double d_aorb_pl = 0.0;              // Change rate in moon orbital semi-major axis due to interactions with primary (cm s-1)
 	double d_aorb_ring = 0.0;            // Change rate in moon orbital semi-major axis due to interactions with ring (cm s-1)
-	double ecc0 = 0.0;                   // Temporary eccentricities used in orbital evolution calculations
-	double ecc1 = 0.0;
-	double decc0 = 0.0;                  // decc0/dt due to mean-motion resonance between two moons (s-1)
-	double decc1 = 0.0;                  // decc1/dt due to mean-motion resonance between two moons (s-1)
-	double lambda0 = 0.0;                // Temporary mean longitudes used in orbital evolution calculations
-	double lambda1 = 0.0;
-	double omega0 = 0.0;                 // Temporary longitudes of pericenter used in orbital evolution calculations
-	double omega1 = 0.0;
 
 	// Calculate tidal dissipation in the host planet (k2prim & Qprim)
 //	tideprim(Rprim, Mprim, omega_tide, &k2prim, &Qprim);
@@ -68,11 +59,10 @@ int Orbit (int argc, char *argv[], char path[1024], int im, double **d_eorb,
 	// Changes in eccentricities due to tides inside moon and on planet
 	//-------------------------------------------------------------------
 
-//	(*d_eorb)[im] = - Wtide_tot[im]*(*aorb)[im] / (Gcgs*Mprim*m_p[im]*(*eorb)[im])                                     // Dissipation inside moon, decreases its eccentricity (equation 4.170 of Murray & Dermott 1999)
-//			 + 57.0/8.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*(*eorb)[im]; // Dissipation inside planet, increases moon's eccentricity
+//	(*d_eorb)[im] = - Wtide_tot*(*aorb)[im] / (Gcgs*Mprim*m_p[im]*eorb[im])                                     // Dissipation inside moon, decreases its eccentricity (equation 4.170 of Murray & Dermott 1999)
+//			 + 57.0/8.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*eorb[im]; // Dissipation inside planet, increases moon's eccentricity
 	// For benchmark with Meyer & Wisdom (2008)
-	(*d_eorb)[im] = 21.0/2.0*8.6e-5*sqrt(Gcgs*Mprim)*pow(r_p[im],5)*Mprim/m_p[im]*pow((*aorb)[im],-6.5)*(*eorb)[im] // Dissipation inside moon, decreases its eccentricity (equation 4.170 of Murray & Dermott 1999)
-		   + 57.0/8.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim  ,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*(*eorb)[im]; // Dissipation inside planet, increases moon's eccentricity
+	(*d_eorb)[im] = 21.0/2.0*8.6e-5*sqrt(Gcgs*Mprim)*pow(r_p[im],5)*Mprim/m_p[im]*pow((*aorb)[im],-6.5)*eorb[im]*1000.0; // Dissipation inside moon, decreases its eccentricity (equation 4.170 of Murray & Dermott 1999)
 
 	//-------------------------------------------------------------------
 	//      Changes in eccentricities due moon-moon perturbations
@@ -81,8 +71,8 @@ int Orbit (int argc, char *argv[], char path[1024], int im, double **d_eorb,
 	for (i=0;i<im;i++) {
 
 		/* Find if there is an orbital resonance and calculate the probability of capture */
-		for (j=1;j<6;j++) {
-			for (k=1;k<=2;k++) { // Borderies & Goldreich (1984) derivation valid for j:j+k resonances up to k=2
+		for (j=5;j>=1;j--) { // Go decreasing, from the weakest to the strongest resonances, because resonance[im][i] gets overprinted
+			for (k=2;k>=1;k--) { // Borderies & Goldreich (1984) derivation valid for j:j+k resonances up to k=2
 
 				// Find index of inner moon
 				if (norb[im] > norb[i]) {
@@ -95,12 +85,12 @@ int Orbit (int argc, char *argv[], char path[1024], int im, double **d_eorb,
 				}
 
 				// MMR if orbital periods stay commensurate by <1% over 1 time step: j*n1 - (j+k)*n2 < 0.01*n1 / # orbits in 1 time step: dt/(2 pi/n1)
-				if (fabs((double)j * norb[inner] - (double)(j+k) * norb[outer]) < 1.0e-2*2.0*PI_greek/dtime) {
+				if (fabs((double)j * norb[inner] - (double)(j+k) * norb[outer]) <= 1.0e-2*2.0*PI_greek/dtime) {
 
 					// Determine probability of capture in resonance with moon i further out
-					if ((double)j*dnorb_dt[inner] < (double)(j+k)*dnorb_dt[outer]) { // Peale (1976) equation (25), Yoder (1973), Sinclair (1972), Lissauer et al. (1984)
-						if (inner > outer) (*PCapture)[inner][outer] = MMR_PCapture(m_p, norb, (*aorb), inner, outer, (*eorb)[inner], (double)j, k, Mprim);
-						else               (*PCapture)[outer][inner] = MMR_PCapture(m_p, norb, (*aorb), inner, outer, (*eorb)[inner], (double)j, k, Mprim);
+					if ((double)j*dnorb_dt[inner] <= (double)(j+k)*dnorb_dt[outer]) { // Peale (1976) equation (25), Yoder (1973), Sinclair (1972), Lissauer et al. (1984)
+						if (inner > outer) (*PCapture)[inner][outer] = MMR_PCapture(m_p, norb, (*aorb), inner, outer, eorb[inner], (double)j, k, Mprim);
+						else               (*PCapture)[outer][inner] = MMR_PCapture(m_p, norb, (*aorb), inner, outer, eorb[inner], (double)j, k, Mprim);
 					}
 					else {
 						(*PCapture)[inner][outer] = 0.0;
@@ -108,13 +98,13 @@ int Orbit (int argc, char *argv[], char path[1024], int im, double **d_eorb,
 					}
 
 					// Resonance if random number below capture proba
-					dice = (double) ((rand()+0)%(100+1))/100.0;
+					dice = 0.0; // (double) ((rand()+0)%(100+1))/100.0;
 
-//					if (inner > outer) printf("itime=%d, PCapture=%g, dice=%g\n", itime, (*PCapture)[inner][outer], dice);
-//					else               printf("itime=%d, PCapture=%g, dice=%g\n", itime, (*PCapture)[outer][inner], dice);
+//					if (inner > outer) printf("itime=%d, im=%d, j=%d, k=%d, PCapture[inner:%d][outer:%d]=%g, dice=%g\n", itime, im, j, k, inner, outer, (*PCapture)[inner][outer], dice);
+//					else               printf("itime=%d, im=%d, j=%d, k=%d, PCapture[outer:%d][inner:%d]=%g, dice=%g\n", itime, im, j, k, outer, inner, (*PCapture)[outer][inner], dice);
 
-					if      (dice < (*PCapture)[inner][outer]) (*resonance)[inner][outer] = 1.0;
-					else if (dice < (*PCapture)[outer][inner]) (*resonance)[outer][inner] = 1.0;
+					if      (dice < (*PCapture)[inner][outer]) (*resonance)[inner][outer] = (double) j;
+					else if (dice < (*PCapture)[outer][inner]) (*resonance)[outer][inner] = (double) j;
 
 					// If proba of resonance has become too low (e.g. ecc increased), resonance is escaped
 					else {
@@ -124,32 +114,17 @@ int Orbit (int argc, char *argv[], char path[1024], int im, double **d_eorb,
 				}
 			}
 		}
-
+	}
+	for (i=0;i<im;i++) {
 		/* Compute changes in eccentricities, lambda, and omega due to moon-moon interaction every few orbits.
 		 * For a time step of 50 years, 1e4 x slowdown is 1.825 days. */
-		if ((*resonance)[im][i] == 1.0) {
-			ecc0 = (*eorb)[im];
-			ecc1 = (*eorb)[i];
-			lambda0 = (*lambda)[im];
-			lambda1 = (*lambda)[i];
-			omega0 = (*omega)[im];
-			omega1 = (*omega)[i];
-			decc0 = 0.0; decc1 = 0.0;
+		if ((*resonance)[im][i] > 0.0) {
+			j = (int) (*resonance)[im][i];
 
-			for (it=0;it<slowdown;it++) {
-//				if (!(it%(slowdown/1000))) printf("%d \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g\n",
-//						it/(slowdown/1000), decc0, decc1, ecc0, ecc1, lambda0, lambda1, omega0, omega1);
-				MMR_AvgHam(norb[im], norb[i], (*aorb)[im], (*aorb)[i], &ecc0, &ecc1, &decc0, &decc1, m_p[im], m_p[i], &lambda0, &lambda1,
-						&omega0, &omega1, j, Mprim, Rprim, J2prim, J4prim, dtime/(double)slowdown);
-			}
-
-//              d_eorb_MMR = MMR(m_p, norb, (*aorb), im, i, (*eorb)[im]) / (double)jr; // Ecc forcing function of Charnoz et al. (2011). /jr: to convert synodic period to conjunction period
-			(*d_eorb)[im] = (*d_eorb)[im] + decc0;
-			(*d_eorb)[i] = (*d_eorb)[i] + decc1;
-			(*lambda)[im] = lambda0;
-			(*lambda)[i] = lambda1;
-			(*omega)[im] = omega0;
-			(*omega)[i] = omega1;
+			MMR_AvgHam(norb[im], norb[i], (*aorb)[im], (*aorb)[i], eorb[im], eorb[i], &(*d_eorb)[im], &(*d_eorb)[i], m_p[im], m_p[i],
+					lambda[im], lambda[i], &(*dlambda)[im], &(*dlambda)[i], omega[im], omega[i], &(*domega)[im], &(*domega)[i],
+					j, Mprim, Rprim, J2prim, J4prim, dtime);
+//          d_eorb_MMR = MMR(m_p, norb, (*aorb), im, i, (*eorb)[im]) / (double)jr; // Ecc forcing function of Charnoz et al. (2011). /jr: to convert synodic period to conjunction period
 		}
 	}
 
@@ -157,11 +132,11 @@ int Orbit (int argc, char *argv[], char path[1024], int im, double **d_eorb,
 	// Changes in semi-major axes due to tides inside moon and on planet
 	//-------------------------------------------------------------------
 
-//	d_aorb_pl = - 2.0*Wtide_tot[im]*(*aorb)[im]*(*aorb)[im] / (Gcgs*Mprim*m_p[im])         // Dissipation inside moon, shrinks its orbit
+//	d_aorb_pl = - 2.0*Wtide_tot*(*aorb)[im]*(*aorb)[im] / (Gcgs*Mprim*m_p[im])         // Dissipation inside moon, shrinks its orbit
 //			  + 3.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-5.5); // Dissipation inside planet, expands moon's orbit
 	// For benchmark with Meyer & Wisdom (2008)
-	d_aorb_pl =21.0*8.6e-5*sqrt(Gcgs*Mprim)*pow(r_p[im],5)*Mprim/m_p[im]*pow((*aorb)[im],-5.5)*(*eorb)[im]*(*eorb)[im] // Dissipation inside moon, shrinks its orbit
-			  + 3.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim  ,5)*m_p[im]/Qprim*pow((*aorb)[im],-5.5); // Dissipation inside planet, expands moon's orbit
+	d_aorb_pl =21.0*8.6e-5*sqrt(Gcgs*Mprim)*pow(r_p[im],5)*Mprim/m_p[im]*pow((*aorb)[im],-5.5)*eorb[im]*eorb[im]*1000.0 // Dissipation inside moon, shrinks its orbit
+			  + 3.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim  ,5)*m_p[im]/Qprim*pow((*aorb)[im],-5.5)*1000.0; // Dissipation inside planet, expands moon's orbit
 
 	//-------------------------------------------------------------------
 	// Changes in semi-major axes due to resonances excited in the rings
@@ -381,8 +356,9 @@ double D2Laplace_coef(double alpha, double j, double s) {
  *
  *--------------------------------------------------------------------*/
 
-int MMR_AvgHam(double n0, double n1, double a0, double a1, double *e0, double *e1, double *de0, double *de1, double m0, double m1, double *lambda0, double *lambda1,
-		double *omega0, double *omega1, int jr, double Mprim, double Rprim, double J2prim, double J4prim, double dt) {
+int MMR_AvgHam(double n0, double n1, double a0, double a1, double e0, double e1, double *de0, double *de1, double m0, double m1,
+		double lambda0, double lambda1, double *dlambda0, double *dlambda1, double omega0, double omega1, double *domega0, double *domega1,
+		int jr, double Mprim, double Rprim, double J2prim, double J4prim, double dt) {
 
 	int im = 0;          // Moon counter
 
@@ -403,8 +379,10 @@ int MMR_AvgHam(double n0, double n1, double a0, double a1, double *e0, double *e
 
 	double m[2];         // Moon mass
 	double e[2];         // Moon eccentricity
-	double e0_old = *e0; // Memorized moon eccentricity
-	double e1_old = *e1; // Memorized moon eccentricity
+	double dlambda[2];   // Rate of change in moon mean longitude
+	double domega[2];    // Rate of change in moon longitude of pericenter
+	double e0_old = e0;  // Memorized moon eccentricity
+	double e1_old = e1;  // Memorized moon eccentricity
 	double a[2];         // Moon semi-major axis
 	double n[2];         // Moon mean motion
 	double lambda[2];    // Moon mean longitude
@@ -436,19 +414,19 @@ int MMR_AvgHam(double n0, double n1, double a0, double a1, double *e0, double *e
 	// Set 0 indices to inner moon
 	if (a0 < a1) {
 		m[0] = m0; m[1] = m1;
-		e[0] = *e0; e[1] = *e1;
+		e[0] = e0; e[1] = e1;
 		a[0] = a0; a[1] = a1;
 		n[0] = n0; n[1] = n1;
-		lambda[0] = *lambda0; lambda[1] = *lambda1;
-		omega[0] = *omega0; omega[1] = *omega1;
+		lambda[0] = lambda0; lambda[1] = lambda1;
+		omega[0] = omega0; omega[1] = omega1;
 	}
 	else {
 		m[0] = m1; m[1] = m0;
-		e[0] = *e1; e[1] = *e0;
+		e[0] = e1; e[1] = e0;
 		a[0] = a1; a[1] = a0;
 		n[0] = n1; n[1] = n0;
-		lambda[0] = *lambda1; lambda[1] = *lambda0;
-		omega[0] = *omega1; omega[1] = *omega0;
+		lambda[0] = lambda1; lambda[1] = lambda0;
+		omega[0] = omega1; omega[1] = omega0;
 	}
 
 	// Calculate sigma, dHk, L, Sigma
@@ -504,23 +482,22 @@ int MMR_AvgHam(double n0, double n1, double a0, double a1, double *e0, double *e
      */
 	for (im=0;im<2;im++) {
 		e[im] = e[im] + (h[im]*dh[im] + k[im]*dk[im]) / e[im] * dt;
-		lambda[im] = fmod(lambda[im] + n[im]*dt, 2.0*PI_greek); // Modulo 2*pi, although that's not necessary since we take cos and sin sigma
-		omega[im] = fmod(omega[im] + omdot[im]*dt, 2.0*PI_greek); // Modulo 2*pi, although that's not necessary since we take cos and sin sigma
+		dlambda[im] = n[im]; // TODO n_, not n?
+		domega[im] = omdot[im];
 	}
 
-	// Update orbital parameters
 	if (a0 < a1) {
-		*e0 = e[0]; *e1 = e[1];
-		*lambda0 = lambda[0]; *lambda1 = lambda[1];
-		*omega0 = omega[0]; *omega1 = omega[1];
+		e0 = e[0]; e1 = e[1];
+		*dlambda0 = dlambda[0]; *dlambda1 = dlambda[1];
+		*domega0 = domega[0]; *domega1 = domega[1];
 	}
 	else {
-		*e0 = e[1]; *e1 = e[0];
-		*lambda0 = lambda[1]; *lambda1 = lambda[0];
-		*omega0 = omega[1]; *omega1 = omega[0];
+		e0 = e[1]; e1 = e[0];
+		*dlambda0 = dlambda[1]; *dlambda1 = dlambda[0];
+		*domega0 = domega[1]; *domega1 = domega[0];
 	}
-	*de0 = *de0 + (*e0 - e0_old);
-	*de1 = *de1 + (*e1 - e1_old);
+	*de0 = *de0 + (e0 - e0_old)/dt;
+	*de1 = *de1 + (e1 - e1_old)/dt;
 
 	return 0;
 }
