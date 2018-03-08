@@ -32,7 +32,7 @@ ICY DWARF v18.x INPUT FILE
 | Density assuming zero porosity (g cm-3)       | 1.611    | 1.517    | 1.049    | 1.517    | 1.267    |
 | Surface temperature (K)                       | 59       | 70       | 68       | 70       | 72       |
 | Initial temperature (K)                       | 100      | 100      | 142      | 118      | 117      |
-| Time of formation (Myr)                       | 4568     | 4568     | 4380     | 4000     | 2100     |
+| Time of formation (Myr)                       | 4368     | 4368     | 4380     | 4000     | 2100     |
 | Ammonia w.r.t. water                          | 0        | 0        | 0        | 0        | 0        |
 | Briny liquid? y=1, n=0                        | 0        | 0        | 0        | 0        | 0        |
 | Initial degree of hydration                   | 1        | 1        | 1        | 1        | 1        |
@@ -41,8 +41,8 @@ ICY DWARF v18.x INPUT FILE
 | Fraction of rock in fines                     | 0        | 0        | 0        | 0        | 0        |
 | Core ice/liquid water volume fraction         | 0.25     | 0.25     | 0.25     | 0.25     | 0.25     |
 | Start differentiated?                         | 1        | 1        | 1        | 1        | 1        |
-| Initial orbital semi-major axis (km)          | 237948   | 377719.1 | 160000   | 160000   | 160000   |
-| Initial orbital eccentricity                  | 0.0047   | 0.0022   | 0.016    | 0.016    | 0.016    |
+| Initial orbital semi-major axis (km)          | 229430   | 364125   | 160000   | 160000   | 160000   |
+| Initial orbital eccentricity                  | 0.0003   | 0.008    | 0.016    | 0.016    | 0.016    |
 | Allow orbit to change?                        | 1        | 1        | 1        | 1        | 1        |
 |-----------------------------------------------|------------------------------------------------------|
 | Dry rock density (g cm-3)                     | 3.8                                                  |

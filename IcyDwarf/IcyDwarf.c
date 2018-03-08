@@ -51,7 +51,7 @@ int main(int argc, char *argv[]){
 	double Qprimi = 0.0;			      // Initial tidal Q of the primary (host planet)
 	double Qprimf = 0.0;               // Final tidal Q of the primary
 	int Qmode = 0;                     // How Q changes over time between Qprimi and Qprimf. 0:linearly; 1:exponential decay; 2:exponential change
-	double k2prim = 0.0;               // k2 tidal Love number of primary (Saturn: 0.39, Gavrilov & Zharkov 1977?, 1.5 for homogeneous body)
+	double k2prim = 0.0;               // k2 tidal Love number of primary (Saturn: 0.39, Lainey et al. 2017?, 1.5 for homogeneous body)
 	double J2prim = 0.0;               // 2nd zonal harmonic of gravity field (Saturn: 16290.71±0.27e-6, Jacobson et al., 2006)
 	double J4prim = 0.0;               // 4th zonal harmonic of gravity field (-935.83±2.77e-6, Jacobson et al., 2006)
 	int nmoons = 0;                    // User-specified number of moons

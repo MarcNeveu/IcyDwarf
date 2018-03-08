@@ -917,6 +917,8 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 				domega_orb[im][ir] = 0.0;
 			}
 		}
+		// TODO For benchmark, remove
+		resonance[1][0] = 1.0;
 
 		// Begin parallel calculations
 #pragma omp parallel // private(thread_id, nloops)
