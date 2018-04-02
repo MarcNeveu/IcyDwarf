@@ -926,7 +926,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 //			thread_id = omp_get_thread_num();
 //			nloops = 0;
 
-#pragma omp for
+//#pragma omp for
 			for (im=0;im<nmoons;im++) {
 				if (realtime >= tzero[im] && orbevol[im]) {
 					dnorb_dt[im] = norb[im];
@@ -934,8 +934,8 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 					// TODO Add a non-Keplerian term due to planetary oblateness?
 					dnorb_dt[im] = (norb[im]-dnorb_dt[im])/dtime;
 
-					Orbit (argc, argv, path, im, dtime, itime, nmoons, m_p, r_p, &resonance, &PCapture, &aorb, eorb, &deorb[im], norb, dnorb_dt,
-							lambda, &dlambda_orb[im], omega, &domega_orb[im], Wtide_tot[im], Mprim, Rprim, J2prim, J4prim, k2prim, Qprim,
+					Orbit (argc, argv, path, im, dtime, itime, nmoons, m_p, r_p, &resonance, &PCapture, &aorb, &eorb, &deorb[im], norb, dnorb_dt,
+							&lambda, &dlambda_orb[im], &omega, &domega_orb[im], Wtide_tot[im], Mprim, Rprim, J2prim, J4prim, k2prim, Qprim,
 							aring_out, aring_in, alpha_Lind, ringSurfaceDensity);
 				}
 //				++nloops;
@@ -943,22 +943,22 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 //			printf("itime = %d, Thread %d performed %d iterations of the orbit loop over moons.\n", itime, thread_id, nloops); nloops = 0;
 
 			// Update eccentricities, which cannot be negative, as well as lambdas and omegas
-#pragma omp for
-			for (im=0;im<nmoons;im++) {
-				if (realtime >= tzero[im] && orbevol[im]) {
-					Update_orbit(im, nmoons, dtime, &eorb[im], &Wtide_tot[im], &lambda[im], &omega[im], deorb,
-							dlambda_orb, domega_orb, Mprim, Rprim, m_p[im], Qprim, aorb[im]);
-				}
-//				++nloops;
-			}
-//			printf("itime = %d, Thread %d performed %d iterations of the ecc loop over moons.\n", itime, thread_id, nloops); nloops = 0;
+//#pragma omp for
+//			for (im=0;im<nmoons;im++) {
+//				if (realtime >= tzero[im] && orbevol[im]) {
+//					Update_orbit(im, nmoons, dtime, &eorb[im], &Wtide_tot[im], &lambda[im], &omega[im], deorb,
+//							dlambda_orb, domega_orb, Mprim, Rprim, m_p[im], Qprim, aorb[im]);
+//				}
+////				++nloops;
+//			}
+////			printf("itime = %d, Thread %d performed %d iterations of the ecc loop over moons.\n", itime, thread_id, nloops); nloops = 0;
 
 			// Numerical convergence plots: let e change only because of resonance, with proba=1 or equivalently dice=0
-//			if (!(itime%1000)) printf("%d \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \n",
-//						itime/1000, dtime*deorb_tot[0], dtime*deorb_tot[1], eorb[0], eorb[1], lambda[0], lambda[1], omega[0], omega[1],
-//						aorb[0], aorb[1]);
+			if (!(itime%100)) printf("%d \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \n",
+						itime/100, aorb[0], aorb[1], norb[0], norb[1], eorb[0], eorb[1], lambda[0], lambda[1], omega[0], omega[1]);
+			if (itime > 400000) exit(0);
 
-//#pragma omp for
+#pragma omp for
 //			for (im=0;im<nmoons;im++) {
 //				if (realtime >= tzero[im]) {
 //					Thermal(argc, argv, path, outputpath[im], warnings, NR, dr_grid[im],

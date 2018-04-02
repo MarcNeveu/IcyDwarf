@@ -15,7 +15,7 @@
 
 int Orbit (int argc, char *argv[], char path[1024], int im,
 		double dtime, int itime, int nmoons, double *m_p, double *r_p, double ***resonance, double ***PCapture,
-		double **aorb, double *eorb, double **d_eorb, double *norb, double *dnorb_dt, double *lambda, double **dlambda, double *omega,
+		double **aorb, double **eorb, double **d_eorb, double *norb, double *dnorb_dt, double **lambda, double **dlambda, double **omega,
 		double **domega, double Wtide_tot, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim,
 		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity);
 
@@ -29,13 +29,13 @@ double DLaplace_coef(double alpha, double j, double s);
 
 double D2Laplace_coef(double alpha, double j, double s);
 
-int MMR_AvgHam(double n0, double n1, double a0, double a1, double e0, double e1, double *de0, double *de1, double m0, double m1,
-		double lambda0, double lambda1, double *dlambda0, double *dlambda1, double omega0, double omega1, double *domega0, double *domega1,
-		int jr, double Mprim, double Rprim, double J2prim, double J4prim, double dt);
+int MMR_AvgHam(double m0, double m1, double r0, double r1, double n0, double n1, double *a0, double *a1, double *e0, double *e1,
+		double *lambda0, double *lambda1, double *omega0, double *omega1,
+		int jr, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim, double dt);
 
 int Orbit (int argc, char *argv[], char path[1024], int im,
 		double dtime, int itime, int nmoons, double *m_p, double *r_p, double ***resonance, double ***PCapture,
-		double **aorb, double *eorb, double **d_eorb, double *norb, double *dnorb_dt, double *lambda, double **dlambda, double *omega,
+		double **aorb, double **eorb, double **d_eorb, double *norb, double *dnorb_dt, double **lambda, double **dlambda, double **omega,
 		double **domega, double Wtide_tot, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim,
 		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity) {
 
@@ -62,12 +62,13 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 //	(*d_eorb)[im] = - Wtide_tot*(*aorb)[im] / (Gcgs*Mprim*m_p[im]*eorb[im])                                     // Dissipation inside moon, decreases its eccentricity (equation 4.170 of Murray & Dermott 1999)
 //			 + 57.0/8.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*eorb[im]; // Dissipation inside planet, increases moon's eccentricity
 	// For benchmark with Meyer & Wisdom (2008)
-	if (im) // Dione
-		(*d_eorb)[im] = - 21.0/2.0*1.0e-4*sqrt(Gcgs*Mprim)*pow(r_p[im],5)*Mprim/m_p[im]*pow((*aorb)[im],-6.5)*eorb[im]*100.0
-		                + 57.0/8.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim  ,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*eorb[im]*100.0; // Dissipation inside moon, decreases its eccentricity (equation 4.170 of Murray & Dermott 1999)
-	else // Enceladus
-		(*d_eorb)[im] = - 21.0/2.0*8.0e-4*sqrt(Gcgs*Mprim)*pow(r_p[im],5)*Mprim/m_p[im]*pow((*aorb)[im],-6.5)*eorb[im]*100.0
-		                + 57.0/8.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim  ,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*eorb[im]*100.0;
+//	double mw_speedup = 1000.0; double mw_k2Qe = 8.0e-4; double mw_k2Qd = 1.0e-4;
+//	if (im) // Dione
+//		(*d_eorb)[im] = - 21.0/2.0*mw_k2Qd*sqrt(Gcgs*Mprim)*pow(r_p[im],5)*Mprim/m_p[im]*pow((*aorb)[im],-6.5)*eorb[im]*mw_speedup
+//		                + 57.0/8.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim  ,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*eorb[im]*mw_speedup; // Dissipation inside moon, decreases its eccentricity (equation 4.170 of Murray & Dermott 1999)
+//	else // Enceladus
+//		(*d_eorb)[im] = - 21.0/2.0*mw_k2Qe*sqrt(Gcgs*Mprim)*pow(r_p[im],5)*Mprim/m_p[im]*pow((*aorb)[im],-6.5)*eorb[im]*mw_speedup
+//		                + 57.0/8.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim  ,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*eorb[im]*mw_speedup;
 
 	//-------------------------------------------------------------------
 	//      Changes in eccentricities due moon-moon perturbations
@@ -121,14 +122,12 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 //		}
 //	}
 	for (i=0;i<im;i++) {
-		/* Compute changes in eccentricities, lambda, and omega due to moon-moon interaction every few orbits.
-		 * For a time step of 50 years, 1e4 x slowdown is 1.825 days. */
 		if ((*resonance)[im][i] > 0.0) {
 			j = (int) (*resonance)[im][i];
 
-			MMR_AvgHam(norb[im], norb[i], (*aorb)[im], (*aorb)[i], eorb[im], eorb[i], &(*d_eorb)[im], &(*d_eorb)[i], m_p[im], m_p[i],
-					lambda[im], lambda[i], &(*dlambda)[im], &(*dlambda)[i], omega[im], omega[i], &(*domega)[im], &(*domega)[i],
-					j, Mprim, Rprim, J2prim, J4prim, dtime);
+			MMR_AvgHam(m_p[im], m_p[i], r_p[im], r_p[i], norb[im], norb[i], &(*aorb)[im], &(*aorb)[i], &(*eorb)[im], &(*eorb)[i],
+					&(*lambda)[im], &(*lambda)[i], &(*omega)[im], &(*omega)[i],
+					j, Mprim, Rprim, J2prim, J4prim, k2prim, Qprim, dtime);
 //          d_eorb_MMR = MMR(m_p, norb, (*aorb), im, i, (*eorb)[im]) / (double)jr; // Ecc forcing function of Charnoz et al. (2011). /jr: to convert synodic period to conjunction period
 		}
 	}
@@ -140,51 +139,51 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 //	d_aorb_pl = - 2.0*Wtide_tot*(*aorb)[im]*(*aorb)[im] / (Gcgs*Mprim*m_p[im])         // Dissipation inside moon, shrinks its orbit
 //			  + 3.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-5.5); // Dissipation inside planet, expands moon's orbit
 	// For benchmark with Meyer & Wisdom (2008)
-	if (im) // Dione
-		d_aorb_pl =21.0*1.0e-4*sqrt(Gcgs*Mprim)*pow(r_p[im],5)*Mprim/m_p[im]*pow((*aorb)[im],-5.5)*eorb[im]*eorb[im]*100.0 // Dissipation inside moon, shrinks its orbit
-				  + 3.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim  ,5)*m_p[im]/Qprim*pow((*aorb)[im],-5.5)*100.0; // Dissipation inside planet, expands moon's orbit
-	else // Enceladus
-		d_aorb_pl =21.0*8.0e-4*sqrt(Gcgs*Mprim)*pow(r_p[im],5)*Mprim/m_p[im]*pow((*aorb)[im],-5.5)*eorb[im]*eorb[im]*100.0 // Dissipation inside moon, shrinks its orbit
-		      	  + 3.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim  ,5)*m_p[im]/Qprim*pow((*aorb)[im],-5.5)*100.0; // Dissipation inside planet, expands moon's orbit
+//	if (im) // Dione
+//		d_aorb_pl =21.0*mw_k2Qd*sqrt(Gcgs*Mprim)*pow(r_p[im],5)*Mprim/m_p[im]*pow((*aorb)[im],-5.5)*eorb[im]*eorb[im]*mw_speedup // Dissipation inside moon, shrinks its orbit
+//				  + 3.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim  ,5)*m_p[im]/Qprim*pow((*aorb)[im],-5.5)*mw_speedup; // Dissipation inside planet, expands moon's orbit
+//	else // Enceladus
+//		d_aorb_pl =21.0*mw_k2Qe*sqrt(Gcgs*Mprim)*pow(r_p[im],5)*Mprim/m_p[im]*pow((*aorb)[im],-5.5)*eorb[im]*eorb[im]*mw_speedup // Dissipation inside moon, shrinks its orbit
+//		      	  + 3.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim  ,5)*m_p[im]/Qprim*pow((*aorb)[im],-5.5)*mw_speedup; // Dissipation inside planet, expands moon's orbit
 
 	//-------------------------------------------------------------------
 	// Changes in semi-major axes due to resonances excited in the rings
 	//-------------------------------------------------------------------
 
-	if (ringSurfaceDensity) { // Dissipation in the rings, expands moon's orbit if exterior to rings (Meyer-Vernet & Sicardy 1987, http://dx.doi.org/10.1016/0019-1035(87)90011-X)
-		ringTorque = 0.0;
-		// 1- Find inner Lindblad resonances that matter (kmin, kmax)
-		kmin = floor(1.0 / (1.0-pow(aring_in/(*aorb)[im],1.5))) + 1;
-		kmax = floor(1.0 / (1.0-pow(aring_out/(*aorb)[im],1.5)));
-
-		if (kmin <= kmax && kmax <= floor(1.0/sqrt(alpha_Lind))) {
-			for (i=kmin;i<=kmax;i++) ringTorque = ringTorque + PI_greek*PI_greek/3.0*ringSurfaceDensity*Gcgs*m_p[im]*m_p[im]*i*(i-1)*(*aorb)[im]/Mprim;
-		}
-		d_aorb_ring = 2.0*ringTorque/m_p[im]*sqrt((*aorb)[im]/(Gcgs*Mprim)); // Charnoz et al. (2011) eq. 2, http://dx.doi.org/10.1016/j.icarus.2011.09.017
-	}
-
-	//-------------------------------------------------------------------
-	//          Update semi-major axes, which cannot be negative
-	//-------------------------------------------------------------------
-
-	if (-dtime*(d_aorb_pl + d_aorb_ring) < (*aorb)[im]) (*aorb)[im] = (*aorb)[im] + dtime*(d_aorb_pl+d_aorb_ring);
-	else {
-		FILE *fout;
-		// Turn working directory into full file path by moving up two directories to IcyDwarf (e.g., removing
-		// "Release/IcyDwarf" characters) and specifying the right path end.
-		char *title = (char*)malloc(1024*sizeof(char)); title[0] = '\0'; // Don't forget to free!
-		char im_str[2]; im_str[0] = '\0';
-		if (v_release == 1) strncat(title,path,strlen(path)-16); else if (cmdline == 1) strncat(title,path,strlen(path)-18);
-		strcat(title,"Outputs/"); sprintf(im_str, "%d", im); strcat(title, im_str); strcat(title,"Thermal.txt");
-
-		fout = fopen(title,"a");
-		if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
-		else fprintf(fout,"Thermal: itime=%d, -dtime*d_aorb_pl = %g - -dtime*d_aorb_ring (= %g) > aorb = %g, moon crashes into planet\n",
-				itime, -dtime*d_aorb_pl, -dtime*d_aorb_ring, (*aorb)[im]);
-		fclose (fout);
-		free (title);
-		exit(0);
-	}
+//	if (ringSurfaceDensity) { // Dissipation in the rings, expands moon's orbit if exterior to rings (Meyer-Vernet & Sicardy 1987, http://dx.doi.org/10.1016/0019-1035(87)90011-X)
+//		ringTorque = 0.0;
+//		// 1- Find inner Lindblad resonances that matter (kmin, kmax)
+//		kmin = floor(1.0 / (1.0-pow(aring_in/(*aorb)[im],1.5))) + 1;
+//		kmax = floor(1.0 / (1.0-pow(aring_out/(*aorb)[im],1.5)));
+//
+//		if (kmin <= kmax && kmax <= floor(1.0/sqrt(alpha_Lind))) {
+//			for (i=kmin;i<=kmax;i++) ringTorque = ringTorque + PI_greek*PI_greek/3.0*ringSurfaceDensity*Gcgs*m_p[im]*m_p[im]*i*(i-1)*(*aorb)[im]/Mprim;
+//		}
+//		d_aorb_ring = 2.0*ringTorque/m_p[im]*sqrt((*aorb)[im]/(Gcgs*Mprim)); // Charnoz et al. (2011) eq. 2, http://dx.doi.org/10.1016/j.icarus.2011.09.017
+//	}
+//
+//	//-------------------------------------------------------------------
+//	//          Update semi-major axes, which cannot be negative
+//	//-------------------------------------------------------------------
+//
+//	if (-dtime*(d_aorb_pl + d_aorb_ring) < (*aorb)[im]) (*aorb)[im] = (*aorb)[im] + dtime*(d_aorb_pl+d_aorb_ring);
+//	else {
+//		FILE *fout;
+//		// Turn working directory into full file path by moving up two directories to IcyDwarf (e.g., removing
+//		// "Release/IcyDwarf" characters) and specifying the right path end.
+//		char *title = (char*)malloc(1024*sizeof(char)); title[0] = '\0'; // Don't forget to free!
+//		char im_str[2]; im_str[0] = '\0';
+//		if (v_release == 1) strncat(title,path,strlen(path)-16); else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+//		strcat(title,"Outputs/"); sprintf(im_str, "%d", im); strcat(title, im_str); strcat(title,"Thermal.txt");
+//
+//		fout = fopen(title,"a");
+//		if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
+//		else fprintf(fout,"Thermal: itime=%d, -dtime*d_aorb_pl = %g - -dtime*d_aorb_ring (= %g) > aorb = %g, moon crashes into planet\n",
+//				itime, -dtime*d_aorb_pl, -dtime*d_aorb_ring, (*aorb)[im]);
+//		fclose (fout);
+//		free (title);
+//		exit(0);
+//	}
 
 	return 0;
 }
@@ -365,11 +364,16 @@ double D2Laplace_coef(double alpha, double j, double s) {
  *
  *--------------------------------------------------------------------*/
 
-int MMR_AvgHam(double n0, double n1, double a0, double a1, double e0, double e1, double *de0, double *de1, double m0, double m1,
-		double lambda0, double lambda1, double *dlambda0, double *dlambda1, double omega0, double omega1, double *domega0, double *domega1,
-		int jr, double Mprim, double Rprim, double J2prim, double J4prim, double dt) {
+int MMR_AvgHam(double m0, double m1, double r0, double r1, double n0, double n1, double *a0, double *a1, double *e0, double *e1,
+		double *lambda0, double *lambda1, double *omega0, double *omega1,
+		int jr, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim, double dt) {
 
 	int im = 0;          // Moon counter
+
+	double mw_speedup = 0.0; // Speedup factor for tidal damping
+	double k2Q[2];       // k2/Q of moons
+	k2Q[0] = 8.0e-4;     // Enceladus
+	k2Q[1] = 1.0e-4;     // Dione
 
 	double sigma[2];     // Resonant variable, called phi_k in Borderies & Goldreich (1984, equation 2) with slightly different linear combination
 	double L[2];         // Angular momentum for each moon
@@ -386,22 +390,30 @@ int MMR_AvgHam(double n0, double n1, double a0, double a1, double e0, double e1,
 	double omdot[2];     // Rate of apsidal precession of pericenter due to planetary oblateness (e.g. Greenberg 1981, not change in this rate as (erroneously?) stated by Meyer & Wisdom 2008)
 	double Delta_sigdot[2]; // Changes in d/dt of resonant variable due to planetary oblateness
 
-	double de[2];        // Rate of change in moon eccentricity
-	double dlambda[2];   // Rate of change in moon mean longitude
-	double domega[2];    // Rate of change in moon longitude of pericenter
-
 	double m[2];         // Moon mass
+	double r[2];         // Moon radius
 	double e[2];         // Moon eccentricity
 	double a[2];         // Moon semi-major axis
 	double n[2];         // Moon mean motion
 	double lambda[2];    // Moon mean longitude
 	double omega[2];     // Moon longitude of pericenter
 
-	double j = (double)jr;
+	double j = (double)jr + 1.0;
 	double p = 2.0*j;
 	double alpha = 0.0;  // Outer moon semimajor axis / inner moon semimajor axis
 	double Cs_ee = 0.0; double Cs_eep = 0.0;  // Disturbing function coefficients (equations A.33-39 of Meyer & Wisdom 2008, also see App. B of Murray & Dermott 1999)
 	double Cr_e = 0.0; double Cr_ep = 0.0; double Cr_ee = 0.0; double Cr_eep = 0.0; double Cr_epep = 0.0; // More coefficients
+
+	double dk_tide[2];   // Tidal damping terms (s-1)
+	double dh_tide[2];
+	double da_tide[2];
+	double c[2];         // Factors used in calculation of tidal damping terms
+	double D[2];
+	double dL_tide[2];
+	double dSigbar_tide[2];
+	double dLambda_tide[2];
+	double Sigbar[2];
+	double da_[2];
 
 	// Initialize parameters
 	for (im=0;im<2;im++) {
@@ -420,26 +432,35 @@ int MMR_AvgHam(double n0, double n1, double a0, double a1, double e0, double e1,
 		omdot[im] = 0.0;
 		Delta_sigdot[im] = 0.0;
 
-		de[im] = 0.0;
-		dlambda[im] = 0.0;
-		domega[im] = 0.0;
+		dk_tide[im] = 0.0;
+		dh_tide[im] = 0.0;
+		da_tide[im] = 0.0;
+		c[im] = 0.0;
+		D[im] = 0.0;
+		dL_tide[im] = 0.0;
+		dSigbar_tide[im] = 0.0;
+		dLambda_tide[im] = 0.0;
+		Sigbar[im] = 0.0;
+		da_[im] = 0.0;
 	}
 	// Set 0 indices to inner moon
 	if (a0 < a1) {
 		m[0] = m0; m[1] = m1;
-		e[0] = e0; e[1] = e1;
-		a[0] = a0; a[1] = a1;
+		r[0] = r0; r[1] = r1;
+		e[0] = *e0; e[1] = *e1;
+		a[0] = *a0; a[1] = *a1;
 		n[0] = n0; n[1] = n1;
-		lambda[0] = lambda0; lambda[1] = lambda1;
-		omega[0] = omega0; omega[1] = omega1;
+		lambda[0] = *lambda0; lambda[1] = *lambda1;
+		omega[0] = *omega0; omega[1] = *omega1;
 	}
 	else {
 		m[0] = m1; m[1] = m0;
-		e[0] = e1; e[1] = e0;
-		a[0] = a1; a[1] = a0;
+		r[0] = r1; r[1] = r0;
+		e[0] = *e1; e[1] = *e0;
+		a[0] = *a1; a[1] = *a0;
 		n[0] = n1; n[1] = n0;
-		lambda[0] = lambda1; lambda[1] = lambda0;
-		omega[0] = omega1; omega[1] = omega0;
+		lambda[0] = *lambda1; lambda[1] = *lambda0;
+		omega[0] = *omega1; omega[1] = *omega0;
 	}
 
 	// Calculate sigma, dHk, L, Sigma
@@ -449,9 +470,11 @@ int MMR_AvgHam(double n0, double n1, double a0, double a1, double e0, double e1,
 		L[im] = sqrt(m[im]*Gcgs*m[im]*Mprim*a[im]);
 		Sigma[im] = L[im] * (1.0-sqrt(1.0-e[im]*e[im]));
 	}
-	// Calculate Lambda
+	// Calculate Lambda, Sigbar
 	Lambda[0] = L[0] - (1.0-j)*(Sigma[0]+Sigma[1]);
 	Lambda[1] = L[1] - j*(Sigma[0]+Sigma[1]);
+
+	for (im=0;im<2;im++) Sigbar[im] = Sigma[im]/Lambda[im];
 	// Calculate n_
 	for (im=0;im<2;im++) n_[im] = m[im]*pow(Gcgs*m[im]*Mprim,2)/pow(Lambda[im],3);
 	// Calculate h, k, a_
@@ -464,6 +487,7 @@ int MMR_AvgHam(double n0, double n1, double a0, double a1, double e0, double e1,
 	for (im=0;im<2;im++) {
 		Delta_n[im] = n_[im]*(3.0*J2prim*pow(Rprim/a_[im],2) + (45.0/4.0*J2prim*J2prim - 15.0/4.0*J4prim)*pow(Rprim/a_[im],4));
 		omdot[im] = n_[im]*(1.5*J2prim*pow(Rprim/a_[im],2) + (63.0/8.0*J2prim*J2prim - 15.0/4.0*J4prim)*pow(Rprim/a_[im],4));
+//		printf("%d %g\n", im, omdot[im]*180.0/PI_greek*86400*365.25);
 	}
 	// Calculate Delta_sigdot
 	for (im=0;im<2;im++) Delta_sigdot[im] = (1.0-j)*Delta_n[0] + j*Delta_n[1] - omdot[im];
@@ -474,16 +498,73 @@ int MMR_AvgHam(double n0, double n1, double a0, double a1, double e0, double e1,
 	Cs_eep  =  0.25 * (                 2.0*Laplace_coef(alpha, 1.0, 0.5) -          2.0*alpha*DLaplace_coef(alpha, 1.0, 0.5) - alpha*alpha*D2Laplace_coef(alpha, 1.0, 0.5));
 	Cr_e    =   0.5 * (              -2.0*j*Laplace_coef(alpha, j  , 0.5) -              alpha*DLaplace_coef(alpha, j  , 0.5)                                              );
 	Cr_ep   =   0.5 * (         (2.0*j-1.0)*Laplace_coef(alpha, j-1, 0.5) +              alpha*DLaplace_coef(alpha, j-1, 0.5)                                              );
-	if (j == 2) Cr_ep = Cr_ep - 2.0*alpha;
+	if (j == 2.0) Cr_ep = Cr_ep - 2.0*alpha;
 	Cr_ee   = 0.125 * (    (-5.0*p+4.0*p*p)*Laplace_coef(alpha, p  , 0.5) + (-2.0+4.0*p)*alpha*DLaplace_coef(alpha, p  , 0.5) + alpha*alpha*D2Laplace_coef(alpha, p  , 0.5));
 	Cr_eep  =  0.25 * ((-2.0+6.0*p-4.0*p*p)*Laplace_coef(alpha, p-1, 0.5) +  (2.0-4.0*p)*alpha*DLaplace_coef(alpha, p-1, 0.5) - alpha*alpha*D2Laplace_coef(alpha, p-1, 0.5));
 	Cr_epep = 0.125 * ( (2.0-7.0*p+4.0*p*p)*Laplace_coef(alpha, p-2, 0.5) + (-2.0+4.0*p)*alpha*DLaplace_coef(alpha, p-2, 0.5) + alpha*alpha*D2Laplace_coef(alpha, p-2, 0.5));
 
+	// Calculate effect of tides
+	for (im=0;im<2;im++) {
+		c[im] = 3.0 * k2prim/Qprim * m[im]/Mprim *sqrt(Gcgs*Mprim) * pow(Rprim,5); // Meyer & Wisdom (2008) indicate m[0] instead of m[im]. Typo?
+		D[im] = k2Q[im] / (k2prim/Qprim) * pow(Mprim/m[im],2) * pow(r[im]/Rprim,5);
+		dk_tide[im] = -3.5*c[im]*D[im]*pow(a[im],-6.5)*k[im]*mw_speedup;
+		dh_tide[im] = -3.5*c[im]*D[im]*pow(a[im],-6.5)*h[im]*mw_speedup;
+		da_tide[im] = c[im] * (1.0-7.0*D[im]*e[im]*e[im]) * pow(a[im],-5.5)*mw_speedup;
+	}
+
 	// Equations of motion
-	dk[0] = ( dHk[0]+Delta_sigdot[0])*h[0] - Gcgs*m[0]*m[1]/(a_[1]*Lambda[0]) * (    Cs_eep*h[1] + 2.0*Cs_ee *h[0] + Cr_e  + 2.0*Cr_ee  *h[0] + Cr_eep*h[1]);
-	dh[0] = (-dHk[0]-Delta_sigdot[0])*k[0] - Gcgs*m[0]*m[1]/(a_[1]*Lambda[0]) * (   -Cs_eep*k[1] - 2.0*Cs_ee *k[0]         + 2.0*Cr_ee  *k[0] + Cr_eep*k[1]);
-	dk[1] = ( dHk[1]+Delta_sigdot[1])*h[1] - Gcgs*m[0]*m[1]/(a_[1]*Lambda[1]) * ( 2.0*Cs_ee*h[1] +     Cs_eep*h[0] + Cr_ep + 2.0*Cr_epep*h[1] + Cr_eep*h[0]);
-	dh[1] = (-dHk[1]-Delta_sigdot[1])*k[1] - Gcgs*m[0]*m[1]/(a_[1]*Lambda[1]) * (-2.0*Cs_ee*k[1] -     Cs_eep*k[0]         + 2.0*Cr_epep*k[1] + Cr_eep*k[0]);
+	dk[0] = ( dHk[0]+Delta_sigdot[0])*h[0] - Gcgs*m[0]*m[1]/(a_[1]*Lambda[0]) * (    Cs_eep*h[1] + 2.0*Cs_ee *h[0] + Cr_e  + 2.0*Cr_ee  *h[0] + Cr_eep*h[1]) + dk_tide[0];
+	dh[0] = (-dHk[0]-Delta_sigdot[0])*k[0] - Gcgs*m[0]*m[1]/(a_[1]*Lambda[0]) * (   -Cs_eep*k[1] - 2.0*Cs_ee *k[0]         + 2.0*Cr_ee  *k[0] + Cr_eep*k[1]) + dh_tide[0];
+	dk[1] = ( dHk[1]+Delta_sigdot[1])*h[1] - Gcgs*m[0]*m[1]/(a_[1]*Lambda[1]) * ( 2.0*Cs_ee*h[1] +     Cs_eep*h[0] + Cr_ep + 2.0*Cr_epep*h[1] + Cr_eep*h[0]) + dk_tide[1];
+	dh[1] = (-dHk[1]-Delta_sigdot[1])*k[1] - Gcgs*m[0]*m[1]/(a_[1]*Lambda[1]) * (-2.0*Cs_ee*k[1] -     Cs_eep*k[0]         + 2.0*Cr_epep*k[1] + Cr_eep*k[0]) + dh_tide[1];
+
+	for (im=0;im<2;im++) {
+		dL_tide[im] = L[im]/(2.0*a[im]) * da_tide[im];
+		dSigbar_tide[im] = h[im]*dh_tide[im] + k[im]*dk_tide[im];
+	}
+	dLambda_tide[0] = ((1.0+     j *Sigbar[1])*dL_tide[0] - (1.0-j)*Lambda[0]*dSigbar_tide[0] - (1.0-j)*Lambda[1]*dSigbar_tide[1] - (1.0-j)*dL_tide[1]*Sigbar[1]);
+	dLambda_tide[1] = ((1.0+(1.0-j)*Sigbar[0])*dL_tide[1] -      j *Lambda[0]*dSigbar_tide[0] -      j *Lambda[1]*dSigbar_tide[1] -      j *dL_tide[0]*Sigbar[0]);
+	for (im=0;im<2;im++)	dLambda_tide[im] = dLambda_tide[im] / (1.0 + (1.0-j)*Sigbar[0] + j*Sigbar[1]);
+
+	for (im=0;im<2;im++) da_[im] = 2.0*a_[im]/Lambda[im]*dLambda_tide[im];
+
+	// Update state variables
+	for (im=0;im<2;im++) {
+		a_[im] = a_[im] + da_[im] * dt;
+		k[im] = k[im] + dk[im] * dt;
+		h[im] = h[im] + dh[im] * dt;
+	}
+	// Update orbital parameters
+	for (im=0;im<2;im++) {
+		lambda[im] = fmod(lambda[im] + n[im] * dt, 2.0*PI_greek);
+//		lambda[im] = lambda[im] + n[im] * dt;
+		omega[im] = fmod(omega[im] + omdot[im] * dt, 2.0*PI_greek);
+		e[im] = sqrt(h[im]*h[im] + k[im]*k[im]);
+		Lambda[im] = sqrt(m[im]*Gcgs*m[im]*Mprim*a_[im]);
+	}
+	L[0] = Lambda[0] + (1.0-j)*(Lambda[0]*e[0]*e[0]/2.0 + Lambda[1]*e[1]*e[1]/2.0);
+	L[1] = Lambda[1] +      j *(Lambda[0]*e[0]*e[0]/2.0 + Lambda[1]*e[1]*e[1]/2.0);
+//	L[1] = Lambda[1] + j*(Lambda[0]+Lambda[1])*(1.0/sqrt(1.0-e[0]*e[0]) - 1.0) / (1.0-j*(1.0-sqrt((1.0-e[1]*e[1])/(1.0-e[0]*e[0]))));
+//	L[0] = (Lambda[0]+Lambda[1])/sqrt(1.0-e[0]*e[0]) - L[1]*sqrt((1.0-e[1]*e[1])/(1.0-e[0]*e[0]));
+//	L[0] = - ( Lambda[1] - pow((1.0-e[1]*e[1]),-0.5)*(Lambda[0]+Lambda[1]) )
+//		   / ( j*(1.0-sqrt(1.0-e[0]*e[0])) + pow((1.0-e[1]*e[1]),-0.5)*sqrt(1.0-e[0]*e[0]) );
+//	L[1] = pow((1.0-e[1]*e[1]),-0.5) * (Lambda[0] + Lambda[1] - L[0]*sqrt(1.0-e[0]*e[0]));
+
+	for (im=0;im<2;im++) a[im] = L[im]*L[im]/(Gcgs*m[im]*m[im]*Mprim);
+
+	// Output
+	if (a0 < a1) {
+		*a0 = a[0]; *a1 = a[1];
+		*e0 = e[0]; *e1 = e[1];
+		*lambda0 = lambda[0]; *lambda1 = lambda[1];
+		*omega0 = omega[0]; *omega1 = omega[1];
+	}
+	else {
+		*a0 = a[1]; *a1 = a[0];
+		*e0 = e[1]; *e1 = e[0];
+		*lambda0 = lambda[1]; *lambda1 = lambda[0];
+		*omega0 = omega[1]; *omega1 = omega[0];
+	}
 
 	/* Calculate change in eccentricity, mean longitude, and longitude of pericenter
 	 * For eccentricity:
@@ -493,22 +574,22 @@ int MMR_AvgHam(double n0, double n1, double a0, double a1, double e0, double e1,
      * 2 h dh + 2 k dk = 2 e de
      * de = (h dh + k dk) / e => That's de/dt
      */
-	for (im=0;im<2;im++) {
-		de[im] = (h[im]*dh[im] + k[im]*dk[im]) / e[im];
-		dlambda[im] = n[im]; // TODO n_, not n?
-		domega[im] = omdot[im];
-	}
-
-	if (a0 < a1) {
-		*de0 = de[0]; *de1 = de[1];
-		*dlambda0 = dlambda[0]; *dlambda1 = dlambda[1];
-		*domega0 = domega[0]; *domega1 = domega[1];
-	}
-	else {
-		*de0 = de[1]; *de1 = de[0];
-		*dlambda0 = dlambda[1]; *dlambda1 = dlambda[0];
-		*domega0 = domega[1]; *domega1 = domega[0];
-	}
+//	for (im=0;im<2;im++) {
+//		de[im] = (h[im]*dh[im] + k[im]*dk[im]) / e[im];
+//		dlambda[im] = n[im]; // TODO n_, not n?
+//		domega[im] = omdot[im];
+//	}
+//
+//	if (a0 < a1) {
+//		*de0 = de[0]; *de1 = de[1];
+//		*dlambda0 = dlambda[0]; *dlambda1 = dlambda[1];
+//		*domega0 = domega[0]; *domega1 = domega[1];
+//	}
+//	else {
+//		*de0 = de[1]; *de1 = de[0];
+//		*dlambda0 = dlambda[1]; *dlambda1 = dlambda[0];
+//		*domega0 = domega[1]; *domega1 = domega[0];
+//	}
 
 	return 0;
 }
