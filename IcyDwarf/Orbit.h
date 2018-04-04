@@ -29,9 +29,14 @@ double DLaplace_coef(double alpha, double j, double s);
 
 double D2Laplace_coef(double alpha, double j, double s);
 
-int MMR_AvgHam(double m0, double m1, double r0, double r1, double n0, double n1, double *a0, double *a1, double *e0, double *e1,
-		double *lambda0, double *lambda1, double *omega0, double *omega1,
-		int jr, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim, double dt);
+int MMR_AvgHam (double x, double y[], double dydx[], double param[]);
+
+int odeint(double **ystart, int nvari, double param[], double x1, double x2, double eps, double h1, double hmin, int *nok, int *nbad, int (*derivs)(double, double[], double[], double[]),
+		int bsstep(double y[], double dydx[], int nv, double param[], double *xx, double htry, double eps, double yscal[], double *hdid, double *hnext, int (*derivs)(double, double[], double[], double[])));
+
+int bsstep(double y[], double dydx[], int nv, double param[], double *xx, double htry, double eps, double yscal[], double *hdid, double *hnext, int (*derivs)(double, double[], double[], double[]));
+
+int mmid(double y[], double dydx[], int nv, double param[], double xs, double htot, int nstep, double yout[], int (*derivs)(double, double[], double[], double[]));
 
 int Orbit (int argc, char *argv[], char path[1024], int im,
 		double dtime, int itime, int nmoons, double *m_p, double *r_p, double ***resonance, double ***PCapture,
@@ -125,10 +130,87 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 		if ((*resonance)[im][i] > 0.0) {
 			j = (int) (*resonance)[im][i];
 
-			MMR_AvgHam(m_p[im], m_p[i], r_p[im], r_p[i], norb[im], norb[i], &(*aorb)[im], &(*aorb)[i], &(*eorb)[im], &(*eorb)[i],
-					&(*lambda)[im], &(*lambda)[i], &(*omega)[im], &(*omega)[i],
-					j, Mprim, Rprim, J2prim, J4prim, k2prim, Qprim, dtime);
-//          d_eorb_MMR = MMR(m_p, norb, (*aorb), im, i, (*eorb)[im]) / (double)jr; // Ecc forcing function of Charnoz et al. (2011). /jr: to convert synodic period to conjunction period
+			int nv = 8;
+			int nparamorb = 11;
+			int nok = 0; // Number of good steps
+			int nbad = 0; // Number of bad steps
+
+			double *ystart = (double*) malloc((nv)*sizeof(double)); // Input vector for integration
+			if (ystart == NULL) printf("Orbit: Not enough memory to create ystart[nv]\n");
+
+			double param[nparamorb];
+
+			param[4] = (double)(j+1);
+			param[5] = Mprim;
+			param[6] = Rprim;
+			param[7] = J2prim;
+			param[8] = J4prim;
+			param[9] = k2prim;
+			param[10] = Qprim;
+
+			// Set 0 indices to inner moon
+			if ((*aorb)[im] < (*aorb)[i]) {
+				ystart[0] = (*aorb)[im];
+				ystart[1] = (*eorb)[im];
+				ystart[2] = (*lambda)[im];
+				ystart[3] = (*omega)[im];
+				ystart[4] = (*aorb)[i];
+				ystart[5] = (*eorb)[i];
+				ystart[6] = (*lambda)[i];
+				ystart[7] = (*omega)[i];
+
+				param[0] = m_p[im];
+				param[1] = r_p[im];
+				param[2] = m_p[i];
+				param[3] = r_p[i];
+			}
+			else {
+				ystart[0] = (*aorb)[i];
+				ystart[1] = (*eorb)[i];
+				ystart[2] = (*lambda)[i];
+				ystart[3] = (*omega)[i];
+				ystart[4] = (*aorb)[im];
+				ystart[5] = (*eorb)[im];
+				ystart[6] = (*lambda)[im];
+				ystart[7] = (*omega)[im];
+
+				param[0] = m_p[i];
+				param[1] = r_p[i];
+				param[2] = m_p[im];
+				param[3] = r_p[im];
+			}
+
+			// Integration by Euler method
+//			double dydx[nv];
+//			for (k=0;k<nv;k++) dydx[k] = 0.0;
+//			MMR_AvgHam(0.0, ystart, dydx, param);
+//			for (k=0;k<nv;k++) ystart[k] = ystart[k] + dtime*dydx[k];
+//			for (k=2;k<=3;k++) ystart[k] = fmod(ystart[k], 2.0*PI_greek);
+//			for (k=6;k<=7;k++) ystart[k] = fmod(ystart[k], 2.0*PI_greek);
+
+			// Integration by modified midpoint method
+			double dydx[nv];
+			for (k=0;k<nv;k++) dydx[k] = 0.0;
+			mmid(ystart, dydx, nv, param, 0.0, dtime, 10.0, ystart, MMR_AvgHam);
+			for (k=2;k<=3;k++) ystart[k] = fmod(ystart[k], 2.0*PI_greek);
+			for (k=6;k<=7;k++) ystart[k] = fmod(ystart[k], 2.0*PI_greek);
+
+			// Integration by Bulirsch-Stoer method
+//			odeint(&ystart, nv, param, 0.0, 0.0+dtime, 1.0e-2, dtime/2.0, dtime/1000.0, &nok, &nbad, MMR_AvgHam, bsstep);
+
+			// Ecc forcing function of Charnoz et al. (2011). /jr: to convert synodic period to conjunction period
+//          d_eorb_MMR = MMR(m_p, norb, (*aorb), im, i, (*eorb)[im]) / (double)jr;
+
+			(*aorb)[im] = ystart[0];
+			(*eorb)[im] = ystart[1];
+			(*lambda)[im] = ystart[2];
+			(*omega)[im] = ystart[3];
+			(*aorb)[i] = ystart[4];
+			(*eorb)[i] = ystart[5];
+			(*lambda)[i] = ystart[6];
+			(*omega)[i] = ystart[7];
+
+			free(ystart);
 		}
 	}
 
@@ -364,13 +446,11 @@ double D2Laplace_coef(double alpha, double j, double s) {
  *
  *--------------------------------------------------------------------*/
 
-int MMR_AvgHam(double m0, double m1, double r0, double r1, double n0, double n1, double *a0, double *a1, double *e0, double *e1,
-		double *lambda0, double *lambda1, double *omega0, double *omega1,
-		int jr, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim, double dt) {
+int MMR_AvgHam (double x, double y[], double dydx[], double param[]) {
 
 	int im = 0;          // Moon counter
 
-	double mw_speedup = 0.0; // Speedup factor for tidal damping
+	double mw_speedup = 1.0; // Speedup factor for tidal damping
 	double k2Q[2];       // k2/Q of moons
 	k2Q[0] = 8.0e-4;     // Enceladus
 	k2Q[1] = 1.0e-4;     // Dione
@@ -398,7 +478,14 @@ int MMR_AvgHam(double m0, double m1, double r0, double r1, double n0, double n1,
 	double lambda[2];    // Moon mean longitude
 	double omega[2];     // Moon longitude of pericenter
 
-	double j = (double)jr + 1.0;
+	double Mprim = param[5];
+	double Rprim = param[6];
+	double J2prim = param[7];
+	double J4prim = param[8];
+	double k2prim = param[9];
+	double Qprim = param[10];
+
+	double j = param[4];
 	double p = 2.0*j;
 	double alpha = 0.0;  // Outer moon semimajor axis / inner moon semimajor axis
 	double Cs_ee = 0.0; double Cs_eep = 0.0;  // Disturbing function coefficients (equations A.33-39 of Meyer & Wisdom 2008, also see App. B of Murray & Dermott 1999)
@@ -414,6 +501,22 @@ int MMR_AvgHam(double m0, double m1, double r0, double r1, double n0, double n1,
 	double dLambda_tide[2];
 	double Sigbar[2];
 	double da_[2];
+
+	m[0] = param[0];
+	r[0] = param[1];
+	m[1] = param[2];
+	r[1] = param[3];
+
+	a[0] = y[0];
+	e[0] = y[1];
+	lambda[0] = y[2];
+	omega[0] = y[3];
+	a[1] = y[4];
+	e[1] = y[5];
+	lambda[1] = y[6];
+	omega[1] = y[7];
+
+	for (im=0;im<2;im++) n[im] = sqrt(Gcgs*Mprim/pow(a[im],3));
 
 	// Initialize parameters
 	for (im=0;im<2;im++) {
@@ -443,25 +546,6 @@ int MMR_AvgHam(double m0, double m1, double r0, double r1, double n0, double n1,
 		Sigbar[im] = 0.0;
 		da_[im] = 0.0;
 	}
-	// Set 0 indices to inner moon
-	if (a0 < a1) {
-		m[0] = m0; m[1] = m1;
-		r[0] = r0; r[1] = r1;
-		e[0] = *e0; e[1] = *e1;
-		a[0] = *a0; a[1] = *a1;
-		n[0] = n0; n[1] = n1;
-		lambda[0] = *lambda0; lambda[1] = *lambda1;
-		omega[0] = *omega0; omega[1] = *omega1;
-	}
-	else {
-		m[0] = m1; m[1] = m0;
-		r[0] = r1; r[1] = r0;
-		e[0] = *e1; e[1] = *e0;
-		a[0] = *a1; a[1] = *a0;
-		n[0] = n1; n[1] = n0;
-		lambda[0] = *lambda1; lambda[1] = *lambda0;
-		omega[0] = *omega1; omega[1] = *omega0;
-	}
 
 	// Calculate sigma, dHk, L, Sigma
 	for (im=0;im<2;im++) {
@@ -487,12 +571,12 @@ int MMR_AvgHam(double m0, double m1, double r0, double r1, double n0, double n1,
 	for (im=0;im<2;im++) {
 		Delta_n[im] = n_[im]*(3.0*J2prim*pow(Rprim/a_[im],2) + (45.0/4.0*J2prim*J2prim - 15.0/4.0*J4prim)*pow(Rprim/a_[im],4));
 		omdot[im] = n_[im]*(1.5*J2prim*pow(Rprim/a_[im],2) + (63.0/8.0*J2prim*J2prim - 15.0/4.0*J4prim)*pow(Rprim/a_[im],4));
-//		printf("%d %g\n", im, omdot[im]*180.0/PI_greek*86400*365.25);
+//		printf("%d %g\n", im, omdot[im]*180.0/PI_greek*86400*365.25); // Orbital precession rates for Enceladus (161 deg/yr) and Dione (32 deg/yr) don't match the values reported by Zhang and Nimmo (2009): 88.4 deg/yr and 17.5 deg/yr.
 	}
 	// Calculate Delta_sigdot
 	for (im=0;im<2;im++) Delta_sigdot[im] = (1.0-j)*Delta_n[0] + j*Delta_n[1] - omdot[im];
 
-	// Calculate disturbing function coefficients (equations A.33-39 of Meyer & Wisdom 2008)
+	// Calculate disturbing function coefficients (equations A.33-39 of Meyer & Wisdom 2008; tables 8.1, 8.2, and 8.4 of Murray & Dermott 1999)
 	alpha = a[0]/a[1];
 	Cs_ee   = 0.125 * (                                                              2.0*alpha*DLaplace_coef(alpha, 0.0, 0.5) + alpha*alpha*D2Laplace_coef(alpha, 0.0, 0.5));
 	Cs_eep  =  0.25 * (                 2.0*Laplace_coef(alpha, 1.0, 0.5) -          2.0*alpha*DLaplace_coef(alpha, 1.0, 0.5) - alpha*alpha*D2Laplace_coef(alpha, 1.0, 0.5));
@@ -524,74 +608,420 @@ int MMR_AvgHam(double m0, double m1, double r0, double r1, double n0, double n1,
 	}
 	dLambda_tide[0] = ((1.0+     j *Sigbar[1])*dL_tide[0] - (1.0-j)*Lambda[0]*dSigbar_tide[0] - (1.0-j)*Lambda[1]*dSigbar_tide[1] - (1.0-j)*dL_tide[1]*Sigbar[1]);
 	dLambda_tide[1] = ((1.0+(1.0-j)*Sigbar[0])*dL_tide[1] -      j *Lambda[0]*dSigbar_tide[0] -      j *Lambda[1]*dSigbar_tide[1] -      j *dL_tide[0]*Sigbar[0]);
-	for (im=0;im<2;im++)	dLambda_tide[im] = dLambda_tide[im] / (1.0 + (1.0-j)*Sigbar[0] + j*Sigbar[1]);
+	for (im=0;im<2;im++)	dLambda_tide[im] = dLambda_tide[im] / (1.0 + (1.0-j)*Sigbar[0] + j*Sigbar[1]); // For [0], Meyer & Wisdom divide by []^-1 instead of just dividing. Typo?
 
 	for (im=0;im<2;im++) da_[im] = 2.0*a_[im]/Lambda[im]*dLambda_tide[im];
 
-	// Update state variables
-	for (im=0;im<2;im++) {
-		a_[im] = a_[im] + da_[im] * dt;
-		k[im] = k[im] + dk[im] * dt;
-		h[im] = h[im] + dh[im] * dt;
-	}
-	// Update orbital parameters
-	for (im=0;im<2;im++) {
-		lambda[im] = fmod(lambda[im] + n[im] * dt, 2.0*PI_greek);
-//		lambda[im] = lambda[im] + n[im] * dt;
-		omega[im] = fmod(omega[im] + omdot[im] * dt, 2.0*PI_greek);
-		e[im] = sqrt(h[im]*h[im] + k[im]*k[im]);
-		Lambda[im] = sqrt(m[im]*Gcgs*m[im]*Mprim*a_[im]);
-	}
-	L[0] = Lambda[0] + (1.0-j)*(Lambda[0]*e[0]*e[0]/2.0 + Lambda[1]*e[1]*e[1]/2.0);
-	L[1] = Lambda[1] +      j *(Lambda[0]*e[0]*e[0]/2.0 + Lambda[1]*e[1]*e[1]/2.0);
-//	L[1] = Lambda[1] + j*(Lambda[0]+Lambda[1])*(1.0/sqrt(1.0-e[0]*e[0]) - 1.0) / (1.0-j*(1.0-sqrt((1.0-e[1]*e[1])/(1.0-e[0]*e[0]))));
-//	L[0] = (Lambda[0]+Lambda[1])/sqrt(1.0-e[0]*e[0]) - L[1]*sqrt((1.0-e[1]*e[1])/(1.0-e[0]*e[0]));
-//	L[0] = - ( Lambda[1] - pow((1.0-e[1]*e[1]),-0.5)*(Lambda[0]+Lambda[1]) )
-//		   / ( j*(1.0-sqrt(1.0-e[0]*e[0])) + pow((1.0-e[1]*e[1]),-0.5)*sqrt(1.0-e[0]*e[0]) );
-//	L[1] = pow((1.0-e[1]*e[1]),-0.5) * (Lambda[0] + Lambda[1] - L[0]*sqrt(1.0-e[0]*e[0]));
+	// Calculate derivatives
+	// dlambda/dt
+	dydx[2] = n[0];
+	dydx[6] = n[1];
 
-	for (im=0;im<2;im++) a[im] = L[im]*L[im]/(Gcgs*m[im]*m[im]*Mprim);
+	// domega/dt
+	dydx[3] = omdot[0];
+	dydx[7] = omdot[1];
 
-	// Output
-	if (a0 < a1) {
-		*a0 = a[0]; *a1 = a[1];
-		*e0 = e[0]; *e1 = e[1];
-		*lambda0 = lambda[0]; *lambda1 = lambda[1];
-		*omega0 = omega[0]; *omega1 = omega[1];
-	}
-	else {
-		*a0 = a[1]; *a1 = a[0];
-		*e0 = e[1]; *e1 = e[0];
-		*lambda0 = lambda[1]; *lambda1 = lambda[0];
-		*omega0 = omega[1]; *omega1 = omega[0];
-	}
-
-	/* Calculate change in eccentricity, mean longitude, and longitude of pericenter
-	 * For eccentricity:
-	 * h = e cos sig
-     * k = e sin sig
+	/* de/dt as a function of dh/dt and dk/dt
      * h2+k2 = e2 cos2 sig + e2 sin2 sig = e2 (cos2 sig + sin2 sig) = e2
      * 2 h dh + 2 k dk = 2 e de
-     * de = (h dh + k dk) / e => That's de/dt
+     * de = (h dh + k dk) / e
      */
-//	for (im=0;im<2;im++) {
-//		de[im] = (h[im]*dh[im] + k[im]*dk[im]) / e[im];
-//		dlambda[im] = n[im]; // TODO n_, not n?
-//		domega[im] = omdot[im];
-//	}
-//
-//	if (a0 < a1) {
-//		*de0 = de[0]; *de1 = de[1];
-//		*dlambda0 = dlambda[0]; *dlambda1 = dlambda[1];
-//		*domega0 = domega[0]; *domega1 = domega[1];
-//	}
-//	else {
-//		*de0 = de[1]; *de1 = de[0];
-//		*dlambda0 = dlambda[1]; *dlambda1 = dlambda[0];
-//		*domega0 = domega[1]; *domega1 = domega[0];
-//	}
+	dydx[1] = (h[0]*dh[0] + k[0]*dk[0])/e[0];
+	dydx[5] = (h[1]*dh[1] + k[1]*dk[1])/e[1];
+
+	/* da/dt as a function of da_/dt
+	 * a = L2 / (G m2 M) so da = 2 L dL / (G m2 M)
+	 * a_ = Lambda2 / (G m2 M) so da_ = 2 Lambda dLambda / (G m2 M)
+	 * L[0] ≈ Lambda[0] + (1-j) (Lambda[0]*e[0]^2/2 + Lambda[1]*e[1]^2/2)
+	 * so dL[0] = dLambda[0] + (1-j)(dLambda[0]*e[0]^2/2 + Lambda[0]*e[0]*de[0] + dLambda[1]*e[1]^2/2 + Lambda[1]*e[1]*de[1])
+	 * substituting da and da_ for dL and dLambda:
+	 * da[0] = 2*L[0] / (G m[0]^2 M) * ( G m[0]^2 M * da_[0] / (2 Lambda[0]) + (1-j)*(G m[0]^2 M da_[0]/(2 Lambda[0])*e[0]^2/2 + Lambda[0]*e[0]*de[0]
+	 *                                                                                G m[1]^2 M da_[1]/(2 Lambda[1])*e[1]^2/2 + Lambda[1]*e[1]*de[1]) )
+	 * And same for dL[1] and da[1], but with j instead of (1-j).
+	 */
+	double factor[2];
+	for (im=0;im<2;im++) factor[im] = Gcgs*m[im]*m[im]*Mprim/(2.0*Lambda[im]);
+	double factor2 = 0.0; // dSigma[0] + dSigma[1]
+	factor2 = factor[0]*da_[0]*e[0]*e[0]/2.0 + Lambda[0]*e[0]*dydx[1] + factor[1]*da_[1]*e[1]*e[1]/2.0 + Lambda[1]*e[1]*dydx[5];
+	dydx[0] = L[0]/Lambda[0]/factor[0] * (factor[0]*da_[0] + (1.0-j)*factor2);
+	dydx[4] = L[1]/Lambda[1]/factor[1] * (factor[1]*da_[1] +      j *factor2);
+//	dydx[0] = da_tide[0];
+//	dydx[4] = da_tide[1];
 
 	return 0;
+}
+
+/* Algorithm routine, benchmarked against simpler Euler method, works.
+ * This implements the basic formulas of the method, starts with dependent variables y i at x, and calculates
+ * new values of the dependent variables at the value x + h. The algorithm routine also yields up some information
+ * about the quality of the solution after the step. From Press et al. (2002), Chapter 16.
+ *
+ * Modified midpoint step. At xs, input the dependent variable vector y[1..nvari] and its derivative vector dydx[1..nvari].
+ * Also input is htot, the total step to be made, and nstep, the number of substeps to be used.
+ * The output is returned as yout[1..nvari], which need not be a distinct array from y;
+ * if it is distinct, however, then y and dydx are returned undamaged.
+ * derivs is the user-supplied routine that computes the right-hand side derivatives.
+ */
+int mmid(double y[], double dydx[], int nv, double param[], double xs, double htot, int nstep, double yout[], int (*derivs)(double, double[], double[], double[])) {
+
+	int n = 0;        // Counter on steps of sub-timestep
+	int i = 0;        // Counter on variables
+
+	double x = 0.0;
+	double swap = 0.0;
+	double h2 = 0.0;  // Full step = 2*h
+	double h = 0.0;   // Midpoint step
+
+	double ym[nv];
+	double yn[nv];
+
+	for (i=0;i<nv;i++) {
+		ym[i] = 0.0;
+		yn[i] = 0.0;
+	}
+
+	h = htot/nstep; // Stepsize this trip
+
+	for (i=0;i<nv;i++) {
+		ym[i] = y[i];
+		yn[i] = y[i] + h*dydx[i]; // Step 0
+	}
+
+	x = xs+h;
+	(*derivs)(x, yn, yout, param); // Will use yout for temporary storage of derivatives
+	h2 = 2.0*h;
+
+	for (n=1;n<nstep;n++) { // General step
+		for (i=0;i<nv;i++) {
+			swap = ym[i] + h2*yout[i];
+			ym[i] = yn[i];
+			yn[i] = swap;
+		}
+		x += h;
+		(*derivs)(x, yn, yout, param);
+	}
+
+	for (i=0;i<nv;i++) yout[i] = 0.5*(ym[i]+yn[i]+h*yout[i]); // Last step
+
+	return 0;
+}
+
+#define KMAXX 8          // Maximum row number used in the extrapolation
+#define IMAXX (KMAXX+1)
+
+/* Bulirsch-Stoer stepper routine, needs debugging.
+ * Calls the algorithm routine. It may reject the result, set a smaller stepsize, and call
+ * the algorithm routine again, until compatibility with a predetermined accuracy criterion has been achieved. The stepper’s
+ * fundamental task is to take the largest stepsize consistent with specified performance. From Press et al. (2002), Chap. 16.
+ *
+ * Includes monitoring of local truncation error to ensure accuracy and adjust stepsize.
+ * Input are the dependent variable vector y[1..nv] and its derivative dydx[1..nv] at the starting value of the independent variable x.
+ * Also input are the stepsize to be attempted htry, the required accuracy eps, and the vector yscal[1..nv] against which the error is scaled.
+ * On output, y and x are replaced by their new values, hdid is the stepsize that was actually accomplished,
+ * and hnext is the estimated next stepsize. derivs is the user-supplied routine that computes the right-hand side derivatives.
+ * Be sure to set htry on successive steps to the value of hnext returned from the previous step, as is the case if the routine is called by odeint.
+ */
+int bsstep(double y[], double dydx[], int nv, double param[], double *xx, double htry, double eps, double yscal[], double *hdid, double *hnext, int (*derivs)(double, double[], double[], double[])) {
+
+	int pzextr(int iest, double xest, double yest[], double y[], double yerr[], int nv, double ***d, double **x);
+
+
+	double SAFE1 = 0.25;       // Safety factors
+	double SAFE2 = 0.7;
+	double REDMAX = 1.0e-5;    // Maximum factor for stepsize reduction
+	double REDMIN = 0.7;       // Minimum factor for stepsize reduction
+	double TINY = 1.0e-30;     // Prevents division by zero
+	double SCALMX = 0.1;       // 1/SCALMX is the maximum factor by which a stepsize can be increased
+
+	int i = 0;
+	int iq = 0;
+	int k = 0;
+	int kk = 0;
+	int kmi = 0;
+
+	static int first = 1;
+	static int kmax;
+	static int kopt;
+
+	static double epsold = -1.0;
+	static double xnew;
+
+	double eps1 = 0.0;
+	double errmax = 0.0;
+	double fact = 0.0;
+	double h = 0.0;
+	double red = 0.0;
+	double scale = 0.0;
+	double work = 0.0;
+	double wrkmin = 0.0;
+	double xest = 0.0;
+
+	double err[KMAXX];
+
+	static double a[IMAXX+1];
+	static double alf[KMAXX+1][KMAXX+1];
+	static int nseq[IMAXX+1] = {0,2,4,6,8,10,12,14,16,18};
+
+	int reduct = 0;
+	int exitflag = 0;
+
+	double yerr[nv];
+	double ysav[nv];
+	double yseq[nv];
+
+	double *x = (double*) malloc((KMAXX)*sizeof(double)); // Vector used for polynomial extrapolation
+	if (x == NULL) printf("Orbit: Not enough memory to create x[KMAXX]\n");
+
+	double **d = (double**) malloc(nv*sizeof(double*)); // Matrix used for polynomial extrapolation
+	if (d == NULL) printf("Orbit: Not enough memory to create d[nv]\n");
+	for (i=0;i<nv;i++) {
+		d[i] = (double*) malloc(KMAXX*sizeof(double));
+		if (d[i] == NULL) printf("Orbit: Not enough memory to create d[nv][KMAXX]\n");
+	}
+
+	for (i=0;i<nv;i++) {
+		yerr[i] = 0.0;
+		ysav[i] = 0.0;
+		yseq[i] = 0.0;
+		x[i] = 0.0;
+		for (k=0;k<KMAXX;k++) d[i][k] = 0.0;
+	}
+
+	if (eps != epsold) { // A new tolerance, so reinitialize
+		*hnext = xnew = -1.0e29; // "Impossible" values
+		eps1 = SAFE1*eps;
+
+		// Compute work coefficients Ak
+		a[0] = nseq[0] + 1;
+		for (k=0;k<KMAXX;k++) a[k+1] = a[k] + nseq[k+1];
+
+		// Compute alpha(k,q)
+		for (iq=1;iq<KMAXX;iq++) {
+			for (k=0;k<iq;k++) alf[k][iq] = pow(eps1,(a[k+1]-a[iq+1])/((a[iq+1]-a[0]+1.0)*(2*k+1)));
+		}
+
+		epsold = eps;
+
+		// Determine optimal row number for convergence
+		for (kopt=1;kopt<KMAXX-1;kopt++)
+			if (a[kopt+1] > a[kopt]*alf[kopt-1][kopt]) break;
+		kmax = kopt;
+	}
+
+	h = htry;
+
+	// Save the starting values
+	for (i=0;i<nv;i++) ysav[i] = y[i];
+
+	// A new stepsize or a new integration: re-establish the order window
+	if (*xx != xnew || h != (*hnext)) {
+		first = 1;
+		kopt = kmax;
+	}
+	reduct = 0;
+	for (;;) { // Equivalent to "while (true)"
+		for (k=1;k<=kmax;k++) { // 	Evaluate the sequence of modified midpoint integrations. Has to start at k=1, or else nseq[k]=0 singular
+			printf("%g\n", h);
+			xnew = (*xx) + h;
+			if (xnew == (*xx)) {
+				printf("Orbit: step size underflow in bsstep()\n");
+				exit(0);
+			}
+
+			mmid(ysav, dydx, nv, param, *xx, h, nseq[k], yseq, derivs);
+
+		    xest = h*h/(nseq[k]*nseq[k]); // Squared, since error series is even
+
+		    pzextr(k, xest, yseq, y, yerr, nv, &d, &x); // Perform extrapolation
+
+		 	// Compute normalized error estimate
+		    if (k != 0) {
+
+			    for (i=0;i<nv;i++) printf("%g\t", yseq[i]);
+			    printf("\n");
+			    for (i=0;i<nv;i++) printf("%g\t", y[i]);
+			    printf("\n");
+			    for (i=0;i<nv;i++) printf("%g\t", yerr[i]);
+			    printf("\n");
+			    exit(0);
+
+				errmax = TINY; // epsilon(k)
+				for (i=0;i<nv;i++) {
+					if (errmax < fabs(yerr[i]/yscal[i])) errmax = fabs(yerr[i]/yscal[i]);
+				}
+				errmax /= eps; // Scale error relative to tolerance
+				kmi = k-1;
+				err[kmi] = pow(errmax/SAFE1, 1.0/(2*kmi+1));
+		    }
+
+		    if (k != 0 && (k >= kopt-1 || first)) { // In order window
+		    	if (errmax < 1.0) { // Converged
+		    		exitflag = 1;
+		    		break;
+		    	}
+		    	if (k == kmax || k == kopt+1) { // Check for possible stepsize reduction
+		    		red = SAFE2/err[kmi];
+		    		break;
+		    	}
+		    	else if (k == kopt && alf[kopt-1][kopt] < err[kmi]) {
+		    		red = 1.0/err[kmi];
+		    		break;
+		    	}
+		    	else if (kopt == kmax && alf[kmi][kmax-1] < err[kmi]) {
+		    		red = alf[kmi][kmax-1]*SAFE2/err[kmi];
+		    		break;
+		    	}
+		    	else if (alf[kmi][kopt] < err[kmi]) {
+		    		red = alf[kmi][kopt-1]/err[kmi];
+		    		break;
+		    	}
+		    }
+		}
+		if (exitflag) break;
+		if (red > REDMIN) red = REDMIN; // Reduce stepsize by at least REDMIN
+		if (red < REDMAX) red = REDMAX; // and at most REDMAX.
+		h *= red;
+		reduct = 1;
+	} // Try again
+	*xx = xnew; // Successful step taken
+	*hdid = h;
+	first = 0;
+	wrkmin = 1.0e35; // Compute optimal row for convergence and corresponding stepsize
+	for (kk=0;kk<kmi;kk++) {
+		fact = err[kk];
+		if (fact < SCALMX) fact = SCALMX;
+		work = fact*a[kk+1];
+		if (work < wrkmin) {
+	        scale = fact;
+	        wrkmin = work;
+	        kopt = kk+1;
+		}
+	}
+	*hnext = h/scale;
+	if (kopt >= k && kopt != kmax && !reduct) {
+		// Check for possible order increase, but not if stepsize was just reduced.
+		fact = scale/alf[kopt-1][kopt];
+		if (fact < SCALMX) fact = SCALMX;
+		if (a[kopt+1]*fact <= wrkmin) {
+	        *hnext=h/fact;
+	        kopt++;
+		}
+	}
+
+	for (i=0;i<nv;i++) free(d[i]);
+	free(d);
+	free(x);
+
+	return 0;
+}
+
+/* Polynomial extrapolation routing for Bulirsch-Stoer integration, from Press et al. (2002), Chapter 16.
+ * Use polynomial extrapolation to evaluate nv functions at x = 0 by fitting a polynomial to a sequence of estimates
+ * with progressively smaller values x = xest, and corresponding function vectors yest[1..nv].
+ * This call is number iest in the sequence of calls. Extrapolated function values are output as yz[1..nv],
+ * and their estimated error is output as dy[1..nv].
+ */
+int pzextr(int iest, double xest, double yest[], double y[], double yerr[], int nv, double ***d, double **x) {
+
+	int k = 0;
+	int j = 0;
+
+	double q = 0.0;
+	double f2 = 0.0;
+	double f1 = 0.0;
+	double delta = 0.0;
+
+	double c[nv];
+
+	(*x)[iest] = xest; // Save current independent variable
+	for (j=0;j<nv;j++) yerr[j] = y[j] = yest[j];
+
+	if (iest == 0) { // Store first estimate in first column
+		for (j=0;j<nv;j++) (*d)[j][0] = yest[j];
+	}
+	else {
+		for (j=0;j<nv;j++) c[j] = yest[j];
+		for (k=0;k<iest-1;k++) {
+			delta = 1.0/((*x)[iest-k-2]-xest);
+			f1 = xest*delta;
+			f2 = (*x)[iest-k-2]*delta;
+			for (j=0;j<nv;j++) { // Propagate tableau 1 diagonal more
+				q = (*d)[j][k];
+				(*d)[j][k] = yerr[j];
+				delta = c[j]-q;
+				yerr[j] = f1*delta;
+				c[j] = f2*delta;
+				y[j] += yerr[j];
+			}
+		}
+		for (j=0;j<nv;j++) (*d)[j][iest] = yerr[j];
+	}
+
+	return 0;
+}
+
+/* Bulirsch-Stoer driver with adaptive stepsize control. Integrate starting values ystart[1..nvari] from x1 to x2 with accuracy eps.
+ * h1 should be set as a guessed first stepsize,
+ * hmin as the minimum allowed stepsize (can be zero). On output nok and nbad are the number of good and bad
+ * (but retried and fixed) steps taken, and ystart is replaced by values at the end of the integration interval.
+ * derivs is the user-supplied routine for calculating the right-hand side derivative, bsstep is the stepper routine.
+ */
+int odeint(double **ystart, int nv, double param[], double x1, double x2, double eps, double h1, double hmin, int *nok, int *nbad, int (*derivs)(double, double[], double[], double[]),
+		int bsstep(double y[], double dydx[], int nv, double param[], double *xx, double htry, double eps, double yscal[], double *hdid, double *hnext, int (*derivs)(double, double[], double[], double[]))) {
+
+	int nstp = 0;
+	int i = 0;
+
+	double x = 0.0;
+	double hnext = 0.0;
+	double hdid = 0.0;
+	double h = 0.0;
+
+	double yscal[nv];
+	double y[nv];
+	double dydx[nv];
+
+	x = x1;
+	if (x2-x1 >= 0) h = h1;
+	else h = -h1;
+	*nok = (*nbad) = 0;
+
+	for (i=0;i<nv;i++) {
+		y[i] = (*ystart)[i];
+		yscal[i] = 0.0;
+		dydx[i] = 0.0;
+	}
+
+	for (nstp=1;nstp<=10000;nstp++) { // Take at most MAXSTP steps
+		(*derivs)(x, y, dydx, param);
+
+		printf("\t");
+		for (i=0;i<nv;i++) printf("%g \t", y[i]);
+		printf("\n dydx: \t");
+		for (i=0;i<nv;i++) printf("%g \t", dydx[i]);
+		printf("\n");
+
+		// Scaling used to monitor accuracy. This general-purpose choice can be modified if need be.
+		for (i=0;i<nv;i++) yscal[i] = fabs(y[i]) + fabs(dydx[i]*h) + 1.0e-30;
+
+		if ((x+h-x2)*(x+h-x1) > 0.0) h = x2-x; // If stepsize can overshoot, decrease
+
+		(*bsstep)(y, dydx, nv, param, &x, h, eps, yscal, &hdid, &hnext, derivs);
+
+		if (hdid == h) ++(*nok);
+		else ++(*nbad);
+
+		// Are we done?
+		if ((x-x2)*(x2-x1) >= 0.0) {
+			for (i=0;i<nv;i++) (*ystart)[i] = y[i];
+
+			return 0; // Normal exit
+		}
+		if (fabs(hnext) <= hmin) printf("Step size too small in odeint\n");
+		h = hnext;
+	}
+	printf("Too many steps in routine odeint\n");
+	return -1;
 }
 
 #endif /* ORBIT_H_ */

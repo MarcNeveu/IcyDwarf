@@ -954,9 +954,13 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 ////			printf("itime = %d, Thread %d performed %d iterations of the ecc loop over moons.\n", itime, thread_id, nloops); nloops = 0;
 
 			// Numerical convergence plots: let e change only because of resonance, with proba=1 or equivalently dice=0
-			if (!(itime%100)) printf("%d \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \n",
-						itime/100, aorb[0], aorb[1], norb[0], norb[1], eorb[0], eorb[1], lambda[0], lambda[1], omega[0], omega[1]);
-			if (itime > 400000) exit(0);
+//			if (!(itime%1)) printf("%d \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \n",
+//						itime/1, aorb[0], aorb[1], norb[0], norb[1], eorb[0], eorb[1], lambda[0], lambda[1], omega[0], omega[1]);
+//			printf("itime=%d\n", itime);
+//			if (itime > 4) exit(0);
+			if (!(itime%100000)) printf("%g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \n",
+						(realtime-tzero_min)/Gyr2sec, aorb[0], aorb[1], norb[1]/norb[0], eorb[0], eorb[1], lambda[0], lambda[1], omega[0], omega[1]);
+			if ((realtime-tzero_min)/Gyr2sec > 0.5) exit(0);
 
 #pragma omp for
 //			for (im=0;im<nmoons;im++) {

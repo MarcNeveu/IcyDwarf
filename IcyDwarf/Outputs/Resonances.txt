@@ -3,4 +3,3 @@
 Time 4.368 Gyr
 0 	0 	
 1 	0 	
-Time 5.35e-08 Myr, eccentricity of moon 0 = 1.1942 > 1. Stopping.
