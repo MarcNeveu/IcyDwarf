@@ -516,8 +516,8 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		eorb[im] = eorb_init[im];
 		norb[im] = 0.0;
 		dnorb_dt[im] = 0.0;
-		lambda[im] = 0.0; // As good an initial value as any, but could randomize
-		omega[im] = 0.0; // As good an initial value as any, but could randomize
+		lambda[im] = 0.32 + (double)im*0.77; // As good an initial value as any, but could randomize
+		omega[im] = 0.58 + (double)im*0.27; // As good an initial value as any, but could randomize
 		Wtide_tot[im] = 0.0;
 		outputpath[im][0] = '\0';
 
@@ -957,9 +957,9 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 //			if (!(itime%1)) printf("%d \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \n",
 //						itime/1, aorb[0], aorb[1], norb[0], norb[1], eorb[0], eorb[1], lambda[0], lambda[1], omega[0], omega[1]);
 //			printf("itime=%d\n", itime);
-//			if (itime > 4) exit(0);
-			if (!(itime%100000)) printf("%g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \n",
-						(realtime-tzero_min)/Gyr2sec, aorb[0], aorb[1], norb[1]/norb[0], eorb[0], eorb[1], lambda[0], lambda[1], omega[0], omega[1]);
+//			if (itime > 2) exit(0);
+			if (!(itime%1)) printf("%g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \n",
+						(realtime-tzero_min)/Gyr2sec, aorb[0], aorb[1], norb[0]/norb[1], eorb[0], eorb[1], lambda[0], lambda[1], omega[0], omega[1]);
 			if ((realtime-tzero_min)/Gyr2sec > 0.5) exit(0);
 
 #pragma omp for
@@ -984,27 +984,6 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 //			}
 //			printf("itime = %d, Thread %d performed %d iterations of the thermal loop over moons.\n", itime, thread_id, nloops);
 		} // Rejoin threads, end parallel calculations
-
-    		// If eccentricity > 1, exit
-		for (im=0;im<nmoons;im++) {
-			if (eorb[im] > 1.0) {
-				printf("Time %g Myr, eccentricity of moon %d = %g > 1. Stopping.\n", (double)itime*dtime/Myr2sec, im, eorb[im]);
-				FILE *fout;
-				// Turn working directory into full file path by moving up two directories to IcyDwarf (e.g., removing
-				// "Release/IcyDwarf" characters) and specifying the right path end.
-				char *title = (char*)malloc(1024*sizeof(char)); // Don't forget to free!
-				title[0] = '\0';
-				if (v_release == 1) strncat(title,path,strlen(path)-16);
-				else if (cmdline == 1) strncat(title,path,strlen(path)-18);
-				strcat(title,"Outputs/Resonances.txt");
-				fout = fopen(title,"a");
-				if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
-				else fprintf(fout,"Time %g Myr, eccentricity of moon %d = %g > 1. Stopping.\n", (double)itime*dtime/Myr2sec, im, eorb[im]);
-				fclose (fout);
-				free (title);
-				exit(0);
-			}
-		}
 
 		//-------------------------------------------------------------------
 		//                           Write outputs

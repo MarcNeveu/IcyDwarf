@@ -46,7 +46,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 
 	int i = 0;
 	int j = 0;
-	int k = 0;
+	int l = 0;
 	int inner = 0;                       // Index of inner moon
 	int outer = 0;                       // Index of outer moon
 	int kmin = 0;                        // Lowest order of inner Lindblad resonance in the rings
@@ -130,7 +130,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 		if ((*resonance)[im][i] > 0.0) {
 			j = (int) (*resonance)[im][i];
 
-			int nv = 8;
+			int nv = 6;
 			int nparamorb = 11;
 			int nok = 0; // Number of good steps
 			int nbad = 0; // Number of bad steps
@@ -148,37 +148,103 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 			param[9] = k2prim;
 			param[10] = Qprim;
 
+			double sigma[2];     // Resonant variable, called phi_k in Borderies & Goldreich (1984, equation 2) with slightly different linear combination
+			double L[2];         // Angular momentum
+			double Lambda[2];    // Angular momentum of the osculating orbit, close to L if e small (Meyer & Wisdom 2008 equation A.5-6), constant of the motion in the absence of tides
+			double Sigma[2];     // Combination of L and e, very small if e small (Meyer & Wisdom 2008 equation A.7)
+
+			double e[2];         // Moon eccentricity
+			double a[2];         // Moon semi-major axis
+			double lamb[2];      // Moon mean longitude
+			double omeg[2];      // Moon longitude of pericenter
+
+			double m[2];         // Moon mass
+			double r[2];         // Moon radius
+
+			double h[2];         // State variable
+			double k[2];         // State variable
+			double a_[2];        // Moon semi-major axis (osculating)
+
+			// Initialize parameters
+			for (l=0;l<2;l++) {
+				sigma[l] = 0.0;
+				L[l] = 0.0;
+				Lambda[l] = 0.0;
+				Sigma[l] = 0.0;
+
+				a[l] = 0.0;
+				e[l] = 0.0;
+				lamb[l] = 0.0;
+				omeg[l] = 0.0;
+
+				m[l] = 0.0;
+				r[l] = 0.0;
+
+				h[l] = 0.0;
+				k[l] = 0.0;
+				a_[l] = 0.0;
+			}
+
 			// Set 0 indices to inner moon
 			if ((*aorb)[im] < (*aorb)[i]) {
-				ystart[0] = (*aorb)[im];
-				ystart[1] = (*eorb)[im];
-				ystart[2] = (*lambda)[im];
-				ystart[3] = (*omega)[im];
-				ystart[4] = (*aorb)[i];
-				ystart[5] = (*eorb)[i];
-				ystart[6] = (*lambda)[i];
-				ystart[7] = (*omega)[i];
+				a[0] = (*aorb)[im];
+				e[0] = (*eorb)[im];
+				lamb[0] = (*lambda)[im];
+				omeg[0] = (*omega)[im];
+				a[1] = (*aorb)[i];
+				e[1] = (*eorb)[i];
+				lamb[1] = (*lambda)[i];
+				omeg[1] = (*omega)[i];
 
-				param[0] = m_p[im];
-				param[1] = r_p[im];
-				param[2] = m_p[i];
-				param[3] = r_p[i];
+				m[0] = m_p[im];
+				r[0] = r_p[im];
+				m[1] = m_p[i];
+				r[1] = r_p[i];
 			}
 			else {
-				ystart[0] = (*aorb)[i];
-				ystart[1] = (*eorb)[i];
-				ystart[2] = (*lambda)[i];
-				ystart[3] = (*omega)[i];
-				ystart[4] = (*aorb)[im];
-				ystart[5] = (*eorb)[im];
-				ystart[6] = (*lambda)[im];
-				ystart[7] = (*omega)[im];
+				a[0] = (*aorb)[i];
+				e[0] = (*eorb)[i];
+				lamb[0] = (*lambda)[i];
+				omeg[0] = (*omega)[i];
+				a[1] = (*aorb)[im];
+				e[1] = (*eorb)[im];
+				lamb[1] = (*lambda)[im];
+				omeg[1] = (*omega)[im];
 
-				param[0] = m_p[i];
-				param[1] = r_p[i];
-				param[2] = m_p[im];
-				param[3] = r_p[im];
+				m[0] = m_p[i];
+				r[0] = r_p[i];
+				m[1] = m_p[im];
+				r[1] = r_p[im];
 			}
+
+			// Change variables
+			for (l=0;l<2;l++) {
+				sigma[l] = j*lamb[1] + (1.0-j)*lamb[0] - omeg[l];
+				L[l] = sqrt(m[l]*Gcgs*m[l]*Mprim*a[l]);
+				Sigma[l] = L[l] * (1.0-sqrt(1.0-e[l]*e[l]));
+			}
+
+			Lambda[0] = L[0] - (1.0-j)*(Sigma[0]+Sigma[1]);
+			Lambda[1] = L[1] -      j *(Sigma[0]+Sigma[1]);
+
+			for (l=0;l<2;l++) {
+				h[l] = e[l]*cos(sigma[l]);
+				k[l] = e[l]*sin(sigma[l]);
+				a_[l] = Lambda[l]*Lambda[l]/(Gcgs*m[l]*m[l]*Mprim);
+			}
+
+			// Set up ODE solver
+			ystart[0] = h[0];
+			ystart[1] = k[0];
+			ystart[2] = a_[0];
+			ystart[3] = h[1];
+			ystart[4] = k[1];
+			ystart[5] = a_[1];
+
+			param[0] = m[0];
+			param[1] = r[0];
+			param[2] = m[1];
+			param[3] = r[1];
 
 			// Integration by Euler method
 //			double dydx[nv];
@@ -190,10 +256,15 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 
 			// Integration by modified midpoint method
 			double dydx[nv];
-			for (k=0;k<nv;k++) dydx[k] = 0.0;
-			mmid(ystart, dydx, nv, param, 0.0, dtime, 10.0, ystart, MMR_AvgHam);
-			for (k=2;k<=3;k++) ystart[k] = fmod(ystart[k], 2.0*PI_greek);
-			for (k=6;k<=7;k++) ystart[k] = fmod(ystart[k], 2.0*PI_greek);
+			for (l=0;l<nv;l++) dydx[l] = 0.0;
+			for (l=0;l<100000;l++) {
+				if (!(l%1000)) printf("%g \t %g \t %g \t %g \t %g \t %g \n",
+										((double)l*dtime)/Gyr2sec, ystart[2], ystart[5],
+										sqrt(ystart[0]*ystart[0]+ystart[1]*ystart[1]), sqrt(ystart[3]*ystart[3]+ystart[4]*ystart[4]),
+										pow(sqrt(ystart[5]/ystart[2]),3));
+				mmid(ystart, dydx, nv, param, 0.0, dtime, 10.0, ystart, MMR_AvgHam);
+			}
+			exit(0);
 
 			// Integration by Bulirsch-Stoer method
 //			odeint(&ystart, nv, param, 0.0, 0.0+dtime, 1.0e-2, dtime/2.0, dtime/1000.0, &nok, &nbad, MMR_AvgHam, bsstep);
@@ -201,14 +272,91 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 			// Ecc forcing function of Charnoz et al. (2011). /jr: to convert synodic period to conjunction period
 //          d_eorb_MMR = MMR(m_p, norb, (*aorb), im, i, (*eorb)[im]) / (double)jr;
 
-			(*aorb)[im] = ystart[0];
-			(*eorb)[im] = ystart[1];
-			(*lambda)[im] = ystart[2];
-			(*omega)[im] = ystart[3];
-			(*aorb)[i] = ystart[4];
-			(*eorb)[i] = ystart[5];
-			(*lambda)[i] = ystart[6];
-			(*omega)[i] = ystart[7];
+			/* de/dt as a function of dh/dt and dk/dt
+		     * h2+k2 = e2 cos2 sig + e2 sin2 sig = e2 (cos2 sig + sin2 sig) = e2
+		     * 2 h dh + 2 k dk = 2 e de
+		     * de = (h dh + k dk) / e
+		     */
+		//	dydx[1] = (h[0]*dh[0] + k[0]*dk[0])/e[0];
+		//	dydx[5] = (h[1]*dh[1] + k[1]*dk[1])/e[1];
+			// d(e2)/dt
+//			dydx[1] = (h[0]*dh[0] + k[0]*dk[0]);
+//			dydx[5] = (h[1]*dh[1] + k[1]*dk[1]);
+
+			/* da/dt as a function of da_/dt
+			 * a = L2 / (G m2 M) so da = 2 L dL / (G m2 M)
+			 * a_ = Lambda2 / (G m2 M) so da_ = 2 Lambda dLambda / (G m2 M)
+			 * L[0] ≈ Lambda[0] + (1-j) (Lambda[0]*e[0]^2/2 + Lambda[1]*e[1]^2/2)
+			 * so dL[0] = dLambda[0] + (1-j)(dLambda[0]*e[0]^2/2 + Lambda[0]*e[0]*de[0] + dLambda[1]*e[1]^2/2 + Lambda[1]*e[1]*de[1])
+			 * substituting da and da_ for dL and dLambda:
+			 * da[0] = 2*L[0] / (G m[0]^2 M) * ( G m[0]^2 M * da_[0] / (2 Lambda[0]) + (1-j)*(G m[0]^2 M da_[0]/(2 Lambda[0])*e[0]^2/2 + Lambda[0]*e[0]*de[0]
+			 *                                                                                G m[1]^2 M da_[1]/(2 Lambda[1])*e[1]^2/2 + Lambda[1]*e[1]*de[1]) )
+			 * And same for dL[1] and da[1], but with j instead of (1-j).
+			 */
+//			double factor3 = 0.0; // d(Lambda0 Sigbar0 + Lambda1 Sigbar1)
+//			for (im=0;im<2;im++) factor3 = factor3 + Lambda[im]/(2.0*a_[im])*da_[im]*Sigbar[im] + Lambda[im]*(h[im]*dh[im]+k[im]*dk[im]);
+//			dydx[0] = 2.0*a[0]/L[0] * (Lambda[0]/(2.0*a_[0]) * da_[0] + (1.0-j)*factor3);
+//			dydx[4] = 2.0*a[1]/L[1] * (Lambda[1]/(2.0*a_[1]) * da_[1] +      j *factor3);
+			// Same thing:
+		//	double factor[2];
+		//	for (im=0;im<2;im++) factor[im] = Gcgs*m[im]*m[im]*Mprim/(2.0*Lambda[im]);
+		//	double factor2 = 0.0; // dSigma[0] + dSigma[1]
+		//	factor2 = factor[0]*da_[0]*e[0]*e[0]/2.0 + Lambda[0]*e[0]*dydx[1] + factor[1]*da_[1]*e[1]*e[1]/2.0 + Lambda[1]*e[1]*dydx[5];
+		//	dydx[0] = L[0]/Lambda[0]/factor[0] * (factor[0]*da_[0] + (1.0-j)*factor2);
+		//	dydx[4] = L[1]/Lambda[1]/factor[1] * (factor[1]*da_[1] +      j *factor2);
+			// Other (but wrong) option:
+		//	dydx[0] = da_tide[0];
+		//	dydx[4] = da_tide[1];
+
+			// Recover variables
+			h[0] = ystart[0];
+			k[0] = ystart[1];
+			a_[0] = ystart[2];
+			h[1] = ystart[3];
+			k[1] = ystart[4];
+			a_[1] = ystart[5];
+
+			// Reverse change of variables
+			for (l=0;l<2;l++) {
+				e[l] = sqrt(h[l]*h[l] + k[l]*k[l]);
+
+				Lambda[l] = sqrt(a_[l]*Gcgs*m[l]*m[l]*Mprim);
+				L[l] = Lambda[l]*e[l]*e[l]/2.0 / (1.0-sqrt(1.0-e[l]*e[l])); // MW08 Eqn A7
+				a[l] = L[l]*L[l]/(Gcgs*m[l]*m[l]*Mprim);
+			}
+
+			// Return orbital properties for printout
+			if ((*aorb)[im] < (*aorb)[i]) {
+				(*aorb)[im] = a[0];
+				(*eorb)[im] = e[0];
+				(*aorb)[i] = a[1];
+				(*eorb)[i] = e[1];
+			}
+			else{
+				(*aorb)[im] = a[1];
+				(*eorb)[im] = e[1];
+				(*aorb)[i] = a[0];
+				(*eorb)[i] = e[0];
+			}
+
+			// If eccentricity < 0 or > 1, exit
+			if (ystart[1] < 0.0 || ystart[1] > 1.0 || ystart[5] < 0.0 || ystart[5] > 1.0) {
+				printf("Time %g Myr, eccentricity out of bounds. Stopping.\n", (double)itime*dtime/Myr2sec);
+				FILE *fout;
+				// Turn working directory into full file path by moving up two directories to IcyDwarf (e.g., removing
+				// "Release/IcyDwarf" characters) and specifying the right path end.
+				char *title = (char*)malloc(1024*sizeof(char)); // Don't forget to free!
+				title[0] = '\0';
+				if (v_release == 1) strncat(title,path,strlen(path)-16);
+				else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+				strcat(title,"Outputs/Resonances.txt");
+				fout = fopen(title,"a");
+				if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
+				else fprintf(fout, "Time %g Myr, eccentricity out of bounds. Stopping.\n", (double)itime*dtime/Myr2sec);
+				fclose (fout);
+				free (title);
+				exit(0);
+			}
 
 			free(ystart);
 		}
@@ -450,33 +598,18 @@ int MMR_AvgHam (double x, double y[], double dydx[], double param[]) {
 
 	int im = 0;          // Moon counter
 
-	double mw_speedup = 1.0; // Speedup factor for tidal damping
+	double mw_speedup = 1000.0; // Speedup factor for tidal damping
 	double k2Q[2];       // k2/Q of moons
 	k2Q[0] = 8.0e-4;     // Enceladus
 	k2Q[1] = 1.0e-4;     // Dione
 
-	double sigma[2];     // Resonant variable, called phi_k in Borderies & Goldreich (1984, equation 2) with slightly different linear combination
-	double L[2];         // Angular momentum for each moon
-	double Lambda[2];    // Combination of L and Sigma, below, close to L if e small (Meyer & Wisdom 2008 equation A.5-6), constant of the motion in the absence of tides
-	double Sigma[2];     // Combination of L and e, very small if e small (Meyer & Wisdom 2008 equation A.7)
-	double h[2];         // State variable
-	double k[2];         // State variable
-	double a_[2];        // Moon semi-major axis (osculating)
-	double n_[2];        // Moon mean motion (osculating)
-	double dh[2];        // dh/dt
-	double dk[2];        // dk/dt
-	double dHk[2];       // Combination of mean motions
-	double Delta_n[2];   // Changes in mean motion due to planetary oblateness
-	double omdot[2];     // Rate of apsidal precession of pericenter due to planetary oblateness (e.g. Greenberg 1981, not change in this rate as (erroneously?) stated by Meyer & Wisdom 2008)
-	double Delta_sigdot[2]; // Changes in d/dt of resonant variable due to planetary oblateness
-
 	double m[2];         // Moon mass
 	double r[2];         // Moon radius
-	double e[2];         // Moon eccentricity
-	double a[2];         // Moon semi-major axis
-	double n[2];         // Moon mean motion
-	double lambda[2];    // Moon mean longitude
-	double omega[2];     // Moon longitude of pericenter
+
+	m[0] = param[0];
+	r[0] = param[1];
+	m[1] = param[2];
+	r[1] = param[3];
 
 	double Mprim = param[5];
 	double Rprim = param[6];
@@ -487,6 +620,23 @@ int MMR_AvgHam (double x, double y[], double dydx[], double param[]) {
 
 	double j = param[4];
 	double p = 2.0*j;
+
+	double Lambda[2];    // Angular momentum of the osculating orbit, close to L if e small (Meyer & Wisdom 2008 equation A.5-6), constant of the motion in the absence of tides
+	double L[2];         // Angular momentum
+	double h[2];         // State variable
+	double k[2];         // State variable
+	double a_[2];        // Moon semi-major axis (osculating)
+	double a[2];         // Moon semi-major axis
+	double e2[2];        // Moon eccentricity, squared
+	double n_[2];        // Moon mean motion (osculating)
+	double n[2];         // Moon mean motion
+	double dh[2];        // dh/dt
+	double dk[2];        // dk/dt
+	double dHk[2];       // Combination of mean motions
+	double Delta_n[2];   // Changes in mean motion due to planetary oblateness
+	double omdot[2];     // Rate of apsidal precession of pericenter due to planetary oblateness (e.g. Greenberg 1981, not change in this rate as (erroneously?) stated by Meyer & Wisdom 2008)
+	double Delta_sigdot[2]; // Changes in d/dt of resonant variable due to planetary oblateness
+
 	double alpha = 0.0;  // Outer moon semimajor axis / inner moon semimajor axis
 	double Cs_ee = 0.0; double Cs_eep = 0.0;  // Disturbing function coefficients (equations A.33-39 of Meyer & Wisdom 2008, also see App. B of Murray & Dermott 1999)
 	double Cr_e = 0.0; double Cr_ep = 0.0; double Cr_ee = 0.0; double Cr_eep = 0.0; double Cr_epep = 0.0; // More coefficients
@@ -502,31 +652,14 @@ int MMR_AvgHam (double x, double y[], double dydx[], double param[]) {
 	double Sigbar[2];
 	double da_[2];
 
-	m[0] = param[0];
-	r[0] = param[1];
-	m[1] = param[2];
-	r[1] = param[3];
-
-	a[0] = y[0];
-	e[0] = y[1];
-	lambda[0] = y[2];
-	omega[0] = y[3];
-	a[1] = y[4];
-	e[1] = y[5];
-	lambda[1] = y[6];
-	omega[1] = y[7];
-
-	for (im=0;im<2;im++) n[im] = sqrt(Gcgs*Mprim/pow(a[im],3));
-
 	// Initialize parameters
 	for (im=0;im<2;im++) {
-		sigma[im] = 0.0;
-		L[im] = 0.0;
 		Lambda[im] = 0.0;
-		Sigma[im] = 0.0;
+		L[im] = 0.0;
 		h[im] = 0.0;
 		k[im] = 0.0;
 		a_[im] = 0.0;
+		a[im] = 0.0;
 		n_[im] = 0.0;
 		dh[im] = 0.0;
 		dk[im] = 0.0;
@@ -547,37 +680,35 @@ int MMR_AvgHam (double x, double y[], double dydx[], double param[]) {
 		da_[im] = 0.0;
 	}
 
-	// Calculate sigma, dHk, L, Sigma
-	for (im=0;im<2;im++) {
-		sigma[im] = j*lambda[1] + (1.0-j)*lambda[0] - omega[im];
-		dHk[im] = (1.0-j)*n[0] + j*n[1];
-		L[im] = sqrt(m[im]*Gcgs*m[im]*Mprim*a[im]);
-		Sigma[im] = L[im] * (1.0-sqrt(1.0-e[im]*e[im]));
-	}
-	// Calculate Lambda, Sigbar
-	Lambda[0] = L[0] - (1.0-j)*(Sigma[0]+Sigma[1]);
-	Lambda[1] = L[1] - j*(Sigma[0]+Sigma[1]);
+	h[0] = y[0];
+	k[0] = y[1];
+	a_[0] = y[2];
+	h[1] = y[3];
+	k[1] = y[4];
+	a_[1] = y[5];
 
-	for (im=0;im<2;im++) Sigbar[im] = Sigma[im]/Lambda[im];
-	// Calculate n_
-	for (im=0;im<2;im++) n_[im] = m[im]*pow(Gcgs*m[im]*Mprim,2)/pow(Lambda[im],3);
-	// Calculate h, k, a_
 	for (im=0;im<2;im++) {
-		h[im] = e[im]*cos(sigma[im]);
-		k[im] = e[im]*sin(sigma[im]);
-		a_[im] = Lambda[im]*Lambda[im]/(Gcgs*m[im]*m[im]*Mprim);
+		e2[im] = h[im]*h[im] + k[im]*k[im]; // Square of eccentricity
+		n_[im] = sqrt(Gcgs*Mprim/pow(a_[im],3));
+		Sigbar[im] = 0.5*e2[im]; // TODO Technically, Sigbar[im] = Sigma[im]/Lambda[im];
+		Lambda[im] = sqrt(a_[im]*Gcgs*m[im]*m[im]*Mprim);
+		L[im] = Lambda[im]*Sigbar[im] / (1.0-sqrt(1.0-e2[im]));
+		a[im] = L[im]*L[im]/(Gcgs*m[im]*m[im]*Mprim);
+		n[im] = sqrt(Gcgs*Mprim/pow(a[im],3));
 	}
-	// Calculate Delta_n, omdot
+
+	for (im=0;im<2;im++) dHk[im] = (1.0-j)*n[0] + j*n[1];
+
+	// Calculate precession terms for mean longitude and argument of perihelion
 	for (im=0;im<2;im++) {
 		Delta_n[im] = n_[im]*(3.0*J2prim*pow(Rprim/a_[im],2) + (45.0/4.0*J2prim*J2prim - 15.0/4.0*J4prim)*pow(Rprim/a_[im],4));
 		omdot[im] = n_[im]*(1.5*J2prim*pow(Rprim/a_[im],2) + (63.0/8.0*J2prim*J2prim - 15.0/4.0*J4prim)*pow(Rprim/a_[im],4));
 //		printf("%d %g\n", im, omdot[im]*180.0/PI_greek*86400*365.25); // Orbital precession rates for Enceladus (161 deg/yr) and Dione (32 deg/yr) don't match the values reported by Zhang and Nimmo (2009): 88.4 deg/yr and 17.5 deg/yr.
 	}
-	// Calculate Delta_sigdot
 	for (im=0;im<2;im++) Delta_sigdot[im] = (1.0-j)*Delta_n[0] + j*Delta_n[1] - omdot[im];
 
 	// Calculate disturbing function coefficients (equations A.33-39 of Meyer & Wisdom 2008; tables 8.1, 8.2, and 8.4 of Murray & Dermott 1999)
-	alpha = a[0]/a[1];
+	alpha = pow((j-1)/j, 2/3);
 	Cs_ee   = 0.125 * (                                                              2.0*alpha*DLaplace_coef(alpha, 0.0, 0.5) + alpha*alpha*D2Laplace_coef(alpha, 0.0, 0.5));
 	Cs_eep  =  0.25 * (                 2.0*Laplace_coef(alpha, 1.0, 0.5) -          2.0*alpha*DLaplace_coef(alpha, 1.0, 0.5) - alpha*alpha*D2Laplace_coef(alpha, 1.0, 0.5));
 	Cr_e    =   0.5 * (              -2.0*j*Laplace_coef(alpha, j  , 0.5) -              alpha*DLaplace_coef(alpha, j  , 0.5)                                              );
@@ -589,11 +720,11 @@ int MMR_AvgHam (double x, double y[], double dydx[], double param[]) {
 
 	// Calculate effect of tides
 	for (im=0;im<2;im++) {
-		c[im] = 3.0 * k2prim/Qprim * m[im]/Mprim *sqrt(Gcgs*Mprim) * pow(Rprim,5); // Meyer & Wisdom (2008) indicate m[0] instead of m[im]. Typo?
+		c[im] = 3.0 * k2prim/Qprim * m[im]/Mprim * sqrt(Gcgs*Mprim) * pow(Rprim,5); // Meyer & Wisdom (2008) indicate m[0] instead of m[im]. Typo?
 		D[im] = k2Q[im] / (k2prim/Qprim) * pow(Mprim/m[im],2) * pow(r[im]/Rprim,5);
 		dk_tide[im] = -3.5*c[im]*D[im]*pow(a[im],-6.5)*k[im]*mw_speedup;
 		dh_tide[im] = -3.5*c[im]*D[im]*pow(a[im],-6.5)*h[im]*mw_speedup;
-		da_tide[im] = c[im] * (1.0-7.0*D[im]*e[im]*e[im]) * pow(a[im],-5.5)*mw_speedup;
+		da_tide[im] = c[im] * (1.0-7.0*D[im]*e2[im]) * pow(a[im],-5.5)*mw_speedup;
 	}
 
 	// Equations of motion
@@ -608,45 +739,17 @@ int MMR_AvgHam (double x, double y[], double dydx[], double param[]) {
 	}
 	dLambda_tide[0] = ((1.0+     j *Sigbar[1])*dL_tide[0] - (1.0-j)*Lambda[0]*dSigbar_tide[0] - (1.0-j)*Lambda[1]*dSigbar_tide[1] - (1.0-j)*dL_tide[1]*Sigbar[1]);
 	dLambda_tide[1] = ((1.0+(1.0-j)*Sigbar[0])*dL_tide[1] -      j *Lambda[0]*dSigbar_tide[0] -      j *Lambda[1]*dSigbar_tide[1] -      j *dL_tide[0]*Sigbar[0]);
-	for (im=0;im<2;im++)	dLambda_tide[im] = dLambda_tide[im] / (1.0 + (1.0-j)*Sigbar[0] + j*Sigbar[1]); // For [0], Meyer & Wisdom divide by []^-1 instead of just dividing. Typo?
+	for (im=0;im<2;im++) dLambda_tide[im] = dLambda_tide[im] / (1.0 + (1.0-j)*Sigbar[0] + j*Sigbar[1]); // For [0], Meyer & Wisdom divide by []^-1 instead of just dividing. Typo?
 
 	for (im=0;im<2;im++) da_[im] = 2.0*a_[im]/Lambda[im]*dLambda_tide[im];
 
-	// Calculate derivatives
-	// dlambda/dt
-	dydx[2] = n[0];
-	dydx[6] = n[1];
-
-	// domega/dt
-	dydx[3] = omdot[0];
-	dydx[7] = omdot[1];
-
-	/* de/dt as a function of dh/dt and dk/dt
-     * h2+k2 = e2 cos2 sig + e2 sin2 sig = e2 (cos2 sig + sin2 sig) = e2
-     * 2 h dh + 2 k dk = 2 e de
-     * de = (h dh + k dk) / e
-     */
-	dydx[1] = (h[0]*dh[0] + k[0]*dk[0])/e[0];
-	dydx[5] = (h[1]*dh[1] + k[1]*dk[1])/e[1];
-
-	/* da/dt as a function of da_/dt
-	 * a = L2 / (G m2 M) so da = 2 L dL / (G m2 M)
-	 * a_ = Lambda2 / (G m2 M) so da_ = 2 Lambda dLambda / (G m2 M)
-	 * L[0] ≈ Lambda[0] + (1-j) (Lambda[0]*e[0]^2/2 + Lambda[1]*e[1]^2/2)
-	 * so dL[0] = dLambda[0] + (1-j)(dLambda[0]*e[0]^2/2 + Lambda[0]*e[0]*de[0] + dLambda[1]*e[1]^2/2 + Lambda[1]*e[1]*de[1])
-	 * substituting da and da_ for dL and dLambda:
-	 * da[0] = 2*L[0] / (G m[0]^2 M) * ( G m[0]^2 M * da_[0] / (2 Lambda[0]) + (1-j)*(G m[0]^2 M da_[0]/(2 Lambda[0])*e[0]^2/2 + Lambda[0]*e[0]*de[0]
-	 *                                                                                G m[1]^2 M da_[1]/(2 Lambda[1])*e[1]^2/2 + Lambda[1]*e[1]*de[1]) )
-	 * And same for dL[1] and da[1], but with j instead of (1-j).
-	 */
-	double factor[2];
-	for (im=0;im<2;im++) factor[im] = Gcgs*m[im]*m[im]*Mprim/(2.0*Lambda[im]);
-	double factor2 = 0.0; // dSigma[0] + dSigma[1]
-	factor2 = factor[0]*da_[0]*e[0]*e[0]/2.0 + Lambda[0]*e[0]*dydx[1] + factor[1]*da_[1]*e[1]*e[1]/2.0 + Lambda[1]*e[1]*dydx[5];
-	dydx[0] = L[0]/Lambda[0]/factor[0] * (factor[0]*da_[0] + (1.0-j)*factor2);
-	dydx[4] = L[1]/Lambda[1]/factor[1] * (factor[1]*da_[1] +      j *factor2);
-//	dydx[0] = da_tide[0];
-//	dydx[4] = da_tide[1];
+	// Return derivatives
+	dydx[0] = dh[0];
+	dydx[1] = dk[0];
+	dydx[2] = da_[0];
+	dydx[3] = dh[1];
+	dydx[4] = dk[1];
+	dydx[5] = da_[1];
 
 	return 0;
 }
