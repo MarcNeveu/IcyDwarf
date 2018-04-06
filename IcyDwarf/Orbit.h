@@ -45,7 +45,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity) {
 
 	int i = 0;
-	int j = 0;
+	double j = 0.0;
 	int l = 0;
 	int inner = 0;                       // Index of inner moon
 	int outer = 0;                       // Index of outer moon
@@ -128,10 +128,10 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 //	}
 	for (i=0;i<im;i++) {
 		if ((*resonance)[im][i] > 0.0) {
-			j = (int) (*resonance)[im][i];
+			j = (*resonance)[im][i] + 1.0;
 
 			int nv = 6;
-			int nparamorb = 11;
+			int nparamorb = 18;
 			int nok = 0; // Number of good steps
 			int nbad = 0; // Number of bad steps
 
@@ -139,14 +139,6 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 			if (ystart == NULL) printf("Orbit: Not enough memory to create ystart[nv]\n");
 
 			double param[nparamorb];
-
-			param[4] = (double)(j+1);
-			param[5] = Mprim;
-			param[6] = Rprim;
-			param[7] = J2prim;
-			param[8] = J4prim;
-			param[9] = k2prim;
-			param[10] = Qprim;
 
 			double sigma[2];     // Resonant variable, called phi_k in Borderies & Goldreich (1984, equation 2) with slightly different linear combination
 			double L[2];         // Angular momentum
@@ -164,6 +156,11 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 			double h[2];         // State variable
 			double k[2];         // State variable
 			double a_[2];        // Moon semi-major axis (osculating)
+
+			double alpha = 0.0;  // Outer moon semimajor axis / inner moon semimajor axis
+			double Cs_ee = 0.0; double Cs_eep = 0.0;  // Disturbing function coefficients (equations A.33-39 of Meyer & Wisdom 2008, also see App. B of Murray & Dermott 1999)
+			double Cr_e = 0.0; double Cr_ep = 0.0; double Cr_ee = 0.0; double Cr_eep = 0.0; double Cr_epep = 0.0; // More coefficients
+			double p = 2.0*j;
 
 			// Initialize parameters
 			for (l=0;l<2;l++) {
@@ -233,6 +230,17 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 				a_[l] = Lambda[l]*Lambda[l]/(Gcgs*m[l]*m[l]*Mprim);
 			}
 
+			// Calculate disturbing function coefficients (equations A.33-39 of Meyer & Wisdom 2008; tables 8.1, 8.2, and 8.4 of Murray & Dermott 1999)
+			alpha = pow((j-1)/j, 2.0/3.0);
+			Cs_ee   = 0.125 * (                                                              2.0*alpha*DLaplace_coef(alpha, 0.0, 0.5) + alpha*alpha*D2Laplace_coef(alpha, 0.0, 0.5));
+			Cs_eep  =  0.25 * (                 2.0*Laplace_coef(alpha, 1.0, 0.5) -          2.0*alpha*DLaplace_coef(alpha, 1.0, 0.5) - alpha*alpha*D2Laplace_coef(alpha, 1.0, 0.5));
+			Cr_e    =   0.5 * (              -2.0*j*Laplace_coef(alpha, j  , 0.5) -              alpha*DLaplace_coef(alpha, j  , 0.5)                                              );
+			Cr_ep   =   0.5 * (         (2.0*j-1.0)*Laplace_coef(alpha, j-1, 0.5) +              alpha*DLaplace_coef(alpha, j-1, 0.5)                                              );
+			if (j == 2.0) Cr_ep = Cr_ep - 2.0*alpha;
+			Cr_ee   = 0.125 * (    (-5.0*p+4.0*p*p)*Laplace_coef(alpha, p  , 0.5) + (-2.0+4.0*p)*alpha*DLaplace_coef(alpha, p  , 0.5) + alpha*alpha*D2Laplace_coef(alpha, p  , 0.5));
+			Cr_eep  =  0.25 * ((-2.0+6.0*p-4.0*p*p)*Laplace_coef(alpha, p-1, 0.5) +  (2.0-4.0*p)*alpha*DLaplace_coef(alpha, p-1, 0.5) - alpha*alpha*D2Laplace_coef(alpha, p-1, 0.5));
+			Cr_epep = 0.125 * ( (2.0-7.0*p+4.0*p*p)*Laplace_coef(alpha, p-2, 0.5) + (-2.0+4.0*p)*alpha*DLaplace_coef(alpha, p-2, 0.5) + alpha*alpha*D2Laplace_coef(alpha, p-2, 0.5));
+
 			// Set up ODE solver
 			ystart[0] = h[0];
 			ystart[1] = k[0];
@@ -246,6 +254,22 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 			param[2] = m[1];
 			param[3] = r[1];
 
+			param[4] = j;
+			param[5] = Mprim;
+			param[6] = Rprim;
+			param[7] = J2prim;
+			param[8] = J4prim;
+			param[9] = k2prim;
+			param[10] = Qprim;
+
+			param[11] = Cs_ee;
+			param[12] = Cs_eep;
+			param[13] = Cr_e;
+			param[14] = Cr_ep;
+			param[15] = Cr_ee;
+			param[16] = Cr_eep;
+			param[17] = Cr_epep;
+
 			// Integration by Euler method
 //			double dydx[nv];
 //			for (k=0;k<nv;k++) dydx[k] = 0.0;
@@ -257,14 +281,15 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 			// Integration by modified midpoint method
 			double dydx[nv];
 			for (l=0;l<nv;l++) dydx[l] = 0.0;
-			for (l=0;l<100000;l++) {
-				if (!(l%1000)) printf("%g \t %g \t %g \t %g \t %g \t %g \n",
-										((double)l*dtime)/Gyr2sec, ystart[2], ystart[5],
+			double totaltime = 0.5*Myr2sec;
+			long int q = 0;
+			for (q=0;q<(long int)(totaltime/dtime);q++) {
+				if (!(q%(long int)(totaltime/dtime/10000))) printf("%g \t %g \t %g \t %g \t %g \t %g \n",
+										((double)q*dtime)/Myr2sec, ystart[2], ystart[5],
 										sqrt(ystart[0]*ystart[0]+ystart[1]*ystart[1]), sqrt(ystart[3]*ystart[3]+ystart[4]*ystart[4]),
-										pow(sqrt(ystart[5]/ystart[2]),3));
+										pow(ystart[5]/ystart[2], 1.5));
 				mmid(ystart, dydx, nv, param, 0.0, dtime, 10.0, ystart, MMR_AvgHam);
 			}
-			exit(0);
 
 			// Integration by Bulirsch-Stoer method
 //			odeint(&ystart, nv, param, 0.0, 0.0+dtime, 1.0e-2, dtime/2.0, dtime/1000.0, &nok, &nbad, MMR_AvgHam, bsstep);
@@ -341,7 +366,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 
 			// If eccentricity < 0 or > 1, exit
 			if (ystart[1] < 0.0 || ystart[1] > 1.0 || ystart[5] < 0.0 || ystart[5] > 1.0) {
-				printf("Time %g Myr, eccentricity out of bounds. Stopping.\n", (double)itime*dtime/Myr2sec);
+				printf("Time %.3g Myr, eccentricity out of bounds. Stopping. e1=%g, e2=%g\n", (double)l*dtime/Myr2sec, ystart[1], ystart[5]);
 				FILE *fout;
 				// Turn working directory into full file path by moving up two directories to IcyDwarf (e.g., removing
 				// "Release/IcyDwarf" characters) and specifying the right path end.
@@ -619,7 +644,6 @@ int MMR_AvgHam (double x, double y[], double dydx[], double param[]) {
 	double Qprim = param[10];
 
 	double j = param[4];
-	double p = 2.0*j;
 
 	double Lambda[2];    // Angular momentum of the osculating orbit, close to L if e small (Meyer & Wisdom 2008 equation A.5-6), constant of the motion in the absence of tides
 	double L[2];         // Angular momentum
@@ -637,10 +661,6 @@ int MMR_AvgHam (double x, double y[], double dydx[], double param[]) {
 	double omdot[2];     // Rate of apsidal precession of pericenter due to planetary oblateness (e.g. Greenberg 1981, not change in this rate as (erroneously?) stated by Meyer & Wisdom 2008)
 	double Delta_sigdot[2]; // Changes in d/dt of resonant variable due to planetary oblateness
 
-	double alpha = 0.0;  // Outer moon semimajor axis / inner moon semimajor axis
-	double Cs_ee = 0.0; double Cs_eep = 0.0;  // Disturbing function coefficients (equations A.33-39 of Meyer & Wisdom 2008, also see App. B of Murray & Dermott 1999)
-	double Cr_e = 0.0; double Cr_ep = 0.0; double Cr_ee = 0.0; double Cr_eep = 0.0; double Cr_epep = 0.0; // More coefficients
-
 	double dk_tide[2];   // Tidal damping terms (s-1)
 	double dh_tide[2];
 	double da_tide[2];
@@ -651,6 +671,9 @@ int MMR_AvgHam (double x, double y[], double dydx[], double param[]) {
 	double dLambda_tide[2];
 	double Sigbar[2];
 	double da_[2];
+
+	double Cs_ee = param[11]; double Cs_eep = param[12];  // Disturbing function coefficients (equations A.33-39 of Meyer & Wisdom 2008, also see App. B of Murray & Dermott 1999)
+	double Cr_e = param[13]; double Cr_ep = param[14]; double Cr_ee = param[15]; double Cr_eep = param[16]; double Cr_epep = param[17]; // More coefficients
 
 	// Initialize parameters
 	for (im=0;im<2;im++) {
@@ -706,17 +729,6 @@ int MMR_AvgHam (double x, double y[], double dydx[], double param[]) {
 //		printf("%d %g\n", im, omdot[im]*180.0/PI_greek*86400*365.25); // Orbital precession rates for Enceladus (161 deg/yr) and Dione (32 deg/yr) don't match the values reported by Zhang and Nimmo (2009): 88.4 deg/yr and 17.5 deg/yr.
 	}
 	for (im=0;im<2;im++) Delta_sigdot[im] = (1.0-j)*Delta_n[0] + j*Delta_n[1] - omdot[im];
-
-	// Calculate disturbing function coefficients (equations A.33-39 of Meyer & Wisdom 2008; tables 8.1, 8.2, and 8.4 of Murray & Dermott 1999)
-	alpha = pow((j-1)/j, 2/3);
-	Cs_ee   = 0.125 * (                                                              2.0*alpha*DLaplace_coef(alpha, 0.0, 0.5) + alpha*alpha*D2Laplace_coef(alpha, 0.0, 0.5));
-	Cs_eep  =  0.25 * (                 2.0*Laplace_coef(alpha, 1.0, 0.5) -          2.0*alpha*DLaplace_coef(alpha, 1.0, 0.5) - alpha*alpha*D2Laplace_coef(alpha, 1.0, 0.5));
-	Cr_e    =   0.5 * (              -2.0*j*Laplace_coef(alpha, j  , 0.5) -              alpha*DLaplace_coef(alpha, j  , 0.5)                                              );
-	Cr_ep   =   0.5 * (         (2.0*j-1.0)*Laplace_coef(alpha, j-1, 0.5) +              alpha*DLaplace_coef(alpha, j-1, 0.5)                                              );
-	if (j == 2.0) Cr_ep = Cr_ep - 2.0*alpha;
-	Cr_ee   = 0.125 * (    (-5.0*p+4.0*p*p)*Laplace_coef(alpha, p  , 0.5) + (-2.0+4.0*p)*alpha*DLaplace_coef(alpha, p  , 0.5) + alpha*alpha*D2Laplace_coef(alpha, p  , 0.5));
-	Cr_eep  =  0.25 * ((-2.0+6.0*p-4.0*p*p)*Laplace_coef(alpha, p-1, 0.5) +  (2.0-4.0*p)*alpha*DLaplace_coef(alpha, p-1, 0.5) - alpha*alpha*D2Laplace_coef(alpha, p-1, 0.5));
-	Cr_epep = 0.125 * ( (2.0-7.0*p+4.0*p*p)*Laplace_coef(alpha, p-2, 0.5) + (-2.0+4.0*p)*alpha*DLaplace_coef(alpha, p-2, 0.5) + alpha*alpha*D2Laplace_coef(alpha, p-2, 0.5));
 
 	// Calculate effect of tides
 	for (im=0;im<2;im++) {
