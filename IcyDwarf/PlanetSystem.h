@@ -119,6 +119,15 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	double *omega = (double*) malloc((nmoons)*sizeof(double));      // Longitude of pericenter for each moon = angle between periapse and longitude of ascending node, ω, + longitude of ascending node, Ω
 	if (omega == NULL) printf("PlanetSystem: Not enough memory to create omega[nmoons]\n");
 
+	double *h_old = (double*) malloc((nmoons)*sizeof(double));      // Stored state variable h if resonance
+	if (h_old == NULL) printf("PlanetSystem: Not enough memory to create h_old[nmoons]\n");
+
+	double *k_old = (double*) malloc((nmoons)*sizeof(double));      // Stored state variable h if resonance
+	if (k_old == NULL) printf("PlanetSystem: Not enough memory to create k_old[nmoons]\n");
+
+	double *a__old = (double*) malloc((nmoons)*sizeof(double));      // Stored state variable h if resonance
+	if (a__old == NULL) printf("PlanetSystem: Not enough memory to create a__old[nmoons]\n");
+
 	double *Wtide_tot = (double*) malloc((nmoons)*sizeof(double));  // Total tidal heating rate in each moon, summed in all layers (erg s-1)
 	if (Wtide_tot == NULL) printf("PlanetSystem: Not enough memory to create Wtide_tot[nmoons]\n");
 
@@ -449,18 +458,6 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		deorb[im] = (double*) malloc(nmoons*sizeof(double));
 		if (deorb[im] == NULL) printf("PlanetSystem: Not enough memory to create deorb[nmoons][nmoons]\n");
 	}
-	double **dlambda_orb = (double**) malloc((nmoons)*sizeof(double*)); // Rate of change in moon mean longitude (s-1)
-	if (dlambda_orb == NULL) printf("PlanetSystem: Not enough memory to create dlambda_orb[nmoons]\n");
-	for (im=0;im<nmoons;im++) {
-		dlambda_orb[im] = (double*) malloc(nmoons*sizeof(double));
-		if (dlambda_orb[im] == NULL) printf("PlanetSystem: Not enough memory to create dlambda_orb[nmoons][nmoons]\n");
-	}
-	double **domega_orb = (double**) malloc((nmoons)*sizeof(double*)); // Rate of change in moon longitude of pericenter (s-1)
-	if (domega_orb == NULL) printf("PlanetSystem: Not enough memory to create domega_orb[nmoons]\n");
-	for (im=0;im<nmoons;im++) {
-		domega_orb[im] = (double*) malloc(nmoons*sizeof(double));
-		if (domega_orb[im] == NULL) printf("PlanetSystem: Not enough memory to create domega_orb[nmoons][nmoons]\n");
-	}
 
 	double ***Tide_output = (double***) malloc(nmoons*sizeof(double**)); // Output: radial and temporal distribution of tidal heating rates (erg s-1)
 	if (Tide_output == NULL) printf("PlanetSystem: Not enough memory to create Tide_output[nmoons]\n");
@@ -518,6 +515,9 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		dnorb_dt[im] = 0.0;
 		lambda[im] = 0.32 + (double)im*0.77; // As good an initial value as any, but could randomize
 		omega[im] = 0.58 + (double)im*0.27; // As good an initial value as any, but could randomize
+		h_old[im] = 0.0;
+		k_old[im] = 0.0;
+		a__old[im] = 0.0;
 		Wtide_tot[im] = 0.0;
 		outputpath[im][0] = '\0';
 
@@ -526,8 +526,6 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 			resonance[im][ir] = 0.0;
 			resonance_old[im][ir] = 0.0;
 			deorb[im][ir] = 0.0;
-			dlambda_orb[im][ir] = 0.0;
-			domega_orb[im][ir] = 0.0;
 		}
 
 		for (i=0;i<12;i++) Thermal_output[im][i] = 0.0;
@@ -864,18 +862,18 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
     		if (tzero[im] < tzero_min) tzero_min = tzero[im];
     }
     realtime = tzero_min;
-    realtime = realtime - dtime*speedup;
+    realtime = realtime - dtime;
 
     ntime = (long long) (fulltime / dtime + 1.0e-3);
     nsteps = (int) (dtoutput / dtime + 1.0e-3);
 
     for (itime=0;itime<=ntime;itime++) {
 
-		realtime = realtime + dtime*speedup;
+		realtime = realtime + dtime;
 
 		for (im=0;im<nmoons;im++) {
 			moonspawn[im] = 0;
-			if (realtime-dtime*speedup < tzero[im] && realtime >= tzero[im]) {
+			if (realtime-dtime < tzero[im] && realtime >= tzero[im]) {
 				Mring = Mring - m_p[im];
 				moonspawn[im]++;
 			}
@@ -913,8 +911,6 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		for (im=0;im<nmoons;im++) {
 			for (ir=0;ir<nmoons;ir++) {
 				deorb[im][ir] = 0.0;
-				dlambda_orb[im][ir] = 0.0;
-				domega_orb[im][ir] = 0.0;
 			}
 		}
 		// TODO For benchmark, remove
@@ -934,9 +930,9 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 					// TODO Add a non-Keplerian term due to planetary oblateness?
 					dnorb_dt[im] = (norb[im]-dnorb_dt[im])/dtime;
 
-					Orbit (argc, argv, path, im, dtime, itime, nmoons, m_p, r_p, &resonance, &PCapture, &aorb, &eorb, &deorb[im], norb, dnorb_dt,
-							&lambda, &dlambda_orb[im], &omega, &domega_orb[im], Wtide_tot[im], Mprim, Rprim, J2prim, J4prim, k2prim, Qprim,
-							aring_out, aring_in, alpha_Lind, ringSurfaceDensity);
+					Orbit (argc, argv, path, im, dtime, speedup, itime, nmoons, m_p, r_p, &resonance, &PCapture, &aorb, &eorb, &deorb[im], norb, dnorb_dt,
+							lambda, omega, &h_old, &k_old, &a__old, Wtide_tot[im], Mprim, Rprim, J2prim, J4prim, k2prim, Qprim,
+							aring_out, aring_in, alpha_Lind, ringSurfaceDensity, realtime-tzero_min);
 				}
 //				++nloops;
 			}
@@ -958,7 +954,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 //						itime/1, aorb[0], aorb[1], norb[0], norb[1], eorb[0], eorb[1], lambda[0], lambda[1], omega[0], omega[1]);
 //			printf("itime=%d\n", itime);
 //			if (itime > 2) exit(0);
-			if (!(itime%1)) printf("%g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \n",
+			if (!(itime%1)) printf("Marc %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \n",
 						(realtime-tzero_min)/Gyr2sec, aorb[0], aorb[1], norb[0]/norb[1], eorb[0], eorb[1], lambda[0], lambda[1], omega[0], omega[1]);
 			if ((realtime-tzero_min)/Gyr2sec > 0.5) exit(0);
 
@@ -966,7 +962,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 //			for (im=0;im<nmoons;im++) {
 //				if (realtime >= tzero[im]) {
 //					Thermal(argc, argv, path, outputpath[im], warnings, NR, dr_grid[im],
-//							dtime*speedup, realtime, itime, Xp[im], Xsalt[im], Xfines[im], Xpores[im], Tsurf[im],
+//							dtime, realtime, itime, Xp[im], Xsalt[im], Xfines[im], Xpores[im], Tsurf[im],
 //							&r[im], &dM[im], &dM_old[im], &Phi[im], &dVol[im], &dE[im], &T[im], &T_old[im], &Pressure[im],
 //							rhoRockth, rhoHydrth, rhoH2osth, rhoAdhsth, rhoH2olth, rhoNh3lth,
 //							&Mrock[im], &Mrock_init[im], &Mh2os[im], &Madhs[im], &Mh2ol[im], &Mnh3l[im],
@@ -1161,8 +1157,6 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		free (resonance_old[im]);
 		free (PCapture[im]);
 		free (deorb[im]);
-		free (dlambda_orb[im]);
-		free (domega_orb[im]);
 		for (i=0;i<12;i++) free (Stress[im][i]);
 		for (ir=0;ir<NR;ir++) free (Act[im][ir]);
 		for (i=0;i<2;i++) free (Tide_output[im][i]);
@@ -1225,8 +1219,9 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	free (PCapture);
 	free (Wtide_tot);
 	free (deorb);
-	free (dlambda_orb);
-	free (domega_orb);
+	free (h_old);
+	free (k_old);
+	free (a__old);
 
 	return 0;
 }
