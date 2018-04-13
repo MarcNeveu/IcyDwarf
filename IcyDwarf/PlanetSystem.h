@@ -20,9 +20,6 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		double *aorb_init, double *eorb_init, int tidalmodel, double tidetimes, int *orbevol, int *hy, int chondr, int *crack_input,
 		int *crack_species);
 
-int Update_orbit(int im, int nmoons, double dtime, double *eorb, double *Wtide_tot, double *lambda, double *omega, double **deorb,
-		double **dlambda_orb, double **domega_orb, double Mprim, double Rprim, double m, double Qprim, double aorb);
-
 int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, double dtime, double speedup, double *tzero, double fulltime,
 		double dtoutput, int nmoons, double Mprim, double Rprim, double Qprimi, double Qprimf, int Qmode, double k2prim, double J2prim, double J4prim,
 		double Mring_init, double aring_out, double aring_in, double *r_p, double *rho_p, double rhoHydr, double rhoDry, double *Xp, double *Xsalt,
@@ -41,7 +38,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	int ir = 0;
 
 	// Variables common to all moons
-	int forced_hydcirc = 0;              // Switch to force hydrothermal circulation
+//	int forced_hydcirc = 0;              // Switch to force hydrothermal circulation
 	int itime = 0;                       // Time counter
 	long long ntime = 0;                 // Total number of iterations
 	int isteps = 0;                      // Output step counter
@@ -452,12 +449,6 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		magnesite[i] = (double*) malloc(sizeaTP*sizeof(double));
 		if (magnesite[i] == NULL) printf("PlanetSystem: Not enough memory to create magnesite[sizeaTP][sizeaTP]\n");
 	}
-	double **deorb = (double**) malloc((nmoons)*sizeof(double*)); // Rate of change in moon orbital eccentricity (s-1)
-	if (deorb == NULL) printf("PlanetSystem: Not enough memory to create deorb[nmoons]\n");
-	for (im=0;im<nmoons;im++) {
-		deorb[im] = (double*) malloc(nmoons*sizeof(double));
-		if (deorb[im] == NULL) printf("PlanetSystem: Not enough memory to create deorb[nmoons][nmoons]\n");
-	}
 
 	double ***Tide_output = (double***) malloc(nmoons*sizeof(double**)); // Output: radial and temporal distribution of tidal heating rates (erg s-1)
 	if (Tide_output == NULL) printf("PlanetSystem: Not enough memory to create Tide_output[nmoons]\n");
@@ -525,7 +516,6 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 			PCapture[im][ir] = 0.0;
 			resonance[im][ir] = 0.0;
 			resonance_old[im][ir] = 0.0;
-			deorb[im][ir] = 0.0;
 		}
 
 		for (i=0;i<12;i++) Thermal_output[im][i] = 0.0;
@@ -908,13 +898,6 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 			free (title);
 			exit(0);
 		}
-		for (im=0;im<nmoons;im++) {
-			for (ir=0;ir<nmoons;ir++) {
-				deorb[im][ir] = 0.0;
-			}
-		}
-		// TODO For benchmark, remove
-		resonance[1][0] = 1.0;
 
 		// Begin parallel calculations
 #pragma omp parallel // private(thread_id, nloops)
@@ -930,33 +913,15 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 					// TODO Add a non-Keplerian term due to planetary oblateness?
 					dnorb_dt[im] = (norb[im]-dnorb_dt[im])/dtime;
 
-					Orbit (argc, argv, path, im, dtime, speedup, itime, nmoons, m_p, r_p, &resonance, &PCapture, &aorb, &eorb, &deorb[im], norb, dnorb_dt,
-							lambda, omega, &h_old, &k_old, &a__old, Wtide_tot[im], Mprim, Rprim, J2prim, J4prim, k2prim, Qprim,
+					Orbit (argc, argv, path, im, dtime, speedup, itime, nmoons, m_p, r_p, &resonance, &PCapture, &aorb, &eorb, norb, dnorb_dt,
+							lambda, omega, &h_old, &k_old, &a__old, &(Wtide_tot[im]), Mprim, Rprim, J2prim, J4prim, k2prim, Qprim,
 							aring_out, aring_in, alpha_Lind, ringSurfaceDensity, realtime-tzero_min);
 				}
 //				++nloops;
 			}
 //			printf("itime = %d, Thread %d performed %d iterations of the orbit loop over moons.\n", itime, thread_id, nloops); nloops = 0;
 
-			// Update eccentricities, which cannot be negative, as well as lambdas and omegas
-//#pragma omp for
-//			for (im=0;im<nmoons;im++) {
-//				if (realtime >= tzero[im] && orbevol[im]) {
-//					Update_orbit(im, nmoons, dtime, &eorb[im], &Wtide_tot[im], &lambda[im], &omega[im], deorb,
-//							dlambda_orb, domega_orb, Mprim, Rprim, m_p[im], Qprim, aorb[im]);
-//				}
-////				++nloops;
-//			}
-////			printf("itime = %d, Thread %d performed %d iterations of the ecc loop over moons.\n", itime, thread_id, nloops); nloops = 0;
-
-			// Numerical convergence plots: let e change only because of resonance, with proba=1 or equivalently dice=0
-//			if (!(itime%1)) printf("%d \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \n",
-//						itime/1, aorb[0], aorb[1], norb[0], norb[1], eorb[0], eorb[1], lambda[0], lambda[1], omega[0], omega[1]);
-//			printf("itime=%d\n", itime);
-//			if (itime > 2) exit(0);
-			if (!(itime%1)) printf("Marc %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \n",
-						(realtime-tzero_min)/Gyr2sec, aorb[0], aorb[1], norb[0]/norb[1], eorb[0], eorb[1], lambda[0], lambda[1], omega[0], omega[1]);
-			if ((realtime-tzero_min)/Gyr2sec > 0.5) exit(0);
+//			if ((realtime-tzero_min)/Gyr2sec > 0.25) exit(0);
 
 #pragma omp for
 //			for (im=0;im<nmoons;im++) {
@@ -1156,7 +1121,6 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		free (resonance[im]);
 		free (resonance_old[im]);
 		free (PCapture[im]);
-		free (deorb[im]);
 		for (i=0;i<12;i++) free (Stress[im][i]);
 		for (ir=0;ir<NR;ir++) free (Act[im][ir]);
 		for (i=0;i<2;i++) free (Tide_output[im][i]);
@@ -1218,34 +1182,9 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	free (resonance_old);
 	free (PCapture);
 	free (Wtide_tot);
-	free (deorb);
 	free (h_old);
 	free (k_old);
 	free (a__old);
-
-	return 0;
-}
-
-int Update_orbit(int im, int nmoons, double dtime, double *eorb, double *Wtide_tot, double *lambda, double *omega, double **deorb,
-		double **dlambda_orb, double **domega_orb, double Mprim, double Rprim, double m, double Qprim, double aorb) {
-
-	int i = 0;
-
-	double deorb_tot = 0.0;
-
-	for (i=0;i<nmoons;i++) {
-		(*lambda) = fmod((*lambda) + dtime*dlambda_orb[i][im], 2.0*PI_greek); // Valid if no more than one resonance, to avoid double-counting. Modulo 2*pi, although that's not necessary since we take cos and sin sigma
-		(*omega) = fmod((*omega) + dtime*domega_orb[i][im], 2.0*PI_greek);
-		deorb_tot = deorb_tot + deorb[i][im];
-	}
-
-	if (-dtime*deorb_tot < (*eorb)) (*eorb) = (*eorb) + dtime*deorb_tot;
-	else { // Set eccentricity to zero at which point there is no more dissipation, update Wtide_tot accordingly
-		deorb_tot = -(*eorb)/dtime;
-		(*Wtide_tot) = (- deorb_tot + 171.0/16.0*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m/Qprim*pow(aorb,-6.5)*(*eorb))
-				     * Gcgs*Mprim*m*(*eorb) / aorb;
-		(*eorb) = 0.0;
-	}
 
 	return 0;
 }
