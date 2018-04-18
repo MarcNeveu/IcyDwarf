@@ -10,8 +10,8 @@ ICY DWARF v18.x INPUT FILE
 | Grid |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 |-----------------------------------------------|------------------------------------------------------|
 | Number of grid zones                          | 200                                                  |
-| Thermal-orbital simulation time step (yr)     | 2.5e5                                              |
-| Moon-moon interaction speedup factor          | 1000                                                |
+| Thermal-orbital simulation time step (yr)     | 50                                                   |
+| Moon-moon interaction speedup factor          | 1000                                                 |
 | Total time of simulation (Myr)                | 250                                                  |
 | Output every (Myr)                            | 1                                                    |
 |-----------------------------------------------|------------------------------------------------------|

@@ -37,7 +37,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 		int **dont_dehydrate, int **circ, int *structure_changed, double **Crack, double **Crack_size, double **fracOpen, double **P_pore,
 		double **P_hydr, double ***Act, double *fracKleached, int *crack_input, int *crack_species, double **aTP, double **integral,
 		double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite, int *ircrack, int *ircore, int *irice,
-		int *irdiff, int forced_hydcirc, double **Nu, int tidalmodel, double tidetimes, int im, int moonspawn, double Mprim, double **eorb,
+		int *irdiff, int forced_hydcirc, double **Nu, int tidalmodel, double tidetimes, int im, int moonspawn, double Mprim, double *eorb,
 		double *norb, double *Wtide_tot, int hy, int chondr, double *Heat_radio, double *Heat_grav, double *Heat_serp, double *Heat_dehydr,
 		double *Heat_tide, double ***Stress, double ***Tide_output);
 
@@ -103,7 +103,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 		int **dont_dehydrate, int **circ, int *structure_changed, double **Crack, double **Crack_size, double **fracOpen, double **P_pore,
 		double **P_hydr, double ***Act, double *fracKleached, int *crack_input, int *crack_species, double **aTP, double **integral,
 		double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite, int *ircrack, int *ircore, int *irice,
-		int *irdiff, int forced_hydcirc, double **Nu, int tidalmodel, double tidetimes, int im, int moonspawn, double Mprim, double **eorb,
+		int *irdiff, int forced_hydcirc, double **Nu, int tidalmodel, double tidetimes, int im, int moonspawn, double Mprim, double *eorb,
 		double *norb, double *Wtide_tot, int hy, int chondr, double *Heat_radio, double *Heat_grav, double *Heat_serp, double *Heat_dehydr,
 		double *Heat_tide, double ***Stress, double ***Tide_output) {
 
@@ -384,13 +384,13 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 	}
 
 	// Tidal heating
-	if (itime > 0 && Mprim && (*eorb)[im] > 0.0 && !moonspawn) {
+	if (itime > 0 && Mprim && eorb[im] > 0.0 && !moonspawn) {
 		for (ir=0;ir<NR;ir++) {
 			(*Tide_output)[ir][1] = -Qth[ir]/1.0e7; // To output the distribution of tidal heating rates in each layer = -before+after
 			strain((*Pressure)[ir], (*Xhydr)[ir], (*T)[ir], &strain_rate[ir], &Brittle_strength[ir], (*pore)[ir]);
 		}
 		(*Wtide_tot) = 0.0;
-		tide(tidalmodel, tidetimes, (*eorb)[im], omega_tide, &Qth, NR, &(*Wtide_tot), (*Mh2os), (*Madhs), (*Mh2ol), (*Mnh3l), (*dM),
+		tide(tidalmodel, tidetimes, eorb[im], omega_tide, &Qth, NR, &(*Wtide_tot), (*Mh2os), (*Madhs), (*Mh2ol), (*Mnh3l), (*dM),
 				(*Vrock), (*dVol), (*r), (*T), (*Xhydr), (*Pressure), (*pore), im);
 		(*Heat_tide) = (*Heat_tide) + (*Wtide_tot);
 

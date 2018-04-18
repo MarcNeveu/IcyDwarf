@@ -38,7 +38,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	int ir = 0;
 
 	// Variables common to all moons
-//	int forced_hydcirc = 0;              // Switch to force hydrothermal circulation
+	int forced_hydcirc = 0;              // Switch to force hydrothermal circulation
 	int itime = 0;                       // Time counter
 	long long ntime = 0;                 // Total number of iterations
 	int isteps = 0;                      // Output step counter
@@ -124,6 +124,27 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 
 	double *a__old = (double*) malloc((nmoons)*sizeof(double));      // Stored state variable h if resonance
 	if (a__old == NULL) printf("PlanetSystem: Not enough memory to create a__old[nmoons]\n");
+
+	double *Cs_ee_old = (double*) malloc((nmoons)*sizeof(double));   // Stored disturbing function coefficient Cs_ee if orbital resonance
+	if (Cs_ee_old == NULL) printf("PlanetSystem: Not enough memory to create Cs_ee_old[nmoons]\n");
+
+	double *Cs_eep_old = (double*) malloc((nmoons)*sizeof(double));   // Stored disturbing function coefficient Cs_eep if orbital resonance
+	if (Cs_eep_old == NULL) printf("PlanetSystem: Not enough memory to create Cs_eep_old[nmoons]\n");
+
+	double *Cr_e_old = (double*) malloc((nmoons)*sizeof(double));   // Stored disturbing function coefficient Cr_e if orbital resonance
+	if (Cr_e_old == NULL) printf("PlanetSystem: Not enough memory to create Cr_e_old[nmoons]\n");
+
+	double *Cr_ep_old = (double*) malloc((nmoons)*sizeof(double));   // Stored disturbing function coefficient Cr_ep if orbital resonance
+	if (Cr_ep_old == NULL) printf("PlanetSystem: Not enough memory to create Cr_ep_old[nmoons]\n");
+
+	double *Cr_ee_old = (double*) malloc((nmoons)*sizeof(double));   // Stored disturbing function coefficient Cr_ee if orbital resonance
+	if (Cr_ee_old == NULL) printf("PlanetSystem: Not enough memory to create Cr_ee_old[nmoons]\n");
+
+	double *Cr_eep_old = (double*) malloc((nmoons)*sizeof(double));   // Stored disturbing function coefficient Cr_eep if orbital resonance
+	if (Cr_eep_old == NULL) printf("PlanetSystem: Not enough memory to create Cr_eep_old[nmoons]\n");
+
+	double *Cr_epep_old = (double*) malloc((nmoons)*sizeof(double));   // Stored disturbing function coefficient Cr_epep if orbital resonance
+	if (Cr_epep_old == NULL) printf("PlanetSystem: Not enough memory to create Cr_epep_old[nmoons]\n");
 
 	double *Wtide_tot = (double*) malloc((nmoons)*sizeof(double));  // Total tidal heating rate in each moon, summed in all layers (erg s-1)
 	if (Wtide_tot == NULL) printf("PlanetSystem: Not enough memory to create Wtide_tot[nmoons]\n");
@@ -509,6 +530,14 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		h_old[im] = 0.0;
 		k_old[im] = 0.0;
 		a__old[im] = 0.0;
+		Cs_ee_old[im] = 0.0;
+		Cs_eep_old[im] = 0.0;
+		Cr_e_old[im] = 0.0;
+		Cr_ep_old[im] = 0.0;
+		Cr_ee_old[im] = 0.0;
+		Cr_eep_old[im] = 0.0;
+		Cr_epep_old[im] = 0.0;
+
 		Wtide_tot[im] = 0.0;
 		outputpath[im][0] = '\0';
 
@@ -905,7 +934,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 //			thread_id = omp_get_thread_num();
 //			nloops = 0;
 
-//#pragma omp for
+#pragma omp for
 			for (im=0;im<nmoons;im++) {
 				if (realtime >= tzero[im] && orbevol[im]) {
 					dnorb_dt[im] = norb[im];
@@ -913,15 +942,20 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 					// TODO Add a non-Keplerian term due to planetary oblateness?
 					dnorb_dt[im] = (norb[im]-dnorb_dt[im])/dtime;
 
+					// Benchmark with Meyer & Wisdom (2008) and Zhang & Nimmo (2009)
+//					Wtide_tot[0] = 8.0e-4*11.5*pow(r_p[0],5)*pow(norb[0],5)*pow(eorb[0],2)/Gcgs;     // Enceladus
+//					Wtide_tot[1] = 1.0e-4*11.5*pow(r_p[1],5)*pow(norb[1],5)*pow(eorb[1],2)/Gcgs;     // Dione
+
 					Orbit (argc, argv, path, im, dtime, speedup, itime, nmoons, m_p, r_p, &resonance, &PCapture, &aorb, &eorb, norb, dnorb_dt,
-							lambda, omega, &h_old, &k_old, &a__old, &(Wtide_tot[im]), Mprim, Rprim, J2prim, J4prim, k2prim, Qprim,
+							lambda, omega, &h_old, &k_old, &a__old, &Cs_ee_old, &Cs_eep_old, &Cr_e_old, &Cr_ep_old, &Cr_ee_old, &Cr_eep_old, &Cr_epep_old,
+							&Wtide_tot, Mprim, Rprim, J2prim, J4prim, k2prim, Qprim,
 							aring_out, aring_in, alpha_Lind, ringSurfaceDensity, realtime-tzero_min);
 				}
 //				++nloops;
 			}
 //			printf("itime = %d, Thread %d performed %d iterations of the orbit loop over moons.\n", itime, thread_id, nloops); nloops = 0;
 
-#pragma omp for
+//#pragma omp for
 //			for (im=0;im<nmoons;im++) {
 //				if (realtime >= tzero[im]) {
 //					Thermal(argc, argv, path, outputpath[im], warnings, NR, dr_grid[im],
@@ -935,7 +969,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 //							&Crack[im], &Crack_size[im], &fracOpen[im], &P_pore[im], &P_hydr[im], &Act[im], &fracKleached[im],
 //							crack_input, crack_species, aTP, integral, alpha, beta, silica, chrysotile, magnesite,
 //							&ircrack[im], &ircore[im], &irice[im], &irdiff[im], forced_hydcirc, &Nu[im],
-//							tidalmodel, tidetimes, im, moonspawn[im], Mprim, &eorb, norb, &Wtide_tot[im], hy[im], chondr,
+//							tidalmodel, tidetimes, im, moonspawn[im], Mprim, eorb, norb, &Wtide_tot[im], hy[im], chondr,
 //							&Heat_radio[im], &Heat_grav[im], &Heat_serp[im], &Heat_dehydr[im], &Heat_tide[im],
 //							&Stress[im], &Tide_output[im]);
 ////					++nloops;
@@ -948,44 +982,44 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		//                           Write outputs
 		//-------------------------------------------------------------------
 
-    		// Print change in status of resonances every time it happens
-    		for (im=0;im<nmoons;im++) {
-    			for (i=0;i<nmoons;i++) {
-    				if (resonance[im][i] != resonance_old[im][i]) {
-    					reso_print = 1;
-    					resonance_old[im][i] = resonance[im][i];
-    				}
-    			}
-    		}
-    		if (reso_print) {
-    			FILE *fout;
-    	    		char *title = (char*)malloc(1024*sizeof(char)); title[0] = '\0';
-    	    		if (v_release == 1) strncat(title,path,strlen(path)-16); else if (cmdline == 1) strncat(title,path,strlen(path)-18);
-    	    		strcat(title,"Outputs/Resonances.txt");
-    			fout = fopen(title,"a");
-    			if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
-    			else fprintf(fout,"Time %g Gyr\n", realtime/Gyr2sec);
-    			fclose (fout);
-    			free (title);
+		// Print change in status of resonances every time it happens
+		for (im=0;im<nmoons;im++) {
+			for (i=0;i<nmoons;i++) {
+				if (resonance[im][i] != resonance_old[im][i]) {
+					reso_print = 1;
+					resonance_old[im][i] = resonance[im][i];
+				}
+			}
+		}
+		if (reso_print) {
+			FILE *fout;
+				char *title = (char*)malloc(1024*sizeof(char)); title[0] = '\0';
+				if (v_release == 1) strncat(title,path,strlen(path)-16); else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+				strcat(title,"Outputs/Resonances.txt");
+			fout = fopen(title,"a");
+			if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
+			else fprintf(fout,"Time %g Gyr\n", realtime/Gyr2sec);
+			fclose (fout);
+			free (title);
 
-    			for (im=0;im<nmoons;im++) append_output(nmoons, resonance[im], path, "Outputs/Resonances.txt");
-    		}
-    		if (reso_print) {
-    			FILE *fout;
-    	    		char *title = (char*)malloc(1024*sizeof(char)); title[0] = '\0';
-    	    		if (v_release == 1) strncat(title,path,strlen(path)-16); else if (cmdline == 1) strncat(title,path,strlen(path)-18);
-    	    		strcat(title,"Outputs/PCapture.txt");
-    			fout = fopen(title,"a");
-    			if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
-    			else fprintf(fout,"Time %g Gyr\n", realtime/Gyr2sec);
-    			fclose (fout);
-    			free (title);
+			for (im=0;im<nmoons;im++) append_output(nmoons, resonance[im], path, "Outputs/Resonances.txt");
+		}
+		if (reso_print) {
+			FILE *fout;
+				char *title = (char*)malloc(1024*sizeof(char)); title[0] = '\0';
+				if (v_release == 1) strncat(title,path,strlen(path)-16); else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+				strcat(title,"Outputs/PCapture.txt");
+			fout = fopen(title,"a");
+			if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
+			else fprintf(fout,"Time %g Gyr\n", realtime/Gyr2sec);
+			fclose (fout);
+			free (title);
 
-    			for (im=0;im<nmoons;im++) append_output(nmoons, PCapture[im], path, "Outputs/PCapture.txt");
-    			reso_print = 0;
-    		}
+			for (im=0;im<nmoons;im++) append_output(nmoons, PCapture[im], path, "Outputs/PCapture.txt");
+			reso_print = 0;
+		}
 
-    		// Print other outputs at regular, user-specified intervals
+		// Print other outputs at regular, user-specified intervals
 		isteps++;
 		if (isteps == nsteps) {
 			isteps = 0;
@@ -1183,6 +1217,11 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	free (h_old);
 	free (k_old);
 	free (a__old);
+	free (Cr_e_old);
+	free (Cr_ep_old);
+	free (Cr_ee_old);
+	free (Cr_eep_old);
+	free (Cr_epep_old);
 
 	return 0;
 }
