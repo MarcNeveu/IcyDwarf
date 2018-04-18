@@ -73,54 +73,64 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 	//      Changes in eccentricities due moon-moon perturbations
 	//-------------------------------------------------------------------
 
-	for (i=0;i<im;i++) {
+	for (i=0;i<nmoons;i++) (*resonance)[im][i] = 0.0;
+	for (i=0;i<nmoons;i++) {
+		if (i != im) {
+			/* Find out if there is an orbital resonance */
 
-		/* Find out if there is an orbital resonance */
-		for (ij=5;ij>=1;ij--) { // Go decreasing, from the weakest to the strongest resonances, because resonance[im][i] gets overprinted
-			for (l=1;l>=1;l--) { // Borderies & Goldreich (1984) derivation valid for j:j+k resonances up to k=2, but TODO for now MMR_AvgHam only handles k=1
+			// Find index of inner moon
+			if (norb[im] > norb[i]) {
+				inner = im;
+				outer = i;
+			}
+			else {
+				inner = i;
+				outer = im;
+			}
+			for (ij=5;ij>=1;ij--) { // Go decreasing, from the weakest to the strongest resonances, because resonance[im][i] gets overprinted
+				for (l=1;l>=1;l--) { // Borderies & Goldreich (1984) derivation valid for j:j+k resonances up to k=2, but TODO for now MMR_AvgHam only handles k=1
 
-				// Find index of inner moon
-				if (norb[im] > norb[i]) {
-					inner = im;
-					outer = i;
-				}
-				else {
-					inner = i;
-					outer = im;
-				}
+					// MMR if mean motions are commensurate by <1%
+					commensurability = norb[inner]/norb[outer] * (double)ij/(double)(ij+l);
+					if (commensurability > 0.99 && commensurability < 1.01) {
 
-				// MMR if mean motions are commensurate by <1%
-				commensurability = norb[inner]/norb[outer] * (double)ij/(double)(ij+l);
-				if (commensurability > 0.99 && commensurability < 1.01) {
+						(*resonance)[inner][outer] = (double)ij;
+						(*resonance)[outer][inner] = (double)ij;
 
-					(*resonance)[inner][outer] = (double)ij;
-					(*resonance)[outer][inner] = (double)ij;
-
-					// Alternatively, determine analytically the probability of capture in resonance with moon i further out
-//					if ((double)ij*dnorb_dt[inner] <= (double)(ij+l)*dnorb_dt[outer]) { // Peale (1976) equation (25), Yoder (1973), Sinclair (1972), Lissauer et al. (1984)
-//						if (inner > outer) (*PCapture)[inner][outer] = MMR_PCapture(m_p, norb, (*aorb), inner, outer, eorb[inner], (double)ij, l, Mprim);
-//						else               (*PCapture)[outer][inner] = MMR_PCapture(m_p, norb, (*aorb), inner, outer, eorb[inner], (double)ij, l, Mprim);
-//					}
-//					else {
-//						(*PCapture)[inner][outer] = 0.0;
-//						(*PCapture)[outer][inner] = 0.0;
-//					}
-//					// Resonance if random number below capture proba
-//					dice = (double) ((rand()+0)%(100+1))/100.0;
-//					if      (dice < (*PCapture)[inner][outer]) (*resonance)[inner][outer] = (double)ij;
-//					else if (dice < (*PCapture)[outer][inner]) (*resonance)[outer][inner] = (double)ij;
-//					else { // If proba of resonance has become too low (e.g. ecc increased), resonance is escaped
-//						(*resonance)[inner][outer] = 0.0;
-//						(*resonance)[outer][inner] = 0.0;
-//					}
+						// Alternatively, determine analytically the probability of capture in resonance with moon i further out
+	//					if ((double)ij*dnorb_dt[inner] <= (double)(ij+l)*dnorb_dt[outer]) { // Peale (1976) equation (25), Yoder (1973), Sinclair (1972), Lissauer et al. (1984)
+	//						if (inner > outer) (*PCapture)[inner][outer] = MMR_PCapture(m_p, norb, (*aorb), inner, outer, eorb[inner], (double)ij, l, Mprim);
+	//						else               (*PCapture)[outer][inner] = MMR_PCapture(m_p, norb, (*aorb), inner, outer, eorb[inner], (double)ij, l, Mprim);
+	//					}
+	//					else {
+	//						(*PCapture)[inner][outer] = 0.0;
+	//						(*PCapture)[outer][inner] = 0.0;
+	//					}
+	//					// Resonance if random number below capture proba
+	//					dice = (double) ((rand()+0)%(100+1))/100.0;
+	//					if      (dice < (*PCapture)[inner][outer]) (*resonance)[inner][outer] = (double)ij;
+	//					else if (dice < (*PCapture)[outer][inner]) (*resonance)[outer][inner] = (double)ij;
+	//					else { // If proba of resonance has become too low (e.g. ecc increased), resonance is escaped
+	//						(*resonance)[inner][outer] = 0.0;
+	//						(*resonance)[outer][inner] = 0.0;
+	//					}
+					}
 				}
 			}
 		}
 	}
 	/* Determine orbital evolution due to moon-moon resonance */
-	for (i=0;i<im;i++) {
-		if ((*resonance)[im][i] > 0.0) {
-			resorbevol = 1;
+	for (i=nmoons-1;i>=im;i--) {
+		if ((*resonance)[im][i] > 0.0) resorbevol = 1; // Bypass secular evolution also for the moon listed in the former column of the input file (see below)
+	}
+	for (i=0;i<im;i++) { // Avoid doing the calculation redundantly for each moon in resonance: only for the moon listed in the latter column of the input file
+		if ((*resonance)[im][i] <= 0.0) { // Reset storage of state variables
+			(*h_old)[im] = 0.0;
+			(*k_old)[im] = 0.0;
+			(*a__old)[im] = 0.0;
+		}
+		else { // Resonance
+			resorbevol = 1; // Trigger the switch to bypass secular evolution
 			j = (*resonance)[im][i] + 1.0;
 
 			int nv = 6;
@@ -187,6 +197,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 			// If moons im and i were in resonance at the previous time step, initialize directly to state variables
 			// This won't work if a given moon is caught up in two resonances at the same time, but the moon-moon interaction routine can't handle this anyway.
 			if ((*a__old)[im] != 0.0 || (*a__old)[i] != 0.0) {
+
 				// Set 0 indices to inner moon
 				if ((*aorb)[im] < (*aorb)[i]) {
 					h[0] = (*h_old)[im];
@@ -399,14 +410,6 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 			}
 
 			free(ystart);
-		}
-		else { // Reset storage of state variables
-			(*h_old)[im] = 0.0;
-			(*k_old)[im] = 0.0;
-			(*a__old)[im] = 0.0;
-			(*h_old)[i] = 0.0;
-			(*k_old)[i] = 0.0;
-			(*a__old)[i] = 0.0;
 		}
 	}
 

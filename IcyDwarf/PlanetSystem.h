@@ -502,7 +502,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		Heat[im][0] = 0.0, 	Heat[im][1] = 0.0, 	Heat[im][2] = 0.0, Heat[im][3] = 0.0, Heat[im][4] = 0.0; Heat[im][5] = 0.0;
 		aorb[im] = aorb_init[im];
 		eorb[im] = eorb_init[im];
-		norb[im] = 0.0;
+		norb[im] = sqrt(Gcgs*Mprim/pow(aorb_init[im],3));
 		dnorb_dt[im] = 0.0;
 		lambda[im] = 0.32 + (double)im*0.77; // As good an initial value as any, but could randomize
 		omega[im] = 0.58 + (double)im*0.27; // As good an initial value as any, but could randomize
@@ -920,8 +920,6 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 //				++nloops;
 			}
 //			printf("itime = %d, Thread %d performed %d iterations of the orbit loop over moons.\n", itime, thread_id, nloops); nloops = 0;
-
-//			if ((realtime-tzero_min)/Gyr2sec > 0.25) exit(0);
 
 #pragma omp for
 //			for (im=0;im<nmoons;im++) {
