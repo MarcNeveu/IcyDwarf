@@ -943,8 +943,8 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 					dnorb_dt[im] = (norb[im]-dnorb_dt[im])/dtime;
 
 					// Benchmark with Meyer & Wisdom (2008) and Zhang & Nimmo (2009)
-//					Wtide_tot[0] = 8.0e-4*11.5*pow(r_p[0],5)*pow(norb[0],5)*pow(eorb[0],2)/Gcgs;     // Enceladus
-//					Wtide_tot[1] = 1.0e-4*11.5*pow(r_p[1],5)*pow(norb[1],5)*pow(eorb[1],2)/Gcgs;     // Dione
+					Wtide_tot[0] = 8.0e-4*11.5*pow(r_p[0],5)*pow(norb[0],5)*pow(eorb[0],2)/Gcgs;     // Enceladus
+					Wtide_tot[1] = 1.0e-4*11.5*pow(r_p[1],5)*pow(norb[1],5)*pow(eorb[1],2)/Gcgs;     // Dione
 
 					Orbit (argc, argv, path, im, dtime, speedup, itime, nmoons, m_p, r_p, &resonance, &PCapture, &aorb, &eorb, norb, dnorb_dt,
 							lambda, omega, &h_old, &k_old, &a__old, &Cs_ee_old, &Cs_eep_old, &Cr_e_old, &Cr_ep_old, &Cr_ee_old, &Cr_eep_old, &Cr_epep_old,
@@ -955,26 +955,26 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 			}
 //			printf("itime = %d, Thread %d performed %d iterations of the orbit loop over moons.\n", itime, thread_id, nloops); nloops = 0;
 
-//#pragma omp for
-//			for (im=0;im<nmoons;im++) {
-//				if (realtime >= tzero[im]) {
-//					Thermal(argc, argv, path, outputpath[im], warnings, NR, dr_grid[im],
-//							dtime, realtime, itime, Xp[im], Xsalt[im], Xfines[im], Xpores[im], Tsurf[im],
-//							&r[im], &dM[im], &dM_old[im], &Phi[im], &dVol[im], &dE[im], &T[im], &T_old[im], &Pressure[im],
-//							rhoRockth, rhoHydrth, rhoH2osth, rhoAdhsth, rhoH2olth, rhoNh3lth,
-//							&Mrock[im], &Mrock_init[im], &Mh2os[im], &Madhs[im], &Mh2ol[im], &Mnh3l[im],
-//							&Vrock[im], &Vh2os[im], &Vadhs[im], &Vh2ol[im], &Vnh3l[im], &Erock[im], &Eh2os[im], &Eslush[im],
-//							&Xhydr[im], &Xhydr_old[im], &kappa[im], &pore[im], &Mliq[im], &Mcracked_rock[im],
-//							&dont_dehydrate[im], &circ[im], &structure_changed[im],
-//							&Crack[im], &Crack_size[im], &fracOpen[im], &P_pore[im], &P_hydr[im], &Act[im], &fracKleached[im],
-//							crack_input, crack_species, aTP, integral, alpha, beta, silica, chrysotile, magnesite,
-//							&ircrack[im], &ircore[im], &irice[im], &irdiff[im], forced_hydcirc, &Nu[im],
-//							tidalmodel, tidetimes, im, moonspawn[im], Mprim, eorb, norb, &Wtide_tot[im], hy[im], chondr,
-//							&Heat_radio[im], &Heat_grav[im], &Heat_serp[im], &Heat_dehydr[im], &Heat_tide[im],
-//							&Stress[im], &Tide_output[im]);
-////					++nloops;
-//				}
-//			}
+#pragma omp for
+			for (im=0;im<nmoons;im++) {
+				if (realtime >= tzero[im]) {
+					Thermal(argc, argv, path, outputpath[im], warnings, NR, dr_grid[im],
+							dtime, realtime, itime, Xp[im], Xsalt[im], Xfines[im], Xpores[im], Tsurf[im],
+							&r[im], &dM[im], &dM_old[im], &Phi[im], &dVol[im], &dE[im], &T[im], &T_old[im], &Pressure[im],
+							rhoRockth, rhoHydrth, rhoH2osth, rhoAdhsth, rhoH2olth, rhoNh3lth,
+							&Mrock[im], &Mrock_init[im], &Mh2os[im], &Madhs[im], &Mh2ol[im], &Mnh3l[im],
+							&Vrock[im], &Vh2os[im], &Vadhs[im], &Vh2ol[im], &Vnh3l[im], &Erock[im], &Eh2os[im], &Eslush[im],
+							&Xhydr[im], &Xhydr_old[im], &kappa[im], &pore[im], &Mliq[im], &Mcracked_rock[im],
+							&dont_dehydrate[im], &circ[im], &structure_changed[im],
+							&Crack[im], &Crack_size[im], &fracOpen[im], &P_pore[im], &P_hydr[im], &Act[im], &fracKleached[im],
+							crack_input, crack_species, aTP, integral, alpha, beta, silica, chrysotile, magnesite,
+							&ircrack[im], &ircore[im], &irice[im], &irdiff[im], forced_hydcirc, &Nu[im],
+							tidalmodel, tidetimes, im, moonspawn[im], Mprim, eorb, norb, &Wtide_tot[im], hy[im], chondr,
+							&Heat_radio[im], &Heat_grav[im], &Heat_serp[im], &Heat_dehydr[im], &Heat_tide[im],
+							&Stress[im], &Tide_output[im]);
+//					++nloops;
+				}
+			}
 //			printf("itime = %d, Thread %d performed %d iterations of the thermal loop over moons.\n", itime, thread_id, nloops);
 		} // Rejoin threads, end parallel calculations
 
@@ -993,9 +993,9 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		}
 		if (reso_print) {
 			FILE *fout;
-				char *title = (char*)malloc(1024*sizeof(char)); title[0] = '\0';
-				if (v_release == 1) strncat(title,path,strlen(path)-16); else if (cmdline == 1) strncat(title,path,strlen(path)-18);
-				strcat(title,"Outputs/Resonances.txt");
+			char *title = (char*)malloc(1024*sizeof(char)); title[0] = '\0';
+			if (v_release == 1) strncat(title,path,strlen(path)-16); else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+			strcat(title,"Outputs/Resonances.txt");
 			fout = fopen(title,"a");
 			if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
 			else fprintf(fout,"Time %g Gyr\n", realtime/Gyr2sec);
@@ -1006,9 +1006,9 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		}
 		if (reso_print) {
 			FILE *fout;
-				char *title = (char*)malloc(1024*sizeof(char)); title[0] = '\0';
-				if (v_release == 1) strncat(title,path,strlen(path)-16); else if (cmdline == 1) strncat(title,path,strlen(path)-18);
-				strcat(title,"Outputs/PCapture.txt");
+			char *title = (char*)malloc(1024*sizeof(char)); title[0] = '\0';
+			if (v_release == 1) strncat(title,path,strlen(path)-16); else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+			strcat(title,"Outputs/PCapture.txt");
 			fout = fopen(title,"a");
 			if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
 			else fprintf(fout,"Time %g Gyr\n", realtime/Gyr2sec);
@@ -1217,6 +1217,8 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	free (h_old);
 	free (k_old);
 	free (a__old);
+	free (Cs_ee_old);
+	free (Cs_eep_old);
 	free (Cr_e_old);
 	free (Cr_ep_old);
 	free (Cr_ee_old);

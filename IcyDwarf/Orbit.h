@@ -245,7 +245,6 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 			else {
 
 				// Calculate disturbing function coefficients (equations A.33-39 of Meyer & Wisdom 2008; tables 8.1, 8.2, and 8.4 of Murray & Dermott 1999)
-				// TODO could calculate only once per resonance
 				alpha = pow((j-1)/j, 2.0/3.0);
 				Cs_ee   = 0.125 * (                                                              2.0*alpha*DLaplace_coef(alpha, 0.0, 0.5) + alpha*alpha*D2Laplace_coef(alpha, 0.0, 0.5));
 				Cs_eep  =  0.25 * (                 2.0*Laplace_coef(alpha, 1.0, 0.5) -          2.0*alpha*DLaplace_coef(alpha, 1.0, 0.5) - alpha*alpha*D2Laplace_coef(alpha, 1.0, 0.5));
@@ -698,7 +697,7 @@ int MMR_AvgHam (double x, double y[], double dydx[], double param[]) {
 
 	int im = 0;          // Moon counter
 
-	double mw_speedup = param[18]; // Speedup factor for tidal damping
+	double mw_speedup = param[20]; // Speedup factor for tidal damping
 	double k2Q[2];       // k2/Q of moons
 	double m[2];         // Moon mass
 	double r[2];         // Moon radius
@@ -792,10 +791,8 @@ int MMR_AvgHam (double x, double y[], double dydx[], double param[]) {
 		n[im] = sqrt(Gcgs*Mprim/pow(a[im],3));
 	}
 
-//	k2Q[0] = param[2]/(11.5*pow(r[0],5)*pow(n[0],5)*e2[0]/Gcgs); // Segatz et al. (1988); Henning & Hurford (2014)
-//	k2Q[1] = param[5]/(11.5*pow(r[1],5)*pow(n[1],5)*e2[1]/Gcgs);
-	k2Q[0] = 8.0e-4;
-	k2Q[1] = 1.0e-4;
+	k2Q[0] = param[2]/(11.5*pow(r[0],5)*pow(n[0],5)*e2[0]/Gcgs); // Segatz et al. (1988); Henning & Hurford (2014)
+	k2Q[1] = param[5]/(11.5*pow(r[1],5)*pow(n[1],5)*e2[1]/Gcgs);
 
 	for (im=0;im<2;im++) dHk[im] = (1.0-j)*n[0] + j*n[1];
 
