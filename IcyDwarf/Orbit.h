@@ -240,6 +240,8 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 					r[1] = r_p[im];
 					W[1] = (*Wtide_tot)[im];
 				}
+				// Convert tidal heating rate W to k2/Q (Segatz et al. (1988); Henning & Hurford (2014))
+				for (l=0;l<2;l++) W[l] = W[l]/(11.5*pow(r[l],5)*pow(Gcgs*Mprim/pow(a_[l],3), 2.5)*(h[l]*h[l]+k[l]*k[l])/Gcgs);
 			}
 			// Otherwise, perform change of variables from orbital parameters
 			else {
@@ -290,6 +292,8 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 					r[1] = r_p[im];
 					W[1] = (*Wtide_tot)[im];
 				}
+				// Convert tidal heating rate W to k2/Q (Segatz et al. (1988); Henning & Hurford (2014))
+				for (l=0;l<2;l++) W[l] = W[l]/(11.5*pow(r[l],5)*pow(Gcgs*Mprim/pow(a[l],3), 2.5)*pow(e[l],2)/Gcgs); // k2/Q, Segatz et al. (1988); Henning & Hurford (2014)
 
 				// Change variables
 				for (l=0;l<2;l++) {
@@ -697,15 +701,18 @@ int MMR_AvgHam (double x, double y[], double dydx[], double param[]) {
 
 	int im = 0;          // Moon counter
 
-	double mw_speedup = param[20]; // Speedup factor for tidal damping
 	double k2Q[2];       // k2/Q of moons
 	double m[2];         // Moon mass
 	double r[2];         // Moon radius
 
 	m[0] = param[0];
 	r[0] = param[1];
+	k2Q[0] = param[2];
 	m[1] = param[3];
 	r[1] = param[4];
+	k2Q[1] = param[5];
+
+	double j = param[6];
 
 	double Mprim = param[7];
 	double Rprim = param[8];
@@ -713,8 +720,6 @@ int MMR_AvgHam (double x, double y[], double dydx[], double param[]) {
 	double J4prim = param[10];
 	double k2prim = param[11];
 	double Qprim = param[12];
-
-	double j = param[6];
 
 	double Lambda[2];    // Angular momentum of the osculating orbit, close to L if e small (Meyer & Wisdom 2008 equation A.5-6), constant of the motion in the absence of tides
 	double L[2];         // Angular momentum
@@ -745,6 +750,8 @@ int MMR_AvgHam (double x, double y[], double dydx[], double param[]) {
 
 	double Cs_ee = param[13]; double Cs_eep = param[14];  // Disturbing function coefficients (equations A.33-39 of Meyer & Wisdom 2008, also see App. B of Murray & Dermott 1999)
 	double Cr_e = param[15]; double Cr_ep = param[16]; double Cr_ee = param[17]; double Cr_eep = param[18]; double Cr_epep = param[19]; // More coefficients
+
+	double mw_speedup = param[20]; // Speedup factor for tidal damping
 
 	// Initialize parameters
 	for (im=0;im<2;im++) {
@@ -790,9 +797,6 @@ int MMR_AvgHam (double x, double y[], double dydx[], double param[]) {
 		a[im] = L[im]*L[im]/(Gcgs*m[im]*m[im]*Mprim);
 		n[im] = sqrt(Gcgs*Mprim/pow(a[im],3));
 	}
-
-	k2Q[0] = param[2]/(11.5*pow(r[0],5)*pow(n[0],5)*e2[0]/Gcgs); // Segatz et al. (1988); Henning & Hurford (2014)
-	k2Q[1] = param[5]/(11.5*pow(r[1],5)*pow(n[1],5)*e2[1]/Gcgs);
 
 	for (im=0;im<2;im++) dHk[im] = (1.0-j)*n[0] + j*n[1];
 

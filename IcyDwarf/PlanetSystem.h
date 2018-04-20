@@ -95,7 +95,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	double WRratio[nmoons][2];			// WRratio[2] (by mass, no dim), output
 	double Heat[nmoons][6];              // Heat[6] (erg), output
 	double Thermal_output[nmoons][12];	// Thermal_output[12] (multiple units), output
-	double Orbit_output[nmoons][3];      // Orbit_output[3] (multiple units), output
+	double Orbit_output[nmoons][4];      // Orbit_output[4] (multiple units), output
 	double Primary[3];                   // Primary[3], output of primary's tidal Q and ring mass (kg) vs. time (Gyr)
 
 	double *aorb = (double*) malloc((nmoons)*sizeof(double));       // Moon orbital semi-major axis (cm)
@@ -855,9 +855,10 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		// Orbital parameters
 		Orbit_output[im][0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
 		Orbit_output[im][1] = aorb[im]/km2cm;
-		Orbit_output[im][2] = eorb[im];
+		Orbit_output[im][2] = a__old[im]/km2cm;
+		Orbit_output[im][3] = eorb[im];
 		strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt");
-		append_output(3, Orbit_output[im], path, filename); filename[0] = '\0';
+		append_output(4, Orbit_output[im], path, filename); filename[0] = '\0';
 	}
 	// Ring mass
 	Primary[0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
@@ -928,6 +929,16 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 			exit(0);
 		}
 
+		// Benchmark with Meyer & Wisdom (2008) and Zhang & Nimmo (2009)
+		if (itime==0) {
+			Wtide_tot[0] = 8.0e-4*11.5*pow(r_p[0],5)*pow(sqrt(Gcgs*Mprim/pow(aorb[0],3)),5)*pow(eorb[0],2)/Gcgs;     // Enceladus
+			Wtide_tot[1] = 1.0e-4*11.5*pow(r_p[1],5)*pow(sqrt(Gcgs*Mprim/pow(aorb[1],3)),5)*pow(eorb[1],2)/Gcgs;     // Dione
+		}
+		else {
+			Wtide_tot[0] = 8.0e-4*11.5*pow(r_p[0],5)*pow(sqrt(Gcgs*Mprim/pow(a__old[0],3)),5)*pow(eorb[0],2)/Gcgs;     // Enceladus
+			Wtide_tot[1] = 1.0e-4*11.5*pow(r_p[1],5)*pow(sqrt(Gcgs*Mprim/pow(a__old[1],3)),5)*pow(eorb[1],2)/Gcgs;     // Dione
+		}
+
 		// Begin parallel calculations
 #pragma omp parallel // private(thread_id, nloops)
     	{
@@ -941,10 +952,6 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 					norb[im] = sqrt(Gcgs*Mprim/pow(aorb[im],3)); // Otherwise, norb[im] is zero and the moon im doesn't influence the others gravitationally
 					// TODO Add a non-Keplerian term due to planetary oblateness?
 					dnorb_dt[im] = (norb[im]-dnorb_dt[im])/dtime;
-
-					// Benchmark with Meyer & Wisdom (2008) and Zhang & Nimmo (2009)
-					Wtide_tot[0] = 8.0e-4*11.5*pow(r_p[0],5)*pow(norb[0],5)*pow(eorb[0],2)/Gcgs;     // Enceladus
-					Wtide_tot[1] = 1.0e-4*11.5*pow(r_p[1],5)*pow(norb[1],5)*pow(eorb[1],2)/Gcgs;     // Dione
 
 					Orbit (argc, argv, path, im, dtime, speedup, itime, nmoons, m_p, r_p, &resonance, &PCapture, &aorb, &eorb, norb, dnorb_dt,
 							lambda, omega, &h_old, &k_old, &a__old, &Cs_ee_old, &Cs_eep_old, &Cr_e_old, &Cr_ep_old, &Cr_ee_old, &Cr_eep_old, &Cr_epep_old,
@@ -1090,9 +1097,10 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 				// Orbital parameters
 				Orbit_output[im][0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
 				Orbit_output[im][1] = aorb[im]/km2cm;
-				Orbit_output[im][2] = eorb[im];
+				Orbit_output[im][2] = a__old[im]/km2cm;
+				Orbit_output[im][3] = eorb[im];
 				strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt");
-				append_output(3, Orbit_output[im], path, filename); filename[0] = '\0';
+				append_output(4, Orbit_output[im], path, filename); filename[0] = '\0';
 			}
 			// Ring mass
 			Primary[0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
