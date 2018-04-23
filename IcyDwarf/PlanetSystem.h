@@ -95,7 +95,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	double WRratio[nmoons][2];			// WRratio[2] (by mass, no dim), output
 	double Heat[nmoons][6];              // Heat[6] (erg), output
 	double Thermal_output[nmoons][12];	// Thermal_output[12] (multiple units), output
-	double Orbit_output[nmoons][4];      // Orbit_output[4] (multiple units), output
+	double Orbit_output[nmoons][6];      // Orbit_output[4] (multiple units), output
 	double Primary[3];                   // Primary[3], output of primary's tidal Q and ring mass (kg) vs. time (Gyr)
 
 	double *aorb = (double*) malloc((nmoons)*sizeof(double));       // Moon orbital semi-major axis (cm)
@@ -167,7 +167,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	if (resonance == NULL) printf("PlanetSystem: Not enough memory to create resonance[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
 		resonance[im] = (double*) malloc(nmoons*sizeof(double));
-		if (resonance[im] == NULL) printf("PlanetSystem: Not enough memory to create resonance[nmoons]\n");
+		if (resonance[im] == NULL) printf("PlanetSystem: Not enough memory to create resonance[nmoons][nmoons]\n");
 	}
 
 	double **resonance_old = (double**) malloc(nmoons*sizeof(double*)); // Previous states of mean-motion resonances between moons
@@ -175,6 +175,13 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	for (im=0;im<nmoons;im++) {
 		resonance_old[im] = (double*) malloc(nmoons*sizeof(double));
 		if (resonance_old[im] == NULL) printf("PlanetSystem: Not enough memory to create resonance_old[nmoons][nmoons]\n");
+	}
+
+	double **resAcctFor = (double**) malloc(nmoons*sizeof(double*)); // Tracks states of mean-motion resonances between moons accounted for by the code: only the lowest-order for a moon
+	if (resAcctFor == NULL) printf("PlanetSystem: Not enough memory to create resAcctFor[nmoons]\n");
+	for (im=0;im<nmoons;im++) {
+		resAcctFor[im] = (double*) malloc(nmoons*sizeof(double));
+		if (resAcctFor[im] == NULL) printf("PlanetSystem: Not enough memory to create resAcctFor[nmoons][nmoons]\n");
 	}
 
 	double **r = (double**) malloc(nmoons*sizeof(double*));         // Layer radius, accounting for porosity (cm)
@@ -545,6 +552,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 			PCapture[im][ir] = 0.0;
 			resonance[im][ir] = 0.0;
 			resonance_old[im][ir] = 0.0;
+			resAcctFor[im][ir] = 0.0;
 		}
 
 		for (i=0;i<12;i++) Thermal_output[im][i] = 0.0;
@@ -657,6 +665,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	}
 	create_output(path, "Outputs/Primary.txt");
 	create_output(path, "Outputs/Resonances.txt");
+	create_output(path, "Outputs/ResAcctFor.txt");
 	create_output(path, "Outputs/PCapture.txt");
 
 	for (im=0;im<nmoons;im++) m_p[im] = rho_p[im]*4.0/3.0*PI_greek*r_p[im]*r_p[im]*r_p[im]; // Compute object mass from radius and density
@@ -857,8 +866,10 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		Orbit_output[im][1] = aorb[im]/km2cm;
 		Orbit_output[im][2] = a__old[im]/km2cm;
 		Orbit_output[im][3] = eorb[im];
+		Orbit_output[im][4] = h_old[im];
+		Orbit_output[im][5] = k_old[im];
 		strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt");
-		append_output(4, Orbit_output[im], path, filename); filename[0] = '\0';
+		append_output(6, Orbit_output[im], path, filename); filename[0] = '\0';
 	}
 	// Ring mass
 	Primary[0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
@@ -868,6 +879,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 
 	// Resonances
 	for (im=0;im<nmoons;im++) append_output(nmoons, resonance[im], path, "Outputs/Resonances.txt");
+	for (im=0;im<nmoons;im++) append_output(nmoons, resAcctFor[im], path, "Outputs/ResAcctFor.txt");
 	for (im=0;im<nmoons;im++) append_output(nmoons, PCapture[im], path, "Outputs/PCapture.txt");
 
 	//-------------------------------------------------------------------
@@ -953,7 +965,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 					// TODO Add a non-Keplerian term due to planetary oblateness?
 					dnorb_dt[im] = (norb[im]-dnorb_dt[im])/dtime;
 
-					Orbit (argc, argv, path, im, dtime, speedup, itime, nmoons, m_p, r_p, &resonance, &PCapture, &aorb, &eorb, norb, dnorb_dt,
+					Orbit (argc, argv, path, im, dtime, speedup, itime, nmoons, m_p, r_p, &resonance, &resAcctFor, &PCapture, &aorb, &eorb, norb, dnorb_dt,
 							lambda, omega, &h_old, &k_old, &a__old, &Cs_ee_old, &Cs_eep_old, &Cr_e_old, &Cr_ep_old, &Cr_ee_old, &Cr_eep_old, &Cr_epep_old,
 							&Wtide_tot, Mprim, Rprim, J2prim, J4prim, k2prim, Qprim,
 							aring_out, aring_in, alpha_Lind, ringSurfaceDensity, realtime-tzero_min);
@@ -1010,6 +1022,19 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 			free (title);
 
 			for (im=0;im<nmoons;im++) append_output(nmoons, resonance[im], path, "Outputs/Resonances.txt");
+		}
+		if (reso_print) {
+			FILE *fout;
+			char *title = (char*)malloc(1024*sizeof(char)); title[0] = '\0';
+			if (v_release == 1) strncat(title,path,strlen(path)-16); else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+			strcat(title,"Outputs/ResAcctFor.txt");
+			fout = fopen(title,"a");
+			if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
+			else fprintf(fout,"Time %g Gyr\n", realtime/Gyr2sec);
+			fclose (fout);
+			free (title);
+
+			for (im=0;im<nmoons;im++) append_output(nmoons, resAcctFor[im], path, "Outputs/ResAcctFor.txt");
 		}
 		if (reso_print) {
 			FILE *fout;
@@ -1099,8 +1124,10 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 				Orbit_output[im][1] = aorb[im]/km2cm;
 				Orbit_output[im][2] = a__old[im]/km2cm;
 				Orbit_output[im][3] = eorb[im];
+				Orbit_output[im][4] = h_old[im];
+				Orbit_output[im][5] = k_old[im];
 				strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt");
-				append_output(4, Orbit_output[im], path, filename); filename[0] = '\0';
+				append_output(6, Orbit_output[im], path, filename); filename[0] = '\0';
 			}
 			// Ring mass
 			Primary[0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
@@ -1160,6 +1187,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		free (Xhydr_old[im]);
 		free (resonance[im]);
 		free (resonance_old[im]);
+		free (resAcctFor[im]);
 		free (PCapture[im]);
 		for (i=0;i<12;i++) free (Stress[im][i]);
 		for (ir=0;ir<NR;ir++) free (Act[im][ir]);
@@ -1220,6 +1248,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	free (Tide_output);
 	free (resonance);
 	free (resonance_old);
+	free (resAcctFor);
 	free (PCapture);
 	free (Wtide_tot);
 	free (h_old);

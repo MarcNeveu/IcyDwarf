@@ -14,7 +14,7 @@
 #include "./IcyDwarf.h"
 
 int Orbit (int argc, char *argv[], char path[1024], int im,
-		double dtime, double speedup, int itime, int nmoons, double *m_p, double *r_p, double ***resonance, double ***PCapture,
+		double dtime, double speedup, int itime, int nmoons, double *m_p, double *r_p, double ***resonance, double ***resAcctFor, double ***PCapture,
 		double **aorb, double **eorb, double *norb, double *dnorb_dt, double *lambda, double *omega,
 		double **h_old, double **k_old, double **a__old,
 		double **Cs_ee_old, double **Cs_eep_old, double **Cr_e_old, double **Cr_ep_old, double **Cr_ee_old, double **Cr_eep_old, double **Cr_epep_old,
@@ -41,7 +41,7 @@ int bsstep(double y[], double dydx[], int nv, double param[], double *xx, double
 int mmid(double y[], double dydx[], int nv, double param[], double xs, double htot, int nstep, double yout[], int (*derivs)(double, double[], double[], double[]));
 
 int Orbit (int argc, char *argv[], char path[1024], int im,
-		double dtime, double speedup, int itime, int nmoons, double *m_p, double *r_p, double ***resonance, double ***PCapture,
+		double dtime, double speedup, int itime, int nmoons, double *m_p, double *r_p, double ***resonance, double ***resAcctFor, double ***PCapture,
 		double **aorb, double **eorb, double *norb, double *dnorb_dt, double *lambda, double *omega,
 		double **h_old, double **k_old, double **a__old,
 		double **Cs_ee_old, double **Cs_eep_old, double **Cr_e_old, double **Cr_ep_old, double **Cr_ee_old, double **Cr_eep_old, double **Cr_epep_old,
@@ -51,6 +51,8 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 	int i = 0;
 	int ij = 0;
 	int l = 0;
+	int ijmax = 5;                       // Max order to look for resonances
+	double resMin = (double)ijmax;       // Min resonance order if a moon is in resonance with multiple moons
 
 	int inner = 0;                       // Index of inner moon
 	int outer = 0;                       // Index of outer moon
@@ -77,7 +79,10 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 	//      Changes in eccentricities due moon-moon perturbations
 	//-------------------------------------------------------------------
 
-	for (i=0;i<nmoons;i++) (*resonance)[im][i] = 0.0;
+	for (i=0;i<nmoons;i++) {
+		(*resonance)[im][i] = 0.0;
+		(*resAcctFor)[im][i] = 0.0;
+	}
 	for (i=0;i<nmoons;i++) {
 		if (i != im) {
 			/* Find out if there is an orbital resonance */
@@ -91,7 +96,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 				inner = i;
 				outer = im;
 			}
-			for (ij=5;ij>=1;ij--) { // Go decreasing, from the weakest to the strongest resonances, because resonance[im][i] gets overprinted
+			for (ij=ijmax;ij>=1;ij--) { // Go decreasing, from the weakest to the strongest resonances, because resonance[im][i] gets overprinted
 				for (l=1;l>=1;l--) { // Borderies & Goldreich (1984) derivation valid for j:j+k resonances up to k=2, but TODO for now MMR_AvgHam only handles k=1
 
 					// MMR if mean motions are commensurate by <1%
@@ -123,12 +128,23 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 			}
 		}
 	}
+	// In case a moon is in resonance with multiple moons, the code can't handle it, so only simulate the lowest-order resonance
+	for (i=0;i<nmoons;i++) {
+		if ((*resonance)[im][i] > 0.0 && (*resonance)[im][i] < resMin) {
+			resMin = (*resonance)[im][i];
+		}
+	}
+	for (i=0;i<nmoons;i++) {
+		if ((*resonance)[im][i] == resMin) {
+			(*resAcctFor)[im][i] = (*resonance)[im][i];
+		}
+	}
 	/* Determine orbital evolution due to moon-moon resonance */
 	for (i=nmoons-1;i>=im;i--) {
-		if ((*resonance)[im][i] > 0.0) resorbevol = 1; // Bypass secular evolution also for the moon listed in the former column of the input file (see below)
+		if ((*resAcctFor)[im][i] > 0.0) resorbevol = 1; // Bypass secular evolution also for the moon listed in the former column of the input file (see below)
 	}
 	for (i=0;i<im;i++) { // Avoid doing the calculation redundantly for each moon in resonance: only for the moon listed in the latter column of the input file
-		if ((*resonance)[im][i] <= 0.0) { // Reset storage of state variables
+		if ((*resAcctFor)[im][i] <= 0.0) { // Reset storage of state variables
 			(*h_old)[im] = 0.0;
 			(*k_old)[im] = 0.0;
 			(*a__old)[im] = 0.0;
@@ -142,7 +158,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 		}
 		else { // Resonance
 			resorbevol = 1; // Trigger the switch to bypass secular evolution
-			j = (*resonance)[im][i] + 1.0;
+			j = (*resAcctFor)[im][i] + 1.0;
 
 			int nv = 6;
 			int nparamorb = 21;
@@ -506,12 +522,12 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 			char *title = (char*)malloc(1024*sizeof(char)); title[0] = '\0'; // Don't forget to free!
 			char im_str[2]; im_str[0] = '\0';
 			if (v_release == 1) strncat(title,path,strlen(path)-16); else if (cmdline == 1) strncat(title,path,strlen(path)-18);
-			strcat(title,"Outputs/"); sprintf(im_str, "%d", im); strcat(title, im_str); strcat(title,"Thermal.txt");
+			strcat(title,"Outputs/"); sprintf(im_str, "%d", im); strcat(title, im_str); strcat(title,"Orbit.txt");
 
 			fout = fopen(title,"a");
 			if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
-			else fprintf(fout,"Thermal: itime=%d, -dtime*d_aorb_pl = %g - -dtime*d_aorb_ring (= %g) > aorb = %g, moon crashes into planet\n",
-					itime, -dtime*d_aorb_pl, -dtime*d_aorb_ring, (*aorb)[im]);
+			else fprintf(fout,"Orbit: itime=%d, time=%g, -dtime*d_aorb_pl = %g - -dtime*d_aorb_ring (= %g) > aorb = %g, moon crashes into planet\n",
+					itime, (double)itime*dtime/Gyr2sec, -dtime*d_aorb_pl, -dtime*d_aorb_ring, (*aorb)[im]);
 			fclose (fout);
 			free (title);
 			exit(0);
