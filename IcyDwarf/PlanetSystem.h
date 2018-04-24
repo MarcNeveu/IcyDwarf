@@ -42,6 +42,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	int itime = 0;                       // Time counter
 	long long ntime = 0;                 // Total number of iterations
 	int isteps = 0;                      // Output step counter
+	int reso_print_switch = 1;           // Switch to print resonance output
 	int nsteps = 0;                      // Total number of output steps
     int thermal_mismatch = 0;            // Switch for grain thermal expansion/contraction mismatch effects
 	int pore_water_expansion = 0;        // Switch for pore water expansion effects
@@ -182,6 +183,13 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	for (im=0;im<nmoons;im++) {
 		resAcctFor[im] = (double*) malloc(nmoons*sizeof(double));
 		if (resAcctFor[im] == NULL) printf("PlanetSystem: Not enough memory to create resAcctFor[nmoons][nmoons]\n");
+	}
+
+	double **resAcctFor_old = (double**) malloc(nmoons*sizeof(double*)); // Previous states of mean-motion resonances between moons accounted for by the code: only the lowest-order for a moon
+	if (resAcctFor_old == NULL) printf("PlanetSystem: Not enough memory to create resAcctFor)old[nmoons]\n");
+	for (im=0;im<nmoons;im++) {
+		resAcctFor_old[im] = (double*) malloc(nmoons*sizeof(double));
+		if (resAcctFor_old[im] == NULL) printf("PlanetSystem: Not enough memory to create resAcctFor_old[nmoons][nmoons]\n");
 	}
 
 	double **r = (double**) malloc(nmoons*sizeof(double*));         // Layer radius, accounting for porosity (cm)
@@ -553,6 +561,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 			resonance[im][ir] = 0.0;
 			resonance_old[im][ir] = 0.0;
 			resAcctFor[im][ir] = 0.0;
+			resAcctFor_old[im][ir] = 0.0;
 		}
 
 		for (i=0;i<12;i++) Thermal_output[im][i] = 0.0;
@@ -951,6 +960,16 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 			Wtide_tot[1] = 1.0e-4*11.5*pow(r_p[1],5)*pow(sqrt(Gcgs*Mprim/pow(a__old[1],3)),5)*pow(eorb[1],2)/Gcgs;     // Dione
 		}
 
+		// Check for orbital resonances
+		for (im=0;im<nmoons;im++) rescheck(nmoons, im, norb, dnorb_dt, aorb, eorb, m_p, Mprim, &resonance, &PCapture);
+		// Only one moon-moon resonance per moon max, so account for only lower-order (stronger) or older resonances
+		for (im=0;im<nmoons;im++) resscreen (nmoons, resonance[im], &resAcctFor[im], resAcctFor_old[im]);
+		for (im=0;im<nmoons;im++) {
+			for (i=0;i<nmoons;i++) {
+				if (i != im && resAcctFor[im][i] == 0.0) resAcctFor[i][im] = 0.0;
+			}
+		}
+
 		// Begin parallel calculations
 #pragma omp parallel // private(thread_id, nloops)
     	{
@@ -965,7 +984,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 					// TODO Add a non-Keplerian term due to planetary oblateness?
 					dnorb_dt[im] = (norb[im]-dnorb_dt[im])/dtime;
 
-					Orbit (argc, argv, path, im, dtime, speedup, itime, nmoons, m_p, r_p, &resonance, &resAcctFor, &PCapture, &aorb, &eorb, norb, dnorb_dt,
+					Orbit (argc, argv, path, im, dtime, speedup, itime, nmoons, m_p, r_p, resAcctFor, &aorb, &eorb, norb,
 							lambda, omega, &h_old, &k_old, &a__old, &Cs_ee_old, &Cs_eep_old, &Cr_e_old, &Cr_ep_old, &Cr_ee_old, &Cr_eep_old, &Cr_epep_old,
 							&Wtide_tot, Mprim, Rprim, J2prim, J4prim, k2prim, Qprim,
 							aring_out, aring_in, alpha_Lind, ringSurfaceDensity, realtime-tzero_min);
@@ -1001,12 +1020,14 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		//                           Write outputs
 		//-------------------------------------------------------------------
 
-		// Print change in status of resonances every time it happens
+		// Print change in status of resonances every time it happens, but not more often than the printing time step
 		for (im=0;im<nmoons;im++) {
 			for (i=0;i<nmoons;i++) {
-				if (resonance[im][i] != resonance_old[im][i]) {
+				if (resonance[im][i] != resonance_old[im][i] && reso_print_switch) {
 					reso_print = 1;
+					reso_print_switch = 0;
 					resonance_old[im][i] = resonance[im][i];
+					resAcctFor_old[im][i] = resAcctFor[im][i];
 				}
 			}
 		}
@@ -1055,6 +1076,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		isteps++;
 		if (isteps == nsteps) {
 			isteps = 0;
+			reso_print_switch = 1;
 
 			for (im=0;im<nmoons;im++) {
 				// Thermal outputs
@@ -1188,6 +1210,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		free (resonance[im]);
 		free (resonance_old[im]);
 		free (resAcctFor[im]);
+		free (resAcctFor_old[im]);
 		free (PCapture[im]);
 		for (i=0;i<12;i++) free (Stress[im][i]);
 		for (ir=0;ir<NR;ir++) free (Act[im][ir]);
@@ -1249,6 +1272,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	free (resonance);
 	free (resonance_old);
 	free (resAcctFor);
+	free (resAcctFor_old);
 	free (PCapture);
 	free (Wtide_tot);
 	free (h_old);

@@ -185,6 +185,12 @@
 #define nmingas 389                                        // Number of minerals and gases
 #define nelts 31                                           // 30 elements + 1 extra column in WaterRock/Molar_masses.txt
 
+//-------------------------------------------------------------------
+// ORBITAL EVOLUTION PARAMETERS
+//-------------------------------------------------------------------
+
+#define ijmax 5                     					   // Max order to look for resonances
+
 typedef struct {
     double radius; // Radius in km
     double tempk;  // Temperature in K

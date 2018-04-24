@@ -14,12 +14,17 @@
 #include "./IcyDwarf.h"
 
 int Orbit (int argc, char *argv[], char path[1024], int im,
-		double dtime, double speedup, int itime, int nmoons, double *m_p, double *r_p, double ***resonance, double ***resAcctFor, double ***PCapture,
-		double **aorb, double **eorb, double *norb, double *dnorb_dt, double *lambda, double *omega,
+		double dtime, double speedup, int itime, int nmoons, double *m_p, double *r_p, double **resAcctFor,
+		double **aorb, double **eorb, double *norb, double *lambda, double *omega,
 		double **h_old, double **k_old, double **a__old,
 		double **Cs_ee_old, double **Cs_eep_old, double **Cr_e_old, double **Cr_ep_old, double **Cr_ee_old, double **Cr_eep_old, double **Cr_epep_old,
 		double **Wtide_tot, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim,
 		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity, double elapsed);
+
+int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, double *eorb, double *m_p, double Mprim,
+		double ***resonance, double ***PCapture);
+
+int resscreen (int nmoons, double *resonance, double **resAcctFor, double *resAcctFor_old);
 
 double MMR(double *m_p, double *norb, double *aorb, int imoon, int i, double eorb);
 
@@ -41,21 +46,15 @@ int bsstep(double y[], double dydx[], int nv, double param[], double *xx, double
 int mmid(double y[], double dydx[], int nv, double param[], double xs, double htot, int nstep, double yout[], int (*derivs)(double, double[], double[], double[]));
 
 int Orbit (int argc, char *argv[], char path[1024], int im,
-		double dtime, double speedup, int itime, int nmoons, double *m_p, double *r_p, double ***resonance, double ***resAcctFor, double ***PCapture,
-		double **aorb, double **eorb, double *norb, double *dnorb_dt, double *lambda, double *omega,
+		double dtime, double speedup, int itime, int nmoons, double *m_p, double *r_p, double **resAcctFor,
+		double **aorb, double **eorb, double *norb, double *lambda, double *omega,
 		double **h_old, double **k_old, double **a__old,
 		double **Cs_ee_old, double **Cs_eep_old, double **Cr_e_old, double **Cr_ep_old, double **Cr_ee_old, double **Cr_eep_old, double **Cr_epep_old,
 		double **Wtide_tot, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim,
 		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity, double elapsed) {
 
 	int i = 0;
-	int ij = 0;
 	int l = 0;
-	int ijmax = 5;                       // Max order to look for resonances
-	double resMin = (double)ijmax;       // Min resonance order if a moon is in resonance with multiple moons
-
-	int inner = 0;                       // Index of inner moon
-	int outer = 0;                       // Index of outer moon
 
 	int kmin = 0;                        // Lowest order of inner Lindblad resonance in the rings
 	int kmax = 0;                        // Highest order of inner Lindblad resonance in the rings
@@ -63,8 +62,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 	int resorbevol = 0;                  // Switch between secular (solely tidal and ring) and resonant orbital evolution (solely moon-moon)
 
 	double j = 0.0;
-	double commensurability = 0.0;
-//	double dice = 0.0;                   // Random number
+
 	double orbdtime = 5.0e-4*1.0e-6*Myr2sec; // 5.0e-4 years max time step for numerical stability
 
 	double d_eorb = 0.0;                 // Change rate in moon orbital eccentricity due to interactions with primary (s-1)
@@ -79,72 +77,12 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 	//      Changes in eccentricities due moon-moon perturbations
 	//-------------------------------------------------------------------
 
-	for (i=0;i<nmoons;i++) {
-		(*resonance)[im][i] = 0.0;
-		(*resAcctFor)[im][i] = 0.0;
-	}
-	for (i=0;i<nmoons;i++) {
-		if (i != im) {
-			/* Find out if there is an orbital resonance */
-
-			// Find index of inner moon
-			if (norb[im] > norb[i]) {
-				inner = im;
-				outer = i;
-			}
-			else {
-				inner = i;
-				outer = im;
-			}
-			for (ij=ijmax;ij>=1;ij--) { // Go decreasing, from the weakest to the strongest resonances, because resonance[im][i] gets overprinted
-				for (l=1;l>=1;l--) { // Borderies & Goldreich (1984) derivation valid for j:j+k resonances up to k=2, but TODO for now MMR_AvgHam only handles k=1
-
-					// MMR if mean motions are commensurate by <1%
-					commensurability = norb[inner]/norb[outer] * (double)ij/(double)(ij+l);
-					if (commensurability > 0.99 && commensurability < 1.01) {
-
-						(*resonance)[inner][outer] = (double)ij;
-						(*resonance)[outer][inner] = (double)ij;
-
-						// Also, determine analytically the probability of capture in resonance with moon i further out (just for output)
-						if ((double)ij*dnorb_dt[inner] <= (double)(ij+l)*dnorb_dt[outer]) { // Peale (1976) equation (25), Yoder (1973), Sinclair (1972), Lissauer et al. (1984)
-							if (inner > outer) (*PCapture)[inner][outer] = MMR_PCapture(m_p, norb, (*aorb), inner, outer, (*eorb)[inner], (double)ij, l, Mprim);
-							else               (*PCapture)[outer][inner] = MMR_PCapture(m_p, norb, (*aorb), inner, outer, (*eorb)[inner], (double)ij, l, Mprim);
-						}
-						else {
-							(*PCapture)[inner][outer] = 0.0;
-							(*PCapture)[outer][inner] = 0.0;
-						}
-	//					// Resonance if random number below capture proba
-	//					dice = (double) ((rand()+0)%(100+1))/100.0;
-	//					if      (dice < (*PCapture)[inner][outer]) (*resonance)[inner][outer] = (double)ij;
-	//					else if (dice < (*PCapture)[outer][inner]) (*resonance)[outer][inner] = (double)ij;
-	//					else { // If proba of resonance has become too low (e.g. ecc increased), resonance is escaped
-	//						(*resonance)[inner][outer] = 0.0;
-	//						(*resonance)[outer][inner] = 0.0;
-	//					}
-					}
-				}
-			}
-		}
-	}
-	// In case a moon is in resonance with multiple moons, the code can't handle it, so only simulate the lowest-order resonance
-	for (i=0;i<nmoons;i++) {
-		if ((*resonance)[im][i] > 0.0 && (*resonance)[im][i] < resMin) {
-			resMin = (*resonance)[im][i];
-		}
-	}
-	for (i=0;i<nmoons;i++) {
-		if ((*resonance)[im][i] == resMin) {
-			(*resAcctFor)[im][i] = (*resonance)[im][i];
-		}
-	}
 	/* Determine orbital evolution due to moon-moon resonance */
 	for (i=nmoons-1;i>=im;i--) {
-		if ((*resAcctFor)[im][i] > 0.0) resorbevol = 1; // Bypass secular evolution also for the moon listed in the former column of the input file (see below)
+		if (resAcctFor[im][i] > 0.0) resorbevol = 1; // Bypass secular evolution also for the moon listed in the former column of the input file (see below)
 	}
 	for (i=0;i<im;i++) { // Avoid doing the calculation redundantly for each moon in resonance: only for the moon listed in the latter column of the input file
-		if ((*resAcctFor)[im][i] <= 0.0) { // Reset storage of state variables
+		if (resAcctFor[im][i] <= 0.0) { // Reset storage of state variables
 			(*h_old)[im] = 0.0;
 			(*k_old)[im] = 0.0;
 			(*a__old)[im] = 0.0;
@@ -158,7 +96,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 		}
 		else { // Resonance
 			resorbevol = 1; // Trigger the switch to bypass secular evolution
-			j = (*resAcctFor)[im][i] + 1.0;
+			j = resAcctFor[im][i] + 1.0;
 
 			int nv = 6;
 			int nparamorb = 21;
@@ -531,6 +469,115 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 			fclose (fout);
 			free (title);
 			exit(0);
+		}
+	}
+
+	return 0;
+}
+
+/*--------------------------------------------------------------------
+ *
+ * Subroutine rescheck
+ *
+ * Checks for resonances
+ *
+ *--------------------------------------------------------------------*/
+
+int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, double *eorb, double *m_p, double Mprim,
+		double ***resonance, double ***PCapture) {
+
+	int i = 0;
+	int l = 0;
+	int ij = 0;
+
+	int inner = 0;                       // Index of inner moon
+	int outer = 0;                       // Index of outer moon
+
+	double commensurability = 0.0;
+//	double dice = 0.0;                   // Random number
+
+	for (i=0;i<nmoons;i++) (*resonance)[im][i] = 0.0;
+
+	for (i=0;i<nmoons;i++) {
+		if (i != im) {
+			/* Find out if there is an orbital resonance */
+
+			// Find index of inner moon
+			if (norb[im] > norb[i]) {
+				inner = im;
+				outer = i;
+			}
+			else {
+				inner = i;
+				outer = im;
+			}
+			for (ij=ijmax;ij>=1;ij--) { // Go decreasing, from the weakest to the strongest resonances, because resonance[im][i] gets overprinted
+				for (l=1;l>=1;l--) { // Borderies & Goldreich (1984) derivation valid for j:j+k resonances up to k=2, but TODO for now MMR_AvgHam only handles k=1
+
+					// MMR if mean motions are commensurate by <1%
+					commensurability = norb[inner]/norb[outer] * (double)ij/(double)(ij+l);
+					if (commensurability > 0.99 && commensurability < 1.01) {
+
+						(*resonance)[inner][outer] = (double)ij;
+						(*resonance)[outer][inner] = (double)ij;
+
+						// Also, determine analytically the probability of capture in resonance with moon i further out (just for output)
+						if ((double)ij*dnorb_dt[inner] <= (double)(ij+l)*dnorb_dt[outer]) { // Peale (1976) equation (25), Yoder (1973), Sinclair (1972), Lissauer et al. (1984)
+							if (inner > outer) (*PCapture)[inner][outer] = MMR_PCapture(m_p, norb, aorb, inner, outer, eorb[inner], (double)ij, l, Mprim);
+							else               (*PCapture)[outer][inner] = MMR_PCapture(m_p, norb, aorb, inner, outer, eorb[inner], (double)ij, l, Mprim);
+						}
+						else {
+							(*PCapture)[inner][outer] = 0.0;
+							(*PCapture)[outer][inner] = 0.0;
+						}
+	//					// Resonance if random number below capture proba
+	//					dice = (double) ((rand()+0)%(100+1))/100.0;
+	//					if      (dice < (*PCapture)[inner][outer]) (*resonance)[inner][outer] = (double)ij;
+	//					else if (dice < (*PCapture)[outer][inner]) (*resonance)[outer][inner] = (double)ij;
+	//					else { // If proba of resonance has become too low (e.g. ecc increased), resonance is escaped
+	//						(*resonance)[inner][outer] = 0.0;
+	//						(*resonance)[outer][inner] = 0.0;
+	//					}
+					}
+				}
+			}
+		}
+	}
+
+	return 0;
+}
+
+int resscreen (int nmoons, double *resonance, double **resAcctFor, double *resAcctFor_old) {
+
+	int i = 0;
+
+	double resMin = (double)ijmax;                       // Min resonance order if a moon is in resonance with multiple moons
+	int nbres;                           // Number of resonances identified for a given moons
+
+	for (i=0;i<nmoons;i++) (*resAcctFor)[i] = 0.0;
+
+	/* In case a moon is in resonance with multiple moons, the code can't handle it, so only simulate the lowest-order resonance */
+	// Find the min order of resonance for each moon and the number of moons involved in resonances of this order
+	nbres = 0;
+	for (i=0;i<nmoons;i++) {
+		if (resonance[i] > 0.0 && resonance[i] <= resMin) resMin = resonance[i];
+	}
+	for (i=0;i<nmoons;i++) {
+		if (resonance[i] == resMin) nbres++;
+	}
+
+	// Let's copy only the lowest-order resonances for each moon.
+	for (i=0;i<nmoons;i++) {
+		if (resonance[i] == resMin) {
+			(*resAcctFor)[i] = resonance[i];
+		}
+	}
+	// But there can be several lowest-order resonances, so let's choose to zero out newer resonances
+	if (nbres > 1) {
+		for (i=0;i<nmoons;i++) {
+			if ((*resAcctFor)[i] > 0.0 && resAcctFor_old[i] == 0.0) {
+				(*resAcctFor)[i] = 0.0;
+			}
 		}
 	}
 
