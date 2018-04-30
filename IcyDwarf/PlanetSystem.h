@@ -871,7 +871,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		}
 
 		// Orbital parameters
-		Orbit_output[im][0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
+		Orbit_output[im][0] = realtime/Gyr2sec;                     // t in Gyr
 		Orbit_output[im][1] = aorb[im]/km2cm;
 		Orbit_output[im][2] = a__old[im]/km2cm;
 		Orbit_output[im][3] = eorb[im];
@@ -884,7 +884,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		append_output(9, Orbit_output[im], path, filename); filename[0] = '\0';
 	}
 	// Ring mass
-	Primary[0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
+	Primary[0] = realtime/Gyr2sec;                     // t in Gyr
 	Primary[1] = Qprimi;
 	Primary[2] = Mring*gram;
 	append_output(3, Primary, path, "Outputs/Primary.txt");
@@ -1104,7 +1104,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 					strcat(filename, outputpath[im]); strcat(filename, "Thermal.txt");
 					append_output(12, Thermal_output[im], path, filename); filename[0] = '\0';
 				}
-				Heat[im][0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
+				Heat[im][0] = realtime/Gyr2sec;                     // t in Gyr
 				Heat[im][1] = Heat_radio[im]*dtime;
 				Heat[im][2] = Heat_grav[im]*dtime;
 				Heat[im][3] = Heat_serp[im]*dtime;
@@ -1118,7 +1118,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 				append_output(NR, Crack[im], path, filename); filename[0] = '\0';
 
 				// Crack depth (km)
-				Crack_depth[im][0] = (double) itime*dtime/Gyr2sec;              // t in Gyr
+				Crack_depth[im][0] = realtime/Gyr2sec;              // t in Gyr
 
 				for (ir=0;ir<NR;ir++) {
 					if (Crack[im][ir] > 0.0) break;
@@ -1129,7 +1129,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 				append_output(2, Crack_depth[im], path, filename); filename[0] = '\0';
 
 				// Water:rock ratio by mass in cracked layer. Here, we say W/R = Mliq/Mcracked_rock.
-				WRratio[im][0] = (double) itime*dtime/Gyr2sec;                   // t in Gyr
+				WRratio[im][0] = realtime/Gyr2sec;                   // t in Gyr
 				if (Mcracked_rock[im] < 0.000001) WRratio[im][1] = 0.0;              // If Mcracked_rock is essentially 0, to avoid infinities
 				else WRratio[im][1] = Mliq[im]/Mcracked_rock[im];
 				strcat(filename, outputpath[im]); strcat(filename, "Crack_WRratio.txt");
@@ -1150,25 +1150,28 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 				}
 
 				// Orbital parameters
-				Orbit_output[im][0] = (double) itime*dtime/Gyr2sec; // t in Gyr
+				Orbit_output[im][0] = realtime/Gyr2sec; // t in Gyr
 				Orbit_output[im][1] = aorb[im]/km2cm;               // Semi-major axis in km
 				Orbit_output[im][2] = a__old[im]/km2cm;             // Osculating semimajor axis in km
 				Orbit_output[im][3] = eorb[im];                     // Eccentricity e, unitless
 				Orbit_output[im][4] = h_old[im];                    // e*cos(resonant angle)
 				Orbit_output[im][5] = k_old[im];                    // e*sin(resonant angle)
-				Orbit_output[im][6] = atan(k_old[im]/h_old[im]);    // Resonant angle
-				if (h_old[im] < 0.0) { // atan will fold the trig circle along the vertical y=0 axis, unwrap it if cos < 0
-					if (k_old[im] >= 0.0) Orbit_output[im][6] = Orbit_output[im][6] + PI_greek; // Add pi if sin >= 0
-					else Orbit_output[im][6] = Orbit_output[im][6] - PI_greek; // Subtract pi if sin < 0
+				if (h_old[im] != 0.0) {
+					Orbit_output[im][6] = atan(k_old[im]/h_old[im]);    // Resonant angle
+					if (h_old[im] < 0.0) { // atan will fold the trig circle along the vertical y=0 axis, unwrap it if cos < 0
+						if (k_old[im] >= 0.0) Orbit_output[im][6] = Orbit_output[im][6] + PI_greek; // Add pi if sin >= 0
+						else Orbit_output[im][6] = Orbit_output[im][6] - PI_greek; // Subtract pi if sin < 0
+					}
+					Orbit_output[im][6] = Orbit_output[im][6]*180.0/PI_greek; // Output in degrees
 				}
-				Orbit_output[im][6] = Orbit_output[im][6]*180.0/PI_greek; // Output in degrees
+				else Orbit_output[im][6] = 0.0;
 				Orbit_output[im][7] = Wtide_tot[im]/1.0e7;          // Total tidal dissipation (W)
 				Orbit_output[im][8] = Wtide_tot[im]/(11.5*pow(r_p[im],5)*pow(sqrt(Gcgs*Mprim/pow(aorb[im],3)),5)*pow(eorb[im],2)/Gcgs); // k2/Q (Segatz et al. 1988; Henning & Hurford 2014)
 				strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt");
 				append_output(9, Orbit_output[im], path, filename); filename[0] = '\0';
 			}
 			// Ring mass
-			Primary[0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
+			Primary[0] = realtime/Gyr2sec;                     // t in Gyr
 			Primary[1] = Qprim;
 			Primary[2] = Mring*gram;
 			append_output(3, Primary, path, "Outputs/Primary.txt");
