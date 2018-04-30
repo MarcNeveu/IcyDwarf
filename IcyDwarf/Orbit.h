@@ -152,7 +152,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 
 			// If moons im and i were in resonance at the previous time step, initialize directly to state variables
 			// This won't work if a given moon is caught up in two resonances at the same time, but the moon-moon interaction routine can't handle this anyway.
-			if ((*a__old)[im] != 0.0 || (*a__old)[i] != 0.0) {
+			if ((*a__old)[im] != 0.0 && (*a__old)[i] != 0.0) {
 
 				// Recall disturbing function coefficients
 				Cs_ee = (*Cs_ee_old)[im];
@@ -774,6 +774,9 @@ int MMR_AvgHam (double x, double y[], double dydx[], double param[]) {
 	m[1] = param[3];
 	r[1] = param[4];
 	k2Q[1] = param[5];
+
+	k2Q[0] = 7.0e-4;
+	k2Q[1] = 1.0e-4;
 
 	double j = param[6];
 

@@ -960,6 +960,11 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 			Wtide_tot[1] = 1.0e-4*11.5*pow(r_p[1],5)*pow(sqrt(Gcgs*Mprim/pow(a__old[1],3)),5)*pow(eorb[1],2)/Gcgs;     // Dione
 		}
 
+		// Set minimum ecc to order 1e-7 so that eorb*eorb > 1.1e-16, the machine epsilon for double precision
+		// Otherwise, MMR_AvgHam() goes singular when dividing by 1-sqrt(1-eorb*eorb)
+		for (im=0;im<nmoons;im++) {
+			if (eorb[im] < 1.0e-7) eorb[im] = 1.0e-7;
+		}
 		// Check for orbital resonances
 		for (im=0;im<nmoons;im++) rescheck(nmoons, im, norb, dnorb_dt, aorb, eorb, m_p, Mprim, &resonance, &PCapture);
 		// Only one moon-moon resonance per moon max, so account for only lower-order (stronger) or older resonances
@@ -968,6 +973,11 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 			for (i=0;i<nmoons;i++) {
 				if (i != im && resAcctFor[im][i] == 0.0) resAcctFor[i][im] = 0.0;
 			}
+		}
+
+		if (!(itime%20)) {
+			printf("%g \t %g \t %g \t %g \t %g \t %g \t", (double) itime*dtime/Gyr2sec, aorb[0]/km2cm, a__old[0]/km2cm, eorb[0], h_old[0], k_old[0]);
+			printf("%g \t %g \t %g \t %g \t %g \n", aorb[1]/km2cm, a__old[1]/km2cm, eorb[1], h_old[1], k_old[1]);
 		}
 
 		// Begin parallel calculations
