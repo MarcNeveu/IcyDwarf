@@ -92,11 +92,11 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	double m_p[nmoons];                  // World mass (g)
 	double Mliq[nmoons];                 // Mass of liquid in the planet (g)
 	double Mcracked_rock[nmoons];        // Mass of cracked rock in the planet (g)
-	double Crack_depth[nmoons][2];		// Crack_depth[2] (km), output
-	double WRratio[nmoons][2];			// WRratio[2] (by mass, no dim), output
+	double Crack_depth[nmoons][2];		 // Crack_depth[2] (km), output
+	double WRratio[nmoons][2];			 // WRratio[2] (by mass, no dim), output
 	double Heat[nmoons][6];              // Heat[6] (erg), output
-	double Thermal_output[nmoons][12];	// Thermal_output[12] (multiple units), output
-	double Orbit_output[nmoons][6];      // Orbit_output[4] (multiple units), output
+	double Thermal_output[nmoons][12];	 // Thermal_output[12] (multiple units), output
+	double Orbit_output[nmoons][9];      // Orbit_output[9] (multiple units), output
 	double Primary[3];                   // Primary[3], output of primary's tidal Q and ring mass (kg) vs. time (Gyr)
 
 	double *aorb = (double*) malloc((nmoons)*sizeof(double));       // Moon orbital semi-major axis (cm)
@@ -877,8 +877,11 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		Orbit_output[im][3] = eorb[im];
 		Orbit_output[im][4] = h_old[im];
 		Orbit_output[im][5] = k_old[im];
+		Orbit_output[im][6] = 0.0; // Resonant angle
+		Orbit_output[im][7] = Wtide_tot[im];
+		Orbit_output[im][8] = 0.0; // k2/Q
 		strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt");
-		append_output(6, Orbit_output[im], path, filename); filename[0] = '\0';
+		append_output(9, Orbit_output[im], path, filename); filename[0] = '\0';
 	}
 	// Ring mass
 	Primary[0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
@@ -951,14 +954,14 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		}
 
 		// Benchmark with Meyer & Wisdom (2008) and Zhang & Nimmo (2009)
-		if (itime==0) {
-			Wtide_tot[0] = 8.0e-4*11.5*pow(r_p[0],5)*pow(sqrt(Gcgs*Mprim/pow(aorb[0],3)),5)*pow(eorb[0],2)/Gcgs;     // Enceladus
-			Wtide_tot[1] = 1.0e-4*11.5*pow(r_p[1],5)*pow(sqrt(Gcgs*Mprim/pow(aorb[1],3)),5)*pow(eorb[1],2)/Gcgs;     // Dione
-		}
-		else {
-			Wtide_tot[0] = 8.0e-4*11.5*pow(r_p[0],5)*pow(sqrt(Gcgs*Mprim/pow(a__old[0],3)),5)*pow(eorb[0],2)/Gcgs;     // Enceladus
-			Wtide_tot[1] = 1.0e-4*11.5*pow(r_p[1],5)*pow(sqrt(Gcgs*Mprim/pow(a__old[1],3)),5)*pow(eorb[1],2)/Gcgs;     // Dione
-		}
+//		if (itime==0) {
+//			Wtide_tot[0] = 8.0e-4*11.5*pow(r_p[0],5)*pow(sqrt(Gcgs*Mprim/pow(aorb[0],3)),5)*pow(eorb[0],2)/Gcgs;     // Enceladus
+//			Wtide_tot[1] = 1.0e-4*11.5*pow(r_p[1],5)*pow(sqrt(Gcgs*Mprim/pow(aorb[1],3)),5)*pow(eorb[1],2)/Gcgs;     // Dione
+//		}
+//		else {
+//			Wtide_tot[0] = 8.0e-4*11.5*pow(r_p[0],5)*pow(sqrt(Gcgs*Mprim/pow(a__old[0],3)),5)*pow(eorb[0],2)/Gcgs;     // Enceladus
+//			Wtide_tot[1] = 1.0e-4*11.5*pow(r_p[1],5)*pow(sqrt(Gcgs*Mprim/pow(a__old[1],3)),5)*pow(eorb[1],2)/Gcgs;     // Dione
+//		}
 
 		// Set minimum ecc to order 1e-7 so that eorb*eorb > 1.1e-16, the machine epsilon for double precision
 		// Otherwise, MMR_AvgHam() goes singular when dividing by 1-sqrt(1-eorb*eorb)
@@ -973,11 +976,6 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 			for (i=0;i<nmoons;i++) {
 				if (i != im && resAcctFor[im][i] == 0.0) resAcctFor[i][im] = 0.0;
 			}
-		}
-
-		if (!(itime%20)) {
-			printf("%g \t %g \t %g \t %g \t %g \t %g \t", (double) itime*dtime/Gyr2sec, aorb[0]/km2cm, a__old[0]/km2cm, eorb[0], h_old[0], k_old[0]);
-			printf("%g \t %g \t %g \t %g \t %g \n", aorb[1]/km2cm, a__old[1]/km2cm, eorb[1], h_old[1], k_old[1]);
 		}
 
 		// Begin parallel calculations
@@ -1152,14 +1150,22 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 				}
 
 				// Orbital parameters
-				Orbit_output[im][0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
-				Orbit_output[im][1] = aorb[im]/km2cm;
-				Orbit_output[im][2] = a__old[im]/km2cm;
-				Orbit_output[im][3] = eorb[im];
-				Orbit_output[im][4] = h_old[im];
-				Orbit_output[im][5] = k_old[im];
+				Orbit_output[im][0] = (double) itime*dtime/Gyr2sec; // t in Gyr
+				Orbit_output[im][1] = aorb[im]/km2cm;               // Semi-major axis in km
+				Orbit_output[im][2] = a__old[im]/km2cm;             // Osculating semimajor axis in km
+				Orbit_output[im][3] = eorb[im];                     // Eccentricity e, unitless
+				Orbit_output[im][4] = h_old[im];                    // e*cos(resonant angle)
+				Orbit_output[im][5] = k_old[im];                    // e*sin(resonant angle)
+				Orbit_output[im][6] = atan(k_old[im]/h_old[im]);    // Resonant angle
+				if (h_old[im] < 0.0) { // atan will fold the trig circle along the vertical y=0 axis, unwrap it if cos < 0
+					if (k_old[im] >= 0.0) Orbit_output[im][6] = Orbit_output[im][6] + PI_greek; // Add pi if sin >= 0
+					else Orbit_output[im][6] = Orbit_output[im][6] - PI_greek; // Subtract pi if sin < 0
+				}
+				Orbit_output[im][6] = Orbit_output[im][6]*180.0/PI_greek; // Output in degrees
+				Orbit_output[im][7] = Wtide_tot[im]/1.0e7;          // Total tidal dissipation (W)
+				Orbit_output[im][8] = Wtide_tot[im]/(11.5*pow(r_p[im],5)*pow(sqrt(Gcgs*Mprim/pow(aorb[im],3)),5)*pow(eorb[im],2)/Gcgs); // k2/Q (Segatz et al. 1988; Henning & Hurford 2014)
 				strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt");
-				append_output(6, Orbit_output[im], path, filename); filename[0] = '\0';
+				append_output(9, Orbit_output[im], path, filename); filename[0] = '\0';
 			}
 			// Ring mass
 			Primary[0] = (double) itime*dtime/Gyr2sec;                     // t in Gyr
