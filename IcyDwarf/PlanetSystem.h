@@ -969,7 +969,9 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 			if (eorb[im] < 1.0e-7) eorb[im] = 1.0e-7;
 		}
 		// Check for orbital resonances
-		for (im=0;im<nmoons;im++) rescheck(nmoons, im, norb, dnorb_dt, aorb, eorb, m_p, Mprim, &resonance, &PCapture);
+		for (im=0;im<nmoons;im++) {
+			if (realtime >= tzero[im]) rescheck(nmoons, im, norb, dnorb_dt, aorb, eorb, m_p, Mprim, &resonance, &PCapture, tzero, realtime);
+		}
 		// Only one moon-moon resonance per moon max, so account for only lower-order (stronger) or older resonances
 		for (im=0;im<nmoons;im++) resscreen (nmoons, resonance[im], &resAcctFor[im], resAcctFor_old[im]);
 		for (im=0;im<nmoons;im++) {

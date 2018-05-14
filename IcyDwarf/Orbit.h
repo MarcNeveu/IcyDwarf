@@ -22,7 +22,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity, double elapsed);
 
 int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, double *eorb, double *m_p, double Mprim,
-		double ***resonance, double ***PCapture);
+		double ***resonance, double ***PCapture, double *tzero, double realtime);
 
 int resscreen (int nmoons, double *resonance, double **resAcctFor, double *resAcctFor_old);
 
@@ -479,16 +479,20 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
  *
  * Subroutine rescheck
  *
- * Checks for resonances
+ * Checks for orbital mean-motion resonances between two moons by
+ * comparing the mean motion of a given moon im with that of all other
+ * moons i. The threshold for identification of a commensurability is
+ * that the mean motions must be an integer ratio j:j+1 of each other
+ * within 1%. Only resonances with j<ijmax are considered.
  *
  *--------------------------------------------------------------------*/
 
 int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, double *eorb, double *m_p, double Mprim,
-		double ***resonance, double ***PCapture) {
+		double ***resonance, double ***PCapture, double *tzero, double realtime) {
 
 	int i = 0;
 	int l = 0;
-	int ij = 0;
+	int j = 0;
 
 	int inner = 0;                       // Index of inner moon
 	int outer = 0;                       // Index of outer moon
@@ -499,7 +503,7 @@ int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, d
 	for (i=0;i<nmoons;i++) (*resonance)[im][i] = 0.0;
 
 	for (i=0;i<nmoons;i++) {
-		if (i != im) {
+		if (i != im && realtime >= tzero[i]) { // Moon i has to be different from im and already spawned
 			/* Find out if there is an orbital resonance */
 
 			// Find index of inner moon
@@ -511,20 +515,20 @@ int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, d
 				inner = i;
 				outer = im;
 			}
-			for (ij=ijmax;ij>=1;ij--) { // Go decreasing, from the weakest to the strongest resonances, because resonance[im][i] gets overprinted
+			for (j=ijmax;j>=1;j--) { // Go decreasing, from the weakest to the strongest resonances, because resonance[im][i] gets overprinted
 				for (l=1;l>=1;l--) { // Borderies & Goldreich (1984) derivation valid for j:j+k resonances up to k=2, but TODO for now MMR_AvgHam only handles k=1
 
-					// MMR if mean motions are commensurate by <1%
-					commensurability = norb[inner]/norb[outer] * (double)ij/(double)(ij+l);
+					// MMR if mean motions are commensurate by <1% TODO and convergent migration, not just for proba?
+					commensurability = norb[inner]/norb[outer] * (double)j/(double)(j+l);
 					if (commensurability > 0.99 && commensurability < 1.01) {
 
-						(*resonance)[inner][outer] = (double)ij;
-						(*resonance)[outer][inner] = (double)ij;
+						(*resonance)[inner][outer] = (double)j;
+						(*resonance)[outer][inner] = (double)j;
 
 						// Also, determine analytically the probability of capture in resonance with moon i further out (just for output)
-						if ((double)ij*dnorb_dt[inner] <= (double)(ij+l)*dnorb_dt[outer]) { // Peale (1976) equation (25), Yoder (1973), Sinclair (1972), Lissauer et al. (1984)
-							if (inner > outer) (*PCapture)[inner][outer] = MMR_PCapture(m_p, norb, aorb, inner, outer, eorb[inner], (double)ij, l, Mprim);
-							else               (*PCapture)[outer][inner] = MMR_PCapture(m_p, norb, aorb, inner, outer, eorb[inner], (double)ij, l, Mprim);
+						if ((double)j*dnorb_dt[inner] <= (double)(j+l)*dnorb_dt[outer]) { // Peale (1976) equation (25), Yoder (1973), Sinclair (1972), Lissauer et al. (1984)
+							if (inner > outer) (*PCapture)[inner][outer] = MMR_PCapture(m_p, norb, aorb, inner, outer, eorb[inner], (double)j, l, Mprim);
+							else               (*PCapture)[outer][inner] = MMR_PCapture(m_p, norb, aorb, inner, outer, eorb[inner], (double)j, l, Mprim);
 						}
 						else {
 							(*PCapture)[inner][outer] = 0.0;
@@ -547,11 +551,28 @@ int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, d
 	return 0;
 }
 
+/*--------------------------------------------------------------------
+ *
+ * Subroutine resscreen
+ *
+ * The implemented averaged Hamiltonian model in MMR_AvgHam() can only
+ * handle resonances between pairs of moons, so it will crash if a
+ * moon is in resonance with more than one other moon. To avoid this,
+ * this routine screens out all additional resonances, keeping only:
+ * - the strongest (lowest j)
+ * - if there are several resonances of equal j (e.g., middle moon in
+ *   a 4:2:1 resonance), keep the one already in place.
+ *
+ * The input state of resonances is saved in **resonance and the output
+ * (retained resonances) is saved in **resAcctFor (resonances accounted
+ * for).
+ *
+ *--------------------------------------------------------------------*/
 int resscreen (int nmoons, double *resonance, double **resAcctFor, double *resAcctFor_old) {
 
 	int i = 0;
 
-	double resMin = (double)ijmax;                       // Min resonance order if a moon is in resonance with multiple moons
+	double resMin = (double)ijmax;       // Min resonance order if a moon is in resonance with multiple moons
 	int nbres;                           // Number of resonances identified for a given moons
 
 	for (i=0;i<nmoons;i++) (*resAcctFor)[i] = 0.0;
