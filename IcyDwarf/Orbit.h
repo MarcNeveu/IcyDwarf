@@ -22,7 +22,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity, double elapsed);
 
 int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, double *eorb, double *m_p, double Mprim,
-		double ***resonance, double ***PCapture, double *tzero, double realtime);
+		double ***resonance, double ***PCapture, double *tzero, double realtime, double aring_out, double **resAcctFor_old);
 
 int resscreen (int nmoons, double *resonance, double **resAcctFor, double *resAcctFor_old);
 
@@ -418,7 +418,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 		// Changes in a_orb and e_orb due to tides inside moon and on planet
 		//-------------------------------------------------------------------
 
-		d_eorb = - (*Wtide_tot)[im]*(*aorb)[im] / (Gcgs*Mprim*m_p[im]*(*eorb)[im])                                     // Dissipation inside moon, decreases its eccentricity (equation 4.170 of Murray & Dermott 1999)
+		d_eorb = - (*Wtide_tot)[im]*(*aorb)[im] / (Gcgs*Mprim*m_p[im]*(*eorb)[im])                                // Dissipation inside moon, decreases its eccentricity (equation 4.170 of Murray & Dermott 1999)
 				 + 57.0/8.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*(*eorb)[im]; // Dissipation inside planet, increases moon's eccentricity
 
 		d_aorb_pl = - 2.0*(*Wtide_tot)[im]*(*aorb)[im]*(*aorb)[im] / (Gcgs*Mprim*m_p[im])         // Dissipation inside moon, shrinks its orbit
@@ -430,7 +430,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 
 		if (ringSurfaceDensity) { // Dissipation in the rings, expands moon's orbit if exterior to rings (Meyer-Vernet & Sicardy 1987, http://dx.doi.org/10.1016/0019-1035(87)90011-X)
 			ringTorque = 0.0;
-			// 1- Find inner Lindblad resonances that matter (kmin, kmax)
+			// Find inner Lindblad resonances that matter (kmin, kmax)
 			kmin = floor(1.0 / (1.0-pow(aring_in/(*aorb)[im],1.5))) + 1;
 			kmax = floor(1.0 / (1.0-pow(aring_out/(*aorb)[im],1.5)));
 
@@ -488,7 +488,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
  *--------------------------------------------------------------------*/
 
 int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, double *eorb, double *m_p, double Mprim,
-		double ***resonance, double ***PCapture, double *tzero, double realtime) {
+		double ***resonance, double ***PCapture, double *tzero, double realtime, double aring_out, double **resAcctFor_old) {
 
 	int i = 0;
 	int l = 0;
@@ -503,7 +503,9 @@ int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, d
 	for (i=0;i<nmoons;i++) (*resonance)[im][i] = 0.0;
 
 	for (i=0;i<nmoons;i++) {
-		if (i != im && realtime >= tzero[i]) { // Moon i has to be different from im and already spawned
+		// 1- Moon i has to be different from im and already spawned
+		// 2- Moons i and im have to be beyond the gravitational influence of the ring, otherwise we assume that they don't get captured into resonance
+		if (i != im && realtime >= tzero[i] && aorb[i]/aring_out > pow(2.0,2.0/3.0) && aorb[im]/aring_out > pow(2.0,2.0/3.0)) {
 			/* Find out if there is an orbital resonance */
 
 			// Find index of inner moon
@@ -520,7 +522,8 @@ int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, d
 
 					// MMR if mean motions are commensurate by <1% TODO and convergent migration, not just for proba?
 					commensurability = norb[inner]/norb[outer] * (double)j/(double)(j+l);
-					if (commensurability > 0.99 && commensurability < 1.01) {
+					if ((commensurability > 0.99 && commensurability < 1.01) ||                                   // 1% tolerance to consider capture
+						(resAcctFor_old[inner][outer] && commensurability > 0.985 && commensurability < 1.015)) { // 1.5% tolerance if already captured, to avoid always going in and out of resonance near the 1% limit
 
 						(*resonance)[inner][outer] = (double)j;
 						(*resonance)[outer][inner] = (double)j;
@@ -589,16 +592,12 @@ int resscreen (int nmoons, double *resonance, double **resAcctFor, double *resAc
 
 	// Let's copy only the lowest-order resonances for each moon.
 	for (i=0;i<nmoons;i++) {
-		if (resonance[i] == resMin) {
-			(*resAcctFor)[i] = resonance[i];
-		}
+		if (resonance[i] == resMin) (*resAcctFor)[i] = resonance[i];
 	}
 	// But there can be several lowest-order resonances, so let's choose to zero out newer resonances
 	if (nbres > 1) {
 		for (i=0;i<nmoons;i++) {
-			if ((*resAcctFor)[i] > 0.0 && resAcctFor_old[i] == 0.0) {
-				(*resAcctFor)[i] = 0.0;
-			}
+			if ((*resAcctFor)[i] > 0.0 && resAcctFor_old[i] == 0.0) (*resAcctFor)[i] = 0.0;
 		}
 	}
 
