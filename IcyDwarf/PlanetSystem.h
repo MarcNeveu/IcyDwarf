@@ -20,6 +20,17 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		double *aorb_init, double *eorb_init, int tidalmodel, double tidetimes, int *orbevol, int *hy, int chondr, int *crack_input,
 		int *crack_species);
 
+int recov(int argc, char *argv[], char path[1024], int nmoons, char outputpath[nmoons][1024], int NR, int ntherm, int norbit, int ncrkstrs, double ****Stress, double *Xp,
+		double *Xsalt, double Mprim, double *Mring, double aring_out, double rhoRockth, double rhoHydrth, double rhoH2olth, double **dVol, double *tzero, double (*m_p)[nmoons],
+		double *dnorb_dt, double *trecover, double ***r, double ***T, double ***Mrock, double ***Mh2os, double ***Madhs, double ***Mh2ol, double ***Mnh3l, double ***Vrock,
+		double ***Vh2ol, double ***Erock, double ***Eh2os, double ***Eslush, double ***dE, double ***Nu, double ***kappa, double ***Xhydr, double ***pore, double ***T_old,
+		double ***Mrock_init, double ***dM, double ***Xhydr_old, double ***Crack, double ***fracOpen, double *Xpores, double ***Pressure, double ***P_pore, double ***P_hydr,
+		double ***Crack_size, int (*irdiff)[nmoons], int (*ircore)[nmoons], int (*ircrack)[nmoons], int (*irice)[nmoons], double **aorb, double **a__old, double **eorb,
+		double **h_old, double **k_old, double **Wtide_tot, double **norb, int ***circ, double ***resonance, double ***PCapture, double ***resAcctFor, double **resAcctFor_old,
+		double **Cs_ee, double **Cs_eep, double **Cr_e, double **Cr_ep, double **Cr_ee, double **Cr_eep, double **Cr_epep);
+
+int tail(FILE *f, int n, int l, double ***output);
+
 int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, double dtime, double speedup, double *tzero, double fulltime,
 		double dtoutput, int nmoons, double Mprim, double Rprim, double Qprimi, double Qprimf, int Qmode, double k2prim, double J2prim, double J4prim,
 		double Mring_init, double aring_out, double aring_in, double *r_p, double *rho_p, double rhoHydr, double rhoDry, double *Xp, double *Xsalt,
@@ -37,6 +48,10 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	int im = 0;
 	int ir = 0;
 
+	int ntherm = 12;                     // Number of quantities output in Thermal.txt
+	int norbit = 9;                      // Number of quantities output in Orbit.txt
+	int ncrkstrs = 12;                   // Number of quantities output in Crack_stresses.txt
+
 	// Variables common to all moons
 	int forced_hydcirc = 0;              // Switch to force hydrothermal circulation
 	int itime = 0;                       // Time counter
@@ -51,16 +66,24 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	double realtime = 0.0;               // Time elapsed since formation of the solar system (s)
 	double tzero_min = 0.0;              // Time of formation of the first moon to form
 	double today = 4568.2*Myr2sec;       // Time elapsed between the formation of Ca-Al inclusions and the present (Bouvier & Wadhwa 2010, http://dx.doi.org/10.1038/ngeo941)
+	double trecover = 0.0;               // Init time of recovered simulation
 	double rhoRockth = rhoDry*gram;      // Density of dry rock (g/cm3)
 	double rhoHydrth = rhoHydr*gram;     // Density of hydrated rock (g/cm3)
-	double rhoH2osth = rhoH2os*gram;	    // Density of water ice (g/cm3)
-	double rhoAdhsth = rhoAdhs*gram;	    // Density of ammonia dihydrate ice (g/cm3)
+	double rhoH2osth = rhoH2os*gram;	 // Density of water ice (g/cm3)
+	double rhoAdhsth = rhoAdhs*gram;	 // Density of ammonia dihydrate ice (g/cm3)
 	double rhoH2olth = 0.0;              // Density of liquid water, just for this routine (g/cm3)
 	double rhoNh3lth = 0.0;              // Density of liquid ammonia, just for this routine (g/cm3)
 	double Qprim = 0.0;                  // Tidal Q of the primary (host planet). For Saturn today, = 2452.8, range 1570.8-4870.6 (Lainey et al. 2016)
 	double Mring = Mring_init;           // Ring mass
 	double ringSurfaceDensity = 0.0;     // Ring surface density (g cm-2)
 	double alpha_Lind = 0.0;             // Dissipation of Lindblad resonance in rings (no dim)
+	double e1 = 0.0;                     // Temporary specific energy (erg/g)
+	double frock = 0.0;                  // Rock mass fraction
+	double fh2os = 0.0;                  // Water ice mass fraction
+	double fadhs = 0.0;                  // Ammonia dihydrate ice mass fraction
+	double fh2ol = 0.0;                  // Liquid water mass fraction
+	double fnh3l = 0.0;                  // Liquid ammonia mass fraction
+	double temp1 = 0.0;                  // Temporary temperature (K)
 	if (ringSurfaceDensity <= 2.0) alpha_Lind = 2.0e-5; else alpha_Lind = 1.0e-4; // Mostly viscosity and pressure if surf density≈2 g cm-2, or self-gravity if surf density~50 g cm-2
 
 	// Variables individual to each moon
@@ -68,16 +91,8 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	int irice[nmoons];                   // Outermost slush layer
 	int ircore[nmoons];                  // Outermost core layer
 	int ircrack[nmoons];                 // Inner most cracked layer in contact with the ocean
-	int structure_changed[nmoons];       // Switch to call separate()
 	int moonspawn[nmoons];               // Switch: was a moon just spawned this time step?
 	double rhoIce[nmoons];               // Density of the bulk ice (g/cm3)
-	double e1[nmoons];                   // Temporary specific energy (erg/g)
-	double frock[nmoons];                // Rock mass fraction
-	double fh2os[nmoons];                // Water ice mass fraction
-	double fadhs[nmoons];                // Ammonia dihydrate ice mass fraction
-	double fh2ol[nmoons];                // Liquid water mass fraction
-	double fnh3l[nmoons];                // Liquid ammonia mass fraction
-	double temp1[nmoons];                // Temporary temperature (K)
 	double Heat_radio[nmoons];           // Total heats produced (erg), for output file
 	double Heat_grav[nmoons];
 	double Heat_serp[nmoons];
@@ -95,8 +110,8 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	double Crack_depth[nmoons][2];		 // Crack_depth[2] (km), output
 	double WRratio[nmoons][2];			 // WRratio[2] (by mass, no dim), output
 	double Heat[nmoons][6];              // Heat[6] (erg), output
-	double Thermal_output[nmoons][12];	 // Thermal_output[12] (multiple units), output
-	double Orbit_output[nmoons][9];      // Orbit_output[9] (multiple units), output
+	double Thermal_output[nmoons][ntherm]; // Thermal_output[ntherm] (multiple units), output
+	double Orbit_output[nmoons][norbit]; // Orbit_output[norbit] (multiple units), output
 	double Primary[3];                   // Primary[3], output of primary's tidal Q and ring mass (kg) vs. time (Gyr)
 
 	double *aorb = (double*) malloc((nmoons)*sizeof(double));       // Moon orbital semi-major axis (cm)
@@ -149,13 +164,6 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 
 	double *Wtide_tot = (double*) malloc((nmoons)*sizeof(double));  // Total tidal heating rate in each moon, summed in all layers (erg s-1)
 	if (Wtide_tot == NULL) printf("PlanetSystem: Not enough memory to create Wtide_tot[nmoons]\n");
-
-	int **dont_dehydrate = (int**) malloc(nmoons*sizeof(int*));     // Don't dehydrate a layer that just got hydrated
-	if (dont_dehydrate == NULL) printf("PlanetSystem: Not enough memory to create dont_dehydrate[nmoons]\n");
-	for (im=0;im<nmoons;im++) {
-		dont_dehydrate[im] = (int*) malloc(NR*sizeof(int));
-		if (dont_dehydrate[im] == NULL) printf("PlanetSystem: Not enough memory to create dont_dehydrate[nmoons][NR]\n");
-	}
 
 	int **circ = (int**) malloc(nmoons*sizeof(int*));               // 0=no hydrothermal circulation, 1=hydrothermal circulation
 	if (circ == NULL) printf("PlanetSystem: Not enough memory to create circ[nmoons]\n");
@@ -429,8 +437,8 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		Stress[im] = (double**) malloc(NR*sizeof(double*));
 		if (Stress[im] == NULL) printf("PlanetSystem: Not enough memory to create Stress[nmoons][NR]\n");
 		for (ir=0;ir<NR;ir++) {
-			Stress[im][ir] = (double*) malloc(12*sizeof(double));
-			if (Stress[im][ir] == NULL) printf("PlanetSystem: Not enough memory to create Stress[nmoons][NR][12]\n");
+			Stress[im][ir] = (double*) malloc(ncrkstrs*sizeof(double));
+			if (Stress[im][ir] == NULL) printf("PlanetSystem: Not enough memory to create Stress[nmoons][NR][ncrkstrs]\n");
 		}
 	}
 	double ***Act = (double***) malloc(nmoons*sizeof(double**));    // Activity of chemical products in cracks, dimensionless or (mol m-3) if << salinity
@@ -501,7 +509,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	char im_str[2];
 	char filename[1024];
 
-	// Zero all the arrays
+	// Initialize all the arrays
 	im_str[0] = '\0';
 	filename[0] = '\0';
 	for (im=0;im<nmoons;im++) {
@@ -509,16 +517,8 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		irice[im] = 0;
 		ircore[im] = 0;
 		ircrack[im] = 0;
-		structure_changed[im] = 0;
 		moonspawn[im] = 0;
 		rhoIce[im] = 0.0;
-		e1[im] = 0.0;
-		frock[im] = 0.0;
-		fh2os[im] = 0.0;
-		fadhs[im] = 0.0;
-		fh2ol[im] = 0.0;
-		fnh3l[im] = 0.0;
-		temp1[im] = 0.0;
 		Heat_radio[im] = 0.0;
 		Heat_grav[im] = 0.0;
 		Heat_serp[im] = 0.0;
@@ -526,7 +526,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		Heat_tide[im] = 0.0;
 		frockpm[im] = 0.0;
 		frockpv[im] = 0.0;
-		dr_grid[im] = 0.0;
+		dr_grid[im] = r_p[im]/((double) NR);
 		Phi[im] = 0.0;
 		ravg[im] = 0.0;
 		fracKleached[im] = 0.0;
@@ -592,7 +592,6 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	    	P_hydr[im][ir] = 0.0;
 	    	kappa[im][ir] = 0.0;
 	    	Nu[im][ir] = 1.0;
-	    	dont_dehydrate[im][ir] = 0;
 	    	circ[im][ir] = 0;
 	    	Mrock_init[im][ir] = 0.0;
 	    	fracOpen[im][ir] = 0.0;
@@ -616,6 +615,12 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 			chrysotile[i][ir] = 0.0;
 			magnesite[i][ir] = 0.0;
 		}
+	}
+
+	for (im=0;im<nmoons;im++) {
+		strcat(outputpath[im],"Outputs/");
+		sprintf(im_str,"%d",im);
+		strcat(outputpath[im],im_str);
 	}
 
 	//-------------------------------------------------------------------
@@ -659,108 +664,269 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		if (magnesite[0][0] == 0) printf("Generate a table of magnesite log K using the Crack_species_CHNOSZ routine.\n");
 	}
 
-	for (im=0;im<nmoons;im++) {
-		strcat(outputpath[im],"Outputs/");
-		sprintf(im_str,"%d",im);
-		strcat(outputpath[im],im_str);
-		strcat(filename, outputpath[im]); strcat(filename, "Thermal.txt"); create_output(path, filename); filename[0] = '\0';
-		strcat(filename, outputpath[im]); strcat(filename, "Heats.txt"); create_output(path, filename); filename[0] = '\0';
-		strcat(filename, outputpath[im]); strcat(filename, "Crack.txt"); create_output(path, filename); filename[0] = '\0';
-		strcat(filename, outputpath[im]); strcat(filename, "Crack_depth.txt"); create_output(path, filename); filename[0] = '\0';
-		strcat(filename, outputpath[im]); strcat(filename, "Crack_WRratio.txt"); create_output(path, filename); filename[0] = '\0';
-		strcat(filename, outputpath[im]); strcat(filename, "Crack_stresses.txt"); create_output(path, filename); filename[0] = '\0';
-		strcat(filename, outputpath[im]); strcat(filename, "Tidal_rates.txt"); create_output(path, filename); filename[0] = '\0';
-		strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt"); create_output(path, filename); filename[0] = '\0';
-	}
-	create_output(path, "Outputs/Primary.txt");
-	create_output(path, "Outputs/Resonances.txt");
-	create_output(path, "Outputs/ResAcctFor.txt");
-	create_output(path, "Outputs/PCapture.txt");
+    //-------------------------------------------------------------------
+    //                         Initialize volumes
+    //-------------------------------------------------------------------
 
-	for (im=0;im<nmoons;im++) m_p[im] = rho_p[im]*4.0/3.0*PI_greek*r_p[im]*r_p[im]*r_p[im]; // Compute object mass from radius and density
-
-    // Determine the core vs. ice shell content from bulk density.
-	  // Densities of liquid water and ammonia are chosen to conserve mass and volume,
-      // actual densities are 1.00 g/cm-3 and about 0.74 g/cm-3
-    rhoH2olth = rhoH2osth;
-    rhoNh3lth = (1.0/rhoH2olth) + (1.0/rhoAdhsth - 1.0/rhoH2osth) / Xc;  // Slush mass balance
-    rhoNh3lth = 1.0/rhoNh3lth;
+	// Densities of liquid water and ammonia are chosen to conserve mass and volume,
+	// actual densities are 1.00 g/cm-3 and about 0.74 g/cm-3
+	rhoH2olth = rhoH2osth;
+	rhoNh3lth = (1.0/rhoH2olth) + (1.0/rhoAdhsth - 1.0/rhoH2osth) / Xc;  // Slush mass balance
+	rhoNh3lth = 1.0/rhoNh3lth;
 
 	for (im=0;im<nmoons;im++) {
-	    rhoIce[im] = 1.0 / ((Xp[im]/Xc)/rhoAdhsth + (1.0-Xp[im]/Xc)/rhoH2osth);          // Bulk ice density
-	    frockpm[im] = (1.0-rhoIce[im]/rho_p[im]) / (1.0-rhoIce[im]/(Xhydr[im][0]*rhoHydrth+(1.0-Xhydr[im][0])*rhoRockth));
-	    frockpv[im] = frockpm[im]*rho_p[im]/(Xhydr[im][0]*rhoHydrth+(1.0-Xhydr[im][0])*rhoRockth);
-	    dr_grid[im] = r_p[im]/((double) NR);
-
-		if (Xpores[im] > 1.0-frockpv[im]) {
-			printf("Rocky core liquid/ice fraction higher (%g) than 1 - planet rock volume fraction %g.\n", Xpores[im], frockpv[im]);
-			exit(0);
-		}
-
 		for (ir=0;ir<NR;ir++) {
 			r[im][ir+1] = r[im][ir] + dr_grid[im];
 			dVol[im][ir] = 4.0/3.0*PI_greek*(pow(r[im][ir+1],3) - pow(r[im][ir],3));
-			dM[im][ir] = dVol[im][ir]*rho_p[im];
-			Mrock[im][ir] = dM[im][ir]*frockpm[im];
-			Mrock_init[im][ir] = Mrock[im][ir];
-			Mh2os[im][ir] = dM[im][ir]*(1.0-frockpm[im])*(1.0-Xp[im]/Xc);
-			Madhs[im][ir] = dM[im][ir]*(1.0-frockpm[im])*(Xp[im]/Xc);
-
-			// Init of the energies, prop to Cp(T) * deltaT. Because often Cp(T) prop to T, energies prop to T*deltaT.
-			Erock[im][ir] = Mrock[im][ir]*heatRock(Tinit[im]);
-			Eh2os[im][ir] = Mh2os[im][ir]*qh2o*Tinit[im]*Tinit[im]/2.0;
-			Eslush[im][ir] = Madhs[im][ir]*qadh*Tinit[im]*Tinit[im]/2.0;
-			dE[im][ir] = Erock[im][ir] + Eh2os[im][ir] + Eslush[im][ir];
 		}
+	}
 
-		// Account for initial porosity
-		for (ir=0;ir<NR;ir++) r[im][ir+1] = r[im][ir] + dr_grid[im]*pow(1.0-pore[im][ir],-1.0/3.0);
+    //-------------------------------------------------------------------
+    //                        Initialize tidal Q
+    //-------------------------------------------------------------------
 
-		// Initial ring mass is the input (final) mass + the mass of the moons
-	    Mring = Mring + m_p[im];
+    tzero_min = tzero[0];
+    for (im=0;im<nmoons;im++) {
+    		if (tzero[im] < tzero_min) tzero_min = tzero[im];
+    }
 
-	    // Initial tidal Q
-    	switch(Qmode) {
-    	case 0: // Q changes linearly
-    		Qprim = Qprimi + (Qprimf-Qprimi) / (today-tzero_min) * (realtime-tzero_min);
-    		break;
-    	case 1: // Q decays exponentially
-    		Qprim = Qprimi * exp( log(Qprimf/Qprimi) / (today-tzero_min) * (realtime-tzero_min) );
-    		break;
-    	case 2: // Q changes exponentially
-    		Qprim = Qprimi + 1.0 - exp( log(Qprimi-Qprimf+1.0) / (today-tzero_min) * (realtime-tzero_min) );
-    		break;
-    	}
+	switch(Qmode) {
+	case 0: // Q changes linearly
+		Qprim = Qprimi + (Qprimf-Qprimi) / (today-tzero_min) * (realtime-tzero_min);
+		break;
+	case 1: // Q decays exponentially
+		Qprim = Qprimi * exp( log(Qprimf/Qprimi) / (today-tzero_min) * (realtime-tzero_min) );
+		break;
+	case 2: // Q changes exponentially
+		Qprim = Qprimi + 1.0 - exp( log(Qprimi-Qprimf+1.0) / (today-tzero_min) * (realtime-tzero_min) );
+		break;
+	}
+
+	int recover = 1;
+	if (recover) {
+
+	    //-------------------------------------------------------------------
+	    //            Recovery init (from existing output files)
+	    //-------------------------------------------------------------------
+
+		recov(argc, argv, path, nmoons, outputpath, NR, ntherm, norbit, ncrkstrs, &Stress, Xp, Xsalt,
+			Mprim, &Mring, aring_out, rhoRockth, rhoHydrth, rhoH2olth, dVol, tzero, &m_p, dnorb_dt,
+			&trecover, &r, &T, &Mrock, &Mh2os, &Madhs, &Mh2ol, &Mnh3l, &Vrock, &Vh2ol, &Erock, &Eh2os, &Eslush, &dE,
+			&Nu, &kappa, &Xhydr, &pore, &T_old, &Mrock_init, &dM, &Xhydr_old, &Crack, &fracOpen, Xpores,
+			&Pressure, &P_pore, &P_hydr, &Crack_size, &irdiff, &ircore, &ircrack, &irice, &aorb, &a__old,
+			&eorb, &h_old, &k_old, &Wtide_tot, &norb, &circ, &resonance, &PCapture, &resAcctFor,
+			resAcctFor_old, &Cs_ee_old, &Cs_eep_old, &Cr_e_old, &Cr_ep_old, &Cr_ee_old, &Cr_eep_old, &Cr_epep_old);
 
 		//-------------------------------------------------------------------
 		//                  Allow for chemical equilibrium
 		//-------------------------------------------------------------------
-
-		for (ir=0;ir<NR;ir++) {
-			e1[im] = dE[im][ir] / dM[im][ir];
-			frock[im] = Mrock[im][ir] / dM[im][ir];
-			fh2os[im] = Mh2os[im][ir] / dM[im][ir];
-			fadhs[im] = Madhs[im][ir] / dM[im][ir];
-			fh2ol[im] = Mh2ol[im][ir] / dM[im][ir];
-			fnh3l[im] = Mnh3l[im][ir] / dM[im][ir];
-			state (path, itime, im, ir, e1[im], &frock[im], &fh2os[im], &fadhs[im], &fh2ol[im], &fnh3l[im], Xsalt[im], &temp1[im]);
-			T[im][ir] = temp1[im];
-			Mrock[im][ir] = dM[im][ir]*frock[im];
-			Mh2os[im][ir] = dM[im][ir]*fh2os[im];
-			Madhs[im][ir] = dM[im][ir]*fadhs[im];
-			Mh2ol[im][ir] = dM[im][ir]*fh2ol[im];
-			Mnh3l[im][ir] = dM[im][ir]*fnh3l[im];
+		for (im=0;im<nmoons;im++) {
+			for (ir=0;ir<NR;ir++) {
+				e1 = dE[im][ir] / dM[im][ir];
+				frock = Mrock[im][ir] / dM[im][ir];
+				fh2os = Mh2os[im][ir] / dM[im][ir];
+				fadhs = Madhs[im][ir] / dM[im][ir];
+				fh2ol = Mh2ol[im][ir] / dM[im][ir];
+				fnh3l = Mnh3l[im][ir] / dM[im][ir];
+				state (path, itime, im, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, Xsalt[im], &temp1);
+				T[im][ir] = temp1;
+				Mrock[im][ir] = dM[im][ir]*frock;
+				Mh2os[im][ir] = dM[im][ir]*fh2os;
+				Madhs[im][ir] = dM[im][ir]*fadhs;
+				Mh2ol[im][ir] = dM[im][ir]*fh2ol;
+				Mnh3l[im][ir] = dM[im][ir]*fnh3l;
+			}
 		}
+	}
+	else {
+	    //-------------------------------------------------------------------
+	    //                Normal init (from input file only)
+	    //-------------------------------------------------------------------
+		for (im=0;im<nmoons;im++) {
+			strcat(filename, outputpath[im]); strcat(filename, "Thermal.txt"); create_output(path, filename); filename[0] = '\0';
+			strcat(filename, outputpath[im]); strcat(filename, "Heats.txt"); create_output(path, filename); filename[0] = '\0';
+			strcat(filename, outputpath[im]); strcat(filename, "Crack.txt"); create_output(path, filename); filename[0] = '\0';
+			strcat(filename, outputpath[im]); strcat(filename, "Crack_depth.txt"); create_output(path, filename); filename[0] = '\0';
+			strcat(filename, outputpath[im]); strcat(filename, "Crack_WRratio.txt"); create_output(path, filename); filename[0] = '\0';
+			strcat(filename, outputpath[im]); strcat(filename, "Crack_stresses.txt"); create_output(path, filename); filename[0] = '\0';
+			strcat(filename, outputpath[im]); strcat(filename, "Tidal_rates.txt"); create_output(path, filename); filename[0] = '\0';
+			strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt"); create_output(path, filename); filename[0] = '\0';
+		}
+		create_output(path, "Outputs/Primary.txt");
+		create_output(path, "Outputs/Resonances.txt");
+		create_output(path, "Outputs/ResAcctFor.txt");
+		create_output(path, "Outputs/PCapture.txt");
+
+		for (im=0;im<nmoons;im++) m_p[im] = rho_p[im]*4.0/3.0*PI_greek*r_p[im]*r_p[im]*r_p[im]; // Compute object mass from radius and density
+
+		for (im=0;im<nmoons;im++) {
+			// Determine the core vs. ice shell content from bulk density.
+			rhoIce[im] = 1.0 / ((Xp[im]/Xc)/rhoAdhsth + (1.0-Xp[im]/Xc)/rhoH2osth);          // Bulk ice density
+			frockpm[im] = (1.0-rhoIce[im]/rho_p[im]) / (1.0-rhoIce[im]/(Xhydr[im][0]*rhoHydrth+(1.0-Xhydr[im][0])*rhoRockth));
+			frockpv[im] = frockpm[im]*rho_p[im]/(Xhydr[im][0]*rhoHydrth+(1.0-Xhydr[im][0])*rhoRockth);
+
+			if (Xpores[im] > 1.0-frockpv[im]) {
+				printf("Rocky core liquid/ice fraction higher (%g) than 1 - planet rock volume fraction %g.\n", Xpores[im], frockpv[im]);
+				exit(0);
+			}
+
+			for (ir=0;ir<NR;ir++) {
+				dM[im][ir] = dVol[im][ir]*rho_p[im];
+				Mrock[im][ir] = dM[im][ir]*frockpm[im];
+				Mrock_init[im][ir] = Mrock[im][ir];
+				Mh2os[im][ir] = dM[im][ir]*(1.0-frockpm[im])*(1.0-Xp[im]/Xc);
+				Madhs[im][ir] = dM[im][ir]*(1.0-frockpm[im])*(Xp[im]/Xc);
+
+				// Init of the energies, prop to Cp(T) * deltaT. Because often Cp(T) prop to T, energies prop to T*deltaT.
+				Erock[im][ir] = Mrock[im][ir]*heatRock(Tinit[im]);
+				Eh2os[im][ir] = Mh2os[im][ir]*qh2o*Tinit[im]*Tinit[im]/2.0;
+				Eslush[im][ir] = Madhs[im][ir]*qadh*Tinit[im]*Tinit[im]/2.0;
+				dE[im][ir] = Erock[im][ir] + Eh2os[im][ir] + Eslush[im][ir];
+			}
+
+			// Account for initial porosity
+			for (ir=0;ir<NR;ir++) r[im][ir+1] = r[im][ir] + dr_grid[im]*pow(1.0-pore[im][ir],-1.0/3.0);
+
+			// Initial ring mass is the input (final) mass + the mass of the moons
+			Mring = Mring + m_p[im];
+
+			//-------------------------------------------------------------------
+			//      If simulation starts out differentiated, differentiate
+			//-------------------------------------------------------------------
+
+			if (startdiff[im] == 1) {
+				irdiff[im] = NR-1;
+				separate(NR, &(irdiff[im]), &(ircore[im]), &(irice[im]), dVol[im], &(dM[im]), &(dE[im]), &(Mrock[im]), &(Mh2os[im]),
+						&(Madhs[im]), &(Mh2ol[im]), &(Mnh3l[im]), &(Vrock[im]), &(Vh2os[im]), &(Vadhs[im]), &(Vh2ol[im]), &(Vnh3l[im]),
+						&(Erock[im]), &(Eh2os[im]), &(Eslush[im]), rhoAdhsth, rhoH2olth, rhoNh3lth, Xfines[im], Xpores[im]);
+			}
+
+			//-------------------------------------------------------------------
+			//                  Allow for chemical equilibrium
+			//-------------------------------------------------------------------
+
+			for (ir=0;ir<NR;ir++) {
+				e1 = dE[im][ir] / dM[im][ir];
+				frock = Mrock[im][ir] / dM[im][ir];
+				fh2os = Mh2os[im][ir] / dM[im][ir];
+				fadhs = Madhs[im][ir] / dM[im][ir];
+				fh2ol = Mh2ol[im][ir] / dM[im][ir];
+				fnh3l = Mnh3l[im][ir] / dM[im][ir];
+				state (path, itime, im, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, Xsalt[im], &temp1);
+				T[im][ir] = temp1;
+				Mrock[im][ir] = dM[im][ir]*frock;
+				Mh2os[im][ir] = dM[im][ir]*fh2os;
+				Madhs[im][ir] = dM[im][ir]*fadhs;
+				Mh2ol[im][ir] = dM[im][ir]*fh2ol;
+				Mnh3l[im][ir] = dM[im][ir]*fnh3l;
+			}
+			for (ir=0;ir<NR;ir++) dM_old[im][ir] = dM[im][ir];
+
+			//-------------------------------------------------------------------
+			//                      Output initial configuration
+			//-------------------------------------------------------------------
+
+			for (ir=0;ir<NR;ir++) {
+				Thermal_output[im][0] = r[im][ir+1]/km2cm;
+				Thermal_output[im][1] = T[im][ir];
+				Thermal_output[im][2] = Mrock[im][ir];
+				Thermal_output[im][3] = Mh2os[im][ir];
+				Thermal_output[im][4] = Madhs[im][ir];
+				Thermal_output[im][5] = Mh2ol[im][ir];
+				Thermal_output[im][6] = Mnh3l[im][ir];
+				Thermal_output[im][7] = Nu[im][ir];
+				Thermal_output[im][8] = 0.0; // Fraction of amorphous ice in the original code of Desch et al. (2009)
+				Thermal_output[im][9] = kappa[im][ir]/1.0e5; // Thermal conductivity, not yet calculated
+				Thermal_output[im][10] = Xhydr[im][ir];
+				Thermal_output[im][11] = pore[im][ir];
+				strcat(filename, outputpath[im]); strcat(filename, "Thermal.txt");
+				append_output(ntherm, Thermal_output[im], path, filename); filename[0] = '\0';
+			}
+
+			Heat[im][0] = 0.0;                     // t in Gyr
+			Heat[im][1] = Heat_radio[im];
+			Heat[im][2] = Heat_grav[im];
+			Heat[im][3] = Heat_serp[im];
+			Heat[im][4] = Heat_dehydr[im];
+			Heat[im][5] = Heat_tide[im];
+			strcat(filename, outputpath[im]); strcat(filename, "Heats.txt");
+			append_output(6, Heat[im], path, filename); filename[0] = '\0';
+
+			// Crack outputs
+			strcat(filename, outputpath[im]); strcat(filename, "Crack.txt"); // Crack type
+			append_output(NR, Crack[im], path, filename); filename[0] = '\0';
+
+			// Crack depth (km)
+			Crack_depth[im][0] = 0.0;              // t in Gyr
+
+			for (ir=0;ir<NR;ir++) {
+				if (Crack[im][ir] > 0.0) break;
+			}
+			Crack_depth[im][1] = (double) (ircore[im]-ir)/(double)NR*r[im][NR-1]/km2cm;
+			if (Crack_depth[im][1] < 0.0) Crack_depth[im][1] = 0.0;
+			strcat(filename, outputpath[im]); strcat(filename, "Crack_depth.txt");
+			append_output(2, Crack_depth[im], path, filename); filename[0] = '\0';
+
+			// Water:rock ratio by mass in cracked layer
+			// Depends entirely on porosity! The W/R by volume is porosity. Here, we say W/R = Mliq/Mcracked_rock.
+			WRratio[im][0] = 0.0;                   // t in Gyr
+			WRratio[im][1] = 0.0;
+			strcat(filename, outputpath[im]); strcat(filename, "Crack_WRratio.txt");
+			append_output(2, WRratio[im], path, filename); filename[0] = '\0';
+
+			// Crack stresses
+			for (ir=0;ir<NR;ir++) {
+				Stress[im][ir][0] = r[im][ir+1]/km2cm;
+				strcat(filename, outputpath[im]); strcat(filename, "Crack_stresses.txt");
+				append_output(ncrkstrs, Stress[im][ir], path, filename); filename[0] = '\0';
+			}
+
+			// Tidal rate outputs
+			for (ir=0;ir<NR;ir++) {
+				Tide_output[im][ir][0] = r[im][ir+1]/km2cm;
+				strcat(filename, outputpath[im]); strcat(filename, "Tidal_rates.txt");
+				append_output(2, Tide_output[im][ir], path, filename); filename[0] = '\0';
+			}
+
+			// Orbital parameters
+			Orbit_output[im][0] = realtime/Gyr2sec;                     // t in Gyr
+			Orbit_output[im][1] = aorb[im]/km2cm;
+			Orbit_output[im][2] = a__old[im]/km2cm;
+			Orbit_output[im][3] = eorb[im];
+			Orbit_output[im][4] = h_old[im];
+			Orbit_output[im][5] = k_old[im];
+			Orbit_output[im][6] = 0.0; // Resonant angle
+			Orbit_output[im][7] = Wtide_tot[im];
+			Orbit_output[im][8] = 0.0; // k2/Q
+			strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt");
+			append_output(norbit, Orbit_output[im], path, filename); filename[0] = '\0';
+		}
+		// Ring mass
+		Primary[0] = realtime/Gyr2sec;                     // t in Gyr
+		Primary[1] = Qprimi;
+		Primary[2] = Mring*gram;
+		append_output(3, Primary, path, "Outputs/Primary.txt");
+
+		// Resonances
+		for (im=0;im<nmoons;im++) append_output(nmoons, resonance[im], path, "Outputs/Resonances.txt");
+		for (im=0;im<nmoons;im++) append_output(nmoons, resAcctFor[im], path, "Outputs/ResAcctFor.txt");
+		for (im=0;im<nmoons;im++) append_output(nmoons, PCapture[im], path, "Outputs/PCapture.txt");
+	}
+
+	//-------------------------------------------------------------------
+	//                           General inits
+	//-------------------------------------------------------------------
+
+	for (im=0;im<nmoons;im++) {
 		for (ir=0;ir<NR;ir++) dM_old[im][ir] = dM[im][ir];
 
+		// Volumes
 		for (ir=0;ir<NR;ir++) {
 			Vrock[im][ir] = Mrock[im][ir] / (Xhydr[im][ir]*rhoHydrth+(1.0-Xhydr[im][ir])*rhoRockth);
 			Vh2os[im][ir] = Mh2os[im][ir] / rhoH2osth;
 			Vadhs[im][ir] = Madhs[im][ir] / rhoAdhsth;
 			Vh2ol[im][ir] = Mh2ol[im][ir] / rhoH2olth;
 			Vnh3l[im][ir] = Mnh3l[im][ir] / rhoNh3lth;
-			T[im][ir] = Tinit[im];
-			Nu[im][ir] = 1.0;
 		}
 
 		// Gravitational potential energy
@@ -771,128 +937,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 			Phi[im] = Phi[im] + Gcgs*M[im][ir-1]*dM[im][ir] / ravg[im];
 			M[im][ir] = M[im][ir-1] + dM[im][ir];
 		}
-
-		//-------------------------------------------------------------------
-		//      If simulation starts out differentiated, differentiate
-		//-------------------------------------------------------------------
-
-		if (startdiff[im] == 1) {
-			irdiff[im] = NR-1;
-			separate(NR, &(irdiff[im]), &(ircore[im]), &(irice[im]), dVol[im], &(dM[im]), &(dE[im]), &(Mrock[im]), &(Mh2os[im]),
-					&(Madhs[im]), &(Mh2ol[im]), &(Mnh3l[im]), &(Vrock[im]), &(Vh2os[im]), &(Vadhs[im]), &(Vh2ol[im]), &(Vnh3l[im]),
-					&(Erock[im]), &(Eh2os[im]), &(Eslush[im]), rhoAdhsth, rhoH2olth, rhoNh3lth, Xfines[im], Xpores[im]);
-		}
-
-		//-------------------------------------------------------------------
-		//                  Allow for chemical equilibrium
-		//-------------------------------------------------------------------
-
-		for (ir=0;ir<NR;ir++) {
-			e1[im] = dE[im][ir] / dM[im][ir];
-			frock[im] = Mrock[im][ir] / dM[im][ir];
-			fh2os[im] = Mh2os[im][ir] / dM[im][ir];
-			fadhs[im] = Madhs[im][ir] / dM[im][ir];
-			fh2ol[im] = Mh2ol[im][ir] / dM[im][ir];
-			fnh3l[im] = Mnh3l[im][ir] / dM[im][ir];
-			state (path, itime, im, ir, e1[im], &frock[im], &fh2os[im], &fadhs[im], &fh2ol[im], &fnh3l[im], Xsalt[im], &temp1[im]);
-			T[im][ir] = temp1[im];
-			Mrock[im][ir] = dM[im][ir]*frock[im];
-			Mh2os[im][ir] = dM[im][ir]*fh2os[im];
-			Madhs[im][ir] = dM[im][ir]*fadhs[im];
-			Mh2ol[im][ir] = dM[im][ir]*fh2ol[im];
-			Mnh3l[im][ir] = dM[im][ir]*fnh3l[im];
-		}
-		for (ir=0;ir<NR;ir++) dM_old[im][ir] = dM[im][ir];
-
-		//-------------------------------------------------------------------
-		//                      Output initial configuration
-		//-------------------------------------------------------------------
-
-		for (ir=0;ir<NR;ir++) {
-			Thermal_output[im][0] = r[im][ir+1]/km2cm;
-			Thermal_output[im][1] = T[im][ir];
-			Thermal_output[im][2] = Mrock[im][ir];
-			Thermal_output[im][3] = Mh2os[im][ir];
-			Thermal_output[im][4] = Madhs[im][ir];
-			Thermal_output[im][5] = Mh2ol[im][ir];
-			Thermal_output[im][6] = Mnh3l[im][ir];
-			Thermal_output[im][7] = Nu[im][ir];
-			Thermal_output[im][8] = 0.0; // Fraction of amorphous ice in the original code of Desch et al. (2009)
-			Thermal_output[im][9] = kappa[im][ir]/1.0e5; // Thermal conductivity, not yet calculated
-			Thermal_output[im][10] = Xhydr[im][ir];
-			Thermal_output[im][11] = pore[im][ir];
-			strcat(filename, outputpath[im]); strcat(filename, "Thermal.txt");
-			append_output(12, Thermal_output[im], path, filename); filename[0] = '\0';
-		}
-
-		Heat[im][0] = 0.0;                     // t in Gyr
-		Heat[im][1] = Heat_radio[im];
-		Heat[im][2] = Heat_grav[im];
-		Heat[im][3] = Heat_serp[im];
-		Heat[im][4] = Heat_dehydr[im];
-		Heat[im][5] = Heat_tide[im];
-		strcat(filename, outputpath[im]); strcat(filename, "Heats.txt");
-		append_output(6, Heat[im], path, filename); filename[0] = '\0';
-
-		// Crack outputs
-		strcat(filename, outputpath[im]); strcat(filename, "Crack.txt"); // Crack type
-		append_output(NR, Crack[im], path, filename); filename[0] = '\0';
-
-		// Crack depth (km)
-		Crack_depth[im][0] = 0.0;              // t in Gyr
-
-		for (ir=0;ir<NR;ir++) {
-			if (Crack[im][ir] > 0.0) break;
-		}
-		Crack_depth[im][1] = (double) (ircore[im]-ir)/(double)NR*r[im][NR-1]/km2cm;
-		if (Crack_depth[im][1] < 0.0) Crack_depth[im][1] = 0.0;
-		strcat(filename, outputpath[im]); strcat(filename, "Crack_depth.txt");
-		append_output(2, Crack_depth[im], path, filename); filename[0] = '\0';
-
-		// Water:rock ratio by mass in cracked layer
-		// Depends entirely on porosity! The W/R by volume is porosity. Here, we say W/R = Mliq/Mcracked_rock.
-		WRratio[im][0] = 0.0;                   // t in Gyr
-		WRratio[im][1] = 0.0;
-		strcat(filename, outputpath[im]); strcat(filename, "Crack_WRratio.txt");
-		append_output(2, WRratio[im], path, filename); filename[0] = '\0';
-
-		// Crack stresses
-		for (ir=0;ir<NR;ir++) {
-			Stress[im][ir][0] = r[im][ir+1]/km2cm;
-			strcat(filename, outputpath[im]); strcat(filename, "Crack_stresses.txt");
-			append_output(12, Stress[im][ir], path, filename); filename[0] = '\0';
-		}
-
-		// Tidal rate outputs
-		for (ir=0;ir<NR;ir++) {
-			Tide_output[im][ir][0] = r[im][ir+1]/km2cm;
-			strcat(filename, outputpath[im]); strcat(filename, "Tidal_rates.txt");
-			append_output(2, Tide_output[im][ir], path, filename); filename[0] = '\0';
-		}
-
-		// Orbital parameters
-		Orbit_output[im][0] = realtime/Gyr2sec;                     // t in Gyr
-		Orbit_output[im][1] = aorb[im]/km2cm;
-		Orbit_output[im][2] = a__old[im]/km2cm;
-		Orbit_output[im][3] = eorb[im];
-		Orbit_output[im][4] = h_old[im];
-		Orbit_output[im][5] = k_old[im];
-		Orbit_output[im][6] = 0.0; // Resonant angle
-		Orbit_output[im][7] = Wtide_tot[im];
-		Orbit_output[im][8] = 0.0; // k2/Q
-		strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt");
-		append_output(9, Orbit_output[im], path, filename); filename[0] = '\0';
 	}
-	// Ring mass
-	Primary[0] = realtime/Gyr2sec;                     // t in Gyr
-	Primary[1] = Qprimi;
-	Primary[2] = Mring*gram;
-	append_output(3, Primary, path, "Outputs/Primary.txt");
-
-	// Resonances
-	for (im=0;im<nmoons;im++) append_output(nmoons, resonance[im], path, "Outputs/Resonances.txt");
-	for (im=0;im<nmoons;im++) append_output(nmoons, resAcctFor[im], path, "Outputs/ResAcctFor.txt");
-	for (im=0;im<nmoons;im++) append_output(nmoons, PCapture[im], path, "Outputs/PCapture.txt");
 
 	//-------------------------------------------------------------------
 	//                       Initialize time loop
@@ -901,14 +946,12 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
     dtime = dtime*1.0e-6*Myr2sec;  // TODO Static time step. Make it dynamic, CFL-compliant?
     // dtime = 0.0010*Myr2sec / ((double) NR / 100.0) / ((double) NR / 100.0);
 
-    tzero_min = tzero[0];
-    for (im=0;im<nmoons;im++) {
-    		if (tzero[im] < tzero_min) tzero_min = tzero[im];
-    }
-    realtime = tzero_min;
+    if (!recover) realtime = tzero_min;
+    else realtime = trecover;
+
     realtime = realtime - dtime;
 
-    ntime = (long long) (fulltime / dtime + 1.0e-3);
+    ntime = (long long) ((fulltime-trecover) / dtime + 1.0e-3);
     nsteps = (int) (dtoutput / dtime + 1.0e-3);
 
     for (itime=0;itime<=ntime;itime++) {
@@ -985,7 +1028,6 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
     	{
 //			thread_id = omp_get_thread_num();
 //			nloops = 0;
-
 #pragma omp for
 			for (im=0;im<nmoons;im++) {
 				if (realtime >= tzero[im] && orbevol[im]) {
@@ -994,6 +1036,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 					// TODO Add a non-Keplerian term due to planetary oblateness?
 					dnorb_dt[im] = (norb[im]-dnorb_dt[im])/dtime;
 
+					// TODO switch r_p to outerrad[nmoons] = r[im][NR]? Could matter if very porous
 					Orbit (argc, argv, path, im, dtime, speedup, itime, nmoons, m_p, r_p, resAcctFor, &aorb, &eorb, norb,
 							lambda, omega, &h_old, &k_old, &a__old, &Cs_ee_old, &Cs_eep_old, &Cr_e_old, &Cr_ep_old, &Cr_ee_old, &Cr_eep_old, &Cr_epep_old,
 							&Wtide_tot, Mprim, Rprim, J2prim, J4prim, k2prim, Qprim,
@@ -1006,15 +1049,15 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 #pragma omp for
 			for (im=0;im<nmoons;im++) {
 				if (realtime >= tzero[im]) {
+
 					Thermal(argc, argv, path, outputpath[im], warnings, NR, dr_grid[im],
 							dtime, realtime, itime, Xp[im], Xsalt[im], Xfines[im], Xpores[im], Tsurf[im],
-							&r[im], &dM[im], &dM_old[im], &Phi[im], &dVol[im], &dE[im], &T[im], &T_old[im], &Pressure[im],
+							&r[im], &dM[im], &dM_old[im], &Phi[im], dVol[im], &dE[im], &T[im], &T_old[im], &Pressure[im],
 							rhoRockth, rhoHydrth, rhoH2osth, rhoAdhsth, rhoH2olth, rhoNh3lth,
 							&Mrock[im], &Mrock_init[im], &Mh2os[im], &Madhs[im], &Mh2ol[im], &Mnh3l[im],
 							&Vrock[im], &Vh2os[im], &Vadhs[im], &Vh2ol[im], &Vnh3l[im], &Erock[im], &Eh2os[im], &Eslush[im],
 							&Xhydr[im], &Xhydr_old[im], &kappa[im], &pore[im], &Mliq[im], &Mcracked_rock[im],
-							&dont_dehydrate[im], &circ[im], &structure_changed[im],
-							&Crack[im], &Crack_size[im], &fracOpen[im], &P_pore[im], &P_hydr[im], &Act[im], &fracKleached[im],
+							&circ[im], &Crack[im], &Crack_size[im], &fracOpen[im], &P_pore[im], &P_hydr[im], &Act[im], &fracKleached[im],
 							crack_input, crack_species, aTP, integral, alpha, beta, silica, chrysotile, magnesite,
 							&ircrack[im], &ircore[im], &irice[im], &irdiff[im], forced_hydcirc, &Nu[im],
 							tidalmodel, tidetimes, im, moonspawn[im], Mprim, eorb, norb, &Wtide_tot[im], hy[im], chondr,
@@ -1194,7 +1237,6 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		free (magnesite[i]);
 	}
 	for (im=0;im<nmoons;im++) {
-		free (dont_dehydrate[im]);
 		free (circ[im]);
 		free (r[im]);
 		free (dVol[im]);
@@ -1246,7 +1288,6 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	free (dnorb_dt);
 	free (lambda);
 	free (omega);
-	free (dont_dehydrate);
 	free (circ);
 	free (r);
 	free (dVol);
@@ -1306,6 +1347,386 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 	free (Cr_ee_old);
 	free (Cr_eep_old);
 	free (Cr_epep_old);
+
+	return 0;
+}
+
+/* Run code from a recovered previous step by reading output files Thermal.txt, Orbit.txt, Crack.txt and Crack_stresses.txt
+ * Helpful e.g. to continue a stalled or crashed simulation
+ *
+ * Parameters values at the previous timestep ("_old") are set to the current timestep, so in effect a timestep is skipped
+ *
+ * Orbital omegas and lambdas are reset
+ */
+int recov(int argc, char *argv[], char path[1024], int nmoons, char outputpath[nmoons][1024], int NR, int ntherm, int norbit, int ncrkstrs, double ****Stress, double *Xp,
+		double *Xsalt, double Mprim, double *Mring, double aring_out, double rhoRockth, double rhoHydrth, double rhoH2olth, double **dVol, double *tzero, double (*m_p)[nmoons],
+		double *dnorb_dt, double *trecover, double ***r, double ***T, double ***Mrock, double ***Mh2os, double ***Madhs, double ***Mh2ol, double ***Mnh3l, double ***Vrock,
+		double ***Vh2ol, double ***Erock, double ***Eh2os, double ***Eslush, double ***dE, double ***Nu, double ***kappa, double ***Xhydr, double ***pore, double ***T_old,
+		double ***Mrock_init, double ***dM, double ***Xhydr_old, double ***Crack, double ***fracOpen, double *Xpores, double ***Pressure, double ***P_pore, double ***P_hydr,
+		double ***Crack_size, int (*irdiff)[nmoons], int (*ircore)[nmoons], int (*ircrack)[nmoons], int (*irice)[nmoons], double **aorb, double **a__old, double **eorb,
+		double **h_old, double **k_old, double **Wtide_tot, double **norb, int ***circ, double ***resonance, double ***PCapture, double ***resAcctFor, double **resAcctFor_old,
+		double **Cs_ee, double **Cs_eep, double **Cr_e, double **Cr_ep, double **Cr_ee, double **Cr_eep, double **Cr_epep) {
+
+	int i = 0;
+	int ir = 0;
+	int im = 0;
+
+	int irin = 0;
+	int irout = 0;
+
+	double Tliq = 0.0; // Ice liquidus (K)
+	double j = 0.0;    // Index of resonance
+	double fineMassFrac = 0.0; // Mass fraction of fines in liquid
+	double fineVolFrac = 0.0; // Volume fraction of fines in liquid
+	double Eice = 0.0; // Internal energy of the ice (non-rock) in erg cm-3
+
+	FILE *f;
+	char filename[1024];
+	char *title = (char*)malloc(1024*sizeof(char));
+
+	double **M = (double**) malloc((nmoons)*sizeof(double*));      // Mass inside a radius
+	if (M == NULL) printf("PlanetSystem: Not enough memory to create M[nmoons]\n");
+	for (im=0;im<nmoons;im++) {
+		M[im] = (double*) malloc(NR*sizeof(double));
+		if (M[im] == NULL) printf("PlanetSystem: Not enough memory to create M[nmoons][NR]\n");
+	}
+
+	double ***thermalout = (double***) malloc(nmoons*sizeof(double**)); // Thermal output
+	if (thermalout == NULL) printf("PlanetSystem: Not enough memory to create thermalout[nmoons]\n");
+	for (im=0;im<nmoons;im++) {
+		thermalout[im] = (double**) malloc((NR)*sizeof(double*));
+		if (thermalout[im] == NULL) printf("PlanetSystem: Not enough memory to create thermalout[nmoons][NR]\n");
+		for (ir=0;ir<NR;ir++) {
+			thermalout[im][ir] = (double*) malloc(ntherm*sizeof(double));
+			if (thermalout[im][ir] == NULL) printf("PlanetSystem: Not enough memory to create thermalout[nmoons][NR][ntherm]\n");
+		}
+	}
+
+	double ***orbitout = (double***) malloc(nmoons*sizeof(double**)); // Orbital output, really a 2D array, but making it 3D to use tail()
+	if (orbitout == NULL) printf("PlanetSystem: Not enough memory to create orbitout[nmoons]\n");
+	for (im=0;im<nmoons;im++) {
+		orbitout[im] = (double**) malloc(1*sizeof(double*));
+		if (orbitout[im] == NULL) printf("PlanetSystem: Not enough memory to create orbitout[nmoons][1]\n");
+		for (ir=0;ir<1;ir++) {
+			orbitout[im][ir] = (double*) malloc(ntherm*sizeof(double));
+			if (orbitout[im][ir] == NULL) printf("PlanetSystem: Not enough memory to create orbitout[nmoons][1][norbit]\n");
+		}
+	}
+
+	double ***crackout = (double***) malloc(nmoons*sizeof(double**)); // Crack output
+	if (crackout == NULL) printf("PlanetSystem: Not enough memory to create crackout[nmoons]\n");
+	for (im=0;im<nmoons;im++) {
+		crackout[im] = (double**) malloc(1*sizeof(double*));
+		if (crackout[im] == NULL) printf("PlanetSystem: Not enough memory to create crackout[nmoons][1]\n");
+		for (ir=0;ir<1;ir++) {
+			crackout[im][ir] = (double*) malloc(NR*sizeof(double));
+			if (crackout[im][ir] == NULL) printf("PlanetSystem: Not enough memory to create crackout[nmoons][1][NR]\n");
+		}
+	}
+
+	for (im=0;im<nmoons;im++) {
+		for (ir=0;ir<NR;ir++) {
+			for (i=0;i<ntherm;i++) thermalout[im][ir][i] = 0.0;
+			crackout[im][0][ir] = 0.0;
+			M[im][ir] = 0.0;
+		}
+		for (i=0;i<norbit;i++) orbitout[im][0][i] = 0.0;
+	}
+
+	//-------------------------------------------------------------------
+	//   Read Thermal.txt, Orbit.txt, Crack.txt and Crack_stresses.txt
+	//-------------------------------------------------------------------
+
+	for (im=0;im<nmoons;im++) {
+		// Thermal.txt
+		title[0] = '\0';
+		filename[0] = '\0';
+		if (v_release == 1) strncat(title,path,strlen(path)-16);
+		else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+
+		strcat(filename, outputpath[im]); strcat(filename, "Thermal.txt");
+		strcat(title, filename);
+
+		f = fopen(title,"r");
+		if (f == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
+		else tail(f, NR, ntherm, &thermalout[im]); // Read the last NR lines
+		fclose (f);
+
+		// Orbit.txt
+		title[0] = '\0';
+		filename[0] = '\0';
+		if (v_release == 1) strncat(title,path,strlen(path)-16);
+		else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+
+		strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt");
+		strcat(title, filename);
+
+		f = fopen(title,"r");
+		if (f == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
+		else tail(f, 1, norbit, &orbitout[im]); // Read the last line
+		fclose (f);
+
+		// Crack.txt
+		title[0] = '\0';
+		filename[0] = '\0';
+		if (v_release == 1) strncat(title,path,strlen(path)-16);
+		else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+
+		strcat(filename, outputpath[im]); strcat(filename, "Crack.txt");
+		strcat(title, filename);
+
+		f = fopen(title,"r");
+		if (f == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
+		else tail(f, 1, norbit, &crackout[im]); // Read the last line
+		fclose (f);
+
+		// Crack_stresses.txt
+		title[0] = '\0';
+		filename[0] = '\0';
+		if (v_release == 1) strncat(title,path,strlen(path)-16);
+		else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+
+		strcat(filename, outputpath[im]); strcat(filename, "Crack_stresses.txt");
+		strcat(title, filename);
+
+		f = fopen(title,"r");
+		if (f == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
+		else tail(f, NR, norbit, &(*Stress)[im]); // Read the last NR lines
+		fclose (f);
+	}
+
+	(*trecover) = orbitout[0][0][0]*Gyr2sec;
+	for (im=0;im<nmoons;im++) {
+		for (ir=0;ir<NR;ir++) {
+			(*r)[im][ir+1] = thermalout[im][ir][0]*km2cm;
+			(*T)[im][ir] = thermalout[im][ir][1];
+			(*Mrock)[im][ir] = thermalout[im][ir][2];
+			(*Mh2os)[im][ir] = thermalout[im][ir][3];
+			(*Madhs)[im][ir] = thermalout[im][ir][4];
+			(*Mh2ol)[im][ir] = thermalout[im][ir][5];
+			(*Mnh3l)[im][ir] = thermalout[im][ir][6];
+			(*Nu)[im][ir] = thermalout[im][ir][7];
+			(*kappa)[im][ir] = thermalout[im][ir][9]*1.0e5;
+			(*Xhydr)[im][ir] = thermalout[im][ir][10];
+			(*pore)[im][ir] = thermalout[im][ir][11];
+
+			(*T_old)[im][ir] = (*T)[im][ir];
+			(*Mrock_init)[im][ir] = (*Mrock)[im][ir];
+			(*dM)[im][ir] = (*Mrock)[im][ir] + (*Mh2os)[im][ir] + (*Mh2ol)[im][ir] + (*Madhs)[im][ir] + (*Mnh3l)[im][ir];
+			M[im][ir] = (*dM)[im][ir];
+			if (ir > 0) M[im][ir] = M[im][ir] + M[im][ir-1];
+			(*Xhydr_old)[im][ir] = (*Xhydr)[im][ir];
+			(*Vrock)[im][ir] = (*Mrock)[im][ir] / ((*Xhydr)[im][ir]*rhoHydrth + (1.0-(*Xhydr)[im][ir])*rhoRockth);
+			(*Vh2ol)[im][ir] = (*Mh2ol)[im][ir] / rhoH2olth;
+
+			(*Crack)[im][ir] = crackout[im][0][ir];
+
+			(*fracOpen)[im][ir] = (*pore)[im][ir]/Xpores[im]; // Approximation
+
+			(*Pressure)[im][ir] = (*Stress)[im][ir][1]*MPa;
+			(*P_pore)[im][ir] = (*Stress)[im][ir][5]*MPa;
+			(*P_hydr)[im][ir] = (*Stress)[im][ir][6]*MPa;
+			(*Crack_size)[im][ir] = (*Stress)[im][ir][9];
+		}
+		(*m_p)[im] = M[im][NR-1];
+		if (tzero[im] > (*trecover)) (*Mring) = (*Mring) + (*m_p)[im];
+
+		(*ircore)[im] = 0;
+		for (ir=0;ir<NR-1;ir++) {
+			if ((*Mrock)[im][ir] > 0.0 && (*Mrock)[im][ir+1] <= 0.0) {
+				(*ircore)[im] = ir;
+				break;
+			}
+		}
+		(*ircrack)[im] = NR;
+		for (ir=(*ircore)[im]-1;ir>=0;ir--) {
+			if ((*Crack)[im][ir] > 0.0 || (ir>0 && (*Crack)[im][ir-1] > 0.0)) (*ircrack)[im] = ir; // Second condition to avoid single non-cracked layers
+			else break;
+		}
+		(*irice)[im] = (*ircore)[im];
+		for (ir=(*ircore)[im];ir<NR;ir++) {
+			if ((*Mh2ol)[im][ir] > 0.0) (*irice)[im] = ir;
+		}
+		if (Xp[im] >= 1.0e-2) Tliq = 174.0; // Differentiation occurs at the solidus (first melt). We set 174 K instead of 176 K for consistency with the heatIce() subroutine.
+		else Tliq = 271.0;              // instead of 273 K for consistency with heatIce().
+		for (ir=0;ir<NR-1;ir++) {
+			if (ir > (*irdiff)[im] && (*T)[im][ir] > Tliq) (*irdiff)[im] = ir;
+		}
+		if ((*irdiff)[im] > NR/2) {      // Subsequent differentiation by Rayleigh-Taylor instabilities
+			for (ir=0;ir<NR-1;ir++) {
+				if (ir > (*irdiff)[im] && (*T)[im][ir] > Tdiff) (*irdiff)[im] = ir;
+			}
+		}
+
+		(*aorb)[im] = orbitout[im][0][1]*km2cm;
+		(*a__old)[im] = orbitout[im][0][2]*km2cm;
+		(*eorb)[im] = orbitout[im][0][3];
+		(*h_old)[im] = orbitout[im][0][4];
+		(*k_old)[im] = orbitout[im][0][5];
+		(*Wtide_tot)[im] = orbitout[im][0][7]*1.0e7;
+
+		(*norb)[im] = sqrt(Gcgs*Mprim*pow((*aorb)[im],-3.0));
+	}
+
+	// Internal energies
+	double frock = 0.0;
+	double fh2os = 0.0;
+	double fadhs = 0.0;
+	double fh2ol = 0.0;
+	double fnh3l = 0.0;
+	double gh2os = 0.0;
+	double gadhs = 0.0;
+	double gh2ol = 0.0;
+	double gnh3l = 0.0;
+	double X = 0.0;
+	for (im=0;im<nmoons;im++) {
+		for (ir=0;ir<NR;ir++) {
+			frock = (*Mrock)[im][ir]/(*dM)[im][ir];
+			fh2os = (*Mh2os)[im][ir]/(*dM)[im][ir];
+			fadhs = (*Madhs)[im][ir]/(*dM)[im][ir];
+			fh2ol = (*Mh2ol)[im][ir]/(*dM)[im][ir];
+			fnh3l = (*Mnh3l)[im][ir]/(*dM)[im][ir];
+
+			if (frock < 1.0) {
+				gh2os = fh2os / (1.0-frock);
+				gadhs = fadhs / (1.0-frock);
+				gh2ol = fh2ol / (1.0-frock);
+				gnh3l = fnh3l / (1.0-frock);
+				X = gnh3l + Xc*gadhs;
+			}
+
+			(*Erock)[im][ir] = (*Mrock)[im][ir]*heatRock((*T)[im][ir]);
+			heatIce ((*T)[im][ir], X, Xsalt[im], &Eice, &gh2os, &gadhs, &gh2ol, &gnh3l);
+			(*Eh2os)[im][ir] = (*Mh2os)[im][ir] * Eice;
+			(*Eslush)[im][ir] = ((*Madhs)[im][ir] + (*Mh2ol)[im][ir] + (*Mnh3l)[im][ir]) * Eice;
+
+			(*dE)[im][ir] = (*Erock)[im][ir] + (*Eh2os)[im][ir] + (*Eslush)[im][ir];
+		}
+	}
+
+	// circ[im] for Thermal()
+	for (im=0;im<nmoons;im++) {
+		// Calculate fine volume fraction in liquid
+		if ((*ircore)[im] < NR) {
+			fineMassFrac = (*Mrock)[im][(*ircore)[im]+1] / ((*Mh2ol)[im][(*ircore)[im]+1] + (*Mh2os)[im][(*ircore)[im]+1] + (*Mrock)[im][(*ircore)[im]+1]);
+			fineVolFrac = fineMassFrac * (*dM)[im][(*ircore)[im]+1] / dVol[im][(*ircore)[im]+1] / ((*Xhydr)[im][(*ircore)[im]+1]*rhoHydrth+(1.0-(*Xhydr)[im][(*ircore)[im]+1])*rhoRockth);
+		}
+		irin = (*ircore)[im]; irout = (*ircore)[im];
+		for (ir=0;ir<(*ircore)[im];ir++) {
+			if ((*Mh2ol)[im][ir] > 0.0) irin = ir;
+			break;
+		}
+		for (ir=irin;ir<(*ircore)[im];ir++) {
+			if ((*Mh2ol)[im][ir] == 0.0) irout = ir;
+			break;
+		}
+		if (irin < (*ircore)[im]) convect(irin, irout, (*T)[im], (*r)[im], NR, (*Pressure)[im], M[im], dVol[im],
+				(*Vrock)[im], (*Vh2ol)[im],(*pore)[im], (*Mh2ol)[im], (*Mnh3l)[im], (*Xhydr)[im], &((*kappa)[im]), &((*Nu)[im]),
+				(*Crack_size)[im], rhoH2olth, rhoRockth, rhoHydrth, fineMassFrac, fineVolFrac, (*ircore)[im], (*irdiff)[im], &((*circ)[im]), 0.0, 0);
+	}
+
+	// Disturbing function coefficients for Orbit()
+	// Check for orbital resonances
+	for (im=0;im<nmoons;im++) {
+		if ((*trecover) >= tzero[im]) rescheck(nmoons, im, *norb, dnorb_dt, *aorb, *eorb, *m_p, Mprim, &(*resonance), &(*PCapture), tzero, *trecover, aring_out, resAcctFor_old);
+	}
+	// Only one moon-moon resonance per moon max, so account for only lower-order (stronger) or older resonances
+	for (im=0;im<nmoons;im++) resscreen (nmoons, (*resonance)[im], &(*resAcctFor)[im], resAcctFor_old[im]);
+
+	for (im=0;im<nmoons;im++) {
+		if ((*a__old)[im] != 0.0) {
+			for (i=0;i<nmoons;i++) {
+				if ((*resonance)[im][i] > 0.0) j = (*resonance)[im][i];
+			}
+			double p = 2.0*j;
+			double alpha = pow((j-1)/j, 2.0/3.0);
+			(*Cs_ee)[im]   = 0.125 * (                                                              2.0*alpha*DLaplace_coef(alpha, 0.0, 0.5) + alpha*alpha*D2Laplace_coef(alpha, 0.0, 0.5));
+			(*Cs_eep)[im]  =  0.25 * (                 2.0*Laplace_coef(alpha, 1.0, 0.5) -          2.0*alpha*DLaplace_coef(alpha, 1.0, 0.5) - alpha*alpha*D2Laplace_coef(alpha, 1.0, 0.5));
+			(*Cr_e)[im]    =   0.5 * (              -2.0*j*Laplace_coef(alpha, j  , 0.5) -              alpha*DLaplace_coef(alpha, j  , 0.5)                                              );
+			(*Cr_ep)[im]   =   0.5 * (         (2.0*j-1.0)*Laplace_coef(alpha, j-1, 0.5) +              alpha*DLaplace_coef(alpha, j-1, 0.5)                                              );
+			if (j == 2.0) (*Cr_ep)[im] = (*Cr_ep)[im] - 2.0*alpha;
+			(*Cr_ee)[im]   = 0.125 * (    (-5.0*p+4.0*p*p)*Laplace_coef(alpha, p  , 0.5) + (-2.0+4.0*p)*alpha*DLaplace_coef(alpha, p  , 0.5) + alpha*alpha*D2Laplace_coef(alpha, p  , 0.5));
+			(*Cr_eep)[im]  =  0.25 * ((-2.0+6.0*p-4.0*p*p)*Laplace_coef(alpha, p-1, 0.5) +  (2.0-4.0*p)*alpha*DLaplace_coef(alpha, p-1, 0.5) - alpha*alpha*D2Laplace_coef(alpha, p-1, 0.5));
+			(*Cr_epep)[im] = 0.125 * ( (2.0-7.0*p+4.0*p*p)*Laplace_coef(alpha, p-2, 0.5) + (-2.0+4.0*p)*alpha*DLaplace_coef(alpha, p-2, 0.5) + alpha*alpha*D2Laplace_coef(alpha, p-2, 0.5));
+		}
+	}
+
+	//-------------------------------------------------------------------
+	//                           Free mallocs
+	//-------------------------------------------------------------------
+
+	for (im=0;im<nmoons;im++) {
+		for (ir=0;ir<NR;ir++) free (thermalout[im][ir]);
+		for (ir=0;ir<1;ir++) {
+			free (crackout[im][0]);
+			free (orbitout[im][ir]);
+		}
+	}
+	for (im=0;im<nmoons;im++) {
+		free (thermalout[im]);
+		free (orbitout[im]);
+		free (crackout[im]);
+		free (M[im]);
+	}
+	free (thermalout);
+	free (orbitout);
+	free (crackout);
+	free (M);
+	free (title);
+
+	return 0;
+}
+
+/* Return the last n lines of file f, each line having l entries
+ */
+int tail(FILE *f, int n, int l, double ***output) {
+
+	int i = 0;
+	int j = 0;
+	int line_length = 0;
+    int newlines = 0;  // To count '\n' characters
+    int scan = 0;
+    unsigned long long pos;
+
+    // Go to End of file
+    if (fseek(f, 0, SEEK_END)) perror("tail(): fseek() failed");
+    else {
+        pos = ftell(f); // # characters in file
+
+        line_length = 0;
+        // Search for '\n' characters
+        while (pos) {
+            if (!fseek(f, --pos, SEEK_SET)) {   // Move 'pos' away from end of file.
+                line_length++;
+            	if (fgetc(f) == '\n') {
+                    if (newlines++ == n) break; // Stop reading when n newlines is found
+                }
+            }
+            else perror("tail(): fseek() failed");
+        }
+
+    	char line[line_length]; // Individual line
+
+        // Return last n lines
+    	for (j=0;j<l;j++) {
+    		scan = fscanf(f, "%lg", &(*output)[i][j]);
+    		if (scan != 1) printf("tail(): Error scanning Icy Dwarf output file at entry i = %d\n",i);
+    		fgets(line, 1, f);
+    	}
+    	i++;
+        while (fgets(line, line_length, f)) {
+        	for (j=0;j<l;j++) {
+        		scan = fscanf(f, "%lg", &(*output)[i][j]);
+        		if (scan != 1 && i<n) printf("tail(): Error scanning Icy Dwarf output file at entry i = %d\n",i);
+        		fgets(line, 1, f);
+        	}
+        	i++;
+        }
+
+//		// Print last n lines
+//        printf("Printing last %d lines -\n", n);
+//        while (fgets(line, sizeof(line), f)) printf("%s", line);
+    }
 
 	return 0;
 }

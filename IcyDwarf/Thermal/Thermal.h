@@ -29,12 +29,12 @@
 
 int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int warnings, int NR, double dr_grid,
 		double dtime, double realtime, int itime, double Xp, double Xsalt, double Xfines, double Xpores, double Tsurf,
-		double **r, double **dM, double **dM_old, double *Phi, double **dVol, double **dE, double **T, double **T_old, double **Pressure,
+		double **r, double **dM, double **dM_old, double *Phi, double *dVol, double **dE, double **T, double **T_old, double **Pressure,
 		double rhoRockth, double rhoHydrth, double rhoH2osth, double rhoAdhsth, double rhoH2olth, double rhoNh3lth,
 		double **Mrock, double **Mrock_init, double **Mh2os, double **Madhs, double **Mh2ol, double **Mnh3l,
 		double **Vrock, double **Vh2os, double **Vadhs, double **Vh2ol, double **Vnh3l, double **Erock, double **Eh2os, double **Eslush,
 		double **Xhydr, double **Xhydr_old, double **kappa, double **pore, double *Mliq, double *Mcracked_rock,
-		int **dont_dehydrate, int **circ, int *structure_changed, double **Crack, double **Crack_size, double **fracOpen, double **P_pore,
+		int **circ, double **Crack, double **Crack_size, double **fracOpen, double **P_pore,
 		double **P_hydr, double ***Act, double *fracKleached, int *crack_input, int *crack_species, double **aTP, double **integral,
 		double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite, int *ircrack, int *ircore, int *irice,
 		int *irdiff, int forced_hydcirc, double **Nu, int tidalmodel, double tidetimes, int im, int moonspawn, double Mprim, double *eorb,
@@ -95,12 +95,12 @@ long double complex y2pp(long double complex x, int mod);
 
 int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int warnings, int NR, double dr_grid,
 		double dtime, double realtime, int itime, double Xp, double Xsalt, double Xfines, double Xpores, double Tsurf,
-		double **r, double **dM, double **dM_old, double *Phi, double **dVol, double **dE, double **T, double **T_old, double **Pressure,
+		double **r, double **dM, double **dM_old, double *Phi, double *dVol, double **dE, double **T, double **T_old, double **Pressure,
 		double rhoRockth, double rhoHydrth, double rhoH2osth, double rhoAdhsth, double rhoH2olth, double rhoNh3lth,
 		double **Mrock, double **Mrock_init, double **Mh2os, double **Madhs, double **Mh2ol, double **Mnh3l,
 		double **Vrock, double **Vh2os, double **Vadhs, double **Vh2ol, double **Vnh3l, double **Erock, double **Eh2os, double **Eslush,
 		double **Xhydr, double **Xhydr_old, double **kappa, double **pore, double *Mliq, double *Mcracked_rock,
-		int **dont_dehydrate, int **circ, int *structure_changed, double **Crack, double **Crack_size, double **fracOpen, double **P_pore,
+		int **circ, double **Crack, double **Crack_size, double **fracOpen, double **P_pore,
 		double **P_hydr, double ***Act, double *fracKleached, int *crack_input, int *crack_species, double **aTP, double **integral,
 		double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite, int *ircrack, int *ircore, int *irice,
 		int *irdiff, int forced_hydcirc, double **Nu, int tidalmodel, double tidetimes, int im, int moonspawn, double Mprim, double *eorb,
@@ -116,6 +116,8 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 	int irice_cv = 0;                    // Outermost slush layer, for convection purposes
 	int iriceold = 0;                    // Old outermost slush layer
 	int irdiffold = 0;                   // Old outermost differentiated layer
+
+	int structure_changed = 0;           // Switch to call separate()
 
 	double Phiold = 0.0;                 // Old gravitational potential energy (erg)
 	double ravg = 0.0;                   // Average radius of a layer (cm)
@@ -134,8 +136,8 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 	double creep_rate = 0.0;             // Strain rate in s-1 for ice, rock, or a mixture. Stress is hydrostatic pressure/(1-porosity)
 	double omega_tide = 0.0;             // Tidal frequency (s-1)
 
-	double *de = (double*) malloc(2*sizeof(double));         // de/dt
-	if (de == NULL) printf("Thermal: Not enough memory to create de[2]\n");
+	int *dont_dehydrate = (int*) malloc(NR*sizeof(int));     // Don't dehydrate a layer that just got hydrated
+	if (dont_dehydrate == NULL) printf("Thermal: Not enough memory to create dont_dehydrate[NR]\n");
 
 	double *M = (double*) malloc(NR*sizeof(double));         // Mass under a layer (g)
 	if (M == NULL) printf("Thermal: Not enough memory to create M[NR]\n");
@@ -154,6 +156,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 
 	// Zero all the arrays
     for (ir=0;ir<NR;ir++) {
+		dont_dehydrate[ir] = 0;
 		M[ir] = 0.0;
 		Qth[ir] = 0.0;
 		Brittle_strength[ir] = 0.0;
@@ -170,7 +173,6 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 
 	i = 0;
 	for (ir=0;ir<NR;ir++) {
-		(*dont_dehydrate)[ir] = 0;
 		for (jr=0;jr<12;jr++) (*Stress)[ir][jr] = 0.0;
 		if (fabs((*dM)[ir] - (*dM_old)[ir])/(*dM_old)[ir] > 0.05) {
 			i = 1;
@@ -197,7 +199,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 	//-------------------------------------------------------------------
 
 	for (ir=0; ir<NR;ir++) {
-		creep((*T)[ir], (*Pressure)[ir], &creep_rate, 1.0-(*Vrock)[ir]/(*dVol)[ir], (*pore)[ir], (*Xhydr)[ir]);
+		creep((*T)[ir], (*Pressure)[ir], &creep_rate, 1.0-(*Vrock)[ir]/dVol[ir], (*pore)[ir], (*Xhydr)[ir]);
 		(*pore)[ir] = (*pore)[ir]-dtime*(1.0-(*pore)[ir])*creep_rate;
 		if ((*pore)[ir] < 0.0) (*pore)[ir] = 0.0;
 		if ((*Mrock)[ir] < 0.01 && (*Mh2ol)[ir] > 0.01) (*pore)[ir] = 0.0;
@@ -208,8 +210,6 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 	//-------------------------------------------------------------------
 	//               Rock hydration & dehydration, cracking
 	//-------------------------------------------------------------------
-
-	(*structure_changed) = 0;
 
 	if (itime > 1 && !moonspawn) { // Don't run crack() at itime = 1, because temperature changes from the initial temp can be artificially strong
 		for (ir=0;ir<(*ircore);ir++) {
@@ -271,19 +271,19 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 
 	if (hy) {
 		for (ir=(*ircore)-1;ir>=(*ircrack);ir--) { // From the ocean downwards -- irice-1 if fines?
-			if ((*circ)[ir] == 1 && (*T)[ir] < Tdehydr_max && (*Xhydr)[ir] <= 0.99 && (*structure_changed) == 0) {
+			if ((*circ)[ir] == 1 && (*T)[ir] < Tdehydr_max && (*Xhydr)[ir] <= 0.99) {
 				Xhydr_temp = (*Xhydr)[ir];
-				hydrate((*T)[ir], &(*dM), *dVol, &(*Mrock), &(*Mh2os), *Madhs, &(*Mh2ol), &(*Mnh3l), &(*Vrock), &(*Vh2os), &(*Vh2ol), &(*Vnh3l),
+				hydrate((*T)[ir], &(*dM), dVol, &(*Mrock), &(*Mh2os), *Madhs, &(*Mh2ol), &(*Mnh3l), &(*Vrock), &(*Vh2os), &(*Vh2ol), &(*Vnh3l),
 					rhoRockth, rhoHydrth, rhoH2osth, rhoH2olth, rhoNh3lth, &(*Xhydr), ir, (*ircore), (*irice), NR);
-				(*structure_changed) = 1;
-				if ((*Xhydr)[ir] >= (1.0+1.0e-10)*Xhydr_temp) (*dont_dehydrate)[ir] = 1; // +epsilon to beat machine error
+				structure_changed = 1;
+				if ((*Xhydr)[ir] >= (1.0+1.0e-10)*Xhydr_temp) dont_dehydrate[ir] = 1; // +epsilon to beat machine error
 			}
 		}
 		for (ir=0;ir<(*ircore);ir++) { // irice if fines?
-			if ((*T)[ir] > Tdehydr_min && (*Xhydr)[ir] >= 0.01 && (*dont_dehydrate)[ir] == 0) {
-				dehydrate((*T)[ir], (*dM)[ir], (*dVol)[ir], &(*Mrock)[ir], &(*Mh2ol)[ir], &(*Vrock)[ir], &(*Vh2ol)[ir], rhoRockth, rhoHydrth, rhoH2olth,
+			if ((*T)[ir] > Tdehydr_min && (*Xhydr)[ir] >= 0.01 && dont_dehydrate[ir] == 0) {
+				dehydrate((*T)[ir], (*dM)[ir], dVol[ir], &(*Mrock)[ir], &(*Mh2ol)[ir], &(*Vrock)[ir], &(*Vh2ol)[ir], rhoRockth, rhoHydrth, rhoH2olth,
 						&(*Xhydr)[ir]);
-				(*structure_changed) = 1;
+				structure_changed = 1;
 			}
 		}
 	}
@@ -302,8 +302,8 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 		}
 	}
 
-	if ((*irdiff) > 0 && ((*irdiff) != irdiffold || (*irice) != iriceold || (*structure_changed) == 1)) {
-		separate(NR, &(*irdiff), &(*ircore), &(*irice), *dVol, &(*dM), &(*dE), &(*Mrock), &(*Mh2os), &(*Madhs), &(*Mh2ol), &(*Mnh3l),
+	if ((*irdiff) > 0 && ((*irdiff) != irdiffold || (*irice) != iriceold || structure_changed == 1)) {
+		separate(NR, &(*irdiff), &(*ircore), &(*irice), dVol, &(*dM), &(*dE), &(*Mrock), &(*Mh2os), &(*Madhs), &(*Mh2ol), &(*Mnh3l),
 				 &(*Vrock), &(*Vh2os), &(*Vadhs), &(*Vh2ol), &(*Vnh3l), &(*Erock), &(*Eh2os), &(*Eslush), rhoAdhsth, rhoH2olth, rhoNh3lth, Xfines, Xpores);
 	}
 
@@ -366,11 +366,11 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 	if ((*irdiff) > 0) {
 		Volume1 = 0.0;
 		for (ir=0;ir<=(*irdiff);ir++) {
-			Volume1 = Volume1 + (*dVol)[ir];
+			Volume1 = Volume1 + dVol[ir];
 		}
 		for (ir=0;ir<=(*irdiff);ir++) {
-			Qth[ir] = Qth[ir] + ((*Phi)-Phiold)/dtime * ((*dVol)[ir]/Volume1);
-			(*Heat_grav) = (*Heat_grav) + ((*Phi)-Phiold)/dtime * ((*dVol)[ir]/Volume1);
+			Qth[ir] = Qth[ir] + ((*Phi)-Phiold)/dtime * (dVol[ir]/Volume1);
+			(*Heat_grav) = (*Heat_grav) + ((*Phi)-Phiold)/dtime * (dVol[ir]/Volume1);
 		}
 	}
 
@@ -391,7 +391,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 		}
 		(*Wtide_tot) = 0.0;
 		tide(tidalmodel, tidetimes, eorb[im], omega_tide, &Qth, NR, &(*Wtide_tot), (*Mh2os), (*Madhs), (*Mh2ol), (*Mnh3l), (*dM),
-				(*Vrock), (*dVol), (*r), (*T), (*Xhydr), (*Pressure), (*pore), im);
+				(*Vrock), dVol, (*r), (*T), (*Xhydr), (*Pressure), (*pore), im);
 		(*Heat_tide) = (*Heat_tide) + (*Wtide_tot);
 
 		for (ir=0;ir<NR;ir++) (*Tide_output)[ir][1] = (*Tide_output)[ir][1] + Qth[ir]/1.0e7;
@@ -402,11 +402,11 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 	//-------------------------------------------------------------------
 
 	for (ir=0;ir<NR;ir++) {
-		frock = (*Vrock)[ir] / (*dVol)[ir];
-		fh2os = (*Vh2os)[ir] / (*dVol)[ir];
-		fadhs = (*Vadhs)[ir] / (*dVol)[ir];
-		fh2ol = (*Vh2ol)[ir] / (*dVol)[ir];
-		fnh3l = (*Vnh3l)[ir] / (*dVol)[ir];
+		frock = (*Vrock)[ir] / dVol[ir];
+		fh2os = (*Vh2os)[ir] / dVol[ir];
+		fadhs = (*Vadhs)[ir] / dVol[ir];
+		fh2ol = (*Vh2ol)[ir] / dVol[ir];
+		fnh3l = (*Vnh3l)[ir] / dVol[ir];
 
 		(*kappa)[ir] = kapcond((*T)[ir], frock, fh2os, fadhs, fh2ol, fnh3l, (*Xhydr)[ir], (*pore)[ir]);
 	}
@@ -420,7 +420,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 	// Calculate fine volume fraction in liquid
 	if ((*ircore) < NR) {
 		fineMassFrac = (*Mrock)[(*ircore)+1] / ((*Mh2ol)[(*ircore)+1] + (*Mh2os)[(*ircore)+1] + (*Mrock)[(*ircore)+1]);
-		fineVolFrac = fineMassFrac * (*dM)[(*ircore)+1] / (*dVol)[(*ircore)+1] / ((*Xhydr)[(*ircore)+1]*rhoHydrth+(1.0-(*Xhydr)[(*ircore)+1])*rhoRockth);
+		fineVolFrac = fineMassFrac * (*dM)[(*ircore)+1] / dVol[(*ircore)+1] / ((*Xhydr)[(*ircore)+1]*rhoHydrth+(1.0-(*Xhydr)[(*ircore)+1])*rhoRockth);
 	}
 
 	 // Find inner and outer radii of convective zone
@@ -434,10 +434,10 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 		break;
 	}
 
-	if (irin < (*ircore)) convect(irin, irout, (*T), (*r), NR, (*Pressure), M, (*dVol), (*Vrock), (*Vh2ol), (*pore), (*Mh2ol), (*Mnh3l), (*Xhydr), &(*kappa), &(*Nu),
+	if (irin < (*ircore)) convect(irin, irout, (*T), (*r), NR, (*Pressure), M, dVol, (*Vrock), (*Vh2ol), (*pore), (*Mh2ol), (*Mnh3l), (*Xhydr), &(*kappa), &(*Nu),
 			(*Crack_size), rhoH2olth, rhoRockth, rhoHydrth, fineMassFrac, fineVolFrac, (*ircore), (*irdiff), &(*circ), creep_rate, 0);
 
-	if ((*ircrack) < (*ircore) && (*Mh2ol)[(*ircore)] > 0.0 && fineVolFrac < 0.64) convect((*ircrack), (*ircore), (*T), (*r), NR, (*Pressure), M, (*dVol),
+	if ((*ircrack) < (*ircore) && (*Mh2ol)[(*ircore)] > 0.0 && fineVolFrac < 0.64) convect((*ircrack), (*ircore), (*T), (*r), NR, (*Pressure), M, dVol,
 			(*Vrock), (*Vh2ol), (*pore), (*Mh2ol), (*Mnh3l), (*Xhydr), &(*kappa), &(*Nu), (*Crack_size), rhoH2olth, rhoRockth, rhoHydrth, fineMassFrac,
 			fineVolFrac, (*ircore), (*irdiff), &(*circ), creep_rate, 1);
 
@@ -457,7 +457,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 		if ((*Mh2ol)[ir] > 0.0) irice_cv = ir; // TODO 2% liquid minimum for liquid convection?
 	}
 
-	if (irice_cv >= (*ircore)+2 && fineVolFrac < 0.64) convect((*ircore), irice_cv, (*T), (*r), NR, (*Pressure), M, (*dVol), (*Vrock), (*Vh2ol), (*pore),
+	if (irice_cv >= (*ircore)+2 && fineVolFrac < 0.64) convect((*ircore), irice_cv, (*T), (*r), NR, (*Pressure), M, dVol, (*Vrock), (*Vh2ol), (*pore),
 			(*Mh2ol), (*Mnh3l), (*Xhydr), &(*kappa), &(*Nu), (*Crack_size), rhoH2olth, rhoRockth, rhoHydrth, fineMassFrac, fineVolFrac, (*ircore),
 			(*irdiff), &(*circ), creep_rate, 2);
 
@@ -471,7 +471,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 	if ((*irice) > (*ircore)) irice_cv = (*irice);
 	else irice_cv = (*ircore); // Case where there is no longer liquid
 
-	if ((*irdiff) >= irice_cv+2 && fineVolFrac < 0.64) convect(irice_cv, (*irdiff), (*T), (*r), NR, (*Pressure), M, (*dVol), (*Vrock), (*Vh2ol), (*pore),
+	if ((*irdiff) >= irice_cv+2 && fineVolFrac < 0.64) convect(irice_cv, (*irdiff), (*T), (*r), NR, (*Pressure), M, dVol, (*Vrock), (*Vh2ol), (*pore),
 			(*Mh2ol), (*Mnh3l), (*Xhydr), &(*kappa), &(*Nu), (*Crack_size), rhoH2osth, rhoRockth, rhoHydrth, fineMassFrac, fineVolFrac, (*ircore),
 			(*irdiff), &(*circ), creep_rate, 3);
 
@@ -487,14 +487,10 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 	//                   Solve heat diffusion equation
 	//-------------------------------------------------------------------
 
-	for (ir=0;ir<NR;ir++) {
-		(*T_old)[ir] = (*T)[ir];  // Memorize temperature
-	}
+	for (ir=0;ir<NR;ir++) (*T_old)[ir] = (*T)[ir];  // Memorize temperature
 
 	// Heat equation
-	for (ir=0;ir<NR-1;ir++) {
-		(*dE)[ir] = (*dE)[ir] + dtime*Qth[ir] + 4.0*PI_greek*dtime*(RRflux[ir]-RRflux[ir+1]);
-	}
+	for (ir=0;ir<NR-1;ir++) (*dE)[ir] = (*dE)[ir] + dtime*Qth[ir] + 4.0*PI_greek*dtime*(RRflux[ir]-RRflux[ir+1]);
 
 	// Chemical equilibrium
 	for (ir=0;ir<NR;ir++) {
@@ -550,12 +546,12 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 	//                           Free mallocs
 	//-------------------------------------------------------------------
 
+	free (dont_dehydrate);
 	free (RRflux);
 	free (M);
 	free (Qth);
 	free (Brittle_strength);
 	free (strain_rate);
-	free (de);
 
 	return 0;
 }
