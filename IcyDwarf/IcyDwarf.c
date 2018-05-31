@@ -28,7 +28,7 @@ int main(int argc, char *argv[]){
 
 	// Housekeeping inputs
 	int warnings = 0;                  // Display warnings
-	int msgout = 0;                    // Display messages
+	int recover = 0;                   // Recover from previous simulation
 
 	int ir = 0;
 	int i = 0;
@@ -47,8 +47,8 @@ int main(int argc, char *argv[]){
 
 	// Planet inputs
 	double Mprim = 0.0;                // Mass of the primary (host planet) (kg)
-	double Rprim = 0.0;				  // Radius of the primary (host planet) (km)
-	double Qprimi = 0.0;			      // Initial tidal Q of the primary (host planet)
+	double Rprim = 0.0;				   // Radius of the primary (host planet) (km)
+	double Qprimi = 0.0;			   // Initial tidal Q of the primary (host planet)
 	double Qprimf = 0.0;               // Final tidal Q of the primary
 	int Qmode = 0;                     // How Q changes over time between Qprimi and Qprimf. 0:linearly; 1:exponential decay; 2:exponential change
 	double k2prim = 0.0;               // k2 tidal Love number of primary (Saturn: 0.39, Lainey et al. 2017?, 1.5 for homogeneous body)
@@ -183,7 +183,7 @@ int main(int argc, char *argv[]){
 	i = 0;
 	//-----------------------------
 	warnings = (int) input[i]; i++;
-	msgout = (int) input[i]; i++;
+	recover = (int) input[i]; i++;
 	//-----------------------------
 	NR = input[i]; i++;
 	timestep = input[i]; i++;          // yr
@@ -274,7 +274,7 @@ int main(int argc, char *argv[]){
 	printf("| Housekeeping |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||\n");
 	printf("|-----------------------------------------------|------------------------------------------------------|\n");
 	printf("| Warnings?                                     | %d\n", warnings);
-	printf("| Messages?                                     | %d\n", msgout);
+	printf("| Recover?                                      | %d\n", recover);
 	printf("|-----------------------------------------------|------------------------------------------------------|\n");
 	printf("| Grid |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||\n");
 	printf("|-----------------------------------------------|------------------------------------------------------|\n");
@@ -297,7 +297,7 @@ int main(int argc, char *argv[]){
 	printf("|-----------------------------------------------|------------------------------------------------------|\n");
 	printf("| Icy world parameters |||||||||||||||||||||||||| World 1  | World 2  | World 3  | World 4  | World 5  |\n");
 	printf("|-----------------------------------------------|----------|----------|----------|----------|----------|\n");
-	printf("| Radius (km)                                   |");
+	printf("| Radius assuming zero porosity (km)              |");
 	for (im=0;im<nmoons;im++) printf(" %g \t", r_p[im]);
 	printf("\n| Density assuming zero porosity (g cm-3)       |");
 	for (im=0;im<nmoons;im++) printf(" %g \t", rho_p[im]);
@@ -387,19 +387,19 @@ int main(int argc, char *argv[]){
 
 	if (run_aTP == 1) {
 		printf("Calculating expansion mismatch optimal flaw size matrix...\n");
-		aTP(path, warnings, msgout);
+		aTP(path, warnings);
 		printf("\n");
 	}
 
 	if (run_alpha_beta == 1) {
 		printf("Calculating alpha(T,P) and beta(T,P) tables for water using CHNOSZ...\n");
-		Crack_water_CHNOSZ(argc, argv, path, warnings, msgout);
+		Crack_water_CHNOSZ(argc, argv, path, warnings);
 		printf("\n");
 	}
 
 	if (run_crack_species == 1) {
 		printf("Calculating log K for crack species using CHNOSZ...\n");
-		Crack_species_CHNOSZ(argc, argv, path, warnings, msgout);
+		Crack_species_CHNOSZ(argc, argv, path, warnings);
 		printf("\n");
 	}
 
@@ -420,7 +420,7 @@ int main(int argc, char *argv[]){
 
 	if (run_thermal == 1) {
 		printf("Running thermal evolution code...\n");
-		PlanetSystem(argc, argv, path, warnings, NR, timestep, speedup, tzero, total_time, output_every, nmoons, Mprim, Rprim, Qprimi, Qprimf,
+		PlanetSystem(argc, argv, path, warnings, recover, NR, timestep, speedup, tzero, total_time, output_every, nmoons, Mprim, Rprim, Qprimi, Qprimf,
 				Qmode, k2prim, J2prim, J4prim, Mring, aring_out, aring_in, r_p, rho_p, rhoHydrRock, rhoDryRock, nh3, salt, Xhydr, porosity, Xpores,
 				Xfines, Tinit, Tsurf, startdiff, aorb, eorb, tidalmodel, tidetimes, orbevol, hy, chondr, crack_input, crack_species);
 		printf("\n");
@@ -482,8 +482,7 @@ int main(int argc, char *argv[]){
 			printf("Icy Dwarf: t_cryolava > total time of sim\n");
 			return -1;
 		}
-		Cryolava(argc, argv, path, NR, NT_output, (float) r_p[0], thoutput, t_cryolava, CHNOSZ_T_MIN, warnings, msgout,
-				rhoHydrRock, rhoDryRock, Xhydr[0]);
+		Cryolava(argc, argv, path, NR, NT_output, (float) r_p[0], thoutput, t_cryolava, CHNOSZ_T_MIN, warnings, rhoHydrRock, rhoDryRock, Xhydr[0]);
 
 		for (ir=0;ir<NR;ir++) free (thoutput[ir]);
 		free (thoutput);

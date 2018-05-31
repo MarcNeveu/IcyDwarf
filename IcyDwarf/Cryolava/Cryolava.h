@@ -36,12 +36,12 @@
 #include "../CHNOSZ_commands.h"
 
 int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p, thermalout **thoutput, int t_cryolava,
-		double CHNOSZ_T_MIN, int warnings, int msgout, double rhoHydr, double rhoDry, double *Xhydr);
+		double CHNOSZ_T_MIN, int warnings, double rhoHydr, double rhoDry, double *Xhydr);
 double f (float P, float Mliq, double *Abundances, double *K_rxn, double x);
 double f_prime (float P, float Mliq, double *Abundances, double *K_rxn, double x);
 
 int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p, thermalout **thoutput, int t_cryolava,
-		double CHNOSZ_T_MIN, int warnings, int msgout, double rhoHydr, double rhoDry, double *Xhydr) {
+		double CHNOSZ_T_MIN, int warnings, double rhoHydr, double rhoDry, double *Xhydr) {
 
 	// Counters
 	int r = 0;
@@ -257,7 +257,7 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 	    // Otherwise, m_i and P_i are simply given by P_i = P and K_i = m_i/P_i regardless of the bulk abundances.
 	    // (Alternatively, A_i determine m_i and P_i are given by K_i = m_i/P_i, but one constraint is still lifted, since X_VAP = 0.)
 
-		// Use CHNOSZ to get reaction constants at given T and P (P is P in ice below crust Å P in the water column)
+		// Use CHNOSZ to get reaction constants at given T and P (P is P in ice below crust ï¿½ P in the water column)
 		for (i=0;i<n_species_cryolava;i++) {
 			logK_reactant = CHNOSZ_logK(Species[i], "g", CHNOSZ_T-Kelvin, Pressure[r]/bar, "IAPWS95");
 			logK_product = CHNOSZ_logK(Species[i], "aq", CHNOSZ_T-Kelvin, Pressure[r]/bar, "IAPWS95");
@@ -343,7 +343,7 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 			else if (r>r_diff && x_vap[r][4] > K_IC_crust) x_vap[r][5] = 1.0;
 			else x_vap[r][5] = 0.0;
 
-			if (msgout == 1) printf("X_VAP = %g and x_vap = V_gas/V_liq = %g found after %d iterations\n",X_VAP,x_vap[r][2],n_iter);
+			printf("X_VAP = %g and x_vap = V_gas/V_liq = %g found after %d iterations\n",X_VAP,x_vap[r][2],n_iter);
 		}
 		/* Debug of solution of degree n_species_cryolava polynamial
 		 * Case n_species_cryolava = 2, solving the degree 2 polynomial (result should be identical to N-R algorithm):

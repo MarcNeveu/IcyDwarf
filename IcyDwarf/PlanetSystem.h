@@ -13,7 +13,7 @@
 #include "Thermal/Thermal.h"
 #include "Crack/Crack.h"
 
-int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, double dtime, double speedup, double *tzero, double fulltime,
+int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int recover, int NR, double dtime, double speedup, double *tzero, double fulltime,
 		double dtoutput, int nmoons, double Mprim, double Rprim, double Qprimi, double Qprimf, int Qmode, double k2prim, double J2prim, double J4prim,
 		double Mring_init, double aring_out, double aring_in, double *r_p, double *rho_p, double rhoHydr, double rhoDry, double *Xp, double *Xsalt,
 		double **Xhydr, double *porosity, double *Xpores, double *Xfines, double *Tinit, double *Tsurf, int *startdiff,
@@ -31,7 +31,7 @@ int recov(int argc, char *argv[], char path[1024], int nmoons, char outputpath[n
 
 int tail(FILE *f, int n, int l, double ***output);
 
-int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, double dtime, double speedup, double *tzero, double fulltime,
+int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int recover, int NR, double dtime, double speedup, double *tzero, double fulltime,
 		double dtoutput, int nmoons, double Mprim, double Rprim, double Qprimi, double Qprimf, int Qmode, double k2prim, double J2prim, double J4prim,
 		double Mring_init, double aring_out, double aring_in, double *r_p, double *rho_p, double rhoHydr, double rhoDry, double *Xp, double *Xsalt,
 		double **Xhydr, double *porosity, double *Xpores, double *Xfines, double *Tinit, double *Tsurf, int *startdiff,
@@ -702,7 +702,6 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int NR, 
 		break;
 	}
 
-	int recover = 1;
 	if (recover) {
 
 	    //-------------------------------------------------------------------
@@ -1516,6 +1515,7 @@ int recov(int argc, char *argv[], char path[1024], int nmoons, char outputpath[n
 			M[im][ir] = (*dM)[im][ir];
 			if (ir > 0) M[im][ir] = M[im][ir] + M[im][ir-1];
 			(*Xhydr_old)[im][ir] = (*Xhydr)[im][ir];
+			// Volumes only used to compute circ[im] below, volumes are recomputed before the time loop starts
 			(*Vrock)[im][ir] = (*Mrock)[im][ir] / ((*Xhydr)[im][ir]*rhoHydrth + (1.0-(*Xhydr)[im][ir])*rhoRockth);
 			(*Vh2ol)[im][ir] = (*Mh2ol)[im][ir] / rhoH2olth;
 

@@ -28,11 +28,11 @@
 #include "../CHNOSZ_commands.h"
 #include "../IcyDwarf.h"
 
-int aTP(char path[1024], int warnings, int msgout);
-int Crack_water_CHNOSZ(int argc, char *argv[], char path[1024], int warnings, int msgout);
-int Crack_species_CHNOSZ(int argc, char *argv[], char path[1024], int warnings, int msgout);
+int aTP(char path[1024], int warnings);
+int Crack_water_CHNOSZ(int argc, char *argv[], char path[1024], int warnings);
+int Crack_species_CHNOSZ(int argc, char *argv[], char path[1024], int warnings);
 
-int aTP(char path[1024], int warnings, int msgout) {
+int aTP(char path[1024], int warnings) {
 
 	/*-------------------------------------------------------------------
 	//Calculate the integral part of equation (4) of Vance et al. (2007),
@@ -165,7 +165,7 @@ int aTP(char path[1024], int warnings, int msgout) {
 	return 0;
 }
 
-int Crack_water_CHNOSZ(int argc, char *argv[], char path[1024], int warnings, int msgout) {
+int Crack_water_CHNOSZ(int argc, char *argv[], char path[1024], int warnings) {
 
 	/* 	This routine outputs two table files, one that gives
 	the thermal expansivity of water (alpha in K-1) for a range of T and P,
@@ -237,7 +237,7 @@ int Crack_water_CHNOSZ(int argc, char *argv[], char path[1024], int warnings, in
 	return 0;
 }
 
-int Crack_species_CHNOSZ(int argc, char *argv[], char path[1024], int warnings, int msgout) {
+int Crack_species_CHNOSZ(int argc, char *argv[], char path[1024], int warnings) {
 
 	/* Calculate log K for the species that dissolve or precipitate in cracks at various T and P.
 	 * The model includes amorphous silica, chrysotile, and magnesite.
