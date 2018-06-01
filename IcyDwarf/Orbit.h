@@ -21,7 +21,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 		double **Wtide_tot, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim,
 		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity, double elapsed);
 
-int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, double *eorb, double *m_p, double Mprim,
+int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, double *a__old, double *eorb, double *m_p, double Mprim,
 		double ***resonance, double ***PCapture, double *tzero, double realtime, double aring_out, double **resAcctFor_old);
 
 int resscreen (int nmoons, double *resonance, double **resAcctFor, double *resAcctFor_old);
@@ -487,7 +487,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
  *
  *--------------------------------------------------------------------*/
 
-int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, double *eorb, double *m_p, double Mprim,
+int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, double *a__old, double *eorb, double *m_p, double Mprim,
 		double ***resonance, double ***PCapture, double *tzero, double realtime, double aring_out, double **resAcctFor_old) {
 
 	int i = 0;
@@ -509,7 +509,7 @@ int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, d
 			/* Find out if there is an orbital resonance */
 
 			// Find index of inner moon
-			if (norb[im] > norb[i]) {
+			if (aorb[im] < aorb[i]) {
 				inner = im;
 				outer = i;
 			}
@@ -518,18 +518,20 @@ int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, d
 				outer = im;
 			}
 			for (j=ijmax;j>=1;j--) { // Go decreasing, from the weakest to the strongest resonances, because resonance[im][i] gets overprinted
-				for (l=1;l>=1;l--) { // Borderies & Goldreich (1984) derivation valid for j:j+k resonances up to k=2, but TODO for now MMR_AvgHam only handles k=1
+				for (l=1;l>=1;l--) { // Borderies & Goldreich (1984) derivation of PCapture valid for j:j+k resonances up to k=2, but TODO for now MMR_AvgHam only handles k=1
 
-					// MMR if mean motions are commensurate by <1% TODO and convergent migration, not just for proba?
-					commensurability = norb[inner]/norb[outer] * (double)j/(double)(j+l);
+					// MMR if mean motions are commensurate by <1%
+					if (resAcctFor_old[inner][outer]) commensurability = pow(a__old[inner]/a__old[outer],-1.5) * (double)j/(double)(j+l);
+					else commensurability = pow(aorb[inner]/aorb[outer],-1.5) * (double)j/(double)(j+l);
 					if ((commensurability > 0.99 && commensurability < 1.01) ||                                   // 1% tolerance to consider capture
 						(resAcctFor_old[inner][outer] && commensurability > 0.985 && commensurability < 1.015)) { // 1.5% tolerance if already captured, to avoid always going in and out of resonance near the 1% limit
 
-						(*resonance)[inner][outer] = (double)j;
-						(*resonance)[outer][inner] = (double)j;
-
-						// Also, determine analytically the probability of capture in resonance with moon i further out (just for output)
 						if ((double)j*dnorb_dt[inner] <= (double)(j+l)*dnorb_dt[outer]) { // Peale (1976) equation (25), Yoder (1973), Sinclair (1972), Lissauer et al. (1984)
+
+							(*resonance)[inner][outer] = (double)j;
+							(*resonance)[outer][inner] = (double)j;
+
+							// Also, determine analytically the probability of capture in resonance with moon i further out (just for output)
 							if (inner > outer) (*PCapture)[inner][outer] = MMR_PCapture(m_p, norb, aorb, inner, outer, eorb[inner], (double)j, l, Mprim);
 							else               (*PCapture)[outer][inner] = MMR_PCapture(m_p, norb, aorb, inner, outer, eorb[inner], (double)j, l, Mprim);
 						}

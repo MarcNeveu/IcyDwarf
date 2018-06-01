@@ -564,7 +564,8 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 			resAcctFor_old[im][ir] = 0.0;
 		}
 
-		for (i=0;i<12;i++) Thermal_output[im][i] = 0.0;
+		for (i=0;i<ntherm;i++) Thermal_output[im][i] = 0.0;
+		for (i=0;i<norbit;i++) Orbit_output[im][i] = 0.0;
 	    for (ir=0;ir<NR;ir++) {
 			dVol[im][ir] = 0.0;
 			dM[im][ir] = 0.0;
@@ -598,7 +599,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 	    	Xhydr_old[im][ir] = 0.0;
 	    	pore[im][ir] = porosity[im];
 	    	for (i=0;i<n_species_crack;i++) Act[im][ir][i] = 0.0;
-	    	for (i=0;i<12;i++) Stress[im][ir][i] = 0.0;
+	    	for (i=0;i<ncrkstrs;i++) Stress[im][ir][i] = 0.0;
 	    	for (i=0;i<2;i++) Tide_output[im][ir][i] = 0.0;
 	    }
 	}
@@ -716,6 +717,17 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 			&eorb, &h_old, &k_old, &Wtide_tot, &norb, &circ, &resonance, &PCapture, &resAcctFor,
 			resAcctFor_old, &Cs_ee_old, &Cs_eep_old, &Cr_e_old, &Cr_ep_old, &Cr_ee_old, &Cr_eep_old, &Cr_epep_old);
 
+		// Volumes
+		for (im=0;im<nmoons;im++) {
+			for (ir=0;ir<NR;ir++) {
+				Vrock[im][ir] = Mrock[im][ir] / (Xhydr[im][ir]*rhoHydrth+(1.0-Xhydr[im][ir])*rhoRockth);
+				Vh2os[im][ir] = Mh2os[im][ir] / rhoH2osth;
+				Vadhs[im][ir] = Madhs[im][ir] / rhoAdhsth;
+				Vh2ol[im][ir] = Mh2ol[im][ir] / rhoH2olth;
+				Vnh3l[im][ir] = Mnh3l[im][ir] / rhoNh3lth;
+			}
+		}
+
 		//-------------------------------------------------------------------
 		//                  Allow for chemical equilibrium
 		//-------------------------------------------------------------------
@@ -768,19 +780,34 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 				printf("Rocky core liquid/ice fraction higher (%g) than 1 - planet rock volume fraction %g.\n", Xpores[im], frockpv[im]);
 				exit(0);
 			}
-
 			for (ir=0;ir<NR;ir++) {
+				// Masses
 				dM[im][ir] = dVol[im][ir]*rho_p[im];
 				Mrock[im][ir] = dM[im][ir]*frockpm[im];
 				Mrock_init[im][ir] = Mrock[im][ir];
 				Mh2os[im][ir] = dM[im][ir]*(1.0-frockpm[im])*(1.0-Xp[im]/Xc);
 				Madhs[im][ir] = dM[im][ir]*(1.0-frockpm[im])*(Xp[im]/Xc);
 
-				// Init of the energies, prop to Cp(T) * deltaT. Because often Cp(T) prop to T, energies prop to T*deltaT.
+				// Volumes
+				Vrock[im][ir] = Mrock[im][ir] / (Xhydr[im][ir]*rhoHydrth+(1.0-Xhydr[im][ir])*rhoRockth);
+				Vh2os[im][ir] = Mh2os[im][ir] / rhoH2osth;
+				Vadhs[im][ir] = Madhs[im][ir] / rhoAdhsth;
+				Vh2ol[im][ir] = Mh2ol[im][ir] / rhoH2olth;
+				Vnh3l[im][ir] = Mnh3l[im][ir] / rhoNh3lth;
+
+				// Internal energies, prop to Cp(T) * deltaT. Because often Cp(T) prop to T, energies prop to T*deltaT.
 				Erock[im][ir] = Mrock[im][ir]*heatRock(Tinit[im]);
 				Eh2os[im][ir] = Mh2os[im][ir]*qh2o*Tinit[im]*Tinit[im]/2.0;
 				Eslush[im][ir] = Madhs[im][ir]*qadh*Tinit[im]*Tinit[im]/2.0;
 				dE[im][ir] = Erock[im][ir] + Eh2os[im][ir] + Eslush[im][ir];
+			}
+
+			// If simulation starts out differentiated, differentiate
+			if (startdiff[im] == 1) {
+				irdiff[im] = NR-1;
+				separate(NR, &(irdiff[im]), &(ircore[im]), &(irice[im]), dVol[im], &(dM[im]), &(dE[im]), &(Mrock[im]), &(Mh2os[im]),
+						&(Madhs[im]), &(Mh2ol[im]), &(Mnh3l[im]), &(Vrock[im]), &(Vh2os[im]), &(Vadhs[im]), &(Vh2ol[im]), &(Vnh3l[im]),
+						&(Erock[im]), &(Eh2os[im]), &(Eslush[im]), rhoAdhsth, rhoH2olth, rhoNh3lth, Xfines[im], Xpores[im]);
 			}
 
 			// Account for initial porosity
@@ -788,17 +815,6 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 
 			// Initial ring mass is the input (final) mass + the mass of the moons
 			Mring = Mring + m_p[im];
-
-			//-------------------------------------------------------------------
-			//      If simulation starts out differentiated, differentiate
-			//-------------------------------------------------------------------
-
-			if (startdiff[im] == 1) {
-				irdiff[im] = NR-1;
-				separate(NR, &(irdiff[im]), &(ircore[im]), &(irice[im]), dVol[im], &(dM[im]), &(dE[im]), &(Mrock[im]), &(Mh2os[im]),
-						&(Madhs[im]), &(Mh2ol[im]), &(Mnh3l[im]), &(Vrock[im]), &(Vh2os[im]), &(Vadhs[im]), &(Vh2ol[im]), &(Vnh3l[im]),
-						&(Erock[im]), &(Eh2os[im]), &(Eslush[im]), rhoAdhsth, rhoH2olth, rhoNh3lth, Xfines[im], Xpores[im]);
-			}
 
 			//-------------------------------------------------------------------
 			//                  Allow for chemical equilibrium
@@ -919,15 +935,6 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 	for (im=0;im<nmoons;im++) {
 		for (ir=0;ir<NR;ir++) dM_old[im][ir] = dM[im][ir];
 
-		// Volumes
-		for (ir=0;ir<NR;ir++) {
-			Vrock[im][ir] = Mrock[im][ir] / (Xhydr[im][ir]*rhoHydrth+(1.0-Xhydr[im][ir])*rhoRockth);
-			Vh2os[im][ir] = Mh2os[im][ir] / rhoH2osth;
-			Vadhs[im][ir] = Madhs[im][ir] / rhoAdhsth;
-			Vh2ol[im][ir] = Mh2ol[im][ir] / rhoH2olth;
-			Vnh3l[im][ir] = Mnh3l[im][ir] / rhoNh3lth;
-		}
-
 		// Gravitational potential energy
 		Phi[im] = 0.6*Gcgs*dM[im][0]*dM[im][0]/r[im][1];
 		M[im][0] = dM[im][0];
@@ -1012,7 +1019,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 		}
 		// Check for orbital resonances
 		for (im=0;im<nmoons;im++) {
-			if (realtime >= tzero[im]) rescheck(nmoons, im, norb, dnorb_dt, aorb, eorb, m_p, Mprim, &resonance, &PCapture, tzero, realtime, aring_out, resAcctFor_old);
+			if (realtime >= tzero[im]) rescheck(nmoons, im, norb, dnorb_dt, aorb, a__old, eorb, m_p, Mprim, &resonance, &PCapture, tzero, realtime, aring_out, resAcctFor_old);
 		}
 		// Only one moon-moon resonance per moon max, so account for only lower-order (stronger) or older resonances
 		for (im=0;im<nmoons;im++) resscreen (nmoons, resonance[im], &resAcctFor[im], resAcctFor_old[im]);
@@ -1628,7 +1635,7 @@ int recov(int argc, char *argv[], char path[1024], int nmoons, char outputpath[n
 	// Disturbing function coefficients for Orbit()
 	// Check for orbital resonances
 	for (im=0;im<nmoons;im++) {
-		if ((*trecover) >= tzero[im]) rescheck(nmoons, im, *norb, dnorb_dt, *aorb, *eorb, *m_p, Mprim, &(*resonance), &(*PCapture), tzero, *trecover, aring_out, resAcctFor_old);
+		if ((*trecover) >= tzero[im]) rescheck(nmoons, im, *norb, dnorb_dt, *aorb, *a__old, *eorb, *m_p, Mprim, &(*resonance), &(*PCapture), tzero, *trecover, aring_out, resAcctFor_old);
 	}
 	// Only one moon-moon resonance per moon max, so account for only lower-order (stronger) or older resonances
 	for (im=0;im<nmoons;im++) resscreen (nmoons, (*resonance)[im], &(*resAcctFor)[im], resAcctFor_old[im]);
