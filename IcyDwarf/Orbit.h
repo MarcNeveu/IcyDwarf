@@ -21,8 +21,8 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 		double **Wtide_tot, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim,
 		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity, double elapsed);
 
-int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, double *a__old, double *eorb, double *m_p, double Mprim,
-		double ***resonance, double ***PCapture, double *tzero, double realtime, double aring_out, double **resAcctFor_old);
+int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, double *a__old, double *eorb, double *m_p, double Mprim, double Rprim, double k2prim, double Qprim,
+		double ***resonance, double ***PCapture, double *tzero, double realtime, double aring_out, double **resAcctFor);
 
 int resscreen (int nmoons, double *resonance, double **resAcctFor, double *resAcctFor_old);
 
@@ -61,7 +61,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 
 	int resorbevol = 0;                  // Switch between secular (solely tidal and ring) and resonant orbital evolution (solely moon-moon)
 
-	double j = 0.0;
+	double j = 0.0;                      // j+1:j resonance
 
 	double orbdtime = 5.0e-4*1.0e-6*Myr2sec; // 5.0e-4 years max time step for numerical stability
 
@@ -82,20 +82,9 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 		if (resAcctFor[im][i] > 0.0) resorbevol = 1; // Bypass secular evolution also for the moon listed in the former column of the input file (see below)
 	}
 	for (i=0;i<im;i++) { // Avoid doing the calculation redundantly for each moon in resonance: only for the moon listed in the latter column of the input file
-		if (resAcctFor[im][i] <= 0.0) { // Reset storage of state variables
-			(*h_old)[im] = 0.0;
-			(*k_old)[im] = 0.0;
-			(*a__old)[im] = 0.0;
-			(*Cs_ee_old)[im] = 0.0; // and of disturbing function coefficients
-			(*Cs_eep_old)[im] = 0.0;
-			(*Cr_e_old)[im] = 0.0;
-			(*Cr_ep_old)[im] = 0.0;
-			(*Cr_ee_old)[im] = 0.0;
-			(*Cr_eep_old)[im] = 0.0;
-			(*Cr_epep_old)[im] = 0.0;
-		}
-		else { // Resonance
+		if (resAcctFor[im][i] > 0.0) { // Resonance
 			resorbevol = 1; // Trigger the switch to bypass secular evolution
+
 			j = resAcctFor[im][i] + 1.0;
 
 			int nv = 6;
@@ -414,6 +403,18 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 	}
 
 	if (!resorbevol) {
+		// Moon not in resonance with any other moon, reset storage of state variables
+		(*h_old)[im] = 0.0;
+		(*k_old)[im] = 0.0;
+		(*a__old)[im] = 0.0;
+		(*Cs_ee_old)[im] = 0.0; // and of disturbing function coefficients
+		(*Cs_eep_old)[im] = 0.0;
+		(*Cr_e_old)[im] = 0.0;
+		(*Cr_ep_old)[im] = 0.0;
+		(*Cr_ee_old)[im] = 0.0;
+		(*Cr_eep_old)[im] = 0.0;
+		(*Cr_epep_old)[im] = 0.0;
+
 		//-------------------------------------------------------------------
 		// Changes in a_orb and e_orb due to tides inside moon and on planet
 		//-------------------------------------------------------------------
@@ -487,8 +488,8 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
  *
  *--------------------------------------------------------------------*/
 
-int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, double *a__old, double *eorb, double *m_p, double Mprim,
-		double ***resonance, double ***PCapture, double *tzero, double realtime, double aring_out, double **resAcctFor_old) {
+int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, double *a__old, double *eorb, double *m_p, double Mprim, double Rprim, double k2prim, double Qprim,
+		double ***resonance, double ***PCapture, double *tzero, double realtime, double aring_out, double **resAcctFor) {
 
 	int i = 0;
 	int l = 0;
@@ -505,7 +506,7 @@ int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, d
 	for (i=0;i<nmoons;i++) {
 		// 1- Moon i has to be different from im and already spawned
 		// 2- Moons i and im have to be beyond the gravitational influence of the ring, otherwise we assume that they don't get captured into resonance
-		if (i != im && realtime >= tzero[i] && aorb[i]/aring_out > pow(2.0,2.0/3.0) && aorb[im]/aring_out > pow(2.0,2.0/3.0)) {
+		if (i < im && realtime >= tzero[i] && aorb[i]/aring_out > pow(2.0,2.0/3.0) && aorb[im]/aring_out > pow(2.0,2.0/3.0)) {
 			/* Find out if there is an orbital resonance */
 
 			// Find index of inner moon
@@ -521,12 +522,14 @@ int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, d
 				for (l=1;l>=1;l--) { // Borderies & Goldreich (1984) derivation of PCapture valid for j:j+k resonances up to k=2, but TODO for now MMR_AvgHam only handles k=1
 
 					// MMR if mean motions are commensurate by <1%
-					if (resAcctFor_old[inner][outer]) commensurability = pow(a__old[inner]/a__old[outer],-1.5) * (double)j/(double)(j+l);
+					if (resAcctFor[inner][outer]) commensurability = pow(a__old[inner]/a__old[outer],-1.5) * (double)j/(double)(j+l);
 					else commensurability = pow(aorb[inner]/aorb[outer],-1.5) * (double)j/(double)(j+l);
 					if ((commensurability > 0.99 && commensurability < 1.01) ||                                   // 1% tolerance to consider capture
-						(resAcctFor_old[inner][outer] && commensurability > 0.985 && commensurability < 1.015)) { // 1.5% tolerance if already captured, to avoid always going in and out of resonance near the 1% limit
+						(resAcctFor[inner][outer] && commensurability > 0.985 && commensurability < 1.015)) { // 1.5% tolerance if already captured, to avoid always going in and out of resonance near the 1% limit
 
-						if ((double)j*dnorb_dt[inner] <= (double)(j+l)*dnorb_dt[outer]) { // Peale (1976) equation (25), Yoder (1973), Sinclair (1972), Lissauer et al. (1984)
+						// No resonance if divergent secular migration: j*dnorb_dt[inner] <= (j+l)*dnorb_dt[outer], Peale (1976) equation (25), Yoder (1973), Sinclair (1972), Lissauer et al. (1984)
+						if (       (double)j*(-1.5)*sqrt(Gcgs*Mprim)*3.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[inner]/Qprim*pow(aorb[inner],-5.5)*pow(aorb[inner],-2.5)
+							<= (double)(j+l)*(-1.5)*sqrt(Gcgs*Mprim)*3.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[outer]/Qprim*pow(aorb[outer],-5.5)*pow(aorb[outer],-2.5)) {
 
 							(*resonance)[inner][outer] = (double)j;
 							(*resonance)[outer][inner] = (double)j;

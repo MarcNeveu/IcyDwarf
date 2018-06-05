@@ -21,13 +21,14 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 		int *crack_species);
 
 int recov(int argc, char *argv[], char path[1024], int nmoons, char outputpath[nmoons][1024], int NR, int ntherm, int norbit, int ncrkstrs, double ****Stress, double *Xp,
-		double *Xsalt, double Mprim, double *Mring, double aring_out, double rhoRockth, double rhoHydrth, double rhoH2olth, double **dVol, double *tzero, double (*m_p)[nmoons],
-		double *dnorb_dt, double *trecover, double ***r, double ***T, double ***Mrock, double ***Mh2os, double ***Madhs, double ***Mh2ol, double ***Mnh3l, double ***Vrock,
-		double ***Vh2ol, double ***Erock, double ***Eh2os, double ***Eslush, double ***dE, double ***Nu, double ***kappa, double ***Xhydr, double ***pore, double ***T_old,
-		double ***Mrock_init, double ***dM, double ***Xhydr_old, double ***Crack, double ***fracOpen, double *Xpores, double ***Pressure, double ***P_pore, double ***P_hydr,
-		double ***Crack_size, int (*irdiff)[nmoons], int (*ircore)[nmoons], int (*ircrack)[nmoons], int (*irice)[nmoons], double **aorb, double **a__old, double **eorb,
-		double **h_old, double **k_old, double **Wtide_tot, double **norb, int ***circ, double ***resonance, double ***PCapture, double ***resAcctFor, double **resAcctFor_old,
-		double **Cs_ee, double **Cs_eep, double **Cr_e, double **Cr_ep, double **Cr_ee, double **Cr_eep, double **Cr_epep);
+		double *Xsalt, double Mprim, double Rprim, double k2prim, double Qprim, double *Mring, double aring_out, double rhoRockth, double rhoHydrth, double rhoH2olth,
+		double **dVol, double *tzero, double (*m_p)[nmoons], double *dnorb_dt, double *trecover, double ***r, double ***T, double ***Mrock, double ***Mh2os, double ***Madhs,
+		double ***Mh2ol, double ***Mnh3l, double ***Vrock, double ***Vh2ol, double ***Erock, double ***Eh2os, double ***Eslush, double ***dE, double ***Nu, double ***kappa,
+		double ***Xhydr, double ***pore, double ***T_old, double ***Mrock_init, double ***dM, double ***Xhydr_old, double ***Crack, double ***fracOpen, double *Xpores,
+		double ***Pressure, double ***P_pore, double ***P_hydr, double ***Crack_size, int (*irdiff)[nmoons], int (*ircore)[nmoons], int (*ircrack)[nmoons],
+		int (*irice)[nmoons], double **aorb, double **a__old, double **eorb, double **h_old, double **k_old, double **Wtide_tot, double **norb, int ***circ,
+		double ***resonance, double ***PCapture, double ***resAcctFor, double **resAcctFor_old, double **Cs_ee, double **Cs_eep, double **Cr_e, double **Cr_ep,
+		double **Cr_ee, double **Cr_eep, double **Cr_epep);
 
 int tail(FILE *f, int n, int l, double ***output);
 
@@ -710,7 +711,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 	    //-------------------------------------------------------------------
 
 		recov(argc, argv, path, nmoons, outputpath, NR, ntherm, norbit, ncrkstrs, &Stress, Xp, Xsalt,
-			Mprim, &Mring, aring_out, rhoRockth, rhoHydrth, rhoH2olth, dVol, tzero, &m_p, dnorb_dt,
+			Mprim, Rprim, k2prim, Qprim, &Mring, aring_out, rhoRockth, rhoHydrth, rhoH2olth, dVol, tzero, &m_p, dnorb_dt,
 			&trecover, &r, &T, &Mrock, &Mh2os, &Madhs, &Mh2ol, &Mnh3l, &Vrock, &Vh2ol, &Erock, &Eh2os, &Eslush, &dE,
 			&Nu, &kappa, &Xhydr, &pore, &T_old, &Mrock_init, &dM, &Xhydr_old, &Crack, &fracOpen, Xpores,
 			&Pressure, &P_pore, &P_hydr, &Crack_size, &irdiff, &ircore, &ircrack, &irice, &aorb, &a__old,
@@ -1019,7 +1020,8 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 		}
 		// Check for orbital resonances
 		for (im=0;im<nmoons;im++) {
-			if (realtime >= tzero[im]) rescheck(nmoons, im, norb, dnorb_dt, aorb, a__old, eorb, m_p, Mprim, &resonance, &PCapture, tzero, realtime, aring_out, resAcctFor_old);
+			if (realtime >= tzero[im]) rescheck(nmoons, im, norb, dnorb_dt, aorb, a__old, eorb, m_p, Mprim, Rprim, k2prim, Qprim,
+					&resonance, &PCapture, tzero, realtime, aring_out, resAcctFor);
 		}
 		// Only one moon-moon resonance per moon max, so account for only lower-order (stronger) or older resonances
 		for (im=0;im<nmoons;im++) resscreen (nmoons, resonance[im], &resAcctFor[im], resAcctFor_old[im]);
@@ -1028,6 +1030,12 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 				if (i != im && resAcctFor[im][i] == 0.0) resAcctFor[i][im] = 0.0;
 			}
 		}
+
+		// Impact that raises Tethys' orbit and knocks it out of resonance with Dione (Zhang & Nimmo 2012) TODO comment out
+//		if (realtime > 1.0*Gyr2sec - dtime && realtime < 1.0*Gyr2sec + dtime) {
+//			aorb[2] = aorb[2] + 300.0*km2cm;
+//			if (a__old[2] > 0) a__old[2] = a__old[2] + 300.0*km2cm;
+//		}
 
 		// Begin parallel calculations
 #pragma omp parallel // private(thread_id, nloops)
@@ -1365,13 +1373,14 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
  * Orbital omegas and lambdas are reset
  */
 int recov(int argc, char *argv[], char path[1024], int nmoons, char outputpath[nmoons][1024], int NR, int ntherm, int norbit, int ncrkstrs, double ****Stress, double *Xp,
-		double *Xsalt, double Mprim, double *Mring, double aring_out, double rhoRockth, double rhoHydrth, double rhoH2olth, double **dVol, double *tzero, double (*m_p)[nmoons],
-		double *dnorb_dt, double *trecover, double ***r, double ***T, double ***Mrock, double ***Mh2os, double ***Madhs, double ***Mh2ol, double ***Mnh3l, double ***Vrock,
-		double ***Vh2ol, double ***Erock, double ***Eh2os, double ***Eslush, double ***dE, double ***Nu, double ***kappa, double ***Xhydr, double ***pore, double ***T_old,
-		double ***Mrock_init, double ***dM, double ***Xhydr_old, double ***Crack, double ***fracOpen, double *Xpores, double ***Pressure, double ***P_pore, double ***P_hydr,
-		double ***Crack_size, int (*irdiff)[nmoons], int (*ircore)[nmoons], int (*ircrack)[nmoons], int (*irice)[nmoons], double **aorb, double **a__old, double **eorb,
-		double **h_old, double **k_old, double **Wtide_tot, double **norb, int ***circ, double ***resonance, double ***PCapture, double ***resAcctFor, double **resAcctFor_old,
-		double **Cs_ee, double **Cs_eep, double **Cr_e, double **Cr_ep, double **Cr_ee, double **Cr_eep, double **Cr_epep) {
+		double *Xsalt, double Mprim, double Rprim, double k2prim, double Qprim, double *Mring, double aring_out, double rhoRockth, double rhoHydrth, double rhoH2olth,
+		double **dVol, double *tzero, double (*m_p)[nmoons], double *dnorb_dt, double *trecover, double ***r, double ***T, double ***Mrock, double ***Mh2os, double ***Madhs,
+		double ***Mh2ol, double ***Mnh3l, double ***Vrock, double ***Vh2ol, double ***Erock, double ***Eh2os, double ***Eslush, double ***dE, double ***Nu, double ***kappa,
+		double ***Xhydr, double ***pore, double ***T_old, double ***Mrock_init, double ***dM, double ***Xhydr_old, double ***Crack, double ***fracOpen, double *Xpores,
+		double ***Pressure, double ***P_pore, double ***P_hydr, double ***Crack_size, int (*irdiff)[nmoons], int (*ircore)[nmoons], int (*ircrack)[nmoons],
+		int (*irice)[nmoons], double **aorb, double **a__old, double **eorb, double **h_old, double **k_old, double **Wtide_tot, double **norb, int ***circ,
+		double ***resonance, double ***PCapture, double ***resAcctFor, double **resAcctFor_old, double **Cs_ee, double **Cs_eep, double **Cr_e, double **Cr_ep,
+		double **Cr_ee, double **Cr_eep, double **Cr_epep) {
 
 	int i = 0;
 	int ir = 0;
@@ -1635,7 +1644,8 @@ int recov(int argc, char *argv[], char path[1024], int nmoons, char outputpath[n
 	// Disturbing function coefficients for Orbit()
 	// Check for orbital resonances
 	for (im=0;im<nmoons;im++) {
-		if ((*trecover) >= tzero[im]) rescheck(nmoons, im, *norb, dnorb_dt, *aorb, *a__old, *eorb, *m_p, Mprim, &(*resonance), &(*PCapture), tzero, *trecover, aring_out, resAcctFor_old);
+		if ((*trecover) >= tzero[im]) rescheck(nmoons, im, *norb, dnorb_dt, *aorb, *a__old, *eorb, *m_p, Mprim, Rprim, k2prim, Qprim,
+				&(*resonance), &(*PCapture), tzero, *trecover, aring_out, resAcctFor_old);
 	}
 	// Only one moon-moon resonance per moon max, so account for only lower-order (stronger) or older resonances
 	for (im=0;im<nmoons;im++) resscreen (nmoons, (*resonance)[im], &(*resAcctFor)[im], resAcctFor_old[im]);
@@ -1681,6 +1691,7 @@ int recov(int argc, char *argv[], char path[1024], int nmoons, char outputpath[n
 	free (M);
 	free (title);
 
+	printf("Previous state recovered\n");
 	return 0;
 }
 
