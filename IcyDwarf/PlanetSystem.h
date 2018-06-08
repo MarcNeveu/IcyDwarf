@@ -1141,6 +1141,32 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 
 		// Print other outputs at regular, user-specified intervals
 		isteps++;
+
+		if (!(isteps%(nsteps/10))) {
+			for (im=0;im<nmoons;im++) {
+				// Orbital parameters
+				Orbit_output[im][0] = realtime/Gyr2sec; // t in Gyr
+				Orbit_output[im][1] = aorb[im]/km2cm;               // Semi-major axis in km
+				Orbit_output[im][2] = a__old[im]/km2cm;             // Osculating semimajor axis in km
+				Orbit_output[im][3] = eorb[im];                     // Eccentricity e, unitless
+				Orbit_output[im][4] = h_old[im];                    // e*cos(resonant angle)
+				Orbit_output[im][5] = k_old[im];                    // e*sin(resonant angle)
+				if (h_old[im] != 0.0) {
+					Orbit_output[im][6] = atan(k_old[im]/h_old[im]);    // Resonant angle
+					if (h_old[im] < 0.0) { // atan will fold the trig circle along the vertical y=0 axis, unwrap it if cos < 0
+						if (k_old[im] >= 0.0) Orbit_output[im][6] = Orbit_output[im][6] + PI_greek; // Add pi if sin >= 0
+						else Orbit_output[im][6] = Orbit_output[im][6] - PI_greek; // Subtract pi if sin < 0
+					}
+					Orbit_output[im][6] = Orbit_output[im][6]*180.0/PI_greek; // Output in degrees
+				}
+				else Orbit_output[im][6] = 0.0;
+				Orbit_output[im][7] = Wtide_tot[im]/1.0e7;          // Total tidal dissipation (W)
+				Orbit_output[im][8] = Wtide_tot[im]/(11.5*pow(r_p[im],5)*pow(sqrt(Gcgs*Mprim/pow(aorb[im],3)),5)*pow(eorb[im],2)/Gcgs); // k2/Q (Segatz et al. 1988; Henning & Hurford 2014)
+				strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt");
+				append_output(9, Orbit_output[im], path, filename); filename[0] = '\0';
+			}
+		}
+
 		if (isteps == nsteps) {
 			isteps = 0;
 			reso_print_switch = 1;
@@ -1207,27 +1233,6 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 					strcat(filename, outputpath[im]); strcat(filename, "Tidal_rates.txt");
 					append_output(2, Tide_output[im][ir], path, filename); filename[0] = '\0';
 				}
-
-				// Orbital parameters
-				Orbit_output[im][0] = realtime/Gyr2sec; // t in Gyr
-				Orbit_output[im][1] = aorb[im]/km2cm;               // Semi-major axis in km
-				Orbit_output[im][2] = a__old[im]/km2cm;             // Osculating semimajor axis in km
-				Orbit_output[im][3] = eorb[im];                     // Eccentricity e, unitless
-				Orbit_output[im][4] = h_old[im];                    // e*cos(resonant angle)
-				Orbit_output[im][5] = k_old[im];                    // e*sin(resonant angle)
-				if (h_old[im] != 0.0) {
-					Orbit_output[im][6] = atan(k_old[im]/h_old[im]);    // Resonant angle
-					if (h_old[im] < 0.0) { // atan will fold the trig circle along the vertical y=0 axis, unwrap it if cos < 0
-						if (k_old[im] >= 0.0) Orbit_output[im][6] = Orbit_output[im][6] + PI_greek; // Add pi if sin >= 0
-						else Orbit_output[im][6] = Orbit_output[im][6] - PI_greek; // Subtract pi if sin < 0
-					}
-					Orbit_output[im][6] = Orbit_output[im][6]*180.0/PI_greek; // Output in degrees
-				}
-				else Orbit_output[im][6] = 0.0;
-				Orbit_output[im][7] = Wtide_tot[im]/1.0e7;          // Total tidal dissipation (W)
-				Orbit_output[im][8] = Wtide_tot[im]/(11.5*pow(r_p[im],5)*pow(sqrt(Gcgs*Mprim/pow(aorb[im],3)),5)*pow(eorb[im],2)/Gcgs); // k2/Q (Segatz et al. 1988; Henning & Hurford 2014)
-				strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt");
-				append_output(9, Orbit_output[im], path, filename); filename[0] = '\0';
 			}
 			// Ring mass
 			Primary[0] = realtime/Gyr2sec;                     // t in Gyr
