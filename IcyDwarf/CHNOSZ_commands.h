@@ -68,12 +68,12 @@ double CHNOSZ_logK (const char species[128], const char state[32], float T, floa
 	SEXP e, sexp;
 
 /*	 TODO 7-17-2013 Code to do thermo$opt$water <- "IAPWS95", doesn't work.
-	 Would get CHNOSZ to work below -20¡C. Main problem: finding thermo in the R environment.
+	 Would get CHNOSZ to work below -20ï¿½C. Main problem: finding thermo in the R environment.
 	 For some reason, R_GlobalEnv is not recognized as an environment.
 	 Maybe because the SEXP thermo is not recognized as a string?
 
 	 Instead, I just forced CHNOSZ to use IAPWS95 all the time by modifying the subcrt source file
-	 (set "dosupcrt" to FALSE) an the water source file (changed the "if supcrt92 else iapws95" to "iapws95").
+	 (set "dosupcrt" to FALSE) and the water source file (changed the "if supcrt92 else iapws95" to "iapws95").
 	 Good enough, but not as elegant (and requires to redo the hack at each CHNOSZ update).*/
 
 /*	SEXP e2, thermo, thermostring, sexp2;

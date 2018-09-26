@@ -136,8 +136,8 @@
                                                               // (10^-0.8 m). Units: m^3/s (default 0.2377)
 #define n_fit 23.0                                         // Fitting parameter (when solving diff eq (1)) (default 23)
 #define L_size 0.25e-3                                      // 1/2 grain size (m) in Vance et al. (2007). Set to d_flow_law/2*1e-6 for consistency (default 0.5e-3).
-#define a_var_max 0.2*L_size                               // Used when looking for the optimal max flaw size
-                                                              // No need to go very far in size to find a_max, usually < (2L)/10
+#define a_var_max 5.0e-5                                   // Used when looking for the optimal max flaw size
+                                                              // No need to go very far in size to find a_max, usually < (2L_size)/10
 							                                  // May need to change this if deltaT>700 K, though (see Vance et al. 2007 Fig. 1)
 #define a_min 1.0e-7                                       // Minimum flaw size (m) below which flaws are neglected
 

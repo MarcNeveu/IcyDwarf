@@ -299,6 +299,15 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 			for (l=0;l<nv;l++) dydx[l] = 0.0;
 			long int q = 0;
 			for (q=0;q<(long int)(dtime/speedup/orbdtime);q++) {
+				// Set minimum ecc to order sqrt(double precision rounding error) TODO remove?
+				if (sqrt(ystart[0]*ystart[0]+ystart[1]*ystart[1]) < 1.0e-7) { // 1.5e-8 sqrt of double precision rounding error (2.22e-16)
+					if (fabs(ystart[0]) > fabs(ystart[1])) ystart[0] = 1.3e-4; // 4th root of double precision rounding error
+					else ystart[1] = 1.3e-4;
+				}
+				if (sqrt(ystart[3]*ystart[3]+ystart[4]*ystart[4]) < 1.0e-7) {
+					if (fabs(ystart[3]) > fabs(ystart[4])) ystart[3] = 1.3e-4; // 4th root of double precision rounding error
+					else ystart[4] = 1.3e-4;
+				}
 //				if (!(q%(long int)(dtime/speedup/orbdtime/10.0))) printf("%g \t %g \t %g \t %g \t %g \t %g \n",
 //										elapsed/Gyr2sec, ystart[2], ystart[5],
 //										sqrt(ystart[0]*ystart[0]+ystart[1]*ystart[1]), sqrt(ystart[3]*ystart[3]+ystart[4]*ystart[4]),
@@ -581,7 +590,7 @@ int resscreen (int nmoons, double *resonance, double **resAcctFor, double *resAc
 	int i = 0;
 
 	double resMin = (double)ijmax;       // Min resonance order if a moon is in resonance with multiple moons
-	int nbres;                           // Number of resonances identified for a given moons
+	int nbres;                           // Number of resonances identified for a given moon
 
 	for (i=0;i<nmoons;i++) (*resAcctFor)[i] = 0.0;
 
