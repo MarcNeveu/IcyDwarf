@@ -97,7 +97,7 @@ In addition, each folder contains the following files. Each of the last three fi
 The cryolava routine outputs three files: 
 - *Cryolava_molalities.txt* (10 columns, *n_ice_or_crust_layer* rows) shows the cryolava content in H2, CH4, CH3OH, CO, CO2, NH3, N2, H2S, SO2, Ar in mol per kg of liquid water
 - *Cryolava_partialP.txt*, with the same layout as the molalities file, shows the partial pressure of each of these 10 species
-- *Cryolava_xvap.txt* has the same amount of rows, but only 6 columns which show the depth under the surface (km), total gas pressure (bar), volumic vapor fraction x_vap (a dimensionless indicator of exsolution),  fluid cryolava density (kg m-3), stress intensity K_I at the crack tip (Pa m^0.5), a boolean (0: no crack propagation; 1: crack propagation).
+- *Cryolava_xvap.txt* has the same amount of rows, but only 6 columns which show the depth under the surface (km), total gas pressure (bar), volumic vapor fraction x_vap (a dimensionless indicator of exsolution),  fluid cryolava density (kg m-3), stress intensity *K_I* at the crack tip (Pa m^0.5), a boolean (0: no crack propagation; 1: crack propagation).
 
 ### Compression code
 
@@ -105,7 +105,7 @@ The compression routine outputs one file, *Compression.txt*, which provides pres
 
 ### WaterRock_ParamExplor code
 
-This routine outputs a file, *ParamExploration.txt*, that looks much like the *PHREEQC* selected output specified in the *IcyDwarf/PHREEQC-3.1.2/io* folder, with a few added columns at the beginning (starting T in celsius, P in bar, pH, pe, log fO2 at FMQ(T,P) buffer, pe-FMQ). The file is formatted for easy import into a spreadsheet, with each line describing a different simulation. Lines filled with zeros are *PHREEQC* simulations that did not converge.
+This routine outputs a file, *ParamExploration.txt*, that looks much like the *PHREEQC* selected output specified in the *IcyDwarf/PHREEQC-3.1.2/io* folder, with a few added columns at the beginning (starting *T* in celsius, *P* in bar, *pH*, *pe*, log *fO2* at FMQ(*T*,*P*) buffer, *pe*-FMQ). The file is formatted for easy import into a spreadsheet, with each line describing a different simulation. Lines filled with zeros are *PHREEQC* simulations that did not converge.
 
 The *PHREEQC* input file, *IcyDwarf/PHREEQC-3.1.2/io/inputIcyDwarf*, can be modified, but be aware that *IcyDwarfPlot* will plot results accurately only if the SELECTED_OUTPUT block is left unchanged.
 
