@@ -41,8 +41,8 @@ The *IPHREEQC* library is a module that allows the *PHREEQC* application to be e
 	make
 	make install
 
-## Install *gcc 5.0*
-In recent Mac versions (OS 10.8+), the Mac compiler *clang* has replaced the compiler *gcc*, which is needed to take advantage of the parallel computing capabilities of the *ParamExploration()* routine of *IcyDwarf*. Go to http://hpc.sourceforge.net and follow the instructions there to download and install *gcc 5.0*.
+## Install *gcc 8.3*
+In Mac OS 10.8+, the default compiler *clang* has replaced the compiler *gcc*, which is needed to take advantage of the parallel computing capabilities of the *ParamExploration()* routine of *IcyDwarf*. Go to http://hpc.sourceforge.net and follow the instructions there to download and install *gcc 5.0*.
 Once *gcc 5.0* is installed, you might need to break the symbolic link between the command 
 
     gcc 
@@ -72,36 +72,25 @@ The respective input files are located in the *IcyDwarf/Input* and *IcyDwarfPlot
 
 ## Output files
 
-### Thermal code
+### Thermal (± orbital) evolution code
 
-The output file of the thermal evolution code is *Thermal.txt*. It lists, for a given layer inside a planetary body:
-- radius (km)
-- temperature (K)
-- mass of rock (g)
-- mass of water ice (g)
-- mass of ammonia dihydrate (g)
-- mass of liquid water (g)
-- mass of liquid ammonia (g)
-- Nusselt number in the ice shell (if >1, the shell convects)
-- fraction of amorphous ice (currently set to 0)
-- thermal conductivity (W/m/K)
-- degree of hydration (0: fully dry, 1: fully hydrated)
+For each file name, the initial character *x* is *0* for the first/only object and incremented by 1 for each additional object. Thermal and crack output files can be read and displayed by *IcyDwarfPlot*.
 
-The first *n_layer* lines list these properties in each layer, from the center to the surface, at *t*=0. The next *n_layer* lines list them at *t+dt_output*, and so on, such that the total number of lines is *n_layer* * *n_output*.
+- *xCrack_depth.txt*: The cracking depth inside the rocky core over time (two columns: time in Gyr, depth of deepest cracked zone in km)
+- *xCrack_stresses.txt*: Internal stresses accounted for by the core cracking subroutine (Neveu et al. 2015, JGR). There are 200 rows (one per layer from the center to the surface) printed at each time interval. Columns list, respectively: layer radius (in km), pressure in this layer (in MPa), brittle strength of this layer (in MPa), critical stress intensity in this layer (in MPa m$^{0.5}$), stress intensity from thermal expansion mismatch at grain boundaries (in MPa m$^{0.5}$), pore fluid pressure (in MPa), net pressure (stress) resulting from rock hydration (in MPa), old crack size prior to hydration/dehydration (in m), old crack size prior to mineral dissolution/precipitation (in m), current crack size (in m). Outputs are zero outside of the core.
+- *xCrack_WRratio.txt*: The bulk water:rock mass ratio in the fractured zone (two columns: time in Gyr, water:rock ratio by mass in cracked zone). Outputs are zero if the core is not cracked or if there is no liquid.
+- *xCrack.txt*: Lists which core layers are fractured, and by which process (Neveu et al. 2015, JGR). There are 200 columns for each layer from the center to the surface, and 451 rows for each time interval starting at 0 Gyr and ending at 4.5 Gyr. Each value is an integer: 0 = no cracks; 1 = cracks from thermal contraction; 2 = cracks from thermal expansion; 3 = cracks from hydration; 4 = cracks from dehydration; 5 = cracks from pore water dilation; 6 = mineral dissolution widening; 7 = mineral precipitation shrinking; --1 = mineral precipitation clogging; --2: clogging from hydration swelling. Outputs are zero outside of the core.
+- *xHeats.txt*: Cumulative heats (in erg) produced or consumed by endogenic and exogenic processes. The six columns describe: time (in Gyr), radiogenic heat, gravitational heat, heat of rock hydration, heat consumed in rock dehydration, and heat from tidal dissipation.
+- *xOrbit.txt*: Orbital parameters (9 columns: time in Gyr, semi-major axis in km, osculating semi-major axis in km (0 if no resonance), eccentricity, product of eccentricity and cosine of resonant angle, product of eccentricity and sine of resonant angle, resonant angle in degrees, total tidal dissipation in W, and equivalent *k2*/*Q* for the moon (Segatz et al. 1988).
+- *xThermal.txt*: There are 200 rows for each layer, repeated 451 times, i.e. for each time interval. Columns list, respectively: layer radius (in km), layer temperature (in K); masses (in g) of rock, water ice, ammonia dihydrate (always zero here), liquid water, and liquid ammonia (always zero here) in the layer; Nusselt number in the shell (if $>$1, the shell convects); fraction of amorphous ice in the layer (always zero here); thermal conductivity of the layer (in W m$^{-1}$ K$^{-1}$); degree of hydration of the layer (0: fully dry; 1: fully hydrated); and porosity of the layer.
+- *xTidal.txt*: Rates of tidal heating in each layer in W (*n_zones* rows for each grid zone, repeated *total time/timestep* times, i.e. for each time interval).
 
-Three additional files, *Heats.txt*, *Tidal_rates.txt*, and *Orbit.txt*, output, respectively:
-- *Heats.txt*: Time (Gyr); cumulative heats (erg) from radioactive decay, differentiation, rock hydration, rock dehydration (negative numbers), and tidal dissipation;
-- *Tidal_rates.txt*: radius (km); tidal heating rate (W); repeated over time as in *Thermal.txt*;
-- *Orbit.txt*: Time (Gyr); orbital semimajor axis (km); orbital eccentricity.
+In addition, each folder contains the following files. Each of the last three files is read in *N_moon* x *N_moon* matrices, where *N_moon* is the number of moons. Matrices are typically 5x5. Matrices are symmetric since they describe interactions between pairs of moons. Element (*x*, *y*) represents interactions between the *x*th and *y*th worlds as specified in *IcyDwarfInput*. The first matrix is output at the first time step. Subsequent matrices are output following a time stamp that corresponds to the time at which pairs of moons get in and out of resonance.
 
-### Cracking code
-
-The crack routine outputs three files: 
-- *Crack_depth.txt* (two columns: time in Gyr, depth of cracked zone in km)
-- *Crack_WRratio.txt* (two columns: time in Gyr, water:rock ratio by mass in cracked zone)
-- *Crack.txt* (*n_layer* columns, *n_output* rows, each value is an integer: 0 = no cracks; 1 = cracks from thermal contraction; 2 = cracks from thermal expansion; 3 = cracks from hydration; 4 = cracks from dehydration; 5 = cracks from pore water dilation; 6 = mineral dissolution widening; 7 = mineral precipitation shrinking; -1 = mineral precipitation clogging.
-
-All thermal and crack output files can be read and displayed by *IcyDwarfPlot*.
+- *Primary.txt*: Over time in Gyr (first column), the *Q* of the primary (second column) and the mass of any ring in kg (third column).
+- *Resonances.txt (for moon system)*: Values are integers *j* if the mean motions of the corresponding moons are commensurate in *j+1:j* ratios with *j≤5*, and if the migration of the moons is convergent (*j dn_inner moon/dt ≤ (j+1) dn_outer moon/dt* since *dn/dt < 0* for expanding orbits). Values are 0 otherwise. If a moon is in resonance with only one other moon, the code computes moon-moon interactions (value in *ResAcctFor* below = *j*), otherwise interactions may be ignored (value in *ResAcctFor* = 0).
+- *ResAcctFor.txt*: Stands for "Resonances Accounted For". A nonzero value in *Resonance* above is accounted for if a moon is in resonance with only one other moon. Otherwise, the code cannot compute the orbital evolution resulting from the interactions between more than two moons. In that case, the resonance accounted for is that between the pair of moons for which *j* is smallest (resonance for which the most moon-moon conjunctions occur per orbit). For equal values of *j* (e.g. for a 4:2:1 resonance, *j* would be 1 between the inner and middle moon, and also 1 between the middle and outer moon), the newer resonance is ignored. For moons with nonzero values, orbital evolution is computed by an averaged Hamiltonian subroutine (Meyer & Wisdom 2008). Otherwise, orbital evolution is computed solely due to effects from moon-primary and moon-ring interactions, ignoring moon-moon interactions.
+- *PCapture.txt*: This output is not taken into account in computations, but provides an indicative probability of capture into resonance based on the equations of Borderies & Goldreich (1984). Whether or not capture occurs in a simulation depends on the outcome of orbital evolution computed with the averaged Hamiltonian routine. This matrix is not made symmetric, so usually the value of a coefficient in a position symmetric to that of a nonzero value is 0. In that case, only the nonzero value is meaningful.
 
 ### Cryolava code
 
@@ -124,16 +113,16 @@ The *PHREEQC* input file, *IcyDwarf/PHREEQC-3.1.2/io/inputIcyDwarf*, can be modi
 
 If you wish to modify the code, set up your compiler and linker so that all the relevant flags are added. 
 
-## Compiler setup (*gcc 6.2* on Mac OS 10.12 Sierra)
+## Compiler setup
 
 My compiling instructions look like this:
 
-For IcyDwarf:
+For IcyDwarf (*gcc 8.3* on Mac OS 10.14 Mojave):
  
-    gcc /usr/local/lib/gcc/x86_64-apple-darwin15.6.0/6.2.0/include -I/usr/local/include -I/Library/Frameworks/R.framework/Versions/3.0/Resources/include -I/Library/Frameworks/R.framework/Versions/3.0/Resources/library/RInside/include -O3 -g -Wall -c -fmessage-length=0 -arch x86_64 -fopenmp -o IcyDwarf.o ../IcyDwarf.c
-    gcc -L/Users/marc/Documents/Research/2011-2016_ASU/2IcyDwarf/Git/IcyDwarf/IcyDwarf -L/usr/local/lib -L/Library/Frameworks/R.framework/Versions/3.2/Resources/lib -o IcyDwarf IcyDwarf.o /usr/local/lib/libiphreeqc-3.1.7.dylib /usr/local/lib/libiphreeqc.dylib /usr/local/lib/libiphreeqc.a -lgomp -lR
+    gcc /usr/local/lib/gcc/x86_64-apple-darwin18.5.0/8.3.0/include -I/usr/local/include -I/Library/Frameworks/R.framework/Versions/3.6/Resources/include -I/Library/Frameworks/R.framework/Versions/3.6/Resources/library/RInside/include -O3 -g -Wall -c -fmessage-length=0 -arch x86_64 -fopenmp -o IcyDwarf.o ../IcyDwarf.c
+    gcc -L/usr/local/lib -L/Library/Frameworks/R.framework/Versions/3.6/Resources/lib -o IcyDwarf IcyDwarf.o /usr/local/lib/libiphreeqc-3.5.0.dylib /usr/local/lib/libiphreeqc.dylib /usr/local/lib/libiphreeqc.a -lgomp -lR
 
-For IcyDwarfPlot:
+For IcyDwarfPlot (*gcc 6.2* on Mac OS 10.12 Sierra):
 
     gcc -I/usr/include -I/Library/Frameworks/SDL2.framework/Versions/A/Headers -I/Library/Frameworks/SDL2_image.framework/Versions/A/Headers -I/Library/Frameworks/SDL2_ttf.framework/Versions/A/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/GLUT.framework/Versions/A/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/OpenGL.framework/Versions/A/Headers -O3 -Wall -c -fmessage-length=0 -o IcyDwarfPlot.o ../IcyDwarfPlot.c 
     gcc -L/Users/marc/Documents/Research/2011-2016_ASU/2IcyDwarf/Git/IcyDwarf/IcyDwarfPlot -F/Library/Frameworks -arch x86_64 -framework openGL -framework Cocoa -framework GLUT -framework SDL2 -framework SDL2_image -framework SDL2_ttf -o IcyDwarfPlot IcyDwarfPlot.o 
@@ -146,10 +135,24 @@ Email me if you have any issues.
 
 # Doing science with the code
 
-If you communicate or publish scientific results using this code, please acknowledge one of the following references. Thanks!
+If you communicate or publish scientific results using this code, please acknowledge one of the following references. Each describes the development of one piece of the code. Thanks!
 
-Neveu M., Desch S. (2015) Geochemistry, thermal evolution, and cryovolcanism on Ceres with a muddy ice mantle. Geophysical Research Letters 42, 10197-10206. http://dx.doi.org/10.1002/2015GL066375.
+Neveu M., Rhoden A. (2019)  Evolution of Saturn’s mid-sized moons. https://doi.org/10.1038/s41550-019-0726-y. (Fully coupled thermal-orbital evolution with moon-primary, moon-ring, and simplified moon-moon interactions, ability to simulate several objects simultaneously)
 
-Neveu M., Desch S., Castillo-Rogez J. (2015) Core cracking and hydrothermal circulation profoundly affect Ceres' geophysical evolution. Journal of Geophysical Research: Planets 120, 123-154. http://dx.doi.org/10.1002/2014JE004714.
+Neveu M., Desch S., Castillo-Rogez J. (2017) Aqueous geochemistry in icy world
+interiors: equilibrium fluid, rock, and gas compositions, and fate of antifreezes and
+radionuclides. Geochimica & Cosmochimica Acta 212, 324-371. https://doi.org/10.1016/j.gca.2017.06.023. (ParamExploration geochemistry code)
 
-Neveu M., Desch S., Shock E., Glein C. (2015) Prerequisites for explosive cryovolcanism on dwarf planet-class Kuiper belt objects. Icarus 246, 48-64. http://dx.doi.org/10.1016/j.icarus.2014.03.043.
+Neveu M., Rhoden A. (2017) The origin and evolution of a differentiated Mimas. Icarus
+296, 183-196. https://doi.org/10.1016/j.icarus.2017.06.011. (Tidal dissipation with basic orbital evolution driven by moon-primary interactions)
+
+Neveu M., Desch S. (2015) Geochemistry, thermal evolution, and cryovolcanism on Ceres with a muddy ice mantle. Geophysical Research Letters 42, 10197-10206. http://dx.doi.org/10.1002/2015GL066375. (Retention of part of rock in icy mantle)
+
+Neveu M., Desch S., Castillo-Rogez J. (2015) Core cracking and hydrothermal circulation profoundly affect Ceres' geophysical evolution. Journal of Geophysical Research: Planets 120, 123-154. http://dx.doi.org/10.1002/2014JE004714. (Thermal evolution code in C, cracking subroutine, convective transfer in rocky core by hydrothermal situation)
+
+Neveu M., Desch S., Shock E., Glein C. (2015) Prerequisites for explosive cryovolcanism on dwarf planet-class Kuiper belt objects. Icarus 246, 48-64. http://dx.doi.org/10.1016/j.icarus.2014.03.043. (Cryolava code)
+
+Rubin M., Desch S., Neveu M. (2014) The effect of Rayleigh-Taylor instabilities on the
+thickness of undifferentiated crusts on Kuiper belt objects. Icarus 236, 122-135. http://dx.doi.org/10.1016/j.icarus.2014.03.047. (Refined treatment of ice-rock differentiation)
+
+Desch, S., Cook, J., Doggett, T. and Porter, S. (2009) Thermal evolution of Kuiper belt objects, with implications for cryovolcanism. Icarus 202, 694-714. https://doi.org/10.1016/j.icarus.2009.03.009. (Thermal evolution code in Fortran)
