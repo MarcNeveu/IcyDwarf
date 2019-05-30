@@ -43,8 +43,8 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 	//                 Declarations and initializations
 	//-------------------------------------------------------------------
 
-//	int thread_id;
-//	int nloops = 0;
+	int thread_id;
+	int nloops = 0;
 	int i = 0;
 	int im = 0;
 	int ir = 0;
@@ -1040,8 +1040,8 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 		// Begin parallel calculations
 #pragma omp parallel // private(thread_id, nloops)
     	{
-//			thread_id = omp_get_thread_num();
-//			nloops = 0;
+			thread_id = omp_get_thread_num();
+			nloops = 0;
 #pragma omp for
 			for (im=0;im<nmoons;im++) {
 				if (realtime >= tzero[im] && orbevol[im]) {
@@ -1056,9 +1056,9 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 							&Wtide_tot, Mprim, Rprim, J2prim, J4prim, k2prim, Qprim,
 							aring_out, aring_in, alpha_Lind, ringSurfaceDensity, realtime-tzero_min);
 				}
-//				++nloops;
+				++nloops;
 			}
-//			printf("itime = %d, Thread %d performed %d iterations of the orbit loop over moons.\n", itime, thread_id, nloops); nloops = 0;
+			printf("itime = %d, Thread %d performed %d iterations of the orbit loop over moons.\n", itime, thread_id, nloops); nloops = 0;
 
 #pragma omp for
 			for (im=0;im<nmoons;im++) {
@@ -1077,10 +1077,10 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 							tidalmodel, tidetimes, im, moonspawn[im], Mprim, eorb, norb, &Wtide_tot[im], hy[im], chondr,
 							&Heat_radio[im], &Heat_grav[im], &Heat_serp[im], &Heat_dehydr[im], &Heat_tide[im],
 							&Stress[im], &Tide_output[im]);
-//					++nloops;
+					++nloops;
 				}
 			}
-//			printf("itime = %d, Thread %d performed %d iterations of the thermal loop over moons.\n", itime, thread_id, nloops);
+			printf("itime = %d, Thread %d performed %d iterations of the thermal loop over moons.\n", itime, thread_id, nloops);
 		} // Rejoin threads, end parallel calculations
 
 		//-------------------------------------------------------------------

@@ -67,14 +67,14 @@ int WaterRock (char path[1024], double T, double P, double WR, double *fracKleac
 	LoadMolMass (path, &molmass); // TODO Load it once before the time loop starts to avoid reading the file at each iteration
 
 	// Use CHNOSZ to get log fO2 for fayalite-magnetite-quartz (FMQ) buffer at given T and P
-	logfO2 = -3.0*CHNOSZ_logK("quartz", "cr", T, P, "SUPCRT92")
-		     -2.0*CHNOSZ_logK("magnetite", "cr", T, P, "SUPCRT92")
-	         +3.0*CHNOSZ_logK("fayalite", "cr", T, P, "SUPCRT92")
-		     +1.0*CHNOSZ_logK("O2", "g", T, P, "SUPCRT92");
-	logKO2H2O = -4.0*CHNOSZ_logK("H+", "aq", T, P, "SUPCRT92")
-				-4.0*CHNOSZ_logK("e-", "aq", T, P, "SUPCRT92")
-				-1.0*CHNOSZ_logK("O2", "g", T, P, "SUPCRT92")
-				+2.0*CHNOSZ_logK("H2O", "liq", T, P, "SUPCRT92");
+	logfO2 = -3.0*CHNOSZ_logK("quartz", "cr", T-Kelvin, P, "SUPCRT92")
+		     -2.0*CHNOSZ_logK("magnetite", "cr", T-Kelvin, P, "SUPCRT92")
+	         +3.0*CHNOSZ_logK("fayalite", "cr", T-Kelvin, P, "SUPCRT92")
+		     +1.0*CHNOSZ_logK("O2", "g", T-Kelvin, P, "SUPCRT92");
+	logKO2H2O = -4.0*CHNOSZ_logK("H+", "aq", T-Kelvin, P, "SUPCRT92")
+				-4.0*CHNOSZ_logK("e-", "aq", T-Kelvin, P, "SUPCRT92")
+				-1.0*CHNOSZ_logK("O2", "g", T-Kelvin, P, "SUPCRT92")
+				+2.0*CHNOSZ_logK("H2O", "liq", T-Kelvin, P, "SUPCRT92");
 
 	FMQ = -pH + 0.25*(logfO2+logKO2H2O);
 	// printf("FMQ pe is %g at T=%g C, P=%g bar, and pH %g\n",FMQ,T,P,pH);

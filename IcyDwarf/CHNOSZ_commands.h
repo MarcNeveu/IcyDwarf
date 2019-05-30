@@ -118,7 +118,8 @@ double CHNOSZ_logK (const char species[128], const char state[32], float T, floa
 		printf("CHNOSZ_commands: Could not perform subcrt('%s','%s',T=%g C,P=%g bar)\n",species,state,T,P);
 	}
 	PROTECT(sexp = AS_NUMERIC(VECTOR_ELT(VECTOR_ELT(sexp,1),0)));
-	logK = NUMERIC_POINTER(sexp)[0];
+	if (state[0] == 'g' || state[0] == 'c') logK = NUMERIC_POINTER(sexp)[2];
+	else logK = NUMERIC_POINTER(sexp)[3];
 	UNPROTECT(3);
 
 	return logK;
