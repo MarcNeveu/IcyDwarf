@@ -29,10 +29,10 @@ Go to http://www.r-project.org and follow instructions.
 	
 In *R*, type the command
 
-	install.packages(CHNOSZ)
+	install.packages("CHNOSZ")
 
 ## Install *Rcpp* and *RInside*
-*Rcpp* and *RInside* are libraries that allow *R* applications to be embedded in C or C++ codes. They are needed only for *IcyDwarf*. Go to http://cran.r-project.org/web/packages/Rcpp/index.html and http://cran.r-project.org/web/packages/RInside/index.html to download the respective archives. On Mac, unzip the archives in */Library/Frameworks/R.framework/Resources/library/*, so that *Rcpp* and *RInside* are two subfolders of *library*.
+*Rcpp* and *RInside* are libraries that allow *R* applications to be embedded in C or C++ codes. They are needed only for *IcyDwarf*. Go to http://cran.r-project.org/web/packages/Rcpp/index.html and http://cran.r-project.org/web/packages/RInside/index.html, or directly to http://dirk.eddelbuettel.com/code/rcpp to download the respective archives. On Mac, unzip the archives in */Library/Frameworks/R.framework/Resources/library/*, so that *Rcpp* and *RInside* are two subfolders of *library*.
 
 ## Install *IPHREEQC*
 The *IPHREEQC* library is a module that allows the *PHREEQC* application to be embedded in C or C++ codes. It is needed only for *IcyDwarf*. Go to http://wwwbrr.cr.usgs.gov/projects/GWC_coupled/phreeqc to download *IPHREEQC* and follow the default installation instructions:
@@ -51,14 +51,16 @@ and *clang* by typing:
 
     alias gcc=/usr/local/bin/gcc
 
-## Install *SDL2*
-*SDL2* is a graphic library, needed only for *IcyDwarfPlot*. Go to http://www.libsdl.org/projects. Download and install *SDL2*, *SDL2_image*, and *SDL2_ttf*. *SDL2_mixer* is not needed as the code doesn't play music for you yet.
+## Install *SDL2* (*IcyDwarfPlot* only)
+*SDL2* is a graphic library. Go to http://www.libsdl.org/projects. Download and install *SDL2*, *SDL2_image*, and *SDL2_ttf*. *SDL2_mixer* is not needed as the code doesn't play music for you yet.
 
 ## Install *IcyDwarf*
 Go to https://github.com/MarcNeveu/IcyDwarf. Click *Download ZIP* on the bottom right side of the page. Unzip IcyDwarf-master.zip. Rename the unzipped folder *IcyDwarf-master* to *IcyDwarf*.
 Move the renamed *IcyDwarf* folder to any folder you would like, we will call it *Path_to_GitFolder* here. All source files should be in: 
 - */Path_to_GitFolder/IcyDwarf/IcyDwarf* and subfolders
 - */Path_to_GitFolder/IcyDwarf/IcyDwarfPlot* and subfolders
+
+Alternatively, if you are familiar with GitHub, you can clone the directory with your favorite tool (I use Git within the Eclipse developing environment).
 
 # Running the code
 
@@ -77,12 +79,12 @@ The respective input files are located in the *IcyDwarf/Input* and *IcyDwarfPlot
 For each file name, the initial character *x* is *0* for the first/only object and incremented by 1 for each additional object. Thermal and crack output files can be read and displayed by *IcyDwarfPlot*.
 
 - *xCrack_depth.txt*: The cracking depth inside the rocky core over time (two columns: time in Gyr, depth of deepest cracked zone in km)
-- *xCrack_stresses.txt*: Internal stresses accounted for by the core cracking subroutine (Neveu et al. 2015, JGR). There are 200 rows (one per layer from the center to the surface) printed at each time interval. Columns list, respectively: layer radius (in km), pressure in this layer (in MPa), brittle strength of this layer (in MPa), critical stress intensity in this layer (in MPa m$^{0.5}$), stress intensity from thermal expansion mismatch at grain boundaries (in MPa m$^{0.5}$), pore fluid pressure (in MPa), net pressure (stress) resulting from rock hydration (in MPa), old crack size prior to hydration/dehydration (in m), old crack size prior to mineral dissolution/precipitation (in m), current crack size (in m). Outputs are zero outside of the core.
+- *xCrack_stresses.txt*: Internal stresses accounted for by the core cracking subroutine (Neveu et al. 2015, JGR). There are *n_zones* rows (one per layer from the center to the surface) printed at each time interval. Columns list, respectively: layer radius (in km), pressure in this layer (in MPa), brittle strength of this layer (in MPa), critical stress intensity in this layer (in MPa m^0.5), stress intensity from thermal expansion mismatch at grain boundaries (in MPa m^0.5), pore fluid pressure (in MPa), net pressure (stress) resulting from rock hydration (in MPa), old crack size prior to hydration/dehydration (in m), old crack size prior to mineral dissolution/precipitation (in m), current crack size (in m). Outputs are zero outside of the core.
 - *xCrack_WRratio.txt*: The bulk water:rock mass ratio in the fractured zone (two columns: time in Gyr, water:rock ratio by mass in cracked zone). Outputs are zero if the core is not cracked or if there is no liquid.
-- *xCrack.txt*: Lists which core layers are fractured, and by which process (Neveu et al. 2015, JGR). There are 200 columns for each layer from the center to the surface, and 451 rows for each time interval starting at 0 Gyr and ending at 4.5 Gyr. Each value is an integer: 0 = no cracks; 1 = cracks from thermal contraction; 2 = cracks from thermal expansion; 3 = cracks from hydration; 4 = cracks from dehydration; 5 = cracks from pore water dilation; 6 = mineral dissolution widening; 7 = mineral precipitation shrinking; --1 = mineral precipitation clogging; --2: clogging from hydration swelling. Outputs are zero outside of the core.
+- *xCrack.txt*: Lists which core layers are fractured, and by which process (Neveu et al. 2015, JGR). There are *n_zones* columns for each layer from the center to the surface, and *total time/timestep* rows for each time interval. Each value is an integer: 0 = no cracks; 1 = cracks from thermal contraction; 2 = cracks from thermal expansion; 3 = cracks from hydration; 4 = cracks from dehydration; 5 = cracks from pore water dilation; 6 = mineral dissolution widening; 7 = mineral precipitation shrinking; -1 = mineral precipitation clogging; -2: clogging from hydration swelling. Outputs are zero outside of the core.
 - *xHeats.txt*: Cumulative heats (in erg) produced or consumed by endogenic and exogenic processes. The six columns describe: time (in Gyr), radiogenic heat, gravitational heat, heat of rock hydration, heat consumed in rock dehydration, and heat from tidal dissipation.
-- *xOrbit.txt*: Orbital parameters (9 columns: time in Gyr, semi-major axis in km, osculating semi-major axis in km (0 if no resonance), eccentricity, product of eccentricity and cosine of resonant angle, product of eccentricity and sine of resonant angle, resonant angle in degrees, total tidal dissipation in W, and equivalent *k2*/*Q* for the moon (Segatz et al. 1988).
-- *xThermal.txt*: There are 200 rows for each layer, repeated 451 times, i.e. for each time interval. Columns list, respectively: layer radius (in km), layer temperature (in K); masses (in g) of rock, water ice, ammonia dihydrate (always zero here), liquid water, and liquid ammonia (always zero here) in the layer; Nusselt number in the shell (if $>$1, the shell convects); fraction of amorphous ice in the layer (always zero here); thermal conductivity of the layer (in W m$^{-1}$ K$^{-1}$); degree of hydration of the layer (0: fully dry; 1: fully hydrated); and porosity of the layer.
+- *xOrbit.txt*: Orbital parameters, comprising 9 columns: time in Gyr, semi-major axis in km, osculating semi-major axis in km (0 if no resonance), eccentricity, product of eccentricity and cosine of resonant angle, product of eccentricity and sine of resonant angle, resonant angle in degrees, total tidal dissipation in W, and equivalent *k2*/*Q* for the moon (Segatz et al. 1988).
+- *xThermal.txt*: There are *n_zones* rows for each grid zone, repeated *total time/timestep* times, i.e. for each time interval. Columns list, respectively: layer radius (in km), layer temperature (in K); masses (in g) of rock, water ice, ammonia dihydrate (always zero here), liquid water, and liquid ammonia (always zero here) in the layer; Nusselt number in the shell (if $>$1, the shell convects); fraction of amorphous ice in the layer (always zero here); thermal conductivity of the layer (in W m$^{-1}$ K$^{-1}$); degree of hydration of the layer (0: fully dry; 1: fully hydrated); and porosity of the layer.
 - *xTidal.txt*: Rates of tidal heating in each layer in W (*n_zones* rows for each grid zone, repeated *total time/timestep* times, i.e. for each time interval).
 
 In addition, each folder contains the following files. Each of the last three files is read in *N_moon* x *N_moon* matrices, where *N_moon* is the number of moons. Matrices are typically 5x5. Matrices are symmetric since they describe interactions between pairs of moons. Element (*x*, *y*) represents interactions between the *x*th and *y*th worlds as specified in *IcyDwarfInput*. The first matrix is output at the first time step. Subsequent matrices are output following a time stamp that corresponds to the time at which pairs of moons get in and out of resonance.
@@ -135,7 +137,7 @@ Email me if you have any issues.
 
 # Doing science with the code
 
-If you communicate or publish scientific results using this code, please acknowledge one of the following references. Each describes the development of one piece of the code. Thanks!
+If you communicate or publish scientific results using this code, please acknowledge one of the references listed below from newest to oldest. Each describes the development of one piece of the code. Thanks!
 
 Neveu M., Rhoden A. (2019)  Evolution of Saturn’s mid-sized moons. https://doi.org/10.1038/s41550-019-0726-y. (Fully coupled thermal-orbital evolution with moon-primary, moon-ring, and simplified moon-moon interactions, ability to simulate several objects simultaneously)
 
@@ -155,4 +157,12 @@ Neveu M., Desch S., Shock E., Glein C. (2015) Prerequisites for explosive cryovo
 Rubin M., Desch S., Neveu M. (2014) The effect of Rayleigh-Taylor instabilities on the
 thickness of undifferentiated crusts on Kuiper belt objects. Icarus 236, 122-135. http://dx.doi.org/10.1016/j.icarus.2014.03.047. (Refined treatment of ice-rock differentiation)
 
-Desch, S., Cook, J., Doggett, T. and Porter, S. (2009) Thermal evolution of Kuiper belt objects, with implications for cryovolcanism. Icarus 202, 694-714. https://doi.org/10.1016/j.icarus.2009.03.009. (Thermal evolution code in Fortran)
+Desch, S., Cook, J., Doggett, T., Porter, S. (2009) Thermal evolution of Kuiper belt objects, with implications for cryovolcanism. Icarus 202, 694-714. https://doi.org/10.1016/j.icarus.2009.03.009. (Thermal evolution code in Fortran)
+
+# Other references (alphabetical)
+
+Borderies, N., Goldreich, P. (1984) A simple derivation of capture probabilities for the J+1:J and J+2:J orbit-orbit resonance problems. Celestial Mechanics 32, 127-136. https://doi.org/10.1007/BF01231120.
+
+Meyer, J., Wisdom, J. (2008) Tidal evolution of Mimas, Enceladus, and Dione. Icarus 193, 213-223. https://doi.org/10.1016/j.icarus.2007.09.008.
+
+Segatz, M., Spohn, T., Ross, M. and Schubert, G. (1988) Tidal dissipation, surface heat flow, and figure of viscoelastic models of Io. Icarus 75, 187-206. https://doi.org/10.1016/0019-1035(88)90001-2
