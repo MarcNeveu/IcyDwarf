@@ -42,7 +42,7 @@ The *IPHREEQC* library is a module that allows the *PHREEQC* application to be e
 	make install
 
 ## Install *gcc*
-In Mac OS 10.8+, the default compiler *clang* has replaced the compiler *gcc*, which is needed to take advantage of the parallel computing capabilities of the *ParamExploration()* routine of *IcyDwarf*. Go to http://hpc.sourceforge.net and follow the instructions there to download and install *gcc*.
+In Mac OS 10.8+, the default compiler *clang* has replaced the compiler *gcc*, which is needed to take advantage of the parallel computing capabilities of the *PlanetSystem* and *WaterRock_ParamExplor* routines of *IcyDwarf*. Go to http://hpc.sourceforge.net and follow the instructions there to download and install *gcc*.
 Once installed, you might need to break the symbolic link between the command *gcc* and *clang* by typing:
 
     alias gcc=/usr/local/bin/gcc
@@ -103,7 +103,7 @@ The cryolava routine outputs three files:
 
 The compression routine outputs one file, *Compression.txt*, which provides pressures and densities as a function of radius, both accounting for self-compression (output) and not accounting for it (output of the thermal code). The file structure, format, and units are explained in the file itself.
 
-### ParamExploration code
+### WaterRock_ParamExplor code
 
 This routine outputs a file, *ParamExploration.txt*, that looks much like the *PHREEQC* selected output specified in the *IcyDwarf/PHREEQC-3.1.2/io* folder, with a few added columns at the beginning (starting T in celsius, P in bar, pH, pe, log fO2 at FMQ(T,P) buffer, pe-FMQ). The file is formatted for easy import into a spreadsheet, with each line describing a different simulation. Lines filled with zeros are *PHREEQC* simulations that did not converge.
 
@@ -141,7 +141,7 @@ Neveu M., Rhoden A. (2019)  Evolution of Saturn’s mid-sized moons. https://doi
 
 Neveu M., Desch S., Castillo-Rogez J. (2017) Aqueous geochemistry in icy world
 interiors: equilibrium fluid, rock, and gas compositions, and fate of antifreezes and
-radionuclides. Geochimica & Cosmochimica Acta 212, 324-371. https://doi.org/10.1016/j.gca.2017.06.023. (ParamExploration geochemistry code)
+radionuclides. Geochimica & Cosmochimica Acta 212, 324-371. https://doi.org/10.1016/j.gca.2017.06.023. (WaterRock_ParamExplor code)
 
 Neveu M., Rhoden A. (2017) The origin and evolution of a differentiated Mimas. Icarus
 296, 183-196. https://doi.org/10.1016/j.icarus.2017.06.011. (Tidal dissipation with basic orbital evolution driven by moon-primary interactions)
