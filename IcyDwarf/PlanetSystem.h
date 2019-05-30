@@ -10,7 +10,7 @@
 
 #include "./IcyDwarf.h"
 #include "./Orbit.h"
-#include "Thermal/Thermal.h"
+#include "./Thermal.h"
 #include "Crack/Crack.h"
 
 int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int recover, int NR, double dtime, double speedup, double *tzero, double fulltime,

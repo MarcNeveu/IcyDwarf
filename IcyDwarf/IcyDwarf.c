@@ -22,7 +22,7 @@
 #include "Cryolava/Cryolava.h"
 #include "WaterRock/WaterRock.h"
 #include "WaterRock/ParamExploration.h"
-#include "Thermal/Thermal.h"
+#include "Thermal.h"
 
 int main(int argc, char *argv[]){
 

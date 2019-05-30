@@ -24,8 +24,8 @@
 #ifndef THERMAL_H_
 #define THERMAL_H_
 
-#include "../IcyDwarf.h"
-#include "../Crack/Crack.h"
+#include "./IcyDwarf.h"
+#include "Crack/Crack.h"
 
 int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int warnings, int NR, double dr_grid,
 		double dtime, double realtime, int itime, double Xp, double Xsalt, double Xfines, double Xpores, double Tsurf,
