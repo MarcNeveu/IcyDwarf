@@ -25,8 +25,8 @@
 #ifndef ATP_H_
 #define ATP_H_
 
-#include "../CHNOSZ_commands.h"
-#include "../IcyDwarf.h"
+#include "CHNOSZ_commands.h"
+#include "IcyDwarf.h"
 
 int aTP(char path[1024], int warnings);
 int Crack_water_CHNOSZ(int argc, char *argv[], char path[1024], int warnings);

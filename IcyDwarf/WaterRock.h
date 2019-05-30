@@ -12,8 +12,8 @@
 #ifndef WATERROCK_H_
 #define WATERROCK_H_
 
-#include "../IcyDwarf.h"
-#include "ParamExploration.h"
+#include "IcyDwarf.h"
+#include "WaterRock_ParamExplor.h"
 
 int WaterRock (char path[1024], double T, double P, double WR, double *fracKleached, int chondrite);
 

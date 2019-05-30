@@ -11,7 +11,7 @@
 #ifndef ORBIT_H_
 #define ORBIT_H_
 
-#include "./IcyDwarf.h"
+#include "IcyDwarf.h"
 
 int Orbit (int argc, char *argv[], char path[1024], int im,
 		double dtime, double speedup, int itime, int nmoons, double *m_p, double *r_p, double **resAcctFor,

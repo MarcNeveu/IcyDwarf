@@ -16,12 +16,12 @@
 #include "IcyDwarf.h"
 #include "PlanetSystem.h"
 #include "Orbit.h"
-#include "Compression/Compression.h"
-#include "Crack/Crack.h"
-#include "Crack/Crack_tables.h"
-#include "Cryolava/Cryolava.h"
-#include "WaterRock/WaterRock.h"
-#include "WaterRock/ParamExploration.h"
+#include "Compression.h"
+#include "Crack.h"
+#include "Crack_tables.h"
+#include "Cryolava.h"
+#include "WaterRock.h"
+#include "WaterRock_ParamExplor.h"
 #include "Thermal.h"
 
 int main(int argc, char *argv[]){

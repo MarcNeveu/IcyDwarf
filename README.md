@@ -41,13 +41,9 @@ The *IPHREEQC* library is a module that allows the *PHREEQC* application to be e
 	make
 	make install
 
-## Install *gcc 8.3*
-In Mac OS 10.8+, the default compiler *clang* has replaced the compiler *gcc*, which is needed to take advantage of the parallel computing capabilities of the *ParamExploration()* routine of *IcyDwarf*. Go to http://hpc.sourceforge.net and follow the instructions there to download and install *gcc 5.0*.
-Once *gcc 5.0* is installed, you might need to break the symbolic link between the command 
-
-    gcc 
-
-and *clang* by typing:
+## Install *gcc*
+In Mac OS 10.8+, the default compiler *clang* has replaced the compiler *gcc*, which is needed to take advantage of the parallel computing capabilities of the *ParamExploration()* routine of *IcyDwarf*. Go to http://hpc.sourceforge.net and follow the instructions there to download and install *gcc*.
+Once installed, you might need to break the symbolic link between the command *gcc* and *clang* by typing:
 
     alias gcc=/usr/local/bin/gcc
 
@@ -55,12 +51,14 @@ and *clang* by typing:
 *SDL2* is a graphic library. Go to http://www.libsdl.org/projects. Download and install *SDL2*, *SDL2_image*, and *SDL2_ttf*. *SDL2_mixer* is not needed as the code doesn't play music for you yet.
 
 ## Install *IcyDwarf*
-Go to https://github.com/MarcNeveu/IcyDwarf. Click *Download ZIP* on the bottom right side of the page. Unzip IcyDwarf-master.zip. Rename the unzipped folder *IcyDwarf-master* to *IcyDwarf*.
-Move the renamed *IcyDwarf* folder to any folder you would like, we will call it *Path_to_GitFolder* here. All source files should be in: 
-- */Path_to_GitFolder/IcyDwarf/IcyDwarf* and subfolders
-- */Path_to_GitFolder/IcyDwarf/IcyDwarfPlot* and subfolders
+Go to https://github.com/MarcNeveu/IcyDwarf. Click the green *Clone or download* button to the right of the page, then either:
+- *Download ZIP* on the bottom right. Unzip IcyDwarf-master.zip. Rename the unzipped folder *IcyDwarf-master* to *IcyDwarf*.
+Move the renamed *IcyDwarf* folder to any folder you would like, we will call it *Path_to_GitFolder* here.
+- if you are familiar with GitHub, you can clone the directory with your favorite tool (I use Git within the Eclipse developing environment).
 
-Alternatively, if you are familiar with GitHub, you can clone the directory with your favorite tool (I use Git within the Eclipse developing environment).
+All source files should be in: 
+- */Path_to_GitFolder/IcyDwarf/IcyDwarf* and subfolders
+- */Path_to_GitFolder/IcyDwarf/IcyDwarfPlot* and subfolders.
 
 # Running the code
 
@@ -127,7 +125,7 @@ For IcyDwarf (*gcc 8.3* on Mac OS 10.14 Mojave):
 For IcyDwarfPlot (*gcc 6.2* on Mac OS 10.12 Sierra):
 
     gcc -I/usr/include -I/Library/Frameworks/SDL2.framework/Versions/A/Headers -I/Library/Frameworks/SDL2_image.framework/Versions/A/Headers -I/Library/Frameworks/SDL2_ttf.framework/Versions/A/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/GLUT.framework/Versions/A/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/OpenGL.framework/Versions/A/Headers -O3 -Wall -c -fmessage-length=0 -o IcyDwarfPlot.o ../IcyDwarfPlot.c 
-    gcc -L/Users/marc/Documents/Research/2011-2016_ASU/2IcyDwarf/Git/IcyDwarf/IcyDwarfPlot -F/Library/Frameworks -arch x86_64 -framework openGL -framework Cocoa -framework GLUT -framework SDL2 -framework SDL2_image -framework SDL2_ttf -o IcyDwarfPlot IcyDwarfPlot.o 
+    gcc -F/Library/Frameworks -arch x86_64 -framework openGL -framework Cocoa -framework GLUT -framework SDL2 -framework SDL2_image -framework SDL2_ttf -o IcyDwarfPlot IcyDwarfPlot.o 
 
 You might need to specify the full path to gcc (e.g. */usr/local/bin/gcc*) rather than simply the *gcc* alias.
 
@@ -165,4 +163,4 @@ Borderies, N., Goldreich, P. (1984) A simple derivation of capture probabilities
 
 Meyer, J., Wisdom, J. (2008) Tidal evolution of Mimas, Enceladus, and Dione. Icarus 193, 213-223. https://doi.org/10.1016/j.icarus.2007.09.008.
 
-Segatz, M., Spohn, T., Ross, M. and Schubert, G. (1988) Tidal dissipation, surface heat flow, and figure of viscoelastic models of Io. Icarus 75, 187-206. https://doi.org/10.1016/0019-1035(88)90001-2
+Segatz, M., Spohn, T., Ross, M. and Schubert, G. (1988) Tidal dissipation, surface heat flow, and figure of viscoelastic models of Io. Icarus 75, 187-206. https://doi.org/10.1016/0019-1035(88)90001-2.

@@ -22,7 +22,7 @@
 #ifndef COMPRESSION_H_
 #define COMPRESSION_H_
 
-#include "../IcyDwarf.h"
+#include "IcyDwarf.h"
 
 int compression(int NR, int NT, thermalout **thoutput, int t, int dbincore, int dboutcore, int dbmantle, int specify,
 		char path[1024], double rhoHydr, double rhoDry, double *Xhydr);

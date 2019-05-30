@@ -8,10 +8,10 @@
 #ifndef PLANETSYSTEM_H_
 #define PLANETSYSTEM_H_
 
-#include "./IcyDwarf.h"
-#include "./Orbit.h"
-#include "./Thermal.h"
-#include "Crack/Crack.h"
+#include "IcyDwarf.h"
+#include "Orbit.h"
+#include "Thermal.h"
+#include "Crack.h"
 
 int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int recover, int NR, double dtime, double speedup, double *tzero, double fulltime,
 		double dtoutput, int nmoons, double Mprim, double Rprim, double Qprimi, double Qprimf, int Qmode, double k2prim, double J2prim, double J4prim,

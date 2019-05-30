@@ -39,7 +39,7 @@
 #ifndef CRACK_H_
 #define CRACK_H_
 
-#include "../IcyDwarf.h"
+#include "IcyDwarf.h"
 
 int crack(double T, double T_old, double Pressure, double *Crack,
 		double *Crack_size, double Xhydr, double Xhydr_old, double dtime, double Mrock, double Mrock_init,
@@ -210,7 +210,7 @@ int crack(double T, double T_old, double Pressure, double *Crack,
 
 	//-------------------------------------------------------------------
 	//             Expansion of pore water as it is heated
-	//            (Norton 1984, Le Ravalec and GuŽguen 1994)
+	//            (Norton 1984, Le Ravalec and Guï¿½guen 1994)
 	//-------------------------------------------------------------------
 
 	if (pore_water_expansion == 1) {
@@ -221,7 +221,7 @@ int crack(double T, double T_old, double Pressure, double *Crack,
 			// Look up the right value of alpha and beta, given P and T
 			tempk_int = look_up (T, (double) tempk_min, delta_tempk, sizeaTP, warnings);
 			P_int = look_up (Pressure/bar, (double) P_bar_min, delta_P_bar, sizeaTP, warnings);
-			// Calculate fluid overpressure from heating, including geometric effects (Le Ravalec & GuŽguen 1994)
+			// Calculate fluid overpressure from heating, including geometric effects (Le Ravalec & Guï¿½guen 1994)
 			(*P_pore) = (*P_pore) + (1.0+2.0*aspect_ratio) * alpha[tempk_int][P_int] * (T-T_old)
 								/ (beta[tempk_int][P_int]/bar + aspect_ratio*3.0*(1.0-2.0*nu_Poisson)/E_Young);
 		}

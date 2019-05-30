@@ -64,9 +64,6 @@
 					</folderInfo>
 					<sourceEntries>
 						<entry excluding="WaterRock|Crack|Thermal|Cryolava|Cryolava_old" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Crack"/>
-						<entry excluding="Cryolava_old" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Cryolava"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="WaterRock"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
@@ -132,9 +129,6 @@
 					</folderInfo>
 					<sourceEntries>
 						<entry excluding="WaterRock|Crack|Thermal|Cryolava|Cryolava_old" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Crack"/>
-						<entry excluding="Cryolava_old" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Cryolava"/>
-						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="WaterRock"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>

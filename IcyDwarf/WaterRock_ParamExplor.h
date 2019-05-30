@@ -12,7 +12,7 @@
 #ifndef PARAMEXPLORATION_H_
 #define PARAMEXPLORATION_H_
 
-#include "../IcyDwarf.h"
+#include "IcyDwarf.h"
 
 int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, double Pmin, double Pmax, double Pstep,
 		double pemin, double pemax, double pestep, double WRmin, double WRmax, double WRstep);
