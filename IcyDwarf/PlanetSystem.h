@@ -16,7 +16,7 @@
 int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int recover, int NR, double dtime, double speedup, double *tzero, double fulltime,
 		double dtoutput, int nmoons, double Mprim, double Rprim, double Qprimi, double Qprimf, int Qmode, double k2prim, double J2prim, double J4prim,
 		double Mring_init, double aring_out, double aring_in, double *r_p, double *rho_p, double rhoHydr, double rhoDry, double *Xp, double *Xsalt,
-		double **Xhydr, double *porosity, double *Xpores, double *Xfines, double *Tinit, double *Tsurf, int *startdiff,
+		double **Xhydr, double *porosity, double *Xpores, double *Xfines, double *Tinit, double *Tsurf, int *fromRing, int *startdiff,
 		double *aorb_init, double *eorb_init, int tidalmodel, double tidetimes, int *orbevol, int *hy, int chondr, int *crack_input,
 		int *crack_species);
 
@@ -35,7 +35,7 @@ int tail(FILE *f, int n, int l, double ***output);
 int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int recover, int NR, double dtime, double speedup, double *tzero, double fulltime,
 		double dtoutput, int nmoons, double Mprim, double Rprim, double Qprimi, double Qprimf, int Qmode, double k2prim, double J2prim, double J4prim,
 		double Mring_init, double aring_out, double aring_in, double *r_p, double *rho_p, double rhoHydr, double rhoDry, double *Xp, double *Xsalt,
-		double **Xhydr, double *porosity, double *Xpores, double *Xfines, double *Tinit, double *Tsurf, int *startdiff,
+		double **Xhydr, double *porosity, double *Xpores, double *Xfines, double *Tinit, double *Tsurf, int *fromRing, int *startdiff,
 		double *aorb_init, double *eorb_init, int tidalmodel, double tidetimes, int *orbevol, int *hy, int chondr, int *crack_input,
 		int *crack_species) {
 
@@ -968,74 +968,82 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 		for (im=0;im<nmoons;im++) {
 			moonspawn[im] = 0;
 			if (realtime-dtime < tzero[im] && realtime >= tzero[im]) {
-				Mring = Mring - m_p[im];
-				moonspawn[im]++;
+				if (fromRing[im]) { // Formation from the rings, decrease the rings' mass accordingly
+					if (Mring > m_p[im]) {
+						Mring = Mring - m_p[im];
+						moonspawn[im]++;
+					}
+					else printf("Ring mass too low to spawn new moon at %g Myr\n", realtime/Myr2sec);
+				}
+				else moonspawn[im]++;
 			}
 		}
 
-		ringSurfaceDensity = Mring/(PI_greek*(aring_out*aring_out-aring_in*aring_in));
+		if (Mprim > 0.0) {
+			if (Mring > 0.0) ringSurfaceDensity = Mring/(PI_greek*(aring_out*aring_out-aring_in*aring_in));
 
-		switch(Qmode) {
-		case 0: // Q changes linearly
-			Qprim = Qprimi + (Qprimf-Qprimi) / (today-tzero_min) * (realtime-tzero_min);
-			break;
-		case 1: // Q decays exponentially
-			Qprim = Qprimi * exp( log(Qprimf/Qprimi) / (today-tzero_min) * (realtime-tzero_min) );
-			break;
-		case 2: // Q changes exponentially
-			Qprim = Qprimi + 1.0 - exp( log(Qprimi-Qprimf+1.0) / (today-tzero_min) * (realtime-tzero_min) );
-			break;
-		}
-		if (Qprim <= 0.0) {
-			FILE *fout;
-			// Turn working directory into full file path by moving up two directories to IcyDwarf (e.g., removing
-			// "Release/IcyDwarf" characters) and specifying the right path end.
-			char *title = (char*)malloc(1024*sizeof(char)); // Don't forget to free!
-			title[0] = '\0';
-			if (v_release == 1) strncat(title,path,strlen(path)-16);
-			else if (cmdline == 1) strncat(title,path,strlen(path)-18);
-			strcat(title,"Outputs/Primary.txt");
-			fout = fopen(title,"a");
-			if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
-			else fprintf(fout,"Tidal Q of primary = %g is negative. Change Q parameters or simulation timing.\n", Qprim);
-			fclose (fout);
-			free (title);
-			exit(0);
-		}
-
-		// Benchmark with Meyer & Wisdom (2008) and Zhang & Nimmo (2009)
-//		if (itime==0) {
-//			Wtide_tot[0] = 8.0e-4*11.5*pow(r_p[0],5)*pow(sqrt(Gcgs*Mprim/pow(aorb[0],3)),5)*pow(eorb[0],2)/Gcgs;     // Enceladus
-//			Wtide_tot[1] = 1.0e-4*11.5*pow(r_p[1],5)*pow(sqrt(Gcgs*Mprim/pow(aorb[1],3)),5)*pow(eorb[1],2)/Gcgs;     // Dione
-//		}
-//		else {
-//			Wtide_tot[0] = 8.0e-4*11.5*pow(r_p[0],5)*pow(sqrt(Gcgs*Mprim/pow(a__old[0],3)),5)*pow(eorb[0],2)/Gcgs;     // Enceladus
-//			Wtide_tot[1] = 1.0e-4*11.5*pow(r_p[1],5)*pow(sqrt(Gcgs*Mprim/pow(a__old[1],3)),5)*pow(eorb[1],2)/Gcgs;     // Dione
-//		}
-
-		// Set minimum ecc to order 1e-7 so that eorb*eorb > 1.1e-16, the machine epsilon for double precision
-		// Otherwise, MMR_AvgHam() goes singular when dividing by 1-sqrt(1-eorb*eorb)
-		for (im=0;im<nmoons;im++) {
-			if (eorb[im] < 1.0e-7) eorb[im] = 1.0e-7;
-		}
-		// Check for orbital resonances
-		for (im=0;im<nmoons;im++) {
-			if (realtime >= tzero[im]) rescheck(nmoons, im, norb, dnorb_dt, aorb, a__old, eorb, m_p, Mprim, Rprim, k2prim, Qprim,
-					&resonance, &PCapture, tzero, realtime, aring_out, resAcctFor);
-		}
-		// Only one moon-moon resonance per moon max, so account for only lower-order (stronger) or older resonances
-		for (im=0;im<nmoons;im++) resscreen (nmoons, resonance[im], &resAcctFor[im], resAcctFor_old[im]);
-		for (im=0;im<nmoons;im++) {
-			for (i=0;i<nmoons;i++) {
-				if (i != im && resAcctFor[im][i] == 0.0) resAcctFor[i][im] = 0.0;
+			switch(Qmode) {
+			case 0: // Q changes linearly
+				Qprim = Qprimi + (Qprimf-Qprimi) / (today-tzero_min) * (realtime-tzero_min);
+				break;
+			case 1: // Q decays exponentially
+				Qprim = Qprimi * exp( log(Qprimf/Qprimi) / (today-tzero_min) * (realtime-tzero_min) );
+				break;
+			case 2: // Q changes exponentially
+				Qprim = Qprimi + 1.0 - exp( log(Qprimi-Qprimf+1.0) / (today-tzero_min) * (realtime-tzero_min) );
+				break;
 			}
-		}
+			if (Qprim <= 0.0) {
+				FILE *fout;
+				// Turn working directory into full file path by moving up two directories to IcyDwarf (e.g., removing
+				// "Release/IcyDwarf" characters) and specifying the right path end.
+				char *title = (char*)malloc(1024*sizeof(char)); // Don't forget to free!
+				title[0] = '\0';
+				if (v_release == 1) strncat(title,path,strlen(path)-16);
+				else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+				strcat(title,"Outputs/Primary.txt");
+				fout = fopen(title,"a");
+				if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
+				else fprintf(fout,"Tidal Q of primary = %g is negative. Change Q parameters or simulation timing.\n", Qprim);
+				fclose (fout);
+				free (title);
+				exit(0);
+			}
 
-		// Impact that raises Tethys' orbit and knocks it out of resonance with Dione (Zhang & Nimmo 2012) TODO comment out
-//		if (realtime > 1.0*Gyr2sec - dtime && realtime < 1.0*Gyr2sec + dtime) {
-//			aorb[2] = aorb[2] + 300.0*km2cm;
-//			if (a__old[2] > 0) a__old[2] = a__old[2] + 300.0*km2cm;
-//		}
+			// Benchmark with Meyer & Wisdom (2008) and Zhang & Nimmo (2009)
+	//		if (itime==0) {
+	//			Wtide_tot[0] = 8.0e-4*11.5*pow(r_p[0],5)*pow(sqrt(Gcgs*Mprim/pow(aorb[0],3)),5)*pow(eorb[0],2)/Gcgs;     // Enceladus
+	//			Wtide_tot[1] = 1.0e-4*11.5*pow(r_p[1],5)*pow(sqrt(Gcgs*Mprim/pow(aorb[1],3)),5)*pow(eorb[1],2)/Gcgs;     // Dione
+	//		}
+	//		else {
+	//			Wtide_tot[0] = 8.0e-4*11.5*pow(r_p[0],5)*pow(sqrt(Gcgs*Mprim/pow(a__old[0],3)),5)*pow(eorb[0],2)/Gcgs;     // Enceladus
+	//			Wtide_tot[1] = 1.0e-4*11.5*pow(r_p[1],5)*pow(sqrt(Gcgs*Mprim/pow(a__old[1],3)),5)*pow(eorb[1],2)/Gcgs;     // Dione
+	//		}
+
+			// Set minimum ecc to order 1e-7 so that eorb*eorb > 1.1e-16, the machine epsilon for double precision
+			// Otherwise, MMR_AvgHam() goes singular when dividing by 1-sqrt(1-eorb*eorb)
+			for (im=0;im<nmoons;im++) {
+				if (eorb[im] < 1.0e-7) eorb[im] = 1.0e-7;
+			}
+			// Check for orbital resonances
+			for (im=0;im<nmoons;im++) {
+				if (realtime >= tzero[im]) rescheck(nmoons, im, norb, dnorb_dt, aorb, a__old, eorb, m_p, Mprim, Rprim, k2prim, Qprim,
+						&resonance, &PCapture, tzero, realtime, aring_out, resAcctFor);
+			}
+			// Only one moon-moon resonance per moon max, so account for only lower-order (stronger) or older resonances
+			for (im=0;im<nmoons;im++) resscreen (nmoons, resonance[im], &resAcctFor[im], resAcctFor_old[im]);
+			for (im=0;im<nmoons;im++) {
+				for (i=0;i<nmoons;i++) {
+					if (i != im && resAcctFor[im][i] == 0.0) resAcctFor[i][im] = 0.0;
+				}
+			}
+
+			// Impact that raises Tethys' orbit and knocks it out of resonance with Dione (Zhang & Nimmo 2012) TODO comment out
+	//		if (realtime > 1.0*Gyr2sec - dtime && realtime < 1.0*Gyr2sec + dtime) {
+	//			aorb[2] = aorb[2] + 300.0*km2cm;
+	//			if (a__old[2] > 0) a__old[2] = a__old[2] + 300.0*km2cm;
+	//		}
+		}
 
 		// Begin parallel calculations
 #pragma omp parallel // private(thread_id, nloops)

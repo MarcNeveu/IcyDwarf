@@ -11,39 +11,39 @@ ICY DWARF v17.x INPUT FILE
 |-----------------------------------------------|------------------------------------------------------|
 | Number of grid zones                          | 200                                                  |
 | Thermal simulation time step (yr)             | 50                                                   |
-| Moon-moon interaction speedup factor          | 1000                                                 |
+| Moon-moon interaction speedup factor          | 0                                                    |
 | Total time of thermal simulation (Myr)        | 5000                                                 |
 | Output every (Myr)                            | 10                                                   |
 |-----------------------------------------------|------------------------------------------------------|
 | Host planet parameters |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 |-----------------------------------------------|------------------------------------------------------|
-| Mass (kg) (0 if world is not a moon)          | 5.68e26                                              |
-| Radius (km)                                   | 58232                                                |
-| Tidal Q (initial,today,{0:lin 1:exp 2:1-exp}) | 20000 2452.8 0                                       |
-| Love number k2; zonal gravity harmonics J2, J4| 0.39 16290.71e-6 -935.83e-6                          |
-| Number of moons                               | 5                                                    |
-| Ring mass (kg) (0 if no rings)                | 1.5e19                                               |
-| Ring inner edge (km)                          | 92000                                                |
-| Ring outer edge (km)                          | 140000                                               |
+| Mass (kg) (0 if world is not a moon)          | 0                                                    |
+| Radius (km)                                   | 0                                                    |
+| Tidal Q (initial,today,{0:lin 1:exp 2:1-exp}) | 0 0 0                                                |
+| Love number k2; zonal gravity harmonics J2, J4| 0 0 0                                                |
+| Number of moons                               | 0                                                    |
+| Ring mass (kg) (0 if no rings)                | 0                                                    |
+| Ring inner edge (km)                          | 0                                                    |
+| Ring outer edge (km)                          | 0                                                    |
 |-----------------------------------------------|------------------------------------------------------|
 | Icy world parameters |||||||||||||||||||||||||| World 1  | World 2  | World 3  | World 4  | World 5  |
 |-----------------------------------------------|----------|----------|----------|----------|----------|
-| Radius assuming zero porosity (km)            | 186.5    | 252.0    | 507.7    | 556.5    | 762.2    |
-| Density assuming zero porosity (g cm-3)       | 1.378    | 1.611    | 1.127    | 1.517    | 1.267    |
-| Surface temperature (K)                       | 76       | 68       | 68       | 70       | 72       |
-| Initial temperature (K)                       | 100      | 100      | 100      | 100      | 100      |
-| Time of formation (Myr)                       | 4235     | 3540     | 1500     | 100      | 100      |
-| Ammonia w.r.t. water                          | 0        | 0        | 0        | 0        | 0        |
-| Briny liquid? y=1, n=0                        | 0        | 0        | 0        | 0        | 0        |
-| Initial degree of hydration                   | 1        | 1        | 1        | 1        | 1        |
-| Hydrate/dehydrate?                            | 1        | 1        | 1        | 1        | 1        |
-| Initial porosity volume fraction              | 0.2      | 0.2      | 0.2      | 0.2      | 0.2      |
-| Fraction of rock in fines                     | 0        | 0        | 0        | 0        | 0        |
-| Core ice/liquid water volume fraction         | 0.25     | 0.25     | 0.25     | 0.25     | 0.25     |
-| Start differentiated?                         | 1        | 1        | 1        | 0        | 0        |
-| Initial orbital semi-major axis (km)          | 160000   | 160000   | 160000   | 300000   | 502000   |
-| Initial orbital eccentricity                  | 0.016    | 0.016    | 0.016    | 0.016    | 0.016    |
-| Allow orbit to change?                        | 1        | 1        | 1        | 1        | 1        |
+| Radius assuming zero porosity (km)            | 1187     |          |          |          |          |
+| Density assuming zero porosity (g cm-3)       | 1.860    |          |          |          |          |
+| Surface temperature (K)                       | 40       |          |          |          |          |
+| Initial temperature (K)                       | 100      |          |          |          |          |
+| Time of formation (Myr)                       | 100      |          |          |          |          |
+| Ammonia w.r.t. water                          | 0.02     |          |          |          |          |
+| Briny liquid? y=1, n=0                        | 0        |          |          |          |          |
+| Initial degree of hydration                   | 1        |          |          |          |          |
+| Hydrate/dehydrate?                            | 1        |          |          |          |          |
+| Initial porosity volume fraction              | 0.2      |          |          |          |          |
+| Fraction of rock in fines                     | 0.2      |          |          |          |          |
+| Core ice/liquid water volume fraction         | 0.25     |          |          |          |          |
+| Start differentiated?                         | 0        |          |          |          |          |
+| Initial orbital semi-major axis (km)          | 0        |          |          |          |          |
+| Initial orbital eccentricity                  | 0        |          |          |          |          |
+| Allow orbit to change?                        | 0        |          |          |          |          |
 |-----------------------------------------------|------------------------------------------------------|
 | Dry rock density (g cm-3)                     | 3.8                                                  |
 | Hydrated rock density (g cm-3)                | 2.9                                                  |

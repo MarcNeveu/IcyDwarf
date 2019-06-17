@@ -513,7 +513,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 					fsetpos (f, &pos);
 				}
 			}
-			else if (line_no == 35) { // NH3 content w.r.t H2O
+			else if (line_no == 35) { // Formed from ring?
 				fgetpos (f, &pos);
 				for (j=0;j<nmoons;j++) {
 					fgets(line, tab+j*tab_world, f);
@@ -522,7 +522,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 					fsetpos (f, &pos);
 				}
 			}
-			else if (line_no == 36) { // Briny liquid (0 or 1)
+			else if (line_no == 36) { // NH3 content w.r.t H2O
 				fgetpos (f, &pos);
 				for (j=0;j<nmoons;j++) {
 					fgets(line, tab+j*tab_world, f);
@@ -531,7 +531,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 					fsetpos (f, &pos);
 				}
 			}
-			else if (line_no == 37) { // Initial degree of hydration (0 to 1)
+			else if (line_no == 37) { // Briny liquid (0 or 1)
 				fgetpos (f, &pos);
 				for (j=0;j<nmoons;j++) {
 					fgets(line, tab+j*tab_world, f);
@@ -540,7 +540,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 					fsetpos (f, &pos);
 				}
 			}
-			else if (line_no == 38) { // Allow degree of hydration to change?
+			else if (line_no == 38) { // Initial degree of hydration (0 to 1)
 				fgetpos (f, &pos);
 				for (j=0;j<nmoons;j++) {
 					fgets(line, tab+j*tab_world, f);
@@ -549,7 +549,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 					fsetpos (f, &pos);
 				}
 			}
-			else if (line_no == 39) { // Porosity volume fraction
+			else if (line_no == 39) { // Allow degree of hydration to change?
 				fgetpos (f, &pos);
 				for (j=0;j<nmoons;j++) {
 					fgets(line, tab+j*tab_world, f);
@@ -558,7 +558,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 					fsetpos (f, &pos);
 				}
 			}
-			else if (line_no == 40) { // Fraction of rock in fines
+			else if (line_no == 40) { // Porosity volume fraction
 				fgetpos (f, &pos);
 				for (j=0;j<nmoons;j++) {
 					fgets(line, tab+j*tab_world, f);
@@ -567,7 +567,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 					fsetpos (f, &pos);
 				}
 			}
-			else if (line_no == 41) { // Core ice/liquid water volume fraction
+			else if (line_no == 41) { // Fraction of rock in fines
 				fgetpos (f, &pos);
 				for (j=0;j<nmoons;j++) {
 					fgets(line, tab+j*tab_world, f);
@@ -576,7 +576,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 					fsetpos (f, &pos);
 				}
 			}
-			else if (line_no == 42) { // Start differentiated?
+			else if (line_no == 42) { // Core ice/liquid water volume fraction
 				fgetpos (f, &pos);
 				for (j=0;j<nmoons;j++) {
 					fgets(line, tab+j*tab_world, f);
@@ -585,7 +585,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 					fsetpos (f, &pos);
 				}
 			}
-			else if (line_no == 43) { // Initial orbital semi-major axis (km)
+			else if (line_no == 43) { // Start differentiated?
 				fgetpos (f, &pos);
 				for (j=0;j<nmoons;j++) {
 					fgets(line, tab+j*tab_world, f);
@@ -594,7 +594,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 					fsetpos (f, &pos);
 				}
 			}
-			else if (line_no == 44) { // Initial orbital eccentricity
+			else if (line_no == 44) { // Initial orbital semi-major axis (km)
 				fgetpos (f, &pos);
 				for (j=0;j<nmoons;j++) {
 					fgets(line, tab+j*tab_world, f);
@@ -603,7 +603,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 					fsetpos (f, &pos);
 				}
 			}
-			else if (line_no == 45) { // Allow orbit to change?
+			else if (line_no == 45) { // Initial orbital eccentricity
 				fgetpos (f, &pos);
 				for (j=0;j<nmoons;j++) {
 					fgets(line, tab+j*tab_world, f);
@@ -612,57 +612,66 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 					fsetpos (f, &pos);
 				}
 			}
-			else if (line_no == 47) {
+			else if (line_no == 46) { // Allow orbit to change?
+				fgetpos (f, &pos);
+				for (j=0;j<nmoons;j++) {
+					fgets(line, tab+j*tab_world, f);
+					scan = fscanf(f, "%lg", &input[i]), i++;
+					if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
+					fsetpos (f, &pos);
+				}
+			}
+			else if (line_no == 48) {
 				fgets(line, tab, f);  // Dry rock density (g cm-3)
 				scan = fscanf(f, "%lg", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
-			else if (line_no == 48) {
+			else if (line_no == 49) {
 				fgets(line, tab, f);  // Hydrated rock density (g cm-3)
 				scan = fscanf(f, "%lg", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
-			else if (line_no == 49) {
+			else if (line_no == 50) {
 				fgets(line, tab, f);  // Chondrite type
 				scan = fscanf(f, "%lg", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
-			else if (line_no == 50) {
+			else if (line_no == 51) {
 				fgets(line, tab, f);  // Tidal model? 2: Maxwell, 3: Burgers, 4: Andrade
 				scan = fscanf(f, "%lg", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
-			else if (line_no == 51) {
+			else if (line_no == 52) {
 				fgets(line, tab, f);  // Tides x...? (realistically up to 10, McCarthy & Cooper 2016)
 				scan = fscanf(f, "%lg", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
-			else if (line_no == 55) {
+			else if (line_no == 56) {
 				fgets(line, tab, f);  // Run thermal-orbital evolution code?
 				scan = fscanf(f, "%lg", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
-			else if (line_no == 56) {
+			else if (line_no == 57) {
 				fgets(line, tab, f);  // Generate a table of crack flaw sizes as a function of T and P?
 				scan = fscanf(f, "%lg", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
-			else if (line_no == 57) {
+			else if (line_no == 58) {
 				fgets(line, tab, f);  // Generate tables of water expansivity and compressibility as a function of T and P?
 				scan = fscanf(f, "%lg", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
-			else if (line_no == 58) {
+			else if (line_no == 59) {
 				fgets(line, tab, f);  // Generate tables of log K for crack chemical species as a function of T and P?
 				scan = fscanf(f, "%lg", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
-			else if (line_no == 59) {
+			else if (line_no == 60) {
 				fgets(line, tab, f);  // Run geochemistry code?
 				scan = fscanf(f, "%lg", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
-			else if (line_no == 60) { // Tmin, Tmax, Tstep
+			else if (line_no == 61) { // Tmin, Tmax, Tstep
 				fgets(line, tab, f);
 				for (j=0;j<3;j++) {
 					scan = fscanf(f, "%lg", &input[i]), i++;
@@ -670,7 +679,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 					fgets(line, 1, f);
 				}
 			}
-			else if (line_no == 61) { // Pmin, Pmax, Pstep
+			else if (line_no == 62) { // Pmin, Pmax, Pstep
 				fgets(line, tab, f);
 				for (j=0;j<3;j++) {
 					scan = fscanf(f, "%lg", &input[i]), i++;
@@ -678,7 +687,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 					fgets(line, 1, f);
 				}
 			}
-			else if (line_no == 62) { // pemin, pemax, pestep
+			else if (line_no == 63) { // pemin, pemax, pestep
 				fgets(line, tab, f);
 				for (j=0;j<3;j++) {
 					scan = fscanf(f, "%lg", &input[i]), i++;
@@ -686,7 +695,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 					fgets(line, 1, f);
 				}
 			}
-			else if (line_no == 63) { // WRmin, WRmax, WRstep
+			else if (line_no == 64) { // WRmin, WRmax, WRstep
 				fgets(line, tab, f);
 				for (j=0;j<3;j++) {
 					scan = fscanf(f, "%lg", &input[i]), i++;
@@ -694,57 +703,57 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 					fgets(line, 1, f);
 				}
 			}
-			else if (line_no == 64) {
+			else if (line_no == 65) {
 				fgets(line, tab, f);  // Run compression code?
 				scan = fscanf(f, "%lg", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
-			else if (line_no == 65) {
+			else if (line_no == 66) {
 				fgets(line, tab, f);  // Run cryovolcanism code?
 				scan = fscanf(f, "%lg", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
-			else if (line_no == 66) {
+			else if (line_no == 67) {
 				fgets(line, tab, f);  // After how many Myr?
 				scan = fscanf(f, "%lg", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
-			else if (line_no == 67) {
+			else if (line_no == 68) {
 				fgets(line, tab, f);  // Minimum temperature to run CHNOSZ (K)
 				scan = fscanf(f, "%lg", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
-			else if (line_no == 71) {
+			else if (line_no == 72) {
 				fgets(line, tab, f);  // Account for thermal expansion/contraction mismatch in cracking calculations?
 				scan = fscanf(f, "%lg", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
-			else if (line_no == 72) {
+			else if (line_no == 73) {
 				fgets(line, tab, f);  // Account for pore water pressurization in cracking calculations?
 				scan = fscanf(f, "%lg", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
-			else if (line_no == 73) {
+			else if (line_no == 74) {
 				fgets(line, tab, f);  // Account for volume changes due to hydration and dehydration in cracking calculations?
 				scan = fscanf(f, "%lg", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
-			else if (line_no == 74) {
+			else if (line_no == 75) {
 				fgets(line, tab, f);  // Account for dissolution and precipitation in cracking calculations?
 				scan = fscanf(f, "%lg", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
-			else if (line_no == 75) {
+			else if (line_no == 76) {
 				fgets(line, tab, f);  // Dissolution/precipitation of silica?
 				scan = fscanf(f, "%lg", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
-			else if (line_no == 76) {
+			else if (line_no == 77) {
 				fgets(line, tab, f);  // Dissolution/precipitation of serpentine?
 				scan = fscanf(f, "%lg", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
-			else if (line_no == 77) {
+			else if (line_no == 78) {
 				fgets(line, tab, f);  // Dissolution/precipitation of carbonate (magnesite)?
 				scan = fscanf(f, "%lg", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);

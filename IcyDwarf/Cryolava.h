@@ -345,7 +345,7 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 
 			printf("X_VAP = %g and x_vap = V_gas/V_liq = %g found after %d iterations\n",X_VAP,x_vap[r][2],n_iter);
 		}
-		/* Debug of solution of degree n_species_cryolava polynamial
+		/* Debug of solution of degree n_species_cryolava polynomial
 		 * Case n_species_cryolava = 2, solving the degree 2 polynomial (result should be identical to N-R algorithm):
 		 * double Delta = pow((K_rxn[0]+K_rxn[1])*P_gas*Mliq[t]-Abundances[0]-Abundances[1],2.0) - 4.0*P_gas*Mliq[t]*(K_rxn[0]*K_rxn[1]*P_gas*Mliq[t]-Abundances[0]*K_rxn[1]-Abundances[1]*K_rxn[0]);
 		 * double X1 = ((-K_rxn[0] - K_rxn[1])*P_gas*Mliq[t] + Abundances[0] + Abundances[1] - sqrt(Delta))/(2*P_gas*Mliq[t]);

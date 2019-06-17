@@ -75,6 +75,7 @@ int main(int argc, char *argv[]){
     double Tsurf[nmoons_max];		       // Surface temperature
     double Tinit[nmoons_max];              // Initial temperature
     double tzero[nmoons_max];              // Time of formation (Myr)
+    int fromRing[nmoons_max];              // Formation from rings (to determine if ring mass decreases accordingly upon formation)
     double nh3[nmoons_max];                // Ammonia w.r.t. water
     double salt[nmoons_max];               // Salt w.r.t. water (3/30/2015: binary quantity)
     double Xhydr_init[nmoons_max];         // Initial degree of hydration of the rock (0=fully dry, 1=fully hydrated)
@@ -88,6 +89,7 @@ int main(int argc, char *argv[]){
 	double eorb[nmoons_max];               // Moon orbital eccentricity
 	for (im=0;im<nmoons_max;im++) {
 		tzero[im] = 0.0;
+		fromRing[im] = 0;
 		r_p[im] = 0.0;
 		rho_p[im] = 0.0;
 		Tsurf[im] = 0.0;
@@ -97,10 +99,10 @@ int main(int argc, char *argv[]){
 		Xhydr_init[im] = 0.0;
 		Xfines[im] = 0.0;
 		Xpores[im] = 0.0;
-		hy[im] = 0.0;
+		hy[im] = 0;
 		porosity[im] = 0.0;
-		startdiff[im] = 0.0;
-		orbevol[im] = 0.0;
+		startdiff[im] = 0;
+		orbevol[im] = 0;
 		aorb[im] = 0.0;
 		eorb[im] = 0.0;
 	}
@@ -152,7 +154,7 @@ int main(int argc, char *argv[]){
 
 	printf("\n");
 	printf("-------------------------------------------------------------------\n");
-	printf("IcyDwarf v18.6\n");
+	printf("IcyDwarf v19.6\n");
 	if (v_release == 1) printf("Release mode\n");
 	else if (cmdline == 1) printf("Command line mode\n");
 	printf("-------------------------------------------------------------------\n");
@@ -207,16 +209,18 @@ int main(int argc, char *argv[]){
 	for (im=0;im<nmoons;im++) Tsurf[im] = input[i+im];           // K
 	i=i+nmoons;
 	for (im=0;im<nmoons;im++) Tinit[im] = input[i+im];           // K
-	 i=i+nmoons;
+	i=i+nmoons;
 	for (im=0;im<nmoons;im++) tzero[im] = input[i+im];           // Myr
-	 i=i+nmoons;
+	i=i+nmoons;
+	for (im=0;im<nmoons;im++) fromRing[im] = (int) input[i+im];  // 0 or 1
+	i=i+nmoons;
 	for (im=0;im<nmoons;im++) nh3[im] = input[i+im];             // Fraction w.r.t. H2O
 	i=i+nmoons;
 	for (im=0;im<nmoons;im++) salt[im] = input[i+im];            // 0 or 1
 	i=i+nmoons;
 	for (im=0;im<nmoons;im++) Xhydr_init[im] = input[i+im];
 	i=i+nmoons;
-	for (im=0;im<nmoons;im++) hy[im] = input[i+im];
+	for (im=0;im<nmoons;im++) hy[im] = (int) input[i+im];
 	i=i+nmoons;
 	for (im=0;im<nmoons;im++) porosity[im] = input[i+im];        // vol fraction
 	i=i+nmoons;
@@ -280,7 +284,7 @@ int main(int argc, char *argv[]){
 	printf("|-----------------------------------------------|------------------------------------------------------|\n");
 	printf("| Number of grid zones                          | %d\n", NR);
 	printf("| Thermal-orbital simulation time step (yr)     | %g\n", timestep);
-	printf("| Thermal simulation speedup factor             | %g\n", speedup);
+	printf("| Moon-moon interaction speedup factor          | %g\n", speedup);
 	printf("| Total time of thermal simulation (Myr)        | %g\n", total_time);
 	printf("| Output every (Myr)                            | %g\n", output_every);
 	printf("|-----------------------------------------------|------------------------------------------------------|\n");
@@ -297,7 +301,7 @@ int main(int argc, char *argv[]){
 	printf("|-----------------------------------------------|------------------------------------------------------|\n");
 	printf("| Icy world parameters |||||||||||||||||||||||||| World 1  | World 2  | World 3  | World 4  | World 5  |\n");
 	printf("|-----------------------------------------------|----------|----------|----------|----------|----------|\n");
-	printf("| Radius assuming zero porosity (km)              |");
+	printf("| Radius assuming zero porosity (km)            |");
 	for (im=0;im<nmoons;im++) printf(" %g \t", r_p[im]);
 	printf("\n| Density assuming zero porosity (g cm-3)       |");
 	for (im=0;im<nmoons;im++) printf(" %g \t", rho_p[im]);
@@ -307,6 +311,8 @@ int main(int argc, char *argv[]){
 	for (im=0;im<nmoons;im++) printf(" %g \t", Tinit[im]);
 	printf("\n| Time of formation (Myr)                       |");
 	for (im=0;im<nmoons;im++) printf(" %g \t", tzero[im]);
+	printf("\n| Formed from ring?                             |");
+	for (im=0;im<nmoons;im++) printf(" %d \t", fromRing[im]);
 	printf("\n| Ammonia w.r.t. water                          |");
 	for (im=0;im<nmoons;im++) printf(" %g \t", nh3[im]);
 	printf("\n| Briny liquid? y=1, n=0                        |");
@@ -334,7 +340,7 @@ int main(int argc, char *argv[]){
 	printf("| Hydrated rock density (g cm-3)                | %g\n", rhoHydrRock);
 	printf("| Chondrite type? CI=0 CO=1                     | %d\n", chondr);
 	printf("| Tidal rheology? Maxwell=2 Burgers=3 Andrade=4 | %d\n", tidalmodel);
-	printf("| Tidal heating x...                            | %g\n", tidetimes);
+	printf("| Tidal heating x...?                           | %g\n", tidetimes);
 	printf("|-----------------------------------------------|------------------------------------------------------|\n");
 	printf("| Subroutines ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||\n");
 	printf("|-----------------------------------------------|------------------------------------------------------|\n");
@@ -422,7 +428,7 @@ int main(int argc, char *argv[]){
 		printf("Running thermal evolution code...\n");
 		PlanetSystem(argc, argv, path, warnings, recover, NR, timestep, speedup, tzero, total_time, output_every, nmoons, Mprim, Rprim, Qprimi, Qprimf,
 				Qmode, k2prim, J2prim, J4prim, Mring, aring_out, aring_in, r_p, rho_p, rhoHydrRock, rhoDryRock, nh3, salt, Xhydr, porosity, Xpores,
-				Xfines, Tinit, Tsurf, startdiff, aorb, eorb, tidalmodel, tidetimes, orbevol, hy, chondr, crack_input, crack_species);
+				Xfines, Tinit, Tsurf, fromRing, startdiff, aorb, eorb, tidalmodel, tidetimes, orbevol, hy, chondr, crack_input, crack_species);
 		printf("\n");
 	}
 
