@@ -81,7 +81,21 @@ For each file name, the initial character *x* is *0* for the first/only object a
 - *xCrack_WRratio.txt*: The bulk water:rock mass ratio in the fractured zone (two columns: time in Gyr, water:rock ratio by mass in cracked zone). Outputs are zero if the core is not cracked or if there is no liquid.
 - *xHeats.txt*: Cumulative heats (in erg) produced or consumed by endogenic and exogenic processes. The six columns describe: time (in Gyr), radiogenic heat, gravitational heat, heat of rock hydration, heat consumed in rock dehydration, and heat from tidal dissipation.
 - *xOrbit.txt* (only for simulations with a nonzero host planet mass and in which the moon's orbit is allowed to change): Orbital parameters, comprising 9 columns: time in Gyr, semi-major axis in km, osculating semi-major axis in km (0 if no resonance), eccentricity, product of eccentricity and cosine of resonant angle, product of eccentricity and sine of resonant angle, resonant angle in degrees, total tidal dissipation in W, and equivalent *k2*/*Q* for the moon (Segatz et al. 1988).
-- *xThermal.txt*: There are *n_zones* rows for each grid zone, repeated *total time/timestep* times, i.e. for each time interval. Columns list, respectively: grid zone radius (in km), grid zone temperature (in K); masses (in g) of rock, water ice, ammonia dihydrate (always zero here), liquid water, and liquid ammonia (always zero here) in the grid zone; Nusselt number in the shell (if >1, the shell convects); fraction of amorphous ice in the grid zone (always zero here); thermal conductivity of the grid zone (in W m^-1 K^-1); degree of hydration of the grid zone (0: fully dry; 1: fully hydrated); porosity of the grid zone; integer indicating whether grid zone is fractured, and by which process (Neveu et al. 2015, JGR): 0 = no cracks; 1 = cracks from thermal contraction; 2 = cracks from thermal expansion; 3 = cracks from hydration; 4 = cracks from dehydration; 5 = cracks from pore water dilation; 6 = mineral dissolution widening; 7 = mineral precipitation shrinking; -1 = mineral precipitation clogging; -2: clogging from hydration swelling; tidal heating rate in the grid zone (W).
+- *xThermal.txt*: There are *n_zones* rows for each grid zone, repeated *total time/timestep* times, i.e. for each time interval. Columns list, respectively, in each grid zone: 
+	* grid zone radius (in km), 
+	* grid zone temperature (in K)
+	* mass of rock (in g)
+	* mass of water ice (in g)
+	* mass of ammonia dihydrate (in g)
+	* mass of liquid water (in g)
+	* mass of liquid ammonia (in g)
+	* Nusselt number (if >1, convection)
+	* fraction of amorphous ice (always zero, a legacy of Desch et al. 2009)
+	* thermal conductivity (in W m^-1 K^-1)
+	* degree of hydration (0: fully dry; 1: fully hydrated)
+	* porosity
+	* integer indicating whether the grid zone is fractured, and by which process (Neveu et al. 2015, JGR): 0 = no cracks; 1 = cracks from thermal contraction; 2 = cracks from thermal expansion; 3 = cracks from hydration; 4 = cracks from dehydration; 5 = cracks from pore water dilation; 6 = mineral dissolution widening; 7 = mineral precipitation shrinking; -1 = mineral precipitation clogging; -2: clogging from hydration swelling
+	* tidal heating rate (in W).
 
 In addition, each simulation with a nonzero host planet mass produces following files. Each of the last three files is read in *N_moon* x *N_moon* matrices, where *N_moon* is the number of moons. Matrices are symmetric since they describe interactions between pairs of moons. Element (*x*, *y*) represents interactions between the *x*th and *y*th worlds as specified in *IcyDwarfInput*. The first matrix is output at the first time step. Subsequent matrices are output following a time stamp that corresponds to the time at which pairs of moons get in and out of resonance.
 
