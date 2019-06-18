@@ -100,7 +100,16 @@ Outputs are zero if the core is not cracked or if there is no liquid.
 	* heat of rock hydration
 	* heat consumed in rock dehydration
 	* heat from tidal dissipation.
-- *xOrbit.txt* (only for simulations with a nonzero host planet mass and in which the moon's orbit is allowed to change): Orbital parameters, comprising 9 columns: time in Gyr, semi-major axis in km, osculating semi-major axis in km (0 if no resonance), eccentricity, product of eccentricity and cosine of resonant angle, product of eccentricity and sine of resonant angle, resonant angle in degrees, total tidal dissipation in W, and equivalent *k2*/*Q* for the moon (Segatz et al. 1988).
+- *xOrbit.txt* (only for simulations with a nonzero host planet mass and in which the moon's orbit is allowed to change): Orbital parameters. Columns list:
+	* time (in Gyr)
+	* semi-major axis (in km)
+	* osculating semi-major axis in km (0 if no resonance)
+	* eccentricity
+	* product of eccentricity and cosine of resonant angle
+	* product of eccentricity and sine of resonant angle
+	* resonant angle (in degrees)
+	* total tidal dissipation (in W)
+	* equivalent *k2*/*Q* for the moon (Segatz et al. 1988).
 - *xThermal.txt*: There are *n_zones* rows for each grid zone, repeated *total time/timestep* times, i.e. for each time interval. Columns list, respectively, in each grid zone: 
 	* grid zone radius (in km), 
 	* grid zone temperature (in K)
