@@ -39,7 +39,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 		double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite, int *ircrack, int *ircore, int *irice,
 		int *irdiff, int forced_hydcirc, double **Nu, int tidalmodel, double tidetimes, int im, int moonspawn, double Mprim, double *eorb,
 		double *norb, double *Wtide_tot, int hy, int chondr, double *Heat_radio, double *Heat_grav, double *Heat_serp, double *Heat_dehydr,
-		double *Heat_tide, double ***Stress, double ***Tide_output);
+		double *Heat_tide, double ***Stress, double **TideHeatRate);
 
 int state (char path[1024], int itime, int im, int ir, double E, double *frock, double *fh2os, double *fadhs, double *fh2ol,
 		double *fnh3l, double Xsalt, double *T);
@@ -105,7 +105,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 		double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite, int *ircrack, int *ircore, int *irice,
 		int *irdiff, int forced_hydcirc, double **Nu, int tidalmodel, double tidetimes, int im, int moonspawn, double Mprim, double *eorb,
 		double *norb, double *Wtide_tot, int hy, int chondr, double *Heat_radio, double *Heat_grav, double *Heat_serp, double *Heat_dehydr,
-		double *Heat_tide, double ***Stress, double ***Tide_output) {
+		double *Heat_tide, double ***Stress, double **TideHeatRate) {
 
 	int ir = 0;                          // Grid counter
 	int jr = 0;                          // Secondary grid counter
@@ -386,7 +386,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 	// Tidal heating
 	if (itime > 0 && Mprim && eorb[im] > 0.0 && !moonspawn) {
 		for (ir=0;ir<NR;ir++) {
-			(*Tide_output)[ir][1] = -Qth[ir]/1.0e7; // To output the distribution of tidal heating rates in each layer = -before+after
+			(*TideHeatRate)[ir] = -Qth[ir]/1.0e7; // To output the distribution of tidal heating rates in each layer = -before+after
 			strain((*Pressure)[ir], (*Xhydr)[ir], (*T)[ir], &strain_rate[ir], &Brittle_strength[ir], (*pore)[ir]);
 		}
 		(*Wtide_tot) = 0.0;
@@ -394,7 +394,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 				(*Vrock), dVol, (*r), (*T), (*Xhydr), (*Pressure), (*pore), im);
 		(*Heat_tide) = (*Heat_tide) + (*Wtide_tot);
 
-		for (ir=0;ir<NR;ir++) (*Tide_output)[ir][1] = (*Tide_output)[ir][1] + Qth[ir]/1.0e7;
+		for (ir=0;ir<NR;ir++) (*TideHeatRate)[ir] = (*TideHeatRate)[ir] + Qth[ir]/1.0e7;
 	}
 
 	//-------------------------------------------------------------------
