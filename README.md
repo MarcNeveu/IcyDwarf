@@ -76,10 +76,30 @@ The respective input files are located in the *IcyDwarf/Input* and *IcyDwarfPlot
 
 For each file name, the initial character *x* is *0* for the first/only object and incremented by 1 for each additional object. Thermal and crack output files can be read and displayed by *IcyDwarfPlot*.
 
-- *xCrack_depth.txt*: The cracking depth inside the rocky core over time (two columns: time in Gyr, depth of deepest cracked zone in km)
-- *xCrack_stresses.txt*: Internal stresses accounted for by the core cracking subroutine (Neveu et al. 2015, JGR). There are *n_zones* rows (one per grid zone from the center to the surface) printed at each time interval. Columns list, respectively: grid zone radius (in km), pressure in this grid zone (in MPa), brittle strength of this grid zone (in MPa), critical stress intensity in this grid zone (in MPa m^0.5), stress intensity from thermal expansion mismatch at grain boundaries (in MPa m^0.5), pore fluid pressure (in MPa), net pressure (stress) resulting from rock hydration (in MPa), old crack size prior to hydration/dehydration (in m), old crack size prior to mineral dissolution/precipitation (in m), current crack size (in m). Outputs are zero outside of the core.
-- *xCrack_WRratio.txt*: The bulk water:rock mass ratio in the fractured zone (two columns: time in Gyr, water:rock ratio by mass in cracked zone). Outputs are zero if the core is not cracked or if there is no liquid.
-- *xHeats.txt*: Cumulative heats (in erg) produced or consumed by endogenic and exogenic processes. The six columns describe: time (in Gyr), radiogenic heat, gravitational heat, heat of rock hydration, heat consumed in rock dehydration, and heat from tidal dissipation.
+- *xCrack_stresses.txt*: Internal stresses accounted for by the core cracking subroutine (Neveu et al. 2015, JGR). There are *n_zones* rows (one per grid zone from the center to the surface) printed at each time interval. Columns list, respectively:
+	* grid zone radius (in km)
+	* pressure (in MPa)
+	* brittle strength (in MPa)
+	* critical stress intensity (in MPa m^0.5)
+	* stress intensity from thermal expansion mismatch at grain boundaries (in MPa m^0.5)
+	* pore fluid pressure (in MPa)
+	* net pressure (stress) resulting from rock hydration (in MPa)
+	* old crack size prior to hydration/dehydration (in m)
+	* old crack size prior to mineral dissolution/precipitation (in m)
+	* current crack size (in m).
+Outputs are zero outside of the core.
+- *xCrack_depth_WR.txt*: The bulk water:rock mass ratio in the fractured zone. This file has three columns:
+	* time (in Gyr)
+	* depth below seafloor of the fractured zone (in km)
+	* water:rock ratio by mass in cracked zone.
+Outputs are zero if the core is not cracked or if there is no liquid.
+- *xHeats.txt*: Cumulative heats (in erg) produced or consumed by endogenic and exogenic processes. The six columns describe: 
+	* time (in Gyr)
+	* radiogenic heat
+	* gravitational heat
+	* heat of rock hydration
+	* heat consumed in rock dehydration
+	* heat from tidal dissipation.
 - *xOrbit.txt* (only for simulations with a nonzero host planet mass and in which the moon's orbit is allowed to change): Orbital parameters, comprising 9 columns: time in Gyr, semi-major axis in km, osculating semi-major axis in km (0 if no resonance), eccentricity, product of eccentricity and cosine of resonant angle, product of eccentricity and sine of resonant angle, resonant angle in degrees, total tidal dissipation in W, and equivalent *k2*/*Q* for the moon (Segatz et al. 1988).
 - *xThermal.txt*: There are *n_zones* rows for each grid zone, repeated *total time/timestep* times, i.e. for each time interval. Columns list, respectively, in each grid zone: 
 	* grid zone radius (in km), 
