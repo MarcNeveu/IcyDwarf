@@ -1164,11 +1164,13 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 					}
 				}
 			}
-			// Host planet Q and ring mass
-			Primary[0] = realtime/Gyr2sec;                     // t in Gyr
-			Primary[1] = Qprim;
-			Primary[2] = Mring*gram;
-			append_output(3, Primary, path, "Outputs/Primary.txt");
+			if (isteps == nsteps) {
+				// Host planet Q and ring mass
+				Primary[0] = realtime/Gyr2sec;                     // t in Gyr
+				Primary[1] = Qprim;
+				Primary[2] = Mring*gram;
+				append_output(3, Primary, path, "Outputs/Primary.txt");
+			}
 		}
 
 		if (isteps == nsteps) {
