@@ -1094,41 +1094,40 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
     			}
     		}
     		if (reso_print) {
-    			char *title = (char*)malloc(1024*sizeof(char)); title[0] = '\0';
+    			reso_print = 0;
+    			char *title = (char*)malloc(1024*sizeof(char));
+
+    			title[0] = '\0';
     			if (v_release == 1) strncat(title,path,strlen(path)-16); else if (cmdline == 1) strncat(title,path,strlen(path)-18);
     			strcat(title,"Outputs/Resonances.txt");
     			fout = fopen(title,"a");
     			if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
     			else fprintf(fout,"Time %g Gyr\n", realtime/Gyr2sec);
     			fclose (fout);
-    			free (title);
 
     			for (im=0;im<nmoons;im++) append_output(nmoons, resonance[im], path, "Outputs/Resonances.txt");
-    		}
-    		if (reso_print) {
-    			char *title = (char*)malloc(1024*sizeof(char)); title[0] = '\0';
+
+    			title[0] = '\0';
     			if (v_release == 1) strncat(title,path,strlen(path)-16); else if (cmdline == 1) strncat(title,path,strlen(path)-18);
     			strcat(title,"Outputs/ResAcctFor.txt");
     			fout = fopen(title,"a");
     			if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
     			else fprintf(fout,"Time %g Gyr\n", realtime/Gyr2sec);
     			fclose (fout);
-    			free (title);
 
     			for (im=0;im<nmoons;im++) append_output(nmoons, resAcctFor[im], path, "Outputs/ResAcctFor.txt");
-    		}
-    		if (reso_print) {
-    			char *title = (char*)malloc(1024*sizeof(char)); title[0] = '\0';
+
+    			title[0] = '\0';
     			if (v_release == 1) strncat(title,path,strlen(path)-16); else if (cmdline == 1) strncat(title,path,strlen(path)-18);
     			strcat(title,"Outputs/PCapture.txt");
     			fout = fopen(title,"a");
     			if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
     			else fprintf(fout,"Time %g Gyr\n", realtime/Gyr2sec);
     			fclose (fout);
-    			free (title);
 
     			for (im=0;im<nmoons;im++) append_output(nmoons, PCapture[im], path, "Outputs/PCapture.txt");
-    			reso_print = 0;
+
+    			free (title);
     		}
     	}
 
