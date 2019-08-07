@@ -543,7 +543,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 	}
 
 	//-------------------------------------------------------------------
-	//                           Free mallocs
+	//                           Release memory
 	//-------------------------------------------------------------------
 
 	free (dont_dehydrate);
@@ -641,7 +641,7 @@ int state (char path[1024], int itime, int im, int ir, double E, double *frock, 
     		// to IcyDwarf (e.g., removing "Release/IcyDwarf" characters) and specifying
     		// the right path end.
 
-    		char *title = (char*)malloc(1024*sizeof(char));       // Don't forget to free!
+    		char *title = (char*)malloc(1024*sizeof(char));
     		title[0] = '\0';
     		char im_str[2];
     		im_str[0] = '\0';
@@ -1425,7 +1425,7 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 	}
 
 	//-------------------------------------------------------------------
-	//                             Free mallocs
+	//                           Release memory
 	//-------------------------------------------------------------------
 
 	free (Mrocknew);

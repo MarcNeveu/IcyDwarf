@@ -276,7 +276,7 @@ double *calculate_pressure (double *Pressure, int NR, double *dM, double *Mrock,
 						 fh2ol[ir+1]*rhoH2ol + fadhs[ir+1]*rhoAdhs +
 						 fnh3l[ir+1]*rhoNh3l);
 
-	// Free mallocs
+	// Release memory
 	free(M);
 	free(frock);
 	free(fh2os);
@@ -782,7 +782,7 @@ thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char pa
 	// to IcyDwarf (i.e., removing "Release/IcyDwarf" characters) and specifying
 	// the right path end.
 
-	char *kbo_dat = (char*)malloc(1024);       // Don't forget to free!
+	char *kbo_dat = (char*)malloc(1024);
 	kbo_dat[0] = '\0';
 	if (v_release == 1) strncat(kbo_dat,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(kbo_dat,path,strlen(path)-18);
@@ -828,7 +828,7 @@ double **read_input (int H, int L, double **Input, char path[1024], const char f
 	// to IcyDwarf (i.e., removing "Release/IcyDwarf" characters) and specifying
 	// the right path end.
 
-	char *title = (char*)malloc(1024);       // Don't forget to free!
+	char *title = (char*)malloc(1024);
 	title[0] = '\0';
 	if (v_release == 1) strncat(title,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(title,path,strlen(path)-18);
@@ -866,7 +866,7 @@ int create_output (char path[1024], const char filename[1024]) {
 	// to IcyDwarf (e.g., removing "Release/IcyDwarf" characters) and specifying
 	// the right path end.
 
-	char *title = (char*)malloc(1024*sizeof(char));       // Don't forget to free!
+	char *title = (char*)malloc(1024*sizeof(char));
 	title[0] = '\0';
 	if (v_release == 1) strncat(title,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(title,path,strlen(path)-18);
@@ -896,7 +896,7 @@ int write_output (int H, int L, double **Output, char path[1024], const char fil
 	// to IcyDwarf (e.g., removing "Release/IcyDwarf" characters) and specifying
 	// the right path end.
 
-	char *title = (char*)malloc(1024*sizeof(char));       // Don't forget to free!
+	char *title = (char*)malloc(1024*sizeof(char));
 	title[0] = '\0';
 	if (v_release == 1) strncat(title,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(title,path,strlen(path)-18);
@@ -933,7 +933,7 @@ int append_output (int L, double *Output, char path[1024], const char filename[1
 	// to IcyDwarf (e.g., removing "Release/IcyDwarf" characters) and specifying
 	// the right path end.
 
-	char *title = (char*)malloc(1024*sizeof(char));       // Don't forget to free!
+	char *title = (char*)malloc(1024*sizeof(char));
 	title[0] = '\0';
 	if (v_release == 1) strncat(title,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(title,path,strlen(path)-18);

@@ -335,7 +335,7 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 			x_vap[r][1] = P_gas/bar;                                // P_gas in bar
 			x_vap[r][2] = X_VAP*rhoH2ol*R_G*T/bar;                  // One of up to n_species real solutions possible.
 																	// The only positive one, it turns out. (They are all close to -K_rxn[i] b/c A_i << P*Mliq, so they are usually negative.)
-																	// Don't forget that X_VAP is in mol kg-1 bar-1, so we need to divide by bar to get Pa-1, the unit consistent with rho*R_G*T.
+																	// X_VAP is in mol kg-1 bar-1, so we need to divide by bar to get Pa-1, the unit consistent with rho*R_G*T.
 			x_vap[r][3] = rhoH2ol/(1.0+x_vap[r][2]);                // Foam density in kg m-3, assuming massless gas
 			x_vap[r][4] = -(x_vap[r][3]-rhoH2os)*2.0 * G*Minf*gram/(thoutput[r+r_seafloor][t].radius*thoutput[r+r_seafloor][t].radius*km*km)
 					      * pow(r*r_p/NR*km,1.5)/sqrt(PI_greek);    // Stress intensity K_I at crack tip (Pa m^0.5)
@@ -377,7 +377,7 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 	write_output (6, NR-r_seafloor, x_vap, path, "Outputs/Cryolava_xvap.txt");
 
 	//-------------------------------------------------------------------
-	//                           Free mallocs
+	//                           Release memory
 	//-------------------------------------------------------------------
 
 	for (r=0;r<NR-r_seafloor;r++) {

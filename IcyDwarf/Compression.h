@@ -36,7 +36,7 @@ int compression(int NR, int NT, thermalout **thoutput, int t, int dbincore, int 
 		char path[1024], double rhoHydr, double rhoDry, double *Xhydr) {
 
 	//-------------------------------------------------------------------
-	// Declarations and initializations
+	//                 Declarations and initializations
 	//-------------------------------------------------------------------
 
 	FILE *fout;
@@ -190,7 +190,7 @@ int compression(int NR, int NT, thermalout **thoutput, int t, int dbincore, int 
 	}
 
 	//-------------------------------------------------------------------
-	// Setup
+	//                              Setup
 	//-------------------------------------------------------------------
 
 	// Load planetary materials database
@@ -359,14 +359,14 @@ int compression(int NR, int NT, thermalout **thoutput, int t, int dbincore, int 
 	rhoavg = 0.75*Mp/PI_greek/(Rp*Rp*Rp);
 
 	//-------------------------------------------------------------------
-	// Output
+	//                               Output
 	//-------------------------------------------------------------------
 
 	// Turn working directory into full file path by moving up two directories
 	// to IcyDwarf (e.g., removing "Release/IcyDwarf" characters) and specifying
 	// the right path end.
 
-	char *title = (char*)malloc(1024*sizeof(char));       // Don't forget to free!
+	char *title = (char*)malloc(1024*sizeof(char));
 	title[0] = '\0';
 	if (v_release == 1) strncat(title,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(title,path,strlen(path)-18);
@@ -427,7 +427,7 @@ int compression(int NR, int NT, thermalout **thoutput, int t, int dbincore, int 
 	free (title);
 
 	//-------------------------------------------------------------------
-	// Free mallocs and exit
+	//                           Release memory
 	//-------------------------------------------------------------------
 
 	free(r);
@@ -476,7 +476,7 @@ int planmat(int ncomp, int **dbindex, int **eos, double **rho0, double **c, doub
 	int i = 0;
 	char str[1024];
 
-	char *planmatdb = (char*)malloc(1024);       // Don't forget to free!
+	char *planmatdb = (char*)malloc(1024);
 	planmatdb[0] = '\0';
 	if (v_release == 1) strncat(planmatdb,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(planmatdb,path,strlen(path)-18);

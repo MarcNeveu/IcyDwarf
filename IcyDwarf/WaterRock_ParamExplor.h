@@ -202,7 +202,7 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 		}
 	}
 
-	// Free mallocs
+	// Release memory
 	for(i=0;i<npeIter+1;i++) {
 		free(simdata[i]);
 	}

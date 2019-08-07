@@ -141,21 +141,14 @@ int aTP(char path[1024], int warnings) {
 	write_output (2, int_size, integral, path, "Data/Crack_integral.txt");
 	write_output (sizeaTP, sizeaTP, aTP, path, "Data/Crack_aTP.txt");
 
-	// Free mallocs
-
+	// Release memory
 	for (i=0;i<int_size;i++) {
 		free (integral[i]);
-	}
-	free (integral);
-
-	for (i=0;i<int_size;i++) {
 		free (K_I[i]);
 	}
+	for (t=0;t<sizeaTP;t++) free (aTP[t]);
+	free (integral);
 	free (K_I);
-
-	for (t=0;t<sizeaTP;t++) {
-		free (aTP[t]);
-	}
 	free (aTP);
 
 	printf("\n Outputs successfully generated in IcyDwarf/Data/ directory:\n");
@@ -222,7 +215,7 @@ int Crack_water_CHNOSZ(int argc, char *argv[], char path[1024], int warnings) {
 	write_output (sizeaTP, sizeaTP, alpha, path, "Data/Crack_alpha.txt");
 	write_output (sizeaTP, sizeaTP, beta, path, "Data/Crack_beta.txt");
 
-	// Free mallocs
+	// Release memory
 	for (t=0;t<sizeaTP;t++) {
 		free(alpha[t]);
 		free(beta[t]);
@@ -309,7 +302,7 @@ int Crack_species_CHNOSZ(int argc, char *argv[], char path[1024], int warnings) 
 	write_output (sizeaTP, sizeaTP, chrysotile, path, "Data/Crack_chrysotile.txt");
 	write_output (sizeaTP, sizeaTP, magnesite, path, "Data/Crack_magnesite.txt");
 
-	// Free mallocs
+	// Release memory
 	for (t=0;t<sizeaTP;t++) {
 		free(silica[t]);
 		free(chrysotile[t]);

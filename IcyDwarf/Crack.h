@@ -92,7 +92,7 @@ int crack(double T, double T_old, double Pressure, double *Crack,
 	//   1    serpentine (chrysotile)
 	//   2    carbonate (magnesite)
 	// -----  ------------------------
-	// No mallocs here, because we keep n_species small
+	// No memory allocations here, because we keep n_species small
 	int itermax = 100;                                           // Max number of iterations for diss/prec
 	double chem_time = 1.0e6;                                    // Time step factor for dissolution/precipitation
 	double R_diss[n_species_crack];                              // Dissolution/precipitation rate in mol m-3 s-1

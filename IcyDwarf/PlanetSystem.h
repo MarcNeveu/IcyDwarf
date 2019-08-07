@@ -983,7 +983,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 			if (Qprim <= 0.0) {
 				// Turn working directory into full file path by moving up two directories to IcyDwarf (e.g., removing
 				// "Release/IcyDwarf" characters) and specifying the right path end.
-				char *title = (char*)malloc(1024*sizeof(char)); // Don't forget to free!
+				char *title = (char*)malloc(1024*sizeof(char));
 				title[0] = '\0';
 				if (v_release == 1) strncat(title,path,strlen(path)-16);
 				else if (cmdline == 1) strncat(title,path,strlen(path)-18);
@@ -1229,7 +1229,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
     }
 
 	//-------------------------------------------------------------------
-	//                           Free mallocs
+	//                           Release memory
 	//-------------------------------------------------------------------
 
 	for (i=0;i<int_size;i++) free (integral[i]);
@@ -1634,7 +1634,7 @@ int recov(int argc, char *argv[], char path[1024], int nmoons, char outputpath[n
 	}
 
 	//-------------------------------------------------------------------
-	//                           Free mallocs
+	//                           Release memory
 	//-------------------------------------------------------------------
 
 	for (im=0;im<nmoons;im++) {
