@@ -571,6 +571,8 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 int state (char path[1024], int itime, int im, int ir, double E, double *frock, double *fh2os, double *fadhs, double *fh2ol,
 		double *fnh3l, double Xsalt, double *T) {
 
+	FILE *fout;
+
 	int iter = 0;
 	double X = 0.0;         // Total solid (dihydrate) + liquid ammonia fraction
 	double Tlo = 0.0;       // Low temperature limit (K) for equation of state of material
@@ -634,8 +636,6 @@ int state (char path[1024], int itime, int im, int ir, double E, double *frock, 
     		printf("Thermal: Tlo=%g K, Thi=%g K, Tmd=%g K\n", Tlo, Thi, Tmd);
     		printf("Thermal: Elo=%g, Ehi=%g, Emd=%g, E=%g\n", Elo, Ehi, Emd, E);
     		printf("Thermal: frock=%g, gh2os=%g, gadhs=%g, gh2ol=%g, gnh3l=%g, X=%g\n", (*frock), gh2os, gadhs, gh2ol, gnh3l, X);
-
-    		FILE *fout;
 
     		// Turn working directory into full file path by moving up two directories
     		// to IcyDwarf (e.g., removing "Release/IcyDwarf" characters) and specifying

@@ -53,6 +53,8 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 		double **Wtide_tot, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim,
 		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity, double elapsed) {
 
+	FILE *fout;
+
 	int i = 0;
 	int l = 0;
 
@@ -391,10 +393,9 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 			// If eccentricity < 0 or > 1, exit
 			if (e[0] < 0.0 || e[0] > 1.0 || e[1] < 0.0 || e[1] > 1.0) {
 				printf("Time %.3g Myr, eccentricity out of bounds. Stopping. e1=%g, e2=%g\n", (double)l*dtime/Myr2sec, e[0], e[1]);
-				FILE *fout;
 				// Turn working directory into full file path by moving up two directories to IcyDwarf (e.g., removing
 				// "Release/IcyDwarf" characters) and specifying the right path end.
-				char *title = (char*)malloc(1024*sizeof(char)); // Don't forget to free!
+				char *title = (char*)malloc(1024*sizeof(char));
 				title[0] = '\0';
 				if (v_release == 1) strncat(title,path,strlen(path)-16);
 				else if (cmdline == 1) strncat(title,path,strlen(path)-18);
@@ -464,10 +465,9 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 
 		if (-dtime*(d_aorb_pl + d_aorb_ring) < (*aorb)[im]) (*aorb)[im] = (*aorb)[im] + dtime*(d_aorb_pl+d_aorb_ring);
 		else {
-			FILE *fout;
 			// Turn working directory into full file path by moving up two directories to IcyDwarf (e.g., removing
 			// "Release/IcyDwarf" characters) and specifying the right path end.
-			char *title = (char*)malloc(1024*sizeof(char)); title[0] = '\0'; // Don't forget to free!
+			char *title = (char*)malloc(1024*sizeof(char)); title[0] = '\0';
 			char im_str[2]; im_str[0] = '\0';
 			if (v_release == 1) strncat(title,path,strlen(path)-16); else if (cmdline == 1) strncat(title,path,strlen(path)-18);
 			strcat(title,"Outputs/"); sprintf(im_str, "%d", im); strcat(title, im_str); strcat(title,"Orbit.txt");

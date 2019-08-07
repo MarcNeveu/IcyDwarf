@@ -43,6 +43,8 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 	//                 Declarations and initializations
 	//-------------------------------------------------------------------
 
+	FILE *fout;
+
 //	int thread_id;
 //	int nloops = 0;
 	int i = 0;
@@ -684,7 +686,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 
     tzero_min = tzero[0];
     for (im=0;im<nmoons;im++) {
-    		if (tzero[im] < tzero_min) tzero_min = tzero[im];
+    	if (tzero[im] < tzero_min) tzero_min = tzero[im];
     }
 
 	switch(Qmode) {
@@ -979,7 +981,6 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 				break;
 			}
 			if (Qprim <= 0.0) {
-				FILE *fout;
 				// Turn working directory into full file path by moving up two directories to IcyDwarf (e.g., removing
 				// "Release/IcyDwarf" characters) and specifying the right path end.
 				char *title = (char*)malloc(1024*sizeof(char)); // Don't forget to free!
@@ -1093,7 +1094,6 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
     			}
     		}
     		if (reso_print) {
-    			FILE *fout;
     			char *title = (char*)malloc(1024*sizeof(char)); title[0] = '\0';
     			if (v_release == 1) strncat(title,path,strlen(path)-16); else if (cmdline == 1) strncat(title,path,strlen(path)-18);
     			strcat(title,"Outputs/Resonances.txt");
@@ -1106,7 +1106,6 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
     			for (im=0;im<nmoons;im++) append_output(nmoons, resonance[im], path, "Outputs/Resonances.txt");
     		}
     		if (reso_print) {
-    			FILE *fout;
     			char *title = (char*)malloc(1024*sizeof(char)); title[0] = '\0';
     			if (v_release == 1) strncat(title,path,strlen(path)-16); else if (cmdline == 1) strncat(title,path,strlen(path)-18);
     			strcat(title,"Outputs/ResAcctFor.txt");
@@ -1119,7 +1118,6 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
     			for (im=0;im<nmoons;im++) append_output(nmoons, resAcctFor[im], path, "Outputs/ResAcctFor.txt");
     		}
     		if (reso_print) {
-    			FILE *fout;
     			char *title = (char*)malloc(1024*sizeof(char)); title[0] = '\0';
     			if (v_release == 1) strncat(title,path,strlen(path)-16); else if (cmdline == 1) strncat(title,path,strlen(path)-18);
     			strcat(title,"Outputs/PCapture.txt");
@@ -1282,7 +1280,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 		free (resAcctFor[im]);
 		free (resAcctFor_old[im]);
 		free (PCapture[im]);
-		for (i=0;i<12;i++) free (Stress[im][i]);
+		for (i=0;i<ncrkstrs;i++) free (Stress[im][i]);
 		for (ir=0;ir<NR;ir++) free (Act[im][ir]);
 		free (Stress[im]);
 		free (Act[im]);

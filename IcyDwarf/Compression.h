@@ -39,6 +39,8 @@ int compression(int NR, int NT, thermalout **thoutput, int t, int dbincore, int 
 	// Declarations and initializations
 	//-------------------------------------------------------------------
 
+	FILE *fout;
+
 	// Planetary parameters
 	double Mp = 0.0; // Planet mass
 	double Mincore = 0.0; // Inner core mass
@@ -359,8 +361,6 @@ int compression(int NR, int NT, thermalout **thoutput, int t, int dbincore, int 
 	//-------------------------------------------------------------------
 	// Output
 	//-------------------------------------------------------------------
-
-	FILE *fout;
 
 	// Turn working directory into full file path by moving up two directories
 	// to IcyDwarf (e.g., removing "Release/IcyDwarf" characters) and specifying
