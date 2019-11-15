@@ -1,4 +1,4 @@
-ICY DWARF v19.x INPUT FILE - Like Sys44
+ICY DWARF v19.x INPUT FILE - Saturn system as moon system template
 
 1 for Yes, 0 for No
 --------------------------------------------------------------------------------------------------------
@@ -45,6 +45,7 @@ ICY DWARF v19.x INPUT FILE - Like Sys44
 | Initial orbital semi-major axis (km)          | 160000   | 160000   | 270000   | 358000   | 523000   |
 | Initial orbital eccentricity                  | 0.016    | 0.016    | 0.016    | 0.016    | 0.016    |
 | Allow orbit to change?                        | 1        | 1        | 1        | 1        | 1        |
+| Retrograde orbit?                             | 0        | 0        | 0        | 0        | 0        |
 |-----------------------------------------------|------------------------------------------------------|
 | Dry rock density (g cm-3)                     | 3.8                                                  |
 | Hydrated rock density (g cm-3)                | 2.9                                                  |

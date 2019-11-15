@@ -87,6 +87,7 @@ int main(int argc, char *argv[]){
 	int orbevol[nmoons_max];               // Orbital evolution?
     double aorb[nmoons_max];               // Moon orbital semi-major axis (km)
 	double eorb[nmoons_max];               // Moon orbital eccentricity
+	int retrograde[nmoons_max];            // 0 if prograde orbit, 1 if retrograde orbit
 	for (im=0;im<nmoons_max;im++) {
 		tzero[im] = 0.0;
 		fromRing[im] = 0;
@@ -105,6 +106,7 @@ int main(int argc, char *argv[]){
 		orbevol[im] = 0;
 		aorb[im] = 0.0;
 		eorb[im] = 0.0;
+		retrograde[im] = 0;
 	}
 
     // Call specific subroutines
@@ -154,7 +156,7 @@ int main(int argc, char *argv[]){
 
 	printf("\n");
 	printf("-------------------------------------------------------------------\n");
-	printf("IcyDwarf v19.8\n");
+	printf("IcyDwarf v19.11\n");
 	if (v_release == 1) printf("Release mode\n");
 	else if (cmdline == 1) printf("Command line mode\n");
 	printf("-------------------------------------------------------------------\n");
@@ -235,6 +237,8 @@ int main(int argc, char *argv[]){
 	for (im=0;im<nmoons;im++) eorb[im] = input[i+im];
 	i=i+nmoons;
 	for (im=0;im<nmoons;im++) orbevol[im] = (int) input[i+im];
+	i=i+nmoons;
+	for (im=0;im<nmoons;im++) retrograde[im] = (int) input[i+im];
 	i=i+nmoons;
 	//-----------------------------
 	rhoDryRock = input[i]; i++;        // g cm-3
@@ -335,6 +339,8 @@ int main(int argc, char *argv[]){
 	for (im=0;im<nmoons;im++) printf(" %g \t", eorb[im]);
 	printf("\n| Allow orbit to change?                        |");
 	for (im=0;im<nmoons;im++) printf(" %d \t", orbevol[im]);
+	printf("\n| Retrograde orbit?                             |");
+	for (im=0;im<nmoons;im++) printf(" %d \t", retrograde[im]);
 	printf("\n|-----------------------------------------------|------------------------------------------------------|\n");
 	printf("| Dry rock density (g cm-3)                     | %g\n", rhoDryRock);
 	printf("| Hydrated rock density (g cm-3)                | %g\n", rhoHydrRock);
@@ -428,7 +434,7 @@ int main(int argc, char *argv[]){
 		printf("Running thermal evolution code...\n");
 		PlanetSystem(argc, argv, path, warnings, recover, NR, timestep, speedup, tzero, total_time, output_every, nmoons, Mprim, Rprim, Qprimi, Qprimf,
 				Qmode, k2prim, J2prim, J4prim, Mring, aring_out, aring_in, r_p, rho_p, rhoHydrRock, rhoDryRock, nh3, salt, Xhydr, porosity, Xpores,
-				Xfines, Tinit, Tsurf, fromRing, startdiff, aorb, eorb, tidalmodel, tidetimes, orbevol, hy, chondr, crack_input, crack_species);
+				Xfines, Tinit, Tsurf, fromRing, startdiff, aorb, eorb, tidalmodel, tidetimes, orbevol, retrograde, hy, chondr, crack_input, crack_species);
 		printf("\n");
 	}
 

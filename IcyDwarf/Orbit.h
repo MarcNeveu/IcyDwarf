@@ -19,7 +19,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 		double **h_old, double **k_old, double **a__old,
 		double **Cs_ee_old, double **Cs_eep_old, double **Cr_e_old, double **Cr_ep_old, double **Cr_ee_old, double **Cr_eep_old, double **Cr_epep_old,
 		double **Wtide_tot, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim,
-		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity, double elapsed);
+		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity, double elapsed, int* retrograde);
 
 int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, double *a__old, double *eorb, double *m_p, double Mprim, double Rprim, double k2prim, double Qprim,
 		double ***resonance, double ***PCapture, double *tzero, double realtime, double aring_out, double **resAcctFor);
@@ -51,7 +51,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 		double **h_old, double **k_old, double **a__old,
 		double **Cs_ee_old, double **Cs_eep_old, double **Cr_e_old, double **Cr_ep_old, double **Cr_ee_old, double **Cr_eep_old, double **Cr_epep_old,
 		double **Wtide_tot, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim,
-		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity, double elapsed) {
+		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity, double elapsed, int* retrograde) {
 
 	FILE *fout;
 
@@ -71,6 +71,11 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 	double d_aorb_pl = 0.0;              // Change rate in moon orbital semi-major axis due to interactions with primary (cm s-1)
 	double d_aorb_ring = 0.0;            // Change rate in moon orbital semi-major axis due to interactions with ring (cm s-1)
 	double ringTorque = 0.0;             // Torque exerted by ring on moon (g cm2 s-2)
+	double prim_sign[nmoons];            // Sign of primary term in secular da/dt equation (positive i.e. +1 if prograde moon; negative i.e. -1 if retrograde moon)
+	for (i=0;i<nmoons;i++) {
+		if (retrograde[i]) prim_sign[i] = -1.0;
+		else prim_sign[i] = 1.0;         // Assuming primary spins faster than secondary orbits, otherwise prim_sign should be -1 even if prograde
+	}
 
 	// Calculate tidal dissipation in the host planet (k2prim & Qprim)
 //	tideprim(Rprim, Mprim, omega_tide, &k2prim, &Qprim);
@@ -90,7 +95,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 			j = resAcctFor[im][i] + 1.0;
 
 			int nv = 6;
-			int nparamorb = 21;
+			int nparamorb = 23;
 
 			double *ystart = (double*) malloc((nv)*sizeof(double)); // Input vector for integration
 			if (ystart == NULL) printf("Orbit: Not enough memory to create ystart[nv]\n");
@@ -290,6 +295,9 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 
 			param[20] = speedup;
 
+			param[21] = prim_sign[0];
+			param[22] = prim_sign[1];
+
 			// Integration by Euler method
 //			double dydx[nv];
 //			for (k=0;k<nv;k++) dydx[k] = 0.0;
@@ -432,8 +440,9 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 		d_eorb = - (*Wtide_tot)[im]*(*aorb)[im] / (Gcgs*Mprim*m_p[im]*(*eorb)[im])                                // Dissipation inside moon, decreases its eccentricity (equation 4.170 of Murray & Dermott 1999)
 				 + 57.0/8.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*(*eorb)[im]; // Dissipation inside planet, increases moon's eccentricity
 
-		d_aorb_pl = - 2.0*(*Wtide_tot)[im]*(*aorb)[im]*(*aorb)[im] / (Gcgs*Mprim*m_p[im])         // Dissipation inside moon, shrinks its orbit
-				  + 3.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-5.5); // Dissipation inside planet, expands moon's orbit
+		// Assumption in semimajor axis evolution is that planet spins faster than the moon orbits. Otherwise, prim_sign < 0 irrespective of retrograde or prograde motion.
+		d_aorb_pl = - 2.0*(*Wtide_tot)[im]*(*aorb)[im]*(*aorb)[im] / (Gcgs*Mprim*m_p[im])                         // Dissipation inside moon, shrinks its orbit
+				  + prim_sign[im]*3.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-5.5);   // Dissipation inside planet, expands moon's orbit
 
 		//-------------------------------------------------------------------
 		// Changes in semi-major axes due to resonances excited in the rings
@@ -801,6 +810,7 @@ int MMR_AvgHam (double x, double y[], double dydx[], double param[]) {
 	double k2Q[2];       // k2/Q of moons
 	double m[2];         // Moon mass
 	double r[2];         // Moon radius
+	double prim_sign[2]; // 1 if orbit prograde, -1 if orbit retrograde
 
 	m[0] = param[0];
 	r[0] = param[1];
@@ -852,6 +862,10 @@ int MMR_AvgHam (double x, double y[], double dydx[], double param[]) {
 	double Cr_e = param[15]; double Cr_ep = param[16]; double Cr_ee = param[17]; double Cr_eep = param[18]; double Cr_epep = param[19]; // More coefficients
 
 	double mw_speedup = param[20]; // Speedup factor for tidal damping
+
+	prim_sign[0] = param[21]; // Sign of semi-major axis tidal evolution due to dissipation in primary, 1 if prograde orbit with longer period than planet spin period,
+	                                 // -1 if retrograde or prograde orbit with shorter period than planet spin period
+	prim_sign[1] = param[22];
 
 	// Initialize parameters
 	for (im=0;im<2;im++) {
@@ -914,7 +928,7 @@ int MMR_AvgHam (double x, double y[], double dydx[], double param[]) {
 		D[im] = k2Q[im] / (k2prim/Qprim) * pow(Mprim/m[im],2) * pow(r[im]/Rprim,5);
 		dk_tide[im] = -3.5*c[im]*D[im]*pow(a[im],-6.5)*k[im]*mw_speedup;
 		dh_tide[im] = -3.5*c[im]*D[im]*pow(a[im],-6.5)*h[im]*mw_speedup;
-		da_tide[im] = c[im] * (1.0-7.0*D[im]*e2[im]) * pow(a[im],-5.5)*mw_speedup;
+		da_tide[im] = c[im] * (prim_sign[im]-7.0*D[im]*e2[im]) * pow(a[im],-5.5)*mw_speedup;
 	}
 
 	// Equations of motion

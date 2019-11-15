@@ -17,7 +17,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 		double dtoutput, int nmoons, double Mprim, double Rprim, double Qprimi, double Qprimf, int Qmode, double k2prim, double J2prim, double J4prim,
 		double Mring_init, double aring_out, double aring_in, double *r_p, double *rho_p, double rhoHydr, double rhoDry, double *Xp, double *Xsalt,
 		double **Xhydr, double *porosity, double *Xpores, double *Xfines, double *Tinit, double *Tsurf, int *fromRing, int *startdiff,
-		double *aorb_init, double *eorb_init, int tidalmodel, double tidetimes, int *orbevol, int *hy, int chondr, int *crack_input,
+		double *aorb_init, double *eorb_init, int tidalmodel, double tidetimes, int *orbevol, int* retrograde, int *hy, int chondr, int *crack_input,
 		int *crack_species);
 
 int recov(int argc, char *argv[], char path[1024], int nmoons, char outputpath[nmoons][1024], int NR, int ntherm, int norbit, int ncrkstrs, double ****Stress, double *Xp,
@@ -36,7 +36,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 		double dtoutput, int nmoons, double Mprim, double Rprim, double Qprimi, double Qprimf, int Qmode, double k2prim, double J2prim, double J4prim,
 		double Mring_init, double aring_out, double aring_in, double *r_p, double *rho_p, double rhoHydr, double rhoDry, double *Xp, double *Xsalt,
 		double **Xhydr, double *porosity, double *Xpores, double *Xfines, double *Tinit, double *Tsurf, int *fromRing, int *startdiff,
-		double *aorb_init, double *eorb_init, int tidalmodel, double tidetimes, int *orbevol, int *hy, int chondr, int *crack_input,
+		double *aorb_init, double *eorb_init, int tidalmodel, double tidetimes, int *orbevol, int* retrograde, int *hy, int chondr, int *crack_input,
 		int *crack_species) {
 
 	//-------------------------------------------------------------------
@@ -1048,7 +1048,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 					Orbit (argc, argv, path, im, dtime, speedup, itime, nmoons, m_p, r_p, resAcctFor, &aorb, &eorb, norb,
 							lambda, omega, &h_old, &k_old, &a__old, &Cs_ee_old, &Cs_eep_old, &Cr_e_old, &Cr_ep_old, &Cr_ee_old, &Cr_eep_old, &Cr_epep_old,
 							&Wtide_tot, Mprim, Rprim, J2prim, J4prim, k2prim, Qprim,
-							aring_out, aring_in, alpha_Lind, ringSurfaceDensity, realtime-tzero_min);
+							aring_out, aring_in, alpha_Lind, ringSurfaceDensity, realtime-tzero_min, retrograde);
 				}
 //				++nloops;
 			}
