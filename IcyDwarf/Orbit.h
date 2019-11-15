@@ -116,6 +116,8 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 			double r[2];         // Moon radius
 			double W[2];         // Moon tidal dissipation
 
+			double psgn[2];      // Sign of primary term in da/dt
+
 			double h[2];         // State variable
 			double k[2];         // State variable
 			double a_[2];        // Moon semi-major axis (osculating)
@@ -140,6 +142,8 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 				m[l] = 0.0;
 				r[l] = 0.0;
 				W[l] = 0.0;
+
+				psgn[l] = 0.0;
 
 				h[l] = 0.0;
 				k[l] = 0.0;
@@ -174,6 +178,9 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 					m[1] = m_p[i];
 					r[1] = r_p[i];
 					W[1] = (*Wtide_tot)[i];
+
+					psgn[0] = prim_sign[im];
+					psgn[1] = prim_sign[i];
 				}
 				else {
 					h[0] = (*h_old)[i];
@@ -189,6 +196,9 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 					m[1] = m_p[im];
 					r[1] = r_p[im];
 					W[1] = (*Wtide_tot)[im];
+
+					psgn[0] = prim_sign[i];
+					psgn[1] = prim_sign[im];
 				}
 				// Convert tidal heating rate W to k2/Q (Segatz et al. (1988); Henning & Hurford (2014))
 				for (l=0;l<2;l++) W[l] = W[l]/(11.5*pow(r[l],5)*pow(Gcgs*Mprim/pow(a_[l],3), 2.5)*(h[l]*h[l]+k[l]*k[l])/Gcgs);
@@ -224,6 +234,9 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 					m[1] = m_p[i];
 					r[1] = r_p[i];
 					W[1] = (*Wtide_tot)[i];
+
+					psgn[0] = prim_sign[im];
+					psgn[1] = prim_sign[i];
 				}
 				else {
 					a[0] = (*aorb)[i];
@@ -241,6 +254,9 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 					m[1] = m_p[im];
 					r[1] = r_p[im];
 					W[1] = (*Wtide_tot)[im];
+
+					psgn[0] = prim_sign[i];
+					psgn[1] = prim_sign[im];
 				}
 				// Convert tidal heating rate W to k2/Q (Segatz et al. (1988); Henning & Hurford (2014))
 				for (l=0;l<2;l++) W[l] = W[l]/(11.5*pow(r[l],5)*pow(Gcgs*Mprim/pow(a[l],3), 2.5)*pow(e[l],2)/Gcgs); // k2/Q, Segatz et al. (1988); Henning & Hurford (2014)
@@ -295,8 +311,8 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 
 			param[20] = speedup;
 
-			param[21] = prim_sign[0];
-			param[22] = prim_sign[1];
+			param[21] = psgn[0];
+			param[22] = psgn[1];
 
 			// Integration by Euler method
 //			double dydx[nv];
