@@ -249,8 +249,6 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 				(*Crack_size)[ir] = 0.0;
 				for (i=0;i<n_species_crack;i++) (*Act)[ir][i] = 0.0;
 			}
-			(*Stress)[ir][10] = (*fracOpen)[ir];
-			(*Stress)[ir][11] = (*Crack)[ir];
 		}
 	}
 
@@ -412,7 +410,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 	}
 
 	//-------------------------------------------------------------------
-	//       Convection in cracked layer (hydrothermal circulation)
+	//     Convection in porous rock layer (hydrothermal circulation)
 	//-------------------------------------------------------------------
 
 	for (ir=0;ir<NR;ir++) (*circ)[ir] = 0;

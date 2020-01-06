@@ -86,7 +86,9 @@ For each file name, the initial character *x* is *0* for the first/only object a
 	* net pressure (stress) resulting from rock hydration (in MPa)
 	* old crack size prior to hydration/dehydration (in m)
 	* old crack size prior to mineral dissolution/precipitation (in m)
-	* current crack size (in m).
+	* current crack size (in m)
+	* fraction of the crack that hasn't healed (i.e. 1 minus the integrated strain rate over time since cracking)
+	* integer indicating whether the grid zone is fractured, and by which process (Neveu et al. 2015, JGR): 0 = no cracks; 1 = cracks from thermal contraction; 2 = cracks from thermal expansion; 3 = cracks from hydration; 4 = cracks from dehydration; 5 = cracks from pore water dilation; 6 = mineral dissolution widening; 7 = mineral precipitation shrinking; -1 = mineral precipitation clogging; -2: clogging from hydration swelling.
 Outputs are zero outside of the core.
 - *xCrack_depth_WR.txt*: The bulk water:rock mass ratio in the fractured zone. This file has three columns:
 	* time (in Gyr)
@@ -123,7 +125,7 @@ Outputs are zero if the core is not cracked or if there is no liquid.
 	* thermal conductivity (in W m^-1 K^-1)
 	* degree of hydration (0: fully dry; 1: fully hydrated)
 	* porosity
-	* integer indicating whether the grid zone is fractured, and by which process (Neveu et al. 2015, JGR): 0 = no cracks; 1 = cracks from thermal contraction; 2 = cracks from thermal expansion; 3 = cracks from hydration; 4 = cracks from dehydration; 5 = cracks from pore water dilation; 6 = mineral dissolution widening; 7 = mineral precipitation shrinking; -1 = mineral precipitation clogging; -2: clogging from hydration swelling
+	* integer indicating whether the grid zone is fractured, and by which process (duplicate of the last column in *xCrack_stresses.txt* above)
 	* tidal heating rate (in W).
 
 In addition, each simulation with a nonzero host planet mass produces following files. Each of the last three files is read in *N_moon* x *N_moon* matrices, where *N_moon* is the number of moons. Matrices are symmetric since they describe interactions between pairs of moons. Element (*x*, *y*) represents interactions between the *x*th and *y*th worlds as specified in *IcyDwarfInput*. The first matrix is output at the first time step. Subsequent matrices are output following a time stamp that corresponds to the time at which pairs of moons get in and out of resonance.

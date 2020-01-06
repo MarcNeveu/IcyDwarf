@@ -1,4 +1,4 @@
-ICY DWARF v20.x INPUT FILE
+ICY DWARF v20.x INPUT FILE - Pluto as single object template
 
 1 for Yes, 0 for No
 --------------------------------------------------------------------------------------------------------
@@ -11,7 +11,7 @@ ICY DWARF v20.x INPUT FILE
 |-----------------------------------------------|------------------------------------------------------|
 | Number of grid zones                          | 200                                                  |
 | Thermal simulation time step (yr)             | 50                                                   |
-| Moon-moon interaction speedup factor          | 1000                                                 |
+| Moon-moon interaction speedup factor          | 0                                                    |
 | Total time of thermal simulation (Myr)        | 5000                                                 |
 | Output every (Myr)                            | 10                                                   |
 |-----------------------------------------------|------------------------------------------------------|
@@ -21,27 +21,26 @@ ICY DWARF v20.x INPUT FILE
 | Radius (km)                                   | 0                                                    |
 | Tidal Q (initial,today,{0:lin 1:exp 2:1-exp}) | 0 0 0                                                |
 | Love number k2; zonal gravity harmonics J2, J4| 0 0 0                                                |
-| Number of moons                               | 1                                                    |
+| Number of moons (1 if world is not a moon)    | 0                                                    |
 | Ring mass (kg) (0 if no rings)                | 0                                                    |
 | Ring inner edge (km)                          | 0                                                    |
 | Ring outer edge (km)                          | 0                                                    |
 |-----------------------------------------------|------------------------------------------------------|
 | Icy world parameters |||||||||||||||||||||||||| World 1  | World 2  | World 3  | World 4  | World 5  |
 |-----------------------------------------------|----------|----------|----------|----------|----------|
-| Radius assuming zero porosity (km)            | 107      |          |          |          |          |
-| Density assuming zero porosity (g cm-3)       | 3.012    |          |          |          |          |
-| Surface temperature (K)                       | 60       |          |          |          |          |
-| Initial temperature (K)                       | 60       |          |          |          |          |
+| Radius assuming zero porosity (km)            | 1187     |          |          |          |          |
+| Density assuming zero porosity (g cm-3)       | 1.860    |          |          |          |          |
+| Surface temperature (K)                       | 40       |          |          |          |          |
+| Initial temperature (K)                       | 100      |          |          |          |          |
 | Time of formation (Myr)                       | 100      |          |          |          |          |
-| Formed from ring?                             | 0        |          |          |          |          |
-| Ammonia w.r.t. water                          | 0        |          |          |          |          |
+| Ammonia w.r.t. water                          | 0.02     |          |          |          |          |
 | Briny liquid? y=1, n=0                        | 0        |          |          |          |          |
-| Initial degree of hydration                   | 0        |          |          |          |          |
+| Initial degree of hydration                   | 1        |          |          |          |          |
 | Hydrate/dehydrate?                            | 1        |          |          |          |          |
-| Initial porosity volume fraction              | 0.6      |          |          |          |          |
-| Fraction of rock in fines                     | 0        |          |          |          |          |
-| Core ice/liquid water volume fraction         | 0.275    |          |          |          |          |
-| Start differentiated?                         | 1        |          |          |          |          |
+| Initial porosity volume fraction              | 0.2      |          |          |          |          |
+| Fraction of rock in fines                     | 0.2      |          |          |          |          |
+| Core ice/liquid water volume fraction         | 0.25     |          |          |          |          |
+| Start differentiated?                         | 0        |          |          |          |          |
 | Initial orbital semi-major axis (km)          | 0        |          |          |          |          |
 | Initial orbital eccentricity                  | 0        |          |          |          |          |
 | Allow orbit to change?                        | 0        |          |          |          |          |
@@ -49,7 +48,7 @@ ICY DWARF v20.x INPUT FILE
 |-----------------------------------------------|------------------------------------------------------|
 | Dry rock density (g cm-3)                     | 3.8                                                  |
 | Hydrated rock density (g cm-3)                | 2.9                                                  |
-| Chondrite type? CI=0 CO=1                     | 1                                                    |
+| Chondrite type? CI=0 CO=1                     | 0                                                    |
 | Tidal rheology? Maxwell=2 Burgers=3 Andrade=4 | 4                                                    |
 | Tidal heating x...?                           | 1                                                    |
 |-----------------------------------------------|------------------------------------------------------|

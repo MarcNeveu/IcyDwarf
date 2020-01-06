@@ -1220,6 +1220,8 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 				// Crack stresses
 				for (ir=0;ir<NR;ir++) {
 					Stress[im][ir][0] = r[im][ir+1]/km2cm;
+					Stress[im][ir][10] = fracOpen[im][ir];
+					Stress[im][ir][11] = Crack[im][ir];
 					strcat(filename, outputpath[im]); strcat(filename, "Crack_stresses.txt");
 					append_output(ncrkstrs, Stress[im][ir], path, filename); filename[0] = '\0';
 				}
