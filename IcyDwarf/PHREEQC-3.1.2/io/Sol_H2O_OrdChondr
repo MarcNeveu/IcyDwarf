@@ -1,0 +1,24 @@
+TITLE IcyDwarf generated speciation input using core10.dat
+
+SOLUTION 1 Cometary fluid
+
+	 pH 	 	7	 charge
+	 temp 	 	100
+	 pressure 	600
+	 pe 	 	-7.01729
+	 -water 	0.1
+
+SELECTED_OUTPUT 1
+	
+	-state 		false	
+	-solution 	false
+	-distance 	false
+	-time 		false
+	-step 		false
+	-ionic_strength	true
+	-percent_error	true
+	-totals 	C Cl N S C(-4)	C(4)	N(-3)	N(0)	S(-2)	S(6)
+	-molalities 	CH4	C2H6	C3H8	HCO3-	CO2	Cl-	NH4+	NH3	N2	H2S	HS-
+	-saturation_indices	CH4(g)	C2H6(g)	H2(g)	H2S(g)
+
+END
