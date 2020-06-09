@@ -14,10 +14,10 @@
 #include "Crack.h"
 
 int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int recover, int NR, double dtime, double speedup, double *tzero, double fulltime,
-		double dtoutput, int nmoons, double Mprim, double Rprim, double Qprimi, double Qprimf, int Qmode, double k2prim, double J2prim, double J4prim,
+		double dtoutput, int nmoons, double Mprim, double Rprim, double Qprimi, double Qprimf, int Qmode, double k2prim, double J2prim, double J4prim, int reslock,
 		double Mring_init, double aring_out, double aring_in, double *r_p, double *rho_p, double rhoHydr, double rhoDry, double *Xp, double *Xsalt,
 		double **Xhydr, double *porosity, double *Xpores, double *Xfines, double *Tinit, double *Tsurf, int *fromRing, int *startdiff,
-		double *aorb_init, double *eorb_init, int tidalmodel, double tidetimes, int *orbevol, int* retrograde, int *hy, int chondr, int *crack_input,
+		double *aorb_init, double *eorb_init, int tidalmodel, double tidetimes, int *orbevol, int* retrograde, double *t_tidereslock, int *hy, int chondr, int *crack_input,
 		int *crack_species);
 
 int recov(int argc, char *argv[], char path[1024], int nmoons, char outputpath[nmoons][1024], int NR, int ntherm, int norbit, int ncrkstrs, double ****Stress, double *Xp,
@@ -33,10 +33,10 @@ int recov(int argc, char *argv[], char path[1024], int nmoons, char outputpath[n
 int tail(FILE *f, int n, int l, double ***output);
 
 int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int recover, int NR, double dtime, double speedup, double *tzero, double fulltime,
-		double dtoutput, int nmoons, double Mprim, double Rprim, double Qprimi, double Qprimf, int Qmode, double k2prim, double J2prim, double J4prim,
+		double dtoutput, int nmoons, double Mprim, double Rprim, double Qprimi, double Qprimf, int Qmode, double k2prim, double J2prim, double J4prim, int reslock,
 		double Mring_init, double aring_out, double aring_in, double *r_p, double *rho_p, double rhoHydr, double rhoDry, double *Xp, double *Xsalt,
 		double **Xhydr, double *porosity, double *Xpores, double *Xfines, double *Tinit, double *Tsurf, int *fromRing, int *startdiff,
-		double *aorb_init, double *eorb_init, int tidalmodel, double tidetimes, int *orbevol, int* retrograde, int *hy, int chondr, int *crack_input,
+		double *aorb_init, double *eorb_init, int tidalmodel, double tidetimes, int *orbevol, int* retrograde, double *t_tidereslock, int *hy, int chondr, int *crack_input,
 		int *crack_species) {
 
 	//-------------------------------------------------------------------
@@ -88,6 +88,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 	double fh2ol = 0.0;                  // Liquid water mass fraction
 	double fnh3l = 0.0;                  // Liquid ammonia mass fraction
 	double temp1 = 0.0;                  // Temporary temperature (K)
+	double tMig = 0.0;                   // Time of heliocentric migration (Gyr)
 	if (ringSurfaceDensity <= 2.0) alpha_Lind = 2.0e-5; else alpha_Lind = 1.0e-4; // Mostly viscosity and pressure if surf density≈2 g cm-2, or self-gravity if surf density~50 g cm-2
 
 	// Variables individual to each moon
@@ -102,15 +103,16 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 	double Heat_serp[nmoons];
 	double Heat_dehydr[nmoons];
 	double Heat_tide[nmoons];
-	double frockpm[nmoons];              // Fraction of rock in the planet by mass
-	double frockpv[nmoons];              // Fraction of rock in the planet by volume
+	double frockpm[nmoons];              // Fraction of rock in the icy world by mass
+	double frockpv[nmoons];              // Fraction of rock in the icy world by volume
 	double dr_grid[nmoons];              // Physical thickness of a shell (cm)
 	double Phi[nmoons];                  // Gravitational potential energy (erg)
 	double ravg[nmoons];                 // Average radius of a layer (cm)
 	double fracKleached[nmoons];         // Fraction of K radionuclide leached (no dim)
 	double m_p[nmoons];                  // World mass (g)
-	double Mliq[nmoons];                 // Mass of liquid in the planet (g)
-	double Mcracked_rock[nmoons];        // Mass of cracked rock in the planet (g)
+	double Mliq[nmoons];                 // Mass of liquid in the icy world (g)
+	double Mcracked_rock[nmoons];        // Mass of cracked rock in the icy world (g)
+	double TsurfMig[nmoons];             // Surface temperature of the icy world post-heliocentric migration (K)
 	double Crack_depth_WR[nmoons][3];	 // Crack_depth_WR[3] (multiple units), output
 	double Heat[nmoons][nheat];          // Heat[6] (erg), output
 	double Thermal_output[nmoons][ntherm]; // Thermal_output[ntherm] (multiple units), output
@@ -553,6 +555,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 		Wtide_tot[im] = 0.0;
 		outputpath[im][0] = '\0';
 
+		TsurfMig[im] = 0.0;
 		for (ir=0;ir<nmoons;ir++) {
 			PCapture[im][ir] = 0.0;
 			resonance[im][ir] = 0.0;
@@ -1031,6 +1034,16 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 	//		}
 		}
 
+
+		for (im=0;im<nmoons;im++) {
+			TsurfMig[im] = Tsurf[im];
+			// Code snippet to change surface temperature with time. Usually commented out. Add to input file options?
+//			tMig = 3.0*Gyr2sec;
+//			if (realtime >= tMig) {
+//				TsurfMig[im] = 148.0;
+//			}
+		}
+
 		// Begin parallel calculations
 #pragma omp parallel // private(thread_id, nloops)
     	{
@@ -1047,7 +1060,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 					// TODO switch r_p to outerrad[nmoons] = r[im][NR]? Could matter if very porous
 					Orbit (argc, argv, path, im, dtime, speedup, itime, nmoons, m_p, r_p, resAcctFor, &aorb, &eorb, norb,
 							lambda, omega, &h_old, &k_old, &a__old, &Cs_ee_old, &Cs_eep_old, &Cr_e_old, &Cr_ep_old, &Cr_ee_old, &Cr_eep_old, &Cr_epep_old,
-							&Wtide_tot, Mprim, Rprim, J2prim, J4prim, k2prim, Qprim,
+							&Wtide_tot, Mprim, Rprim, J2prim, J4prim, k2prim, Qprim, reslock, t_tidereslock[im],
 							aring_out, aring_in, alpha_Lind, ringSurfaceDensity, realtime-tzero_min, retrograde);
 				}
 //				++nloops;
@@ -1059,7 +1072,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 				if (realtime >= tzero[im]) {
 
 					Thermal(argc, argv, path, outputpath[im], warnings, NR, dr_grid[im],
-							dtime, realtime, itime, Xp[im], Xsalt[im], Xfines[im], Xpores[im], Tsurf[im],
+							dtime, realtime, itime, Xp[im], Xsalt[im], Xfines[im], Xpores[im], TsurfMig[im],
 							&r[im], &dM[im], &dM_old[im], &Phi[im], dVol[im], &dE[im], &T[im], &T_old[im], &Pressure[im],
 							rhoRockth, rhoHydrth, rhoH2osth, rhoAdhsth, rhoH2olth, rhoNh3lth,
 							&Mrock[im], &Mrock_init[im], &Mh2os[im], &Madhs[im], &Mh2ol[im], &Mnh3l[im],

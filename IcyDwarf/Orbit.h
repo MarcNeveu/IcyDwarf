@@ -18,7 +18,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 		double **aorb, double **eorb, double *norb, double *lambda, double *omega,
 		double **h_old, double **k_old, double **a__old,
 		double **Cs_ee_old, double **Cs_eep_old, double **Cr_e_old, double **Cr_ep_old, double **Cr_ee_old, double **Cr_eep_old, double **Cr_epep_old,
-		double **Wtide_tot, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim,
+		double **Wtide_tot, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim, int reslock, double t_tide,
 		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity, double elapsed, int* retrograde);
 
 int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, double *a__old, double *eorb, double *m_p, double Mprim, double Rprim, double k2prim, double Qprim,
@@ -50,7 +50,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 		double **aorb, double **eorb, double *norb, double *lambda, double *omega,
 		double **h_old, double **k_old, double **a__old,
 		double **Cs_ee_old, double **Cs_eep_old, double **Cr_e_old, double **Cr_ep_old, double **Cr_ee_old, double **Cr_eep_old, double **Cr_epep_old,
-		double **Wtide_tot, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim,
+		double **Wtide_tot, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim, int reslock, double t_tide,
 		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity, double elapsed, int* retrograde) {
 
 	FILE *fout;
@@ -67,9 +67,14 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 
 	double orbdtime = 5.0e-4*1.0e-6*Myr2sec; // 5.0e-4 years max time step for numerical stability
 
-	double d_eorb = 0.0;                 // Change rate in moon orbital eccentricity due to interactions with primary (s-1)
-	double d_aorb_pl = 0.0;              // Change rate in moon orbital semi-major axis due to interactions with primary (cm s-1)
+	double d_eorb_moon = 0.0;            // Change rate in moon orbital eccentricity due to tidal dissipation within moon itself (s-1)
+	double d_eorb_pl = 0.0;              // Change rate in moon orbital eccentricity due to tidal dissipation within primary (s-1)
+	double d_eorb_ring = 0.0;            // Change rate in moon orbital eccentricity due to interactions with ring (s-1)
+
+	double d_aorb_moon = 0.0;            // Change rate in moon orbital semi-major axis due to tidal dissipation within moon itself (cm s-1)
+	double d_aorb_pl = 0.0;              // Change rate in moon orbital semi-major axis due to tidal dissipation within primary (cm s-1)
 	double d_aorb_ring = 0.0;            // Change rate in moon orbital semi-major axis due to interactions with ring (cm s-1)
+
 	double ringTorque = 0.0;             // Torque exerted by ring on moon (g cm2 s-2)
 	double prim_sign[nmoons];            // Sign of primary term in secular da/dt equation (positive i.e. +1 if prograde moon; negative i.e. -1 if retrograde moon)
 	for (i=0;i<nmoons;i++) {
@@ -450,20 +455,25 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 		(*Cr_epep_old)[im] = 0.0;
 
 		//-------------------------------------------------------------------
-		// Changes in a_orb and e_orb due to tides inside moon and on planet
+		// Secular changes in eccentricities and semi-major axes
 		//-------------------------------------------------------------------
 
-		d_eorb = - (*Wtide_tot)[im]*(*aorb)[im] / (Gcgs*Mprim*m_p[im]*(*eorb)[im])                                // Dissipation inside moon, decreases its eccentricity (equation 4.170 of Murray & Dermott 1999)
-				 + 57.0/8.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*(*eorb)[im]; // Dissipation inside planet, increases moon's eccentricity
+		// Dissipation inside moon, decreases its eccentricity (equation 4.170 of Murray & Dermott 1999) TODO Equation below assumes constant phase lag, incorporate results from tidalPy instead
+		d_eorb_moon = - (*Wtide_tot)[im]*(*aorb)[im] / (Gcgs*Mprim*m_p[im]*(*eorb)[im]);
 
-		// Assumption in semimajor axis evolution is that planet spins faster than the moon orbits. Otherwise, prim_sign < 0 irrespective of retrograde or prograde motion.
-		d_aorb_pl = - 2.0*(*Wtide_tot)[im]*(*aorb)[im]*(*aorb)[im] / (Gcgs*Mprim*m_p[im])                         // Dissipation inside moon, shrinks its orbit
-				  + prim_sign[im]*3.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-5.5);   // Dissipation inside planet, expands moon's orbit
+		// Dissipation inside primary, typically increases moon's eccentricity but depends on mode.
+		d_eorb_pl = 57.0/8.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*(*eorb)[im]; // Equation below assumes constant phase lag. Effect of any resonance locking unknown.
 
-		//-------------------------------------------------------------------
-		// Changes in semi-major axes due to resonances excited in the rings
-		//-------------------------------------------------------------------
+		// Interactions with ring TODO Could increase e (Nakajima et al. 2019 Icarus)
+		if (ringSurfaceDensity) d_eorb_ring = 0.0;
+		else d_eorb_ring = 0.0;
 
+		// Dissipation inside moon, shrinks its orbit
+		d_aorb_moon = - 2.0*(*Wtide_tot)[im]*(*aorb)[im]*(*aorb)[im] / (Gcgs*Mprim*m_p[im]);
+
+		// Dissipation inside primary. prim_sign depends on mode. Typical assumption in semimajor axis evolution is > 0 in gas giant systems where primary spins much faster than moons orbit. Otherwise, prim_sign < 0 irrespective of retrograde or prograde motion.
+		if (!reslock) d_aorb_pl = prim_sign[im]*3.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-5.5); // Dissipation inside planet, expands moon's orbit
+		else d_aorb_pl = prim_sign[im] * (*aorb)[im] / t_tide;
 		if (ringSurfaceDensity) { // Dissipation in the rings, expands moon's orbit if exterior to rings (Meyer-Vernet & Sicardy 1987, http://dx.doi.org/10.1016/0019-1035(87)90011-X)
 			ringTorque = 0.0;
 			// Find inner Lindblad resonances that matter (kmin, kmax)
@@ -476,19 +486,16 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 			d_aorb_ring = 2.0*ringTorque/m_p[im]*sqrt((*aorb)[im]/(Gcgs*Mprim)); // Charnoz et al. (2011) eq. 2, http://dx.doi.org/10.1016/j.icarus.2011.09.017
 		}
 
-		//-------------------------------------------------------------------
 		// Update eccentricities and semi-major axes; they cannot be negative
-		//-------------------------------------------------------------------
-
-		if (-dtime*d_eorb < (*eorb)[im]) (*eorb)[im] = (*eorb)[im] + dtime*d_eorb;
+		if (-dtime*(d_eorb_moon+d_eorb_pl+d_eorb_ring) < (*eorb)[im]) (*eorb)[im] = (*eorb)[im] + dtime*(d_eorb_moon+d_eorb_pl+d_eorb_ring);
 		else { // Set eccentricity to zero at which point there is no more dissipation, update Wtide_tot accordingly
-			d_eorb = -(*eorb)[im]/dtime;
-			(*Wtide_tot)[im] = (- d_eorb + 171.0/16.0*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*(*eorb)[im])
+			d_eorb_moon = -(*eorb)[im]/dtime;
+			(*Wtide_tot)[im] = (- d_eorb_moon + 171.0/16.0*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*(*eorb)[im])
 					     * Gcgs*Mprim*m_p[im]*(*eorb)[im] / (*aorb)[im];
 			(*eorb)[im] = 0.0;
 		}
 
-		if (-dtime*(d_aorb_pl + d_aorb_ring) < (*aorb)[im]) (*aorb)[im] = (*aorb)[im] + dtime*(d_aorb_pl+d_aorb_ring);
+		if (-dtime*(d_aorb_moon+d_aorb_pl+d_aorb_ring) < (*aorb)[im]) (*aorb)[im] = (*aorb)[im] + dtime*(d_aorb_moon+d_aorb_pl+d_aorb_ring);
 		else {
 			// Turn working directory into full file path by moving up two directories to IcyDwarf (e.g., removing
 			// "Release/IcyDwarf" characters) and specifying the right path end.
