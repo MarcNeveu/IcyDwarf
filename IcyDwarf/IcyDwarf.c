@@ -89,7 +89,7 @@ int main(int argc, char *argv[]){
     double aorb[nmoons_max];               // Moon orbital semi-major axis (km)
 	double eorb[nmoons_max];               // Moon orbital eccentricity
 	int retrograde[nmoons_max];            // 0 if prograde orbit, 1 if retrograde orbit
-	double t_tidereslock[nmoons_max];      // Timescale of primary internal evolution for resonance locking mechanism (Gyr)
+	double t_tidereslock[nmoons_max];      // Present-day timescale of primary internal evolution for resonance locking mechanism (Gyr)
 	for (im=0;im<nmoons_max;im++) {
 		tzero[im] = 0.0;
 		fromRing[im] = 0;

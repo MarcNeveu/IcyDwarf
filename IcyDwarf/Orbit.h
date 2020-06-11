@@ -19,7 +19,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 		double **h_old, double **k_old, double **a__old,
 		double **Cs_ee_old, double **Cs_eep_old, double **Cr_e_old, double **Cr_ep_old, double **Cr_ee_old, double **Cr_eep_old, double **Cr_epep_old,
 		double **Wtide_tot, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim, int reslock, double t_tide,
-		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity, double elapsed, int* retrograde);
+		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity, double elapsed, double realtime, int* retrograde);
 
 int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, double *a__old, double *eorb, double *m_p, double Mprim, double Rprim, double k2prim, double Qprim,
 		double ***resonance, double ***PCapture, double *tzero, double realtime, double aring_out, double **resAcctFor);
@@ -51,7 +51,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 		double **h_old, double **k_old, double **a__old,
 		double **Cs_ee_old, double **Cs_eep_old, double **Cr_e_old, double **Cr_ep_old, double **Cr_ee_old, double **Cr_eep_old, double **Cr_epep_old,
 		double **Wtide_tot, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim, int reslock, double t_tide,
-		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity, double elapsed, int* retrograde) {
+		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity, double elapsed, double realtime, int* retrograde) {
 
 	FILE *fout;
 
@@ -462,7 +462,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 		d_eorb_moon = - (*Wtide_tot)[im]*(*aorb)[im] / (Gcgs*Mprim*m_p[im]*(*eorb)[im]);
 
 		// Dissipation inside primary, typically increases moon's eccentricity but depends on mode.
-		d_eorb_pl = 57.0/8.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*(*eorb)[im]; // Equation below assumes constant phase lag. Effect of any resonance locking unknown.
+		d_eorb_pl = 57.0/8.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*(*eorb)[im]; // Equation below assumes constant phase lag. Effect of any resonant locking unknown.
 
 		// Interactions with ring TODO Could increase e (Nakajima et al. 2019 Icarus)
 		if (ringSurfaceDensity) d_eorb_ring = 0.0;
@@ -473,7 +473,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 
 		// Dissipation inside primary. prim_sign depends on mode. Typical assumption in semimajor axis evolution is > 0 in gas giant systems where primary spins much faster than moons orbit. Otherwise, prim_sign < 0 irrespective of retrograde or prograde motion.
 		if (!reslock) d_aorb_pl = prim_sign[im]*3.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-5.5); // Dissipation inside planet, expands moon's orbit
-		else d_aorb_pl = prim_sign[im] * (*aorb)[im] / t_tide;
+		else d_aorb_pl = prim_sign[im] * (*aorb)[im] / t_tide * (4.5682*Gyr2sec)/realtime;
 		if (ringSurfaceDensity) { // Dissipation in the rings, expands moon's orbit if exterior to rings (Meyer-Vernet & Sicardy 1987, http://dx.doi.org/10.1016/0019-1035(87)90011-X)
 			ringTorque = 0.0;
 			// Find inner Lindblad resonances that matter (kmin, kmax)

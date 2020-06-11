@@ -635,7 +635,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 					fsetpos (f, &pos);
 				}
 			}
-			else if (line_no == 49) { // Timescale of resonance locking evolution
+			else if (line_no == 49) { // Current timescale of resonance locking evolution
 				fgetpos (f, &pos);
 				for (j=0;j<nmoons;j++) {
 					fgets(line, tab+j*tab_world, f);

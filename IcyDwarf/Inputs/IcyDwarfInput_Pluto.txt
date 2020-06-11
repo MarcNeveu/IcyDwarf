@@ -21,6 +21,7 @@ ICY DWARF v20.x INPUT FILE - Pluto as single object template
 | Radius (km)                                   | 0                                                    |
 | Tidal Q (initial,today,{0:lin 1:exp 2:1-exp}) | 0 0 0                                                |
 | Love number k2; zonal gravity harmonics J2, J4| 0 0 0                                                |
+| Resonant tidal locking with inertial waves?   | 0                                                    |
 | Number of moons (1 if world is not a moon)    | 0                                                    |
 | Ring mass (kg) (0 if no rings)                | 0                                                    |
 | Ring inner edge (km)                          | 0                                                    |
@@ -45,6 +46,7 @@ ICY DWARF v20.x INPUT FILE - Pluto as single object template
 | Initial orbital eccentricity                  | 0        |          |          |          |          |
 | Allow orbit to change?                        | 0        |          |          |          |          |
 | Retrograde orbit?                             | 0        |          |          |          |          |
+| Resonant tidal locking timescale (Gyr)        | 0        |          |          |          |          |
 |-----------------------------------------------|------------------------------------------------------|
 | Dry rock density (g cm-3)                     | 3.8                                                  |
 | Hydrated rock density (g cm-3)                | 2.9                                                  |

@@ -12,7 +12,7 @@ ICY DWARF v20.x INPUT FILE - Saturn system
 | Number of grid zones                          | 200                                                  |
 | Thermal simulation time step (yr)             | 50                                                   |
 | Moon-moon interaction speedup factor          | 1000                                                 |
-| Total time of thermal simulation (Myr)        | 5000                                                 |
+| Total time of thermal simulation (Myr)        | 4560                                                 |
 | Output every (Myr)                            | 10                                                   |
 |-----------------------------------------------|------------------------------------------------------|
 | Host planet parameters |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -33,7 +33,7 @@ ICY DWARF v20.x INPUT FILE - Saturn system
 | Density assuming zero porosity (g cm-3)       | 1.378    | 1.611    | 1.127    | 1.517    | 1.267    | 1.879    | 1.089    |
 | Surface temperature (K)                       | 76       | 68       | 68       | 70       | 72       | 85       | 82       |
 | Initial temperature (K)                       | 100      | 100      | 100      | 100      | 100      | 100      | 100      |
-| Time of formation (Myr)                       | 4117     | 3300     | 1800     | 800      | 100      | 100      | 100      |
+| Time of formation (Myr)                       | 4117     | 3300     | 2440     | 1430     | 680      | 100      | 100      |
 | Formed from ring?                             | 1        | 1        | 1        | 1        | 0        | 0        | 0        |
 | Ammonia w.r.t. water                          | 0        | 0        | 0        | 0        | 0        | 0        | 0        |
 | Briny liquid? y=1, n=0                        | 0        | 0        | 0        | 0        | 0        | 0        | 0        |
@@ -47,7 +47,7 @@ ICY DWARF v20.x INPUT FILE - Saturn system
 | Initial orbital eccentricity                  | 0.016    | 0.016    | 0.016    | 0.016    | 0.016    | 0.016    | 0.016    |
 | Allow orbit to change?                        | 1        | 1        | 1        | 1        | 1        | 1        | 1        |
 | Retrograde orbit?                             | 0        | 0        | 0        | 0        | 0        | 0        | 0        |
-| Resonant tidal locking timescale (Gyr)        | 10       | 10       | 10       | 10       | 10       | 10       | 10       |
+| Current resonant tidal locking timescale (Gyr)| 10       | 10       | 10       | 10       | 10       | 10       | 10       |
 |-----------------------------------------------|------------------------------------------------------|----------|----------|
 | Dry rock density (g cm-3)                     | 3.8                                                  |
 | Hydrated rock density (g cm-3)                | 2.9                                                  |
