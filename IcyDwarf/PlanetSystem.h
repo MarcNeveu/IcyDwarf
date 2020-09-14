@@ -1427,7 +1427,7 @@ int recov(int argc, char *argv[], char path[1024], int nmoons, char outputpath[n
 		orbitout[im] = (double**) malloc(1*sizeof(double*));
 		if (orbitout[im] == NULL) printf("PlanetSystem: Not enough memory to create orbitout[nmoons][1]\n");
 		for (ir=0;ir<1;ir++) {
-			orbitout[im][ir] = (double*) malloc(ntherm*sizeof(double));
+			orbitout[im][ir] = (double*) malloc(norbit*sizeof(double));
 			if (orbitout[im][ir] == NULL) printf("PlanetSystem: Not enough memory to create orbitout[nmoons][1][norbit]\n");
 		}
 	}
