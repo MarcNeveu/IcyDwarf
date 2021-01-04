@@ -162,8 +162,8 @@ My compiling instructions look like this:
 
 For IcyDwarf (*gcc 9.2* on Mac OS 10.15 Catalina):
  
-    gcc /usr/local/lib/gcc/x86_64-apple-darwin18.5.0/8.3.0/include -I/usr/local/include -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include -I/Library/Frameworks/R.framework/Versions/3.6/Resources/include -I/Library/Frameworks/R.framework/Versions/3.6/Resources/library/RInside/include -O3 -g -Wall -c -fmessage-length=0 -arch x86_64 -fopenmp -o IcyDwarf.o ../IcyDwarf.c
-    gcc -L/usr/lib -L/usr/local/lib -L/Library/Frameworks/R.framework/Versions/3.6/Resources/lib -o IcyDwarf IcyDwarf.o /usr/local/lib/libiphreeqc-3.5.0.dylib /usr/local/lib/libiphreeqc.dylib /usr/local/lib/libiphreeqc.a -lgomp -lR
+    gcc /usr/local/lib/gcc/x86_64-apple-darwin18.5.0/8.3.0/include -I/usr/local/include -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include -I/Library/Frameworks/R.framework/Versions/4.0/Resources/include -I/Library/Frameworks/R.framework/Versions/4.0/Resources/library/RInside/include -O3 -g -Wall -c -fmessage-length=0 -arch x86_64 -fopenmp -o IcyDwarf.o ../IcyDwarf.c
+    gcc -L/usr/lib -L/usr/local/lib -L/Library/Frameworks/R.framework/Versions/4.0/Resources/lib -o IcyDwarf IcyDwarf.o /usr/local/lib/libiphreeqc-3.5.0.dylib /usr/local/lib/libiphreeqc.dylib /usr/local/lib/libiphreeqc.a -lgomp -lR
 
 For IcyDwarfPlot (*gcc 6.2* on Mac OS 10.12 Sierra):
 
