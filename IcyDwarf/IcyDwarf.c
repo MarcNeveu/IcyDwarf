@@ -159,7 +159,7 @@ int main(int argc, char *argv[]){
 
 	printf("\n");
 	printf("-------------------------------------------------------------------\n");
-	printf("IcyDwarf v20.6\n");
+	printf("IcyDwarf v21.1\n");
 	if (v_release == 1) printf("Release mode\n");
 	else if (cmdline == 1) printf("Command line mode\n");
 	printf("-------------------------------------------------------------------\n");
@@ -305,7 +305,7 @@ int main(int argc, char *argv[]){
 	printf("| Tidal Q (initial,today,{0:lin 1:exp 2:1-exp}) | %g %g %d\n", Qprimi, Qprimf, Qmode);
 	printf("| Love number k2; zonal gravity harmonics J2, J4| %g %g %g\n", k2prim, J2prim, J4prim);
 	printf("| Resonant tidal locking with inertial waves?   | %d\n", reslock);
-	printf("| Number of moons                               | %d\n", nmoons);
+	printf("| Number of worlds                              | %d\n", nmoons);
 	printf("| Ring mass (kg) (0 if no rings)                | %g\n", Mring);
 	printf("| Ring inner edge (km)                          | %g\n", aring_in);
 	printf("| Ring outer edge (km)                          | %g\n", aring_out);

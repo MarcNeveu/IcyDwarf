@@ -1038,7 +1038,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 		for (im=0;im<nmoons;im++) {
 			TsurfMig[im] = Tsurf[im];
 			// Code snippet to change surface temperature with time. Usually commented out. Add to input file options?
-//			tMig = 3.0*Gyr2sec;
+//			tMig = 12.0*Myr2sec;
 //			if (realtime >= tMig) {
 //				TsurfMig[im] = 148.0;
 //			}
