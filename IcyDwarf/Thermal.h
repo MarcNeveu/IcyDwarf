@@ -1786,6 +1786,17 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
 	double B_Andrade = 0.0;
 	double D_Andrade = 0.0;
 	double H_mu = 0.0;    				 // Sensitivity of the radial strain energy integral to the shear modulus mu
+    double voigt_comp_offset = 0.0;      // Voigt/Burgers/S-C secondary Debye peak - compliance (1 / rigidity) offset
+    double voigt_viscosity_offset = 0.0; // Voigt/Burgers/S-C  secondary Debye peak - viscosity offset
+    double zeta_Andrade = 0.0;           // Andrade parameter, can be found via beta_Andrade and the viscosity/rigidity
+    double comp_Maxwell = 0.0;           // 1 / mu_rigid
+    double comp_Voigt = 0.0;             // voigt_comp_offset * comp_Maxwell
+    double visc_Voigt = 0.0;             // voigt_viscosity_offset * mu_visc
+    double complex sine_Andrade = 0.0 + 0.0*I;                // Defined via Andrade alpha Parameter
+    double complex cmplx_compliance_Maxwell = 0.0 + 0.0*I;    // Maxwell model's complex compliance
+    double complex cmplx_compliance_subAndrade = 0.0 + 0.0*I; // a portion of the Andrade model's complex compliance
+    double complex cmplx_compliance_Voigt = 0.0 + 0.0*I;      // Voigt-Kelvin model's complex compliance
+    double complex cmplx_compliance_SC = 0.0 + 0.0*I;         // Sundberg-Cooper model's complex compliance
 
 	double *rho = (double*) malloc(NR*sizeof(double)); // Mean layer density (g cm-3)
 	if (rho == NULL) printf("Thermal: Not enough memory to create rho[NR]\n");
@@ -1986,6 +1997,44 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
 			shearmod[ir] = A_Andrade/D_Andrade
 						 + B_Andrade/D_Andrade * I;
 		break;
+
+        case 5: // Sundberg-Cooper viscoelastic model (Sundberg and Cooper 2010; Renaud and Henning 2018)
+            // Evaluate Gamma(alpha_Andrade + 1.0); Gamma is the gamma function. alpha_Andrade can vary from 0.2 to 0.5 (Shoji et al. 2013; Castillo-Rogez et al. 2011)
+            if (alpha_Andrade == 0.2) gamma_Andrade = 0.918169;
+            else if (alpha_Andrade == 0.3) gamma_Andrade = 0.897471;
+            else if (alpha_Andrade == 0.4) gamma_Andrade = 0.887264;
+            else if (alpha_Andrade == 0.5) gamma_Andrade = 0.886227;
+            else {
+                printf ("IcyDwarf: Thermal: alpha_Andrade must be equal to 0.2, 0.3, 0.4, or 0.5 (see Castillo-Rogez et al. 2011, doi 10.1029/2010JE003664)\n");
+                exit(0);
+            }
+
+            // Setup Burgers / Voigt-Kelvin constants
+            // Hard coding these parameters here for now
+            voigt_comp_offset = 0.43;       // Value from S-C 2010 fit
+            voigt_viscosity_offset = 0.02;  // Value from Henning+ 2009
+            zeta_Andrade = 1.0;             // Assumes the Maxwell and Andrade timescales are equal. For Mantle rock this can range from ~0.1 to 10.0. See refs in Renaud (PhD Thesis; GMU) 2019
+
+            // Scale viscosity and compliance
+            comp_Maxwell = (1.0 / mu_rigid);
+            comp_Voigt = voigt_comp_offset * comp_Maxwell;
+            visc_Voigt = voigt_viscosity_offset * mu_visc;
+
+            // Solve Andrade components
+            sine_Andrade = (cos(alpha_Andrade * PI_greek/ 2.0) - I * sin(alpha_Andrade * PI_greek / 2.0)) * gamma_Andrade;
+
+            // Solve for the various compliances
+            cmplx_compliance_Maxwell = comp_Maxwell - (I * / (omega_tide * mu_visc));
+            cmplx_compliance_subAndrade = comp_Maxwell *
+                                          pow(omega_tide * comp_Maxwell * mu_visc * zeta_Andrade, -omega_tide) * sine_Andrade;
+            cmplx_compliance_Voigt = I * comp_Voigt / (I - (comp_Voigt * visc_Voigt * omega_tide));
+
+            // Solve for full Sundberg-Cooper 2010 composite model
+            cmplx_compliance_SC = cmplx_compliance_Maxwell + cmplx_compliance_subAndrade + cmplx_compliance_Voigt;
+
+            // Convert to complex rigidity and return.
+            shearmod[ir] = (1.0 / cmplx_compliance_SC);
+            break;
 		}
 	}
 
