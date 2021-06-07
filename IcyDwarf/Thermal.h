@@ -37,7 +37,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 		int **circ, double **Crack, double **Crack_size, double **fracOpen, double **P_pore,
 		double **P_hydr, double ***Act, double *fracKleached, int *crack_input, int *crack_species, double **aTP, double **integral,
 		double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite, int *ircrack, int *ircore, int *irice,
-		int *irdiff, int forced_hydcirc, double **Nu, int tidalmodel, double tidetimes, int im, int moonspawn, double Mprim, double *eorb,
+		int *irdiff, int forced_hydcirc, double **Nu, int tidalmodel, int eccentricitymodel, double tidetimes, int im, int moonspawn, double Mprim, double *eorb,
 		double *norb, double *Wtide_tot, int hy, int chondr, double *Heat_radio, double *Heat_grav, double *Heat_serp, double *Heat_dehydr,
 		double *Heat_tide, double ***Stress, double **TideHeatRate);
 
@@ -72,7 +72,7 @@ int convect(int ir1, int ir2, double *T, double *r, int NR, double *Pressure, do
 
 double viscosity(double T, double Mh2ol, double Mnh3l);
 
-int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, double **Qth, int NR, double *Wtide_tot, double *Mh2os,
+int tide(int tidalmodel, int eccentricitymodel, double tidetimes, double eorb, double omega_tide, double **Qth, int NR, double *Wtide_tot, double *Mh2os,
 		double *Madhs, double *Mh2ol, double *Mnh3l, double *dM,  double *Vrock, double *dVol, double *r, double *T, double *Xhydr,
 		double *Pressure, double *pore, int im);
 
@@ -103,7 +103,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 		int **circ, double **Crack, double **Crack_size, double **fracOpen, double **P_pore,
 		double **P_hydr, double ***Act, double *fracKleached, int *crack_input, int *crack_species, double **aTP, double **integral,
 		double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite, int *ircrack, int *ircore, int *irice,
-		int *irdiff, int forced_hydcirc, double **Nu, int tidalmodel, double tidetimes, int im, int moonspawn, double Mprim, double *eorb,
+		int *irdiff, int forced_hydcirc, double **Nu, int tidalmodel, int eccentricitymodel, double tidetimes, int im, int moonspawn, double Mprim, double *eorb,
 		double *norb, double *Wtide_tot, int hy, int chondr, double *Heat_radio, double *Heat_grav, double *Heat_serp, double *Heat_dehydr,
 		double *Heat_tide, double ***Stress, double **TideHeatRate) {
 
@@ -388,7 +388,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 			strain((*Pressure)[ir], (*Xhydr)[ir], (*T)[ir], &strain_rate[ir], &Brittle_strength[ir], (*pore)[ir]);
 		}
 		(*Wtide_tot) = 0.0;
-		tide(tidalmodel, tidetimes, eorb[im], omega_tide, &Qth, NR, &(*Wtide_tot), (*Mh2os), (*Madhs), (*Mh2ol), (*Mnh3l), (*dM),
+		tide(tidalmodel, eccentricitymodel, tidetimes, eorb[im], omega_tide, &Qth, NR, &(*Wtide_tot), (*Mh2os), (*Madhs), (*Mh2ol), (*Mnh3l), (*dM),
 				(*Vrock), dVol, (*r), (*T), (*Xhydr), (*Pressure), (*pore), im);
 		(*Heat_tide) = (*Heat_tide) + (*Wtide_tot);
 
@@ -1757,9 +1757,10 @@ double viscosity(double T, double Mh2ol, double Mnh3l) {
  *
  *--------------------------------------------------------------------*/
 
-int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, double **Qth, int NR, double *Wtide_tot, double *Mh2os,
-		double *Madhs, double *Mh2ol, double *Mnh3l, double *dM,  double *Vrock, double *dVol, double *r, double *T, double *Xhydr,
-		double *Pressure, double *pore, int im) {
+int tide(int tidalmodel, int eccentricitymodel, double tidetimes, double eorb, double omega_tide, double **Qth, int NR,
+         double *Wtide_tot, double *Mh2os,
+		 double *Madhs, double *Mh2ol, double *Mnh3l, double *dM,  double *Vrock, double *dVol, double *r, double *T, double *Xhydr,
+		 double *Pressure, double *pore, int im) {
 
 	int ir = 0;                          // Counters
 	int i = 0;
@@ -1797,6 +1798,17 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
     double complex cmplx_compliance_subAndrade = 0.0 + 0.0*I; // a portion of the Andrade model's complex compliance
     double complex cmplx_compliance_Voigt = 0.0 + 0.0*I;      // Voigt-Kelvin model's complex compliance
     double complex cmplx_compliance_SC = 0.0 + 0.0*I;         // Sundberg-Cooper model's complex compliance
+    double e2 = 0.0;                     // Eccentricity^2
+    double e4 = 0.0;                     // Eccentricity^4
+    double e6 = 0.0;                     // Eccentricity^6
+    double e8 = 0.0;                     // Eccentricity^8
+    double e10 = 0.0;                    // Eccentricity^10
+    double eterm = 0.0;                  // Multiplier to the tidal heat given a planet's susceptibility to eccentricity tides.
+    double eterm_1 = 0.0;                // 1st Eccentricity Subterm
+    double eterm_2 = 0.0;                // 1st Eccentricity Subterm
+    double eterm_3 = 0.0;                // 1st Eccentricity Subterm
+    double eterm_4 = 0.0;                // 1st Eccentricity Subterm
+    double eterm_5 = 0.0;                // 1st Eccentricity Subterm
 
 	double *rho = (double*) malloc(NR*sizeof(double)); // Mean layer density (g cm-3)
 	if (rho == NULL) printf("Thermal: Not enough memory to create rho[NR]\n");
@@ -2056,6 +2068,75 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
     //      Find H_mu, then tidal heating rate (Tobie et al. 2005)
     //-------------------------------------------------------------------
 
+    // TODO: this is better suited where ever eccentricity is being updated. Putting it here for now.
+    e2 = eorb * eorb;
+    if (eccentricitymodel == 0) {
+        // Classic model w/ accuracy to eccentricity squared.
+        eterm = e2;
+    } else if (eccentricitymodel == 1) {
+        // CPL-like model where eccentricity terms collapse assuming -Im[a * k2] = 1 * -Im[k2] for all `a`s.
+        // Accuracy to eccentricity to the 10th power.
+        e4 = e2 * e2;
+        e6 = e2 * e4;
+        e8 = e4 * e4;
+        e10 = e8 * e2;
+
+        // See Eq. B4 in Renaud et al (2021; PSJ)
+        // OPT: We can manually collapse all these terms from the git go to increase performance. Leaving them separate for now for easier debugging/comparison.
+        //    Also could just calculate the decimal form of all these coefficients too as an optimization.
+        eterm_1 = e10 * (2555911.0 / 122880.0) -
+                  e8  * (63949.0 / 2304.0) +
+                  e6  * (551.0 / 12.0) -
+                  e4  * (101.0 / 4.0) +
+                  e2  * 7.0;
+        eterm_2 = e10 * (-171083.0 / 320.0) +
+                  e8  * (339187.0 / 576.0) -
+                  e6  * (3847.0 / 12.0) +
+                  e4  * (605.0 / 8.0);
+        eterm_3 = e10 * (368520907.0 / 81920.0) -
+                  e8  * (1709915.0 / 768.0) +
+                  e6  * (2855.0 / 6.0);
+        eterm_4 = e10 * (-66268493.0 / 5760.0) +
+                  e8  * (2592379.0 / 1152.0);
+        eterm_5 = e10 * (6576742601.0 / 737280.0);
+
+        // Collapse into a single eterm using the CPL-like assumption.
+        eterm = eterm_1 + eterm_2 + eterm_3 + eterm_4 + eterm_5;
+    } else if (eccentricitymodel == 2) {
+        // CTL-like model where eccentricity terms collapse assuming -Im[a * k2] = a * -Im[k2] for all `a`s.
+        // Accuracy to eccentricity to the 10th power.
+        e4 = e2 * e2;
+        e6 = e2 * e4;
+        e8 = e4 * e4;
+        e10 = e8 * e2;
+
+        // See Eq. B4 in Renaud et al (2021; PSJ)
+        // OPT: We can manually collapse all these terms from the git go to increase performance. Leaving them separate for now for easier debugging/comparison.
+        //    Also could just calculate the decimal form of all these coefficients too as an optimization.
+        // These subterms are identical to the previous model. Only the final combination changes.
+        eterm_1 = e10 * (2555911.0 / 122880.0) -
+                  e8  * (63949.0 / 2304.0) +
+                  e6  * (551.0 / 12.0) -
+                  e4  * (101.0 / 4.0) +
+                  e2  * 7.0;
+        eterm_2 = e10 * (-171083.0 / 320.0) +
+                  e8  * (339187.0 / 576.0) -
+                  e6  * (3847.0 / 12.0) +
+                  e4  * (605.0 / 8.0);
+        eterm_3 = e10 * (368520907.0 / 81920.0) -
+                  e8  * (1709915.0 / 768.0) +
+                  e6  * (2855.0 / 6.0);
+        eterm_4 = e10 * (-66268493.0 / 5760.0) +
+                  e8  * (2592379.0 / 1152.0);
+        eterm_5 = e10 * (6576742601.0 / 737280.0);
+
+        // Collapse into a single eterm using the CPL-like assumption.
+        eterm = eterm_1 + 2.0 * eterm_2 + 3.0 * eterm_3 + 4.0 * eterm_4 + 5.0 * eterm_5;
+    } else {
+        printf("IcyDwarf: Thermal: eccentricitymodel must be equal to 0, 1, or 2\n");
+        exit(0);
+    }
+
 	for (ir=1;ir<NR;ir++) {
 		// Tobie et al. 2005, doi:10.1016/j.icarus.2005.04.006, equation 33. Note y2 and y3 are inverted here.
 		H_mu = 4.0/3.0 * (r[ir+1]*r[ir+1]/pow(cabs(K + 4.0/3.0*shearmod[ir]),2))
@@ -2069,7 +2150,7 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
 		// Note Im(k2) = -Im(y5) (Henning & Hurford 2014 eq. A9), the opposite convention of Tobie et al. (2005, eqs. 9 & 36).
 		// And k2 = |-y5-1| (Roberts & Nimmo 2008 equation A8), not 1-y5 as in Henning & Hurford (2014) equation A9
 		// If shearmod << 1, k2->3/2 (fluid-dominated); if shearmod->inf, k2->0 (strength-dominated) (Henning et al. 2009 p. 1006)
-		Wtide = dVol[ir] * 2.1*pow(omega_tide,5)*pow(r[NR-1],4)*eorb*eorb/r[ir+1]/r[ir+1]*H_mu*cimag(shearmod[ir]);
+		Wtide = dVol[ir] * 2.1*pow(omega_tide,5)*pow(r[NR-1],4)*eterm/r[ir+1]/r[ir+1]*H_mu*cimag(shearmod[ir]);
 		if (tidetimes) Wtide = tidetimes*Wtide;
 		(*Qth)[ir] = (*Qth)[ir] + Wtide;
 		(*Wtide_tot) = (*Wtide_tot) + Wtide;

@@ -17,7 +17,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 		double dtoutput, int nmoons, double Mprim, double Rprim, double Qprimi, double Qprimf, int Qmode, double k2prim, double J2prim, double J4prim, int reslock,
 		double Mring_init, double aring_out, double aring_in, double *r_p, double *rho_p, double rhoHydr, double rhoDry, double *Xp, double *Xsalt,
 		double **Xhydr, double *porosity, double *Xpores, double *Xfines, double *Tinit, double *Tsurf, int *fromRing, int *startdiff,
-		double *aorb_init, double *eorb_init, int tidalmodel, double tidetimes, int *orbevol, int* retrograde, double *t_tidereslock, int *hy, int chondr, int *crack_input,
+		double *aorb_init, double *eorb_init, int tidalmodel, int eccentricitymodel, double tidetimes, int *orbevol, int* retrograde, double *t_tidereslock, int *hy, int chondr, int *crack_input,
 		int *crack_species);
 
 int recov(int argc, char *argv[], char path[1024], int nmoons, char outputpath[nmoons][1024], int NR, int ntherm, int norbit, int ncrkstrs, double ****Stress, double *Xp,
@@ -36,7 +36,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 		double dtoutput, int nmoons, double Mprim, double Rprim, double Qprimi, double Qprimf, int Qmode, double k2prim, double J2prim, double J4prim, int reslock,
 		double Mring_init, double aring_out, double aring_in, double *r_p, double *rho_p, double rhoHydr, double rhoDry, double *Xp, double *Xsalt,
 		double **Xhydr, double *porosity, double *Xpores, double *Xfines, double *Tinit, double *Tsurf, int *fromRing, int *startdiff,
-		double *aorb_init, double *eorb_init, int tidalmodel, double tidetimes, int *orbevol, int* retrograde, double *t_tidereslock, int *hy, int chondr, int *crack_input,
+		double *aorb_init, double *eorb_init, int tidalmodel, int eccentricitymodel, double tidetimes, int *orbevol, int* retrograde, double *t_tidereslock, int *hy, int chondr, int *crack_input,
 		int *crack_species) {
 
 	//-------------------------------------------------------------------
@@ -1081,7 +1081,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 							&circ[im], &Crack[im], &Crack_size[im], &fracOpen[im], &P_pore[im], &P_hydr[im], &Act[im], &fracKleached[im],
 							crack_input, crack_species, aTP, integral, alpha, beta, silica, chrysotile, magnesite,
 							&ircrack[im], &ircore[im], &irice[im], &irdiff[im], forced_hydcirc, &Nu[im],
-							tidalmodel, tidetimes, im, moonspawn[im], Mprim, eorb, norb, &Wtide_tot[im], hy[im], chondr,
+							tidalmodel, eccentricitymodel, tidetimes, im, moonspawn[im], Mprim, eorb, norb, &Wtide_tot[im], hy[im], chondr,
 							&Heat_radio[im], &Heat_grav[im], &Heat_serp[im], &Heat_dehydr[im], &Heat_tide[im],
 							&Stress[im], &TideHeatRate[im]);
 //					++nloops;

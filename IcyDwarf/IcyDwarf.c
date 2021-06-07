@@ -64,6 +64,9 @@ int main(int argc, char *argv[]){
     int tidalmodel = 0;                // 1: Elastic model; 2: Maxwell model; 3: Burgers model; 4: Andrade model
     double tidetimes = 0.0;            // Multiply tidal dissipation by this factor, realistically up to 10 (McCarthy & Cooper 2016)
 
+    // Orbit inputs
+    int eccentricitymodel = 0;         // 0: Standard e^2; 1: e^10 using CPL-like assumption; 2: e^10 using CTL-like assumption. TODO: currently only effects heating.
+
     // Geophysical inputs
 	double rhoHydrRock = 0.0;          // Density of hydrated rock endmember (kg m-3)
     double rhoDryRock = 0.0;           // Density of dry rock endmember (kg m-3)
@@ -355,6 +358,7 @@ int main(int argc, char *argv[]){
     printf("| Hydrated rock density (g cm-3)                                  | %g\n", rhoHydrRock);
     printf("| Chondrite type? CI=0 CO=1                                       | %d\n", chondr);
     printf("| Tidal rheology? Maxwell=2 Burgers=3 Andrade=4 Sundberg-Cooper=5 | %d\n", tidalmodel);
+    printf("| Eccentricity Model? e^2=0 e^10-CPL=1 e^10-CTL=2                 | %d\n", eccentricitymodel);
     printf("| Tidal heating x...?                                             | %g\n", tidetimes);
     printf("|-----------------------------------------------------------------|------------------------------------------------------|\n");
     printf("| Subroutines ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||\n");
@@ -444,7 +448,7 @@ int main(int argc, char *argv[]){
 		printf("Running thermal evolution code...\n");
 		PlanetSystem(argc, argv, path, warnings, recover, NR, timestep, speedup, tzero, total_time, output_every, nmoons, Mprim, Rprim, Qprimi, Qprimf,
 				Qmode, k2prim, J2prim, J4prim, reslock, Mring, aring_out, aring_in, r_p, rho_p, rhoHydrRock, rhoDryRock, nh3, salt, Xhydr, porosity, Xpores,
-				Xfines, Tinit, Tsurf, fromRing, startdiff, aorb, eorb, tidalmodel, tidetimes, orbevol, retrograde, t_tidereslock, hy, chondr, crack_input, crack_species);
+				Xfines, Tinit, Tsurf, fromRing, startdiff, aorb, eorb, tidalmodel, eccentricitymodel, tidetimes, orbevol, retrograde, t_tidereslock, hy, chondr, crack_input, crack_species);
 		printf("\n");
 	}
 
