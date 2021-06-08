@@ -2025,7 +2025,7 @@ int tide(int tidalmodel, int eccentricitymodel, double tidetimes, double eorb, d
             // Hard coding these parameters here for now
             voigt_comp_offset = 0.43;       // Value from S-C 2010 fit
             voigt_viscosity_offset = 0.02;  // Value from Henning+ 2009
-            zeta_Andrade = 1.0;             // Assumes the Maxwell and Andrade timescales are equal. For Mantle rock this can range from ~0.1 to 10.0. See refs in Renaud (PhD Thesis; GMU) 2019
+            zeta_Andrade = 1.0;             // Assumes the Maxwell and Andrade timescales are equal (Efroimsky 2013). For Mantle rock this can range from ~0.1 to 10.0. See refs in Renaud (PhD Thesis; GMU) 2019
 
             // Scale viscosity and compliance
             comp_Maxwell = (1.0 / mu_rigid);

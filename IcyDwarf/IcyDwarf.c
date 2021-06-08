@@ -254,6 +254,7 @@ int main(int argc, char *argv[]){
 	rhoHydrRock = input[i]; i++;       // g cm-3
 	chondr = (int) input[i]; i++;
 	tidalmodel = (int) input[i]; i++;
+    eccentricitymodel = (int) input[i]; i++;
 	tidetimes = input[i]; i++;
 	//-----------------------------
 	run_thermal = (int) input[i]; i++;
