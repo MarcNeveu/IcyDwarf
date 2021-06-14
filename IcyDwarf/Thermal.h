@@ -1805,10 +1805,10 @@ int tide(int tidalmodel, int eccentricitymodel, double tidetimes, double eorb, d
     double e10 = 0.0;                    // Eccentricity^10
     double eterm = 0.0;                  // Multiplier to the tidal heat given a planet's susceptibility to eccentricity tides.
     double eterm_1 = 0.0;                // 1st Eccentricity Subterm
-    double eterm_2 = 0.0;                // 1st Eccentricity Subterm
-    double eterm_3 = 0.0;                // 1st Eccentricity Subterm
-    double eterm_4 = 0.0;                // 1st Eccentricity Subterm
-    double eterm_5 = 0.0;                // 1st Eccentricity Subterm
+    double eterm_2 = 0.0;                // 2nd Eccentricity Subterm
+    double eterm_3 = 0.0;                // 3rd Eccentricity Subterm
+    double eterm_4 = 0.0;                // 4th Eccentricity Subterm
+    double eterm_5 = 0.0;                // 5th Eccentricity Subterm
 
 	double *rho = (double*) malloc(NR*sizeof(double)); // Mean layer density (g cm-3)
 	if (rho == NULL) printf("Thermal: Not enough memory to create rho[NR]\n");
@@ -2033,12 +2033,14 @@ int tide(int tidalmodel, int eccentricitymodel, double tidetimes, double eorb, d
             visc_Voigt = voigt_viscosity_offset * mu_visc;
 
             // Solve Andrade components
-            sine_Andrade = (cos(alpha_Andrade * PI_greek/ 2.0) - I * sin(alpha_Andrade * PI_greek / 2.0)) * gamma_Andrade;
+            sine_Andrade = (cos(alpha_Andrade * PI_greek/ 2.0) -
+                           I * sin(alpha_Andrade * PI_greek / 2.0)) * gamma_Andrade;
 
             // Solve for the various compliances
             cmplx_compliance_Maxwell = comp_Maxwell - (I * / (omega_tide * mu_visc));
             cmplx_compliance_subAndrade = comp_Maxwell *
-                                          pow(omega_tide * comp_Maxwell * mu_visc * zeta_Andrade, -omega_tide) * sine_Andrade;
+                                          pow(omega_tide * comp_Maxwell * mu_visc * zeta_Andrade, -alpha_Andrade) *
+                                          sine_Andrade;
             cmplx_compliance_Voigt = I * comp_Voigt / (I - (comp_Voigt * visc_Voigt * omega_tide));
 
             // Solve for full Sundberg-Cooper 2010 composite model
@@ -2065,77 +2067,69 @@ int tide(int tidalmodel, int eccentricitymodel, double tidetimes, double eorb, d
 //	}
 
     //-------------------------------------------------------------------
-    //      Find H_mu, then tidal heating rate (Tobie et al. 2005)
+    //      Find eccentricity susceptibility (Renaud et al. 2021)
     //-------------------------------------------------------------------
 
-    // TODO: this is better suited where ever eccentricity is being updated. Putting it here for now.
+    // TODO: this may be better suited where ever eccentricity is being updated and then the `eterm` can be
+    //  passed to this function. Putting it here for now.
     e2 = eorb * eorb;
     if (eccentricitymodel == 0) {
-        // Classic model w/ accuracy to eccentricity squared.
+        // Classic model which is accurate for eccentricity around 0.1 or less.
         eterm = e2;
-    } else if (eccentricitymodel == 1) {
-        // CPL-like model where eccentricity terms collapse assuming -Im[a * k2] = 1 * -Im[k2] for all `a`s.
-        // Accuracy to eccentricity to the 10th power.
-        e4 = e2 * e2;
-        e6 = e2 * e4;
-        e8 = e4 * e4;
-        e10 = e8 * e2;
-
-        // See Eq. B4 in Renaud et al (2021; PSJ)
-        // OPT: We can manually collapse all these terms from the git go to increase performance. Leaving them separate for now for easier debugging/comparison.
-        //    Also could just calculate the decimal form of all these coefficients too as an optimization.
-        eterm_1 = e10 * (2555911.0 / 122880.0) -
-                  e8  * (63949.0 / 2304.0) +
-                  e6  * (551.0 / 12.0) -
-                  e4  * (101.0 / 4.0) +
-                  e2  * 7.0;
-        eterm_2 = e10 * (-171083.0 / 320.0) +
-                  e8  * (339187.0 / 576.0) -
-                  e6  * (3847.0 / 12.0) +
-                  e4  * (605.0 / 8.0);
-        eterm_3 = e10 * (368520907.0 / 81920.0) -
-                  e8  * (1709915.0 / 768.0) +
-                  e6  * (2855.0 / 6.0);
-        eterm_4 = e10 * (-66268493.0 / 5760.0) +
-                  e8  * (2592379.0 / 1152.0);
-        eterm_5 = e10 * (6576742601.0 / 737280.0);
-
-        // Collapse into a single eterm using the CPL-like assumption.
-        eterm = eterm_1 + eterm_2 + eterm_3 + eterm_4 + eterm_5;
-    } else if (eccentricitymodel == 2) {
-        // CTL-like model where eccentricity terms collapse assuming -Im[a * k2] = a * -Im[k2] for all `a`s.
-        // Accuracy to eccentricity to the 10th power.
-        e4 = e2 * e2;
-        e6 = e2 * e4;
-        e8 = e4 * e4;
-        e10 = e8 * e2;
-
-        // See Eq. B4 in Renaud et al (2021; PSJ)
-        // OPT: We can manually collapse all these terms from the git go to increase performance. Leaving them separate for now for easier debugging/comparison.
-        //    Also could just calculate the decimal form of all these coefficients too as an optimization.
-        // These subterms are identical to the previous model. Only the final combination changes.
-        eterm_1 = e10 * (2555911.0 / 122880.0) -
-                  e8  * (63949.0 / 2304.0) +
-                  e6  * (551.0 / 12.0) -
-                  e4  * (101.0 / 4.0) +
-                  e2  * 7.0;
-        eterm_2 = e10 * (-171083.0 / 320.0) +
-                  e8  * (339187.0 / 576.0) -
-                  e6  * (3847.0 / 12.0) +
-                  e4  * (605.0 / 8.0);
-        eterm_3 = e10 * (368520907.0 / 81920.0) -
-                  e8  * (1709915.0 / 768.0) +
-                  e6  * (2855.0 / 6.0);
-        eterm_4 = e10 * (-66268493.0 / 5760.0) +
-                  e8  * (2592379.0 / 1152.0);
-        eterm_5 = e10 * (6576742601.0 / 737280.0);
-
-        // Collapse into a single eterm using the CPL-like assumption.
-        eterm = eterm_1 + 2.0 * eterm_2 + 3.0 * eterm_3 + 4.0 * eterm_4 + 5.0 * eterm_5;
     } else {
-        printf("IcyDwarf: Thermal: eccentricitymodel must be equal to 0, 1, or 2\n");
-        exit(0);
+        // The other two currently available options are accurate for eccentricity around 0.5 or less.
+        // They utilize an eccentricity to the 10th power truncation.
+        e4 = e2 * e2;
+        e6 = e2 * e4;
+        e8 = e4 * e4;
+        e10 = e8 * e2;
+
+        // See Eq. B4 in Renaud et al (2021; PSJ)
+        // OPT: We can manually collapse all these terms from the git go to increase performance.
+        //  Leaving them separate for now for easier debugging/comparison.
+        //  Also could just calculate the decimal form of all these coefficients too as an optimization.
+        eterm_1 = e10 * (2555911.0 / 122880.0) -
+                  e8  * (63949.0 / 2304.0) +
+                  e6  * (551.0 / 12.0) -
+                  e4  * (101.0 / 4.0) +
+                  e2  * 7.0;
+        eterm_2 = e10 * (-171083.0 / 320.0) +
+                  e8  * (339187.0 / 576.0) -
+                  e6  * (3847.0 / 12.0) +
+                  e4  * (605.0 / 8.0);
+        eterm_3 = e10 * (368520907.0 / 81920.0) -
+                  e8  * (1709915.0 / 768.0) +
+                  e6  * (2855.0 / 6.0);
+        eterm_4 = e10 * (-66268493.0 / 5760.0) +
+                  e8  * (2592379.0 / 1152.0);
+        eterm_5 = e10 * (6576742601.0 / 737280.0);
+
+        // Note that both the CPL and CTL like models are not physically correct. A real rheology would need to be
+        //  passed each new frequency (or "tidal mode") individually and then a superposition of the final
+        //  -Im[k2] * specifc_eccentricity_terms would describe the tidal dissipation. This is less of a problem for
+        //  spin-synchronous as there are only 5 terms (at this truncation level).
+        if (eccentricitymodel == 1) {
+            // CPL-like model where eccentricity terms collapse assuming -Im[a * k2] = 1 * -Im[k2] for all `a`s.
+            eterm = eterm_1 + eterm_2 + eterm_3 + eterm_4 + eterm_5;
+        } else if (eccentricitymodel == 2) {
+            // CTL-like model where eccentricity terms collapse assuming -Im[a * k2] = a * -Im[k2] for all `a`s.
+            eterm = eterm_1 + 2.0 * eterm_2 + 3.0 * eterm_3 + 4.0 * eterm_4 + 5.0 * eterm_5;
+        } else {
+            // Unknown or non-implemented model.
+            eterm = 0.0
+            printf("IcyDwarf: Thermal: eccentricitymodel must be equal to 0, 1, or 2\n");
+            exit(0);
+        }
+
+        // The above CPL/CTL-like models carry with them most of the dissipation equations coefficients.
+        // The standard version (e^2) used in IcyDwarf does not. To make sure we have the same
+        //   coefficients on the eterm we need to divide out a 7 on the CPL/CTL-like models.
+        eterm = eterm / 7.0
     }
+
+    //-------------------------------------------------------------------
+    //      Find H_mu, then tidal heating rate (Tobie et al. 2005)
+    //-------------------------------------------------------------------
 
 	for (ir=1;ir<NR;ir++) {
 		// Tobie et al. 2005, doi:10.1016/j.icarus.2005.04.006, equation 33. Note y2 and y3 are inverted here.
@@ -2175,7 +2169,7 @@ int tide(int tidalmodel, int eccentricitymodel, double tidetimes, double eorb, d
 	free (shearmod);
 	free (rho);
 	free (M);
-	free(g);
+	free (g);
 	free (ytide);
 
 	return 0;
