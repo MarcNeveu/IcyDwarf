@@ -34,7 +34,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 		double **Mrock, double **Mrock_init, double **Mh2os, double **Madhs, double **Mh2ol, double **Mnh3l,
 		double **Vrock, double **Vh2os, double **Vadhs, double **Vh2ol, double **Vnh3l, double **Erock, double **Eh2os, double **Eslush,
 		double **Xhydr, double **Xhydr_old, double **kappa, double **pore, double *Mliq, double *Mcracked_rock,
-		int **circ, double **Crack, double **Crack_size, double **fracOpen, double **P_pore,
+		int **circ, double **Crack, double **Crack_ size, double **fracOpen, double **P_pore,
 		double **P_hydr, double ***Act, double *fracKleached, int *crack_input, int *crack_species, double **aTP, double **integral,
 		double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite, int *ircrack, int *ircore, int *irice,
 		int *irdiff, int forced_hydcirc, double **Nu, int tidalmodel, int eccentricitymodel, double tidetimes, int im, int moonspawn, double Mprim, double *eorb,
@@ -1809,6 +1809,7 @@ int tide(int tidalmodel, int eccentricitymodel, double tidetimes, double eorb, d
     double eterm_3 = 0.0;                // 3rd Eccentricity Subterm
     double eterm_4 = 0.0;                // 4th Eccentricity Subterm
     double eterm_5 = 0.0;                // 5th Eccentricity Subterm
+    double dEPS = 2.22e-16;              // Floating point precision of c double
 
 	double *rho = (double*) malloc(NR*sizeof(double)); // Mean layer density (g cm-3)
 	if (rho == NULL) printf("Thermal: Not enough memory to create rho[NR]\n");
@@ -1977,8 +1978,15 @@ int tide(int tidalmodel, int eccentricitymodel, double tidetimes, double eorb, d
 		switch(tidalmodel) {
 
 		case 2: // Maxwell viscoelastic model (Henning et al. 2009), assumes steady-state response
-			shearmod[ir] = mu_rigid*omega_tide*omega_tide*mu_visc*mu_visc / (mu_rigid*mu_rigid + omega_tide*omega_tide*mu_visc*mu_visc)
-						 + mu_rigid*mu_rigid*omega_tide*mu_visc / (mu_rigid*mu_rigid + omega_tide*omega_tide*mu_visc*mu_visc) * I;
+            // Check if the frequency is zero. Return no dissipation if that is the case.
+            if (abs(omega_tide) < 100.0 * dEPS) {
+                // The frequency is zero -> no dissipation -> Im[shear] = 0
+                shearmod[ir] = mu_rigid*omega_tide*omega_tide*mu_visc*mu_visc / (mu_rigid*mu_rigid + omega_tide*omega_tide*mu_visc*mu_visc)
+                               + 0.0 * I;
+            } else {
+                shearmod[ir] = mu_rigid*omega_tide*omega_tide*mu_visc*mu_visc / (mu_rigid*mu_rigid + omega_tide*omega_tide*mu_visc*mu_visc)
+                               + mu_rigid*mu_rigid*omega_tide*mu_visc / (mu_rigid*mu_rigid + omega_tide*omega_tide*mu_visc*mu_visc) * I;
+            }
 		break;
 
 		case 3: // Burgers viscoelastic model (Henning et al. 2009; Shoji et al. 2013), assumes superposition of steady-state and transient responses
@@ -1988,8 +1996,15 @@ int tide(int tidalmodel, int eccentricitymodel, double tidetimes, double eorb, d
 			C1 = 1.0/mu_rigid_1 + mu2/(mu_rigid_1*mu_visc) + 1.0/mu_rigid_2;
 			C2 = 1.0/mu_visc - mu2*omega_tide*omega_tide/(mu_rigid_1*mu_rigid_2);
 			D_Burgers = (pow(C2,2) + pow(omega_tide,2)*pow(C1,2));
-			shearmod[ir] = omega_tide*omega_tide*(C1 - mu2*C2/mu_rigid_1) / D_Burgers
-						 + omega_tide*(C2 + mu2*omega_tide*omega_tide*C1/mu_rigid_1) / D_Burgers * I;
+            // Check if the frequency is zero. Return no dissipation if that is the case.
+            if (abs(omega_tide) < 100.0 * dEPS) {
+                // The frequency is zero -> no dissipation -> Im[shear] = 0
+                shearmod[ir] = omega_tide*omega_tide*(C1 - mu2*C2/mu_rigid_1) / D_Burgers
+                               + 0.0 * I;
+            } else {
+                shearmod[ir] = omega_tide*omega_tide*(C1 - mu2*C2/mu_rigid_1) / D_Burgers
+                               + omega_tide*(C2 + mu2*omega_tide*omega_tide*C1/mu_rigid_1) / D_Burgers * I;
+            }
 		break;
 
 		case 4: // Andrade viscoelastic model (Shoji et al. 2013)
@@ -2006,8 +2021,18 @@ int tide(int tidalmodel, int eccentricitymodel, double tidetimes, double eorb, d
 			A_Andrade = 1.0/mu_rigid + pow(omega_tide,-alpha_Andrade)*beta_Andrade*cos(alpha_Andrade*PI_greek/2.0)*gamma_Andrade;
 			B_Andrade = 1.0/(mu_visc*omega_tide) + pow(omega_tide,-alpha_Andrade)*beta_Andrade*sin(alpha_Andrade*PI_greek/2.0)*gamma_Andrade;
 			D_Andrade = pow(A_Andrade,2) + pow(B_Andrade,2);
-			shearmod[ir] = A_Andrade/D_Andrade
-						 + B_Andrade/D_Andrade * I;
+
+            // Check if the frequency is zero. Return no dissipation if that is the case.
+            // TODO: Add a abs(w) < double_EPS here? How is EPS handled?
+            if (abs(omega_tide) < 100.0 * dEPS) {
+                // The frequency is zero -> no dissipation -> Im[shear] = 0
+                // TODO: The andrade component of the Real[compliance] goes to a very large value at zero freq (very small Re[shear]). This is not implemented yet.
+                shearmod[ir] = A_Andrade/D_Andrade
+                             + 0.0 * I;
+            } else {
+                shearmod[ir] = A_Andrade/D_Andrade
+                               + B_Andrade/D_Andrade * I;
+            }
 		break;
 
         case 5: // Sundberg-Cooper viscoelastic model (Sundberg and Cooper 2010; Renaud and Henning 2018)
@@ -2032,23 +2057,43 @@ int tide(int tidalmodel, int eccentricitymodel, double tidetimes, double eorb, d
             comp_Voigt = voigt_comp_offset * comp_Maxwell;
             visc_Voigt = voigt_viscosity_offset * mu_visc;
 
-            // Solve Andrade components
-            sine_Andrade = (cos(alpha_Andrade * PI_greek/ 2.0) -
-                           I * sin(alpha_Andrade * PI_greek / 2.0)) * gamma_Andrade;
+            // Check if the frequency is zero. Return no dissipation if that is the case.
+            // TODO: Add a abs(w) < double_EPS here? How is EPS handled?
+            if (abs(omega_tide) < 100.0 * dEPS) {
+                // The frequency is zero -> no dissipation -> Im[shear] = 0
+                // TODO: The andrade component of the Real[compliance] goes to a very large value at zero freq (very small Re[shear]). This is not implemented yet.
+                // Solve Andrade components
+                sine_Andrade = (cos(alpha_Andrade * PI_greek / 2.0) - I * 0.0) * gamma_Andrade;
 
-            // Solve for the various compliances
-            cmplx_compliance_Maxwell = comp_Maxwell - (I * / (omega_tide * mu_visc));
-            cmplx_compliance_subAndrade = comp_Maxwell *
-                                          pow(omega_tide * comp_Maxwell * mu_visc * zeta_Andrade, -alpha_Andrade) *
-                                          sine_Andrade;
-            cmplx_compliance_Voigt = I * comp_Voigt / (I - (comp_Voigt * visc_Voigt * omega_tide));
+                // Solve for the various compliances
+                cmplx_compliance_Maxwell = comp_Maxwell - I * 0.0;
+                cmplx_compliance_subAndrade = comp_Maxwell *
+                                              pow(omega_tide * comp_Maxwell * mu_visc * zeta_Andrade, -alpha_Andrade) *
+                                              sine_Andrade;
+                cmplx_compliance_Voigt =
+                        (1.0 / (comp_Voigt * comp_Voigt * visc_Voigt * visc_Voigt * omega_tide * omega_tide + 1.0)) *
+                        (comp_Voigt - I * 0.0);
+            } else {
+                // Solve Andrade components
+                sine_Andrade = (cos(alpha_Andrade * PI_greek / 2.0) -
+                                I * sin(alpha_Andrade * PI_greek / 2.0)) * gamma_Andrade;
+
+                // Solve for the various compliances
+                cmplx_compliance_Maxwell = comp_Maxwell - (I / (omega_tide * mu_visc));
+                cmplx_compliance_subAndrade = comp_Maxwell *
+                                              pow(omega_tide * comp_Maxwell * mu_visc * zeta_Andrade, -alpha_Andrade) *
+                                              sine_Andrade;
+                cmplx_compliance_Voigt =
+                        (1.0 / (comp_Voigt * comp_Voigt * visc_Voigt * visc_Voigt * omega_tide * omega_tide + 1.0)) *
+                        (comp_Voigt - I * comp_Voigt * comp_Voigt * visc_Voigt * omega_tide);
+            }
 
             // Solve for full Sundberg-Cooper 2010 composite model
             cmplx_compliance_SC = cmplx_compliance_Maxwell + cmplx_compliance_subAndrade + cmplx_compliance_Voigt;
 
             // Convert to complex rigidity and return.
             shearmod[ir] = (1.0 / cmplx_compliance_SC);
-            break;
+        break;
 		}
 	}
 
