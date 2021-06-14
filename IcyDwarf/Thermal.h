@@ -34,7 +34,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 		double **Mrock, double **Mrock_init, double **Mh2os, double **Madhs, double **Mh2ol, double **Mnh3l,
 		double **Vrock, double **Vh2os, double **Vadhs, double **Vh2ol, double **Vnh3l, double **Erock, double **Eh2os, double **Eslush,
 		double **Xhydr, double **Xhydr_old, double **kappa, double **pore, double *Mliq, double *Mcracked_rock,
-		int **circ, double **Crack, double **Crack_ size, double **fracOpen, double **P_pore,
+		int **circ, double **Crack, double **Crack_size, double **fracOpen, double **P_pore,
 		double **P_hydr, double ***Act, double *fracKleached, int *crack_input, int *crack_species, double **aTP, double **integral,
 		double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite, int *ircrack, int *ircore, int *irice,
 		int *irdiff, int forced_hydcirc, double **Nu, int tidalmodel, int eccentricitymodel, double tidetimes, int im, int moonspawn, double Mprim, double *eorb,
