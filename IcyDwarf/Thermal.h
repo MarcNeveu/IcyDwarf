@@ -2023,7 +2023,6 @@ int tide(int tidalmodel, int eccentricitymodel, double tidetimes, double eorb, d
 			D_Andrade = pow(A_Andrade,2) + pow(B_Andrade,2);
 
             // Check if the frequency is zero. Return no dissipation if that is the case.
-            // TODO: Add a abs(w) < double_EPS here? How is EPS handled?
             if (abs(omega_tide) < 100.0 * dEPS) {
                 // The frequency is zero -> no dissipation -> Im[shear] = 0
                 // TODO: The andrade component of the Real[compliance] goes to a very large value at zero freq (very small Re[shear]). This is not implemented yet.
@@ -2058,7 +2057,6 @@ int tide(int tidalmodel, int eccentricitymodel, double tidetimes, double eorb, d
             visc_Voigt = voigt_viscosity_offset * mu_visc;
 
             // Check if the frequency is zero. Return no dissipation if that is the case.
-            // TODO: Add a abs(w) < double_EPS here? How is EPS handled?
             if (abs(omega_tide) < 100.0 * dEPS) {
                 // The frequency is zero -> no dissipation -> Im[shear] = 0
                 // TODO: The andrade component of the Real[compliance] goes to a very large value at zero freq (very small Re[shear]). This is not implemented yet.
