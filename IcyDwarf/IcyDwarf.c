@@ -64,6 +64,9 @@ int main(int argc, char *argv[]){
     int tidalmodel = 0;                // 1: Elastic model; 2: Maxwell model; 3: Burgers model; 4: Andrade model
     double tidetimes = 0.0;            // Multiply tidal dissipation by this factor, realistically up to 10 (McCarthy & Cooper 2016)
 
+    // Orbit inputs
+    int eccentricitymodel = 0;         // 0: Standard e^2; 1: e^10 using CPL-like assumption; 2: e^10 using CTL-like assumption. TODO: currently only effects heating.
+
     // Geophysical inputs
 	double rhoHydrRock = 0.0;          // Density of hydrated rock endmember (kg m-3)
     double rhoDryRock = 0.0;           // Density of dry rock endmember (kg m-3)
@@ -251,6 +254,7 @@ int main(int argc, char *argv[]){
 	rhoHydrRock = input[i]; i++;       // g cm-3
 	chondr = (int) input[i]; i++;
 	tidalmodel = (int) input[i]; i++;
+    eccentricitymodel = (int) input[i]; i++;
 	tidetimes = input[i]; i++;
 	//-----------------------------
 	run_thermal = (int) input[i]; i++;
@@ -350,39 +354,40 @@ int main(int argc, char *argv[]){
 	for (im=0;im<nmoons;im++) printf(" %d \t", retrograde[im]);
 	printf("\n| Resonant tidal locking timescale (Gyr)        |");
 	for (im=0;im<nmoons;im++) printf(" %g \t", t_tidereslock[im]);
-	printf("\n|-----------------------------------------------|------------------------------------------------------|\n");
-	printf("| Dry rock density (g cm-3)                     | %g\n", rhoDryRock);
-	printf("| Hydrated rock density (g cm-3)                | %g\n", rhoHydrRock);
-	printf("| Chondrite type? CI=0 CO=1                     | %d\n", chondr);
-	printf("| Tidal rheology? Maxwell=2 Burgers=3 Andrade=4 | %d\n", tidalmodel);
-	printf("| Tidal heating x...?                           | %g\n", tidetimes);
-	printf("|-----------------------------------------------|------------------------------------------------------|\n");
-	printf("| Subroutines ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||\n");
-	printf("|-----------------------------------------------|------------------------------------------------------|\n");
-	printf("| Run thermal code?                             | %d\n", run_thermal);
-	printf("| Generate core crack aTP table?                | %d\n", run_aTP);
-	printf("| Generate water alpha beta table?              | %d\n", run_alpha_beta);
-	printf("| Generate crack species log K with CHNOSZ?     | %d\n", run_crack_species);
-	printf("| Run geochemistry code? (min max step)         | %d\n", run_geochem);
-	printf("|   Temperature                                 | %g %g %g\n", Tmin, Tmax, Tstep);
-	printf("|   Pressure                                    | %g %g %g\n", Pmin, Pmax, Pstep);
-	printf("|   pe = FMQ + ...                              | %g %g %g\n", pemin, pemax, pestep);
-	printf("|   Water:rock mass ratio                       | %g %g %g\n", WRmin, WRmax, WRstep);
-	printf("| Run compression code?                         | %d\n", run_compression);
-	printf("| Run cryovolcanism code?                       | %d\n", run_cryolava);
-	printf("|   After how many output steps?                | %d\n", t_cryolava);
-	printf("|   Minimum temperature to run CHNOSZ (K)       | %g\n", CHNOSZ_T_MIN);
-	printf("|-----------------------------------------------|------------------------------------------------------|\n");
-	printf("| Core crack options |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||\n");
-	printf("|-----------------------------------------------|------------------------------------------------------|\n");
-	printf("| Include thermal expansion/contrac mismatch?   | %d\n", crack_input[0]);
-	printf("| Include pore water expansion?                 | %d\n", crack_input[1]);
-	printf("| Include hydration/dehydration vol changes?    | %d\n", crack_input[2]);
-	printf("| Include dissolution/precipitation...?         | %d\n", crack_input[3]);
-	printf("|   ... of silica?                              | %d\n", crack_species[0]);
-	printf("|   ... of serpentine?                          | %d\n", crack_species[1]);
-	printf("|   ... of carbonate (magnesite)?               | %d\n", crack_species[2]);
-	printf("|------------------------------------------------------------------------------------------------------|\n\n");
+    printf("\n|---------------------------------------------------------------|------------------------------------------------------|\n");
+    printf("| Dry rock density (g cm-3)                                       | %g\n", rhoDryRock);
+    printf("| Hydrated rock density (g cm-3)                                  | %g\n", rhoHydrRock);
+    printf("| Chondrite type? CI=0 CO=1                                       | %d\n", chondr);
+    printf("| Tidal rheology? Maxwell=2 Burgers=3 Andrade=4 Sundberg-Cooper=5 | %d\n", tidalmodel);
+    printf("| Eccentricity Model? e^2=0 e^10-CPL=1 e^10-CTL=2                 | %d\n", eccentricitymodel);
+    printf("| Tidal heating x...?                                             | %g\n", tidetimes);
+    printf("|-----------------------------------------------------------------|------------------------------------------------------|\n");
+    printf("| Subroutines ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||\n");
+    printf("|-----------------------------------------------------------------|------------------------------------------------------|\n");
+    printf("| Run thermal code?                                               | %d\n", run_thermal);
+    printf("| Generate core crack aTP table?                                  | %d\n", run_aTP);
+    printf("| Generate water alpha beta table?                                | %d\n", run_alpha_beta);
+    printf("| Generate crack species log K with CHNOSZ?                       | %d\n", run_crack_species);
+    printf("| Run geochemistry code? (min max step)                           | %d\n", run_geochem);
+    printf("|   Temperature                                                   | %g %g %g\n", Tmin, Tmax, Tstep);
+    printf("|   Pressure                                                      | %g %g %g\n", Pmin, Pmax, Pstep);
+    printf("|   pe = FMQ + ...                                                | %g %g %g\n", pemin, pemax, pestep);
+    printf("|   Water:rock mass ratio                                         | %g %g %g\n", WRmin, WRmax, WRstep);
+    printf("| Run compression code?                                           | %d\n", run_compression);
+    printf("| Run cryovolcanism code?                                         | %d\n", run_cryolava);
+    printf("|   After how many output steps?                                  | %d\n", t_cryolava);
+    printf("|   Minimum temperature to run CHNOSZ (K)                         | %g\n", CHNOSZ_T_MIN);
+    printf("|-----------------------------------------------------------------|------------------------------------------------------|\n");
+    printf("| Core crack options |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||\n");
+    printf("|-----------------------------------------------------------------|------------------------------------------------------|\n");
+    printf("| Include thermal expansion/contrac mismatch?                     | %d\n", crack_input[0]);
+    printf("| Include pore water expansion?                                   | %d\n", crack_input[1]);
+    printf("| Include hydration/dehydration vol changes?                      | %d\n", crack_input[2]);
+    printf("| Include dissolution/precipitation...?                           | %d\n", crack_input[3]);
+    printf("|   ... of silica?                                                | %d\n", crack_species[0]);
+    printf("|   ... of serpentine?                                            | %d\n", crack_species[1]);
+    printf("|   ... of carbonate (magnesite)?                                 | %d\n", crack_species[2]);
+    printf("|------------------------------------------------------------------------------------------------------------------------|\n\n");
 
 	// Conversions to cgs
 	total_time = total_time*Myr2sec;
@@ -444,7 +449,7 @@ int main(int argc, char *argv[]){
 		printf("Running thermal evolution code...\n");
 		PlanetSystem(argc, argv, path, warnings, recover, NR, timestep, speedup, tzero, total_time, output_every, nmoons, Mprim, Rprim, Qprimi, Qprimf,
 				Qmode, k2prim, J2prim, J4prim, reslock, Mring, aring_out, aring_in, r_p, rho_p, rhoHydrRock, rhoDryRock, nh3, salt, Xhydr, porosity, Xpores,
-				Xfines, Tinit, Tsurf, fromRing, startdiff, aorb, eorb, tidalmodel, tidetimes, orbevol, retrograde, t_tidereslock, hy, chondr, crack_input, crack_species);
+				Xfines, Tinit, Tsurf, fromRing, startdiff, aorb, eorb, tidalmodel, eccentricitymodel, tidetimes, orbevol, retrograde, t_tidereslock, hy, chondr, crack_input, crack_species);
 		printf("\n");
 	}
 

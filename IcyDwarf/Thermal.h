@@ -37,7 +37,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 		int **circ, double **Crack, double **Crack_size, double **fracOpen, double **P_pore,
 		double **P_hydr, double ***Act, double *fracKleached, int *crack_input, int *crack_species, double **aTP, double **integral,
 		double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite, int *ircrack, int *ircore, int *irice,
-		int *irdiff, int forced_hydcirc, double **Nu, int tidalmodel, double tidetimes, int im, int moonspawn, double Mprim, double *eorb,
+		int *irdiff, int forced_hydcirc, double **Nu, int tidalmodel, int eccentricitymodel, double tidetimes, int im, int moonspawn, double Mprim, double *eorb,
 		double *norb, double *Wtide_tot, int hy, int chondr, double *Heat_radio, double *Heat_grav, double *Heat_serp, double *Heat_dehydr,
 		double *Heat_tide, double ***Stress, double **TideHeatRate);
 
@@ -72,7 +72,7 @@ int convect(int ir1, int ir2, double *T, double *r, int NR, double *Pressure, do
 
 double viscosity(double T, double Mh2ol, double Mnh3l);
 
-int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, double **Qth, int NR, double *Wtide_tot, double *Mh2os,
+int tide(int tidalmodel, int eccentricitymodel, double tidetimes, double eorb, double omega_tide, double **Qth, int NR, double *Wtide_tot, double *Mh2os,
 		double *Madhs, double *Mh2ol, double *Mnh3l, double *dM,  double *Vrock, double *dVol, double *r, double *T, double *Xhydr,
 		double *Pressure, double *pore, int im);
 
@@ -103,7 +103,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 		int **circ, double **Crack, double **Crack_size, double **fracOpen, double **P_pore,
 		double **P_hydr, double ***Act, double *fracKleached, int *crack_input, int *crack_species, double **aTP, double **integral,
 		double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite, int *ircrack, int *ircore, int *irice,
-		int *irdiff, int forced_hydcirc, double **Nu, int tidalmodel, double tidetimes, int im, int moonspawn, double Mprim, double *eorb,
+		int *irdiff, int forced_hydcirc, double **Nu, int tidalmodel, int eccentricitymodel, double tidetimes, int im, int moonspawn, double Mprim, double *eorb,
 		double *norb, double *Wtide_tot, int hy, int chondr, double *Heat_radio, double *Heat_grav, double *Heat_serp, double *Heat_dehydr,
 		double *Heat_tide, double ***Stress, double **TideHeatRate) {
 
@@ -388,7 +388,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 			strain((*Pressure)[ir], (*Xhydr)[ir], (*T)[ir], &strain_rate[ir], &Brittle_strength[ir], (*pore)[ir]);
 		}
 		(*Wtide_tot) = 0.0;
-		tide(tidalmodel, tidetimes, eorb[im], omega_tide, &Qth, NR, &(*Wtide_tot), (*Mh2os), (*Madhs), (*Mh2ol), (*Mnh3l), (*dM),
+		tide(tidalmodel, eccentricitymodel, tidetimes, eorb[im], omega_tide, &Qth, NR, &(*Wtide_tot), (*Mh2os), (*Madhs), (*Mh2ol), (*Mnh3l), (*dM),
 				(*Vrock), dVol, (*r), (*T), (*Xhydr), (*Pressure), (*pore), im);
 		(*Heat_tide) = (*Heat_tide) + (*Wtide_tot);
 
@@ -1757,9 +1757,10 @@ double viscosity(double T, double Mh2ol, double Mnh3l) {
  *
  *--------------------------------------------------------------------*/
 
-int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, double **Qth, int NR, double *Wtide_tot, double *Mh2os,
-		double *Madhs, double *Mh2ol, double *Mnh3l, double *dM,  double *Vrock, double *dVol, double *r, double *T, double *Xhydr,
-		double *Pressure, double *pore, int im) {
+int tide(int tidalmodel, int eccentricitymodel, double tidetimes, double eorb, double omega_tide, double **Qth, int NR,
+         double *Wtide_tot, double *Mh2os,
+		 double *Madhs, double *Mh2ol, double *Mnh3l, double *dM,  double *Vrock, double *dVol, double *r, double *T, double *Xhydr,
+		 double *Pressure, double *pore, int im) {
 
 	int ir = 0;                          // Counters
 	int i = 0;
@@ -1786,6 +1787,29 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
 	double B_Andrade = 0.0;
 	double D_Andrade = 0.0;
 	double H_mu = 0.0;    				 // Sensitivity of the radial strain energy integral to the shear modulus mu
+    double voigt_comp_offset = 0.0;      // Voigt/Burgers/S-C secondary Debye peak - compliance (1 / rigidity) offset
+    double voigt_viscosity_offset = 0.0; // Voigt/Burgers/S-C  secondary Debye peak - viscosity offset
+    double zeta_Andrade = 0.0;           // Andrade parameter, can be found via beta_Andrade and the viscosity/rigidity
+    double comp_Maxwell = 0.0;           // 1 / mu_rigid
+    double comp_Voigt = 0.0;             // voigt_comp_offset * comp_Maxwell
+    double visc_Voigt = 0.0;             // voigt_viscosity_offset * mu_visc
+    double complex sine_Andrade = 0.0 + 0.0*I;                // Defined via Andrade alpha Parameter
+    double complex cmplx_compliance_Maxwell = 0.0 + 0.0*I;    // Maxwell model's complex compliance
+    double complex cmplx_compliance_subAndrade = 0.0 + 0.0*I; // a portion of the Andrade model's complex compliance
+    double complex cmplx_compliance_Voigt = 0.0 + 0.0*I;      // Voigt-Kelvin model's complex compliance
+    double complex cmplx_compliance_SC = 0.0 + 0.0*I;         // Sundberg-Cooper model's complex compliance
+    double e2 = 0.0;                     // Eccentricity^2
+    double e4 = 0.0;                     // Eccentricity^4
+    double e6 = 0.0;                     // Eccentricity^6
+    double e8 = 0.0;                     // Eccentricity^8
+    double e10 = 0.0;                    // Eccentricity^10
+    double eterm = 0.0;                  // Multiplier to the tidal heat given a planet's susceptibility to eccentricity tides.
+    double eterm_1 = 0.0;                // 1st Eccentricity Subterm
+    double eterm_2 = 0.0;                // 2nd Eccentricity Subterm
+    double eterm_3 = 0.0;                // 3rd Eccentricity Subterm
+    double eterm_4 = 0.0;                // 4th Eccentricity Subterm
+    double eterm_5 = 0.0;                // 5th Eccentricity Subterm
+    double dEPS = 2.22e-16;              // Floating point precision of c double
 
 	double *rho = (double*) malloc(NR*sizeof(double)); // Mean layer density (g cm-3)
 	if (rho == NULL) printf("Thermal: Not enough memory to create rho[NR]\n");
@@ -1954,8 +1978,15 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
 		switch(tidalmodel) {
 
 		case 2: // Maxwell viscoelastic model (Henning et al. 2009), assumes steady-state response
-			shearmod[ir] = mu_rigid*omega_tide*omega_tide*mu_visc*mu_visc / (mu_rigid*mu_rigid + omega_tide*omega_tide*mu_visc*mu_visc)
-						 + mu_rigid*mu_rigid*omega_tide*mu_visc / (mu_rigid*mu_rigid + omega_tide*omega_tide*mu_visc*mu_visc) * I;
+            // Check if the frequency is zero. Return no dissipation if that is the case.
+            if (abs(omega_tide) < 100.0 * dEPS) {
+                // The frequency is zero -> no dissipation -> Im[shear] = 0
+                shearmod[ir] = mu_rigid*omega_tide*omega_tide*mu_visc*mu_visc / (mu_rigid*mu_rigid + omega_tide*omega_tide*mu_visc*mu_visc)
+                               + 0.0 * I;
+            } else {
+                shearmod[ir] = mu_rigid*omega_tide*omega_tide*mu_visc*mu_visc / (mu_rigid*mu_rigid + omega_tide*omega_tide*mu_visc*mu_visc)
+                               + mu_rigid*mu_rigid*omega_tide*mu_visc / (mu_rigid*mu_rigid + omega_tide*omega_tide*mu_visc*mu_visc) * I;
+            }
 		break;
 
 		case 3: // Burgers viscoelastic model (Henning et al. 2009; Shoji et al. 2013), assumes superposition of steady-state and transient responses
@@ -1965,8 +1996,15 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
 			C1 = 1.0/mu_rigid_1 + mu2/(mu_rigid_1*mu_visc) + 1.0/mu_rigid_2;
 			C2 = 1.0/mu_visc - mu2*omega_tide*omega_tide/(mu_rigid_1*mu_rigid_2);
 			D_Burgers = (pow(C2,2) + pow(omega_tide,2)*pow(C1,2));
-			shearmod[ir] = omega_tide*omega_tide*(C1 - mu2*C2/mu_rigid_1) / D_Burgers
-						 + omega_tide*(C2 + mu2*omega_tide*omega_tide*C1/mu_rigid_1) / D_Burgers * I;
+            // Check if the frequency is zero. Return no dissipation if that is the case.
+            if (abs(omega_tide) < 100.0 * dEPS) {
+                // The frequency is zero -> no dissipation -> Im[shear] = 0
+                shearmod[ir] = omega_tide*omega_tide*(C1 - mu2*C2/mu_rigid_1) / D_Burgers
+                               + 0.0 * I;
+            } else {
+                shearmod[ir] = omega_tide*omega_tide*(C1 - mu2*C2/mu_rigid_1) / D_Burgers
+                               + omega_tide*(C2 + mu2*omega_tide*omega_tide*C1/mu_rigid_1) / D_Burgers * I;
+            }
 		break;
 
 		case 4: // Andrade viscoelastic model (Shoji et al. 2013)
@@ -1983,9 +2021,77 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
 			A_Andrade = 1.0/mu_rigid + pow(omega_tide,-alpha_Andrade)*beta_Andrade*cos(alpha_Andrade*PI_greek/2.0)*gamma_Andrade;
 			B_Andrade = 1.0/(mu_visc*omega_tide) + pow(omega_tide,-alpha_Andrade)*beta_Andrade*sin(alpha_Andrade*PI_greek/2.0)*gamma_Andrade;
 			D_Andrade = pow(A_Andrade,2) + pow(B_Andrade,2);
-			shearmod[ir] = A_Andrade/D_Andrade
-						 + B_Andrade/D_Andrade * I;
+
+            // Check if the frequency is zero. Return no dissipation if that is the case.
+            if (abs(omega_tide) < 100.0 * dEPS) {
+                // The frequency is zero -> no dissipation -> Im[shear] = 0
+                // TODO: The andrade component of the Real[compliance] goes to a very large value at zero freq (very small Re[shear]). This is not implemented yet.
+                shearmod[ir] = A_Andrade/D_Andrade
+                             + 0.0 * I;
+            } else {
+                shearmod[ir] = A_Andrade/D_Andrade
+                               + B_Andrade/D_Andrade * I;
+            }
 		break;
+
+        case 5: // Sundberg-Cooper viscoelastic model (Sundberg and Cooper 2010; Renaud and Henning 2018)
+            // Evaluate Gamma(alpha_Andrade + 1.0); Gamma is the gamma function. alpha_Andrade can vary from 0.2 to 0.5 (Shoji et al. 2013; Castillo-Rogez et al. 2011)
+            if (alpha_Andrade == 0.2) gamma_Andrade = 0.918169;
+            else if (alpha_Andrade == 0.3) gamma_Andrade = 0.897471;
+            else if (alpha_Andrade == 0.4) gamma_Andrade = 0.887264;
+            else if (alpha_Andrade == 0.5) gamma_Andrade = 0.886227;
+            else {
+                printf ("IcyDwarf: Thermal: alpha_Andrade must be equal to 0.2, 0.3, 0.4, or 0.5 (see Castillo-Rogez et al. 2011, doi 10.1029/2010JE003664)\n");
+                exit(0);
+            }
+
+            // Setup Burgers / Voigt-Kelvin constants
+            // Hard coding these parameters here for now
+            voigt_comp_offset = 0.43;       // Value from S-C 2010 fit
+            voigt_viscosity_offset = 0.02;  // Value from Henning+ 2009
+            zeta_Andrade = 1.0;             // Assumes the Maxwell and Andrade timescales are equal (Efroimsky 2013). For Mantle rock this can range from ~0.1 to 10.0. See refs in Renaud (PhD Thesis; GMU) 2019
+
+            // Scale viscosity and compliance
+            comp_Maxwell = (1.0 / mu_rigid);
+            comp_Voigt = voigt_comp_offset * comp_Maxwell;
+            visc_Voigt = voigt_viscosity_offset * mu_visc;
+
+            // Check if the frequency is zero. Return no dissipation if that is the case.
+            if (abs(omega_tide) < 100.0 * dEPS) {
+                // The frequency is zero -> no dissipation -> Im[shear] = 0
+                // TODO: The andrade component of the Real[compliance] goes to a very large value at zero freq (very small Re[shear]). This is not implemented yet.
+                // Solve Andrade components
+                sine_Andrade = (cos(alpha_Andrade * PI_greek / 2.0) - I * 0.0) * gamma_Andrade;
+
+                // Solve for the various compliances
+                cmplx_compliance_Maxwell = comp_Maxwell - I * 0.0;
+                cmplx_compliance_subAndrade = comp_Maxwell *
+                                              pow(omega_tide * comp_Maxwell * mu_visc * zeta_Andrade, -alpha_Andrade) *
+                                              sine_Andrade;
+                cmplx_compliance_Voigt =
+                        (1.0 / (comp_Voigt * comp_Voigt * visc_Voigt * visc_Voigt * omega_tide * omega_tide + 1.0)) *
+                        (comp_Voigt - I * 0.0);
+            } else {
+                // Solve Andrade components
+                sine_Andrade = (cos(alpha_Andrade * PI_greek / 2.0) -
+                                I * sin(alpha_Andrade * PI_greek / 2.0)) * gamma_Andrade;
+
+                // Solve for the various compliances
+                cmplx_compliance_Maxwell = comp_Maxwell - (I / (omega_tide * mu_visc));
+                cmplx_compliance_subAndrade = comp_Maxwell *
+                                              pow(omega_tide * comp_Maxwell * mu_visc * zeta_Andrade, -alpha_Andrade) *
+                                              sine_Andrade;
+                cmplx_compliance_Voigt =
+                        (1.0 / (comp_Voigt * comp_Voigt * visc_Voigt * visc_Voigt * omega_tide * omega_tide + 1.0)) *
+                        (comp_Voigt - I * comp_Voigt * comp_Voigt * visc_Voigt * omega_tide);
+            }
+
+            // Solve for full Sundberg-Cooper 2010 composite model
+            cmplx_compliance_SC = cmplx_compliance_Maxwell + cmplx_compliance_subAndrade + cmplx_compliance_Voigt;
+
+            // Convert to complex rigidity and return.
+            shearmod[ir] = (1.0 / cmplx_compliance_SC);
+        break;
 		}
 	}
 
@@ -2004,6 +2110,67 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
 //	}
 
     //-------------------------------------------------------------------
+    //      Find eccentricity susceptibility (Renaud et al. 2021)
+    //-------------------------------------------------------------------
+
+    // TODO: this may be better suited where ever eccentricity is being updated and then the `eterm` can be
+    //  passed to this function. Putting it here for now.
+    e2 = eorb * eorb;
+    if (eccentricitymodel == 0) {
+        // Classic model which is accurate for eccentricity around 0.1 or less.
+        eterm = e2;
+    } else {
+        // The other two currently available options are accurate for eccentricity around 0.5 or less.
+        // They utilize an eccentricity to the 10th power truncation.
+        e4 = e2 * e2;
+        e6 = e2 * e4;
+        e8 = e4 * e4;
+        e10 = e8 * e2;
+
+        // See Eq. B4 in Renaud et al (2021; PSJ)
+        // OPT: We can manually collapse all these terms from the git go to increase performance.
+        //  Leaving them separate for now for easier debugging/comparison.
+        //  Also could just calculate the decimal form of all these coefficients too as an optimization.
+        eterm_1 = e10 * (2555911.0 / 122880.0) -
+                  e8  * (63949.0 / 2304.0) +
+                  e6  * (551.0 / 12.0) -
+                  e4  * (101.0 / 4.0) +
+                  e2  * 7.0;
+        eterm_2 = e10 * (-171083.0 / 320.0) +
+                  e8  * (339187.0 / 576.0) -
+                  e6  * (3847.0 / 12.0) +
+                  e4  * (605.0 / 8.0);
+        eterm_3 = e10 * (368520907.0 / 81920.0) -
+                  e8  * (1709915.0 / 768.0) +
+                  e6  * (2855.0 / 6.0);
+        eterm_4 = e10 * (-66268493.0 / 5760.0) +
+                  e8  * (2592379.0 / 1152.0);
+        eterm_5 = e10 * (6576742601.0 / 737280.0);
+
+        // Note that both the CPL and CTL like models are not physically correct. A real rheology would need to be
+        //  passed each new frequency (or "tidal mode") individually and then a superposition of the final
+        //  -Im[k2] * specifc_eccentricity_terms would describe the tidal dissipation. This is less of a problem for
+        //  spin-synchronous as there are only 5 terms (at this truncation level).
+        if (eccentricitymodel == 1) {
+            // CPL-like model where eccentricity terms collapse assuming -Im[a * k2] = 1 * -Im[k2] for all `a`s.
+            eterm = eterm_1 + eterm_2 + eterm_3 + eterm_4 + eterm_5;
+        } else if (eccentricitymodel == 2) {
+            // CTL-like model where eccentricity terms collapse assuming -Im[a * k2] = a * -Im[k2] for all `a`s.
+            eterm = eterm_1 + 2.0 * eterm_2 + 3.0 * eterm_3 + 4.0 * eterm_4 + 5.0 * eterm_5;
+        } else {
+            // Unknown or non-implemented model.
+            eterm = 0.0
+            printf("IcyDwarf: Thermal: eccentricitymodel must be equal to 0, 1, or 2\n");
+            exit(0);
+        }
+
+        // The above CPL/CTL-like models carry with them most of the dissipation equations coefficients.
+        // The standard version (e^2) used in IcyDwarf does not. To make sure we have the same
+        //   coefficients on the eterm we need to divide out a 7 on the CPL/CTL-like models.
+        eterm = eterm / 7.0
+    }
+
+    //-------------------------------------------------------------------
     //      Find H_mu, then tidal heating rate (Tobie et al. 2005)
     //-------------------------------------------------------------------
 
@@ -2020,7 +2187,7 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
 		// Note Im(k2) = -Im(y5) (Henning & Hurford 2014 eq. A9), the opposite convention of Tobie et al. (2005, eqs. 9 & 36).
 		// And k2 = |-y5-1| (Roberts & Nimmo 2008 equation A8), not 1-y5 as in Henning & Hurford (2014) equation A9
 		// If shearmod << 1, k2->3/2 (fluid-dominated); if shearmod->inf, k2->0 (strength-dominated) (Henning et al. 2009 p. 1006)
-		Wtide = dVol[ir] * 2.1*pow(omega_tide,5)*pow(r[NR-1],4)*eorb*eorb/r[ir+1]/r[ir+1]*H_mu*cimag(shearmod[ir]);
+		Wtide = dVol[ir] * 2.1*pow(omega_tide,5)*pow(r[NR-1],4)*eterm/r[ir+1]/r[ir+1]*H_mu*cimag(shearmod[ir]);
 		if (tidetimes) Wtide = tidetimes*Wtide;
 		(*Qth)[ir] = (*Qth)[ir] + Wtide;
 		(*Wtide_tot) = (*Wtide_tot) + Wtide;
@@ -2045,7 +2212,7 @@ int tide(int tidalmodel, double tidetimes, double eorb, double omega_tide, doubl
 	free (shearmod);
 	free (rho);
 	free (M);
-	free(g);
+	free (g);
 	free (ytide);
 
 	return 0;

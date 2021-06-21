@@ -47,13 +47,14 @@ ICY DWARF v20.x INPUT FILE - Pluto as single object template
 | Allow orbit to change?                        | 0        |          |          |          |          |
 | Retrograde orbit?                             | 0        |          |          |          |          |
 | Resonant tidal locking timescale (Gyr)        | 0        |          |          |          |          |
-|-----------------------------------------------|------------------------------------------------------|
-| Dry rock density (g cm-3)                     | 3.8                                                  |
-| Hydrated rock density (g cm-3)                | 2.9                                                  |
-| Chondrite type? CI=0 CO=1                     | 0                                                    |
-| Tidal rheology? Maxwell=2 Burgers=3 Andrade=4 | 4                                                    |
-| Tidal heating x...?                           | 1                                                    |
-|-----------------------------------------------|------------------------------------------------------|
+|-----------------------------------------------------------------|------------------------------------|
+| Dry rock density (g cm-3)                                       | 3.8                                |
+| Hydrated rock density (g cm-3)                                  | 2.9                                |
+| Chondrite type? CI=0 CO=1                                       | 0                                  |
+| Tidal rheology? Maxwell=2 Burgers=3 Andrade=4 Sundberg-Cooper=5 | 4                                  |
+| Eccentricity Model? e^2=0 e^10-CPL=1 e^10-CTL=2                 | 0                                  |
+| Tidal heating x...?                                             | 1                                  |
+|-----------------------------------------------------------------|------------------------------------|
 | Subroutines ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 |-----------------------------------------------|------------------------------------------------------|
 | Run thermal code?                             | 1                                                    |
