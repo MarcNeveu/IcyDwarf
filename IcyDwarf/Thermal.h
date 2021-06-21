@@ -2159,7 +2159,7 @@ int tide(int tidalmodel, int eccentricitymodel, double tidetimes, double eorb, d
             eterm = eterm_1 + 2.0 * eterm_2 + 3.0 * eterm_3 + 4.0 * eterm_4 + 5.0 * eterm_5;
         } else {
             // Unknown or non-implemented model.
-            eterm = 0.0
+            eterm = 0.0;
             printf("IcyDwarf: Thermal: eccentricitymodel must be equal to 0, 1, or 2\n");
             exit(0);
         }
@@ -2167,7 +2167,7 @@ int tide(int tidalmodel, int eccentricitymodel, double tidetimes, double eorb, d
         // The above CPL/CTL-like models carry with them most of the dissipation equations coefficients.
         // The standard version (e^2) used in IcyDwarf does not. To make sure we have the same
         //   coefficients on the eterm we need to divide out a 7 on the CPL/CTL-like models.
-        eterm = eterm / 7.0
+        eterm = eterm / 7.0;
     }
 
     //-------------------------------------------------------------------
