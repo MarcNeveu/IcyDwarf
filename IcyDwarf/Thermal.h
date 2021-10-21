@@ -255,7 +255,12 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 	// Find the depth of the continuous cracked layer in contact with the ocean
 	(*ircrack) = NR;
 	for (ir=(*ircore)-1;ir>=0;ir--) {
-		if ((*Crack)[ir] > 0.0 || (ir>0 && (*Crack)[ir-1] > 0.0)) (*ircrack) = ir; // Second condition to avoid single non-cracked layers
+		if ((*Crack)[ir] > 0.0 ||
+				(ir>0 && (*Crack)[ir-1] > 0.0) ||
+				(ir>1 && (*Crack)[ir-2] > 0.0) ||
+				(ir>2 && (*Crack)[ir-3] > 0.0) ||
+				(ir>3 && (*Crack)[ir-4] > 0.0) ||
+				(ir>4 && (*Crack)[ir-5] > 0.0)) (*ircrack) = ir; // Second condition to avoid up to 5 non-cracked layers below seafloor
 		else break;
 	}
 
@@ -1654,7 +1659,8 @@ int convect(int ir1, int ir2, double *T, double *r, int NR, double *Pressure, do
 	if (cvmode <= 1) { // Hydrothermal circulation
 		alf1 = alfh2oavg;
 		cp1 = ((1.0-fineMassFrac)*ch2ol + fineMassFrac*(heatRock(T[jr]+2.0)-heatRock(T[jr]-2.0))*0.25); // For rock, cp = d(energy)/d(temp), here taken over 4 K surrounding T[jr]
-		mu_visc = Pa2ba*viscosity(T[jr],Mh2ol[ir1],Mnh3l[ir1])/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // Mueller, S. et al. (2010) Proc Roy Soc A 466, 1201-1228.
+		if (cvmode == 0) mu_visc = Pa2ba*viscosity(T[jr],Mh2ol[ir1],Mnh3l[ir1])/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // Water-filled porous core. Fine frac scaling from Mueller, S. et al. (2010) Proc Roy Soc A 466, 1201-1228.
+		else mu_visc = Pa2ba*viscosity(T[jr],Mh2ol[ir2],Mnh3l[ir2])/(1.0-fineVolFrac/0.64)/(1.0-fineVolFrac/0.64); // Hyd circ through cracked layer, get properties of fluid at ircore because there is no explicit fluid in cracked layer
 
 		for (ir=ir1;ir<=ir2;ir++) Crack_size_avg = Crack_size_avg + Crack_size[ir];
 		Crack_size_avg = Crack_size_avg / (double) (ir2-ir1);
