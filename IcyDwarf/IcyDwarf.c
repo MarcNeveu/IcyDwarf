@@ -162,7 +162,7 @@ int main(int argc, char *argv[]){
 
 	printf("\n");
 	printf("-------------------------------------------------------------------\n");
-	printf("IcyDwarf v21.1\n");
+	printf("IcyDwarf v21.10\n");
 	if (v_release == 1) printf("Release mode\n");
 	else if (cmdline == 1) printf("Command line mode\n");
 	printf("-------------------------------------------------------------------\n");
@@ -357,7 +357,7 @@ int main(int argc, char *argv[]){
     printf("\n|---------------------------------------------------------------|------------------------------------------------------|\n");
     printf("| Dry rock density (g cm-3)                                       | %g\n", rhoDryRock);
     printf("| Hydrated rock density (g cm-3)                                  | %g\n", rhoHydrRock);
-    printf("| Chondrite type? CI=0 CO=1                                       | %d\n", chondr);
+    printf("| Chondrite type? CI=0 CO=1 CV=2                                  | %d\n", chondr);
     printf("| Tidal rheology? Maxwell=2 Burgers=3 Andrade=4 Sundberg-Cooper=5 | %d\n", tidalmodel);
     printf("| Eccentricity Model? e^2=0 e^10-CPL=1 e^10-CTL=2                 | %d\n", eccentricitymodel);
     printf("| Tidal heating x...?                                             | %g\n", tidetimes);

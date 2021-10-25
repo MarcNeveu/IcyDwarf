@@ -1083,14 +1083,20 @@ int decay(double t, double **Qth, int NR, int chondr, double fracKleached, doubl
 		  + 0.01942 * (52.07-6.0) / 4.47  * exp(-t*0.6931/(4.47 *Gyr2sec))  // 238 U
 	      + 0.04293 * (42.96-4.0) / 14.0  * exp(-t*0.6931/(14.0 *Gyr2sec)); // 232 Th
 	}
+	else if (chondr == 2) { // CV abundances
+		S = 0.00825 * (46.74-4.0) / 0.704 * exp(-t*0.6931/(0.704*Gyr2sec))  // 235 U
+		  + 0.02589 * (52.07-6.0) / 4.47  * exp(-t*0.6931/(4.47 *Gyr2sec))  // 238 U
+	      + 0.05834 * (42.96-4.0) / 14.0  * exp(-t*0.6931/(14.0 *Gyr2sec)); // 232 Th
+	}
 	else {             // Default: CI abundances
 		S = 0.00592 * (46.74-4.0) / 0.704 * exp(-t*0.6931/(0.704*Gyr2sec))  // 235 U
 		  + 0.01871 * (52.07-6.0) / 4.47  * exp(-t*0.6931/(4.47 *Gyr2sec))  // 238 U
 		  + 0.04399 * (42.96-4.0) / 14.0  * exp(-t*0.6931/(14.0 *Gyr2sec)); // 232 Th
 	}
 	// Potassium 40
-	if (chondr == 1) S_K = 2.219 * 0.6087 / 1.265 * exp(-t*0.6931/(1.265*Gyr2sec)); // CO abundances
-	else             S_K = 5.244 * 0.6087 / 1.265 * exp(-t*0.6931/(1.265*Gyr2sec)); // CI abundances
+	if (chondr == 1)      S_K = 2.219 * 0.6087 / 1.265 * exp(-t*0.6931/(1.265*Gyr2sec)); // CO abundances
+	else if (chondr == 2) S_K = 2.032 * 0.6087 / 1.265 * exp(-t*0.6931/(1.265*Gyr2sec)); // CV abundances
+	else                  S_K = 5.244 * 0.6087 / 1.265 * exp(-t*0.6931/(1.265*Gyr2sec)); // CI abundances
 	// Short-lived radionuclides
 	S = S + (5.0e-5*8.410e4) * 3.117 / 0.000716 * exp(-t*0.6931/(0.000716*Gyr2sec)); // 26 Al
 
@@ -1688,7 +1694,8 @@ int convect(int ir1, int ir2, double *T, double *r, int NR, double *Pressure, do
 
 	// Determine effective thermal conductivities
 	if (cvmode == 0 || cvmode == 1) {
-		Ra_cr = 30.0; // Lapwood (1948)
+		// Ra_cr = 30.0; // Lapwood (1948)
+		Ra_cr = 40.0; // Huang and Wellmann (2021) Fig. 8
 		if (Ra > Ra_cr) {
 			if (cvmode == 1) {
 				// Calculate volumes of liquid water and pore space to check if there is enough liquid to circulate
@@ -1696,10 +1703,13 @@ int convect(int ir1, int ir2, double *T, double *r, int NR, double *Pressure, do
 				for (ir=ircore;ir<irdiff;ir++) Vliq = Vliq + Vh2ol[ir];
 			}
 			if (cvmode == 0 || Vliq >= Vcracked) { // Circulation, modeled as enhanced effective thermal conductivity kap1
-				kap1 = rhofluid*ch2ol/pore[ir2-1]*(permeability*Crack_size_avg*Crack_size_avg/cm/cm)/mu_visc
-									*(Pressure[ir1]-Pressure[ir2])*Pa2ba;
-				for (ir=ir1;ir<ir2;ir++) {  // Capped at kap_hydro for numerical stability
-					if (kap1 < kap_hydro) (*kappa)[ir] = kap1;
+				// kap1 = rhofluid*ch2ol/pore[ir2-1]*(permeability*Crack_size_avg*Crack_size_avg/cm/cm)/mu_visc // Neveu et al. (2015) JGR eq. 27
+				//					*(Pressure[ir1]-Pressure[ir2])*Pa2ba;
+				Nu0 = pow(Ra/Ra_cr,2.0/3.0+Ra_cr/Ra); // Fit  to Huang and Wellmann (2021) Fig. 8
+				for (ir=ir1;ir<ir2;ir++) { // Capped at kap_hydro for numerical stability
+					// if (kap1 < kap_hydro) (*kappa)[ir] = kap1; // Neveu et al. (2015) JGR approach
+					(*Nu)[ir] = Nu0; // Huang and Wellmann (2021) approach
+					if ((*kappa)[ir]*Nu0 < kap_hydro) (*kappa)[ir] = (*kappa)[ir]*Nu0;
 					else (*kappa)[ir] = kap_hydro;
 					(*circ)[ir] = 1;
 				}
