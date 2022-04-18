@@ -1401,8 +1401,8 @@ int recov(int argc, char *argv[], char path[1024], int nmoons, char outputpath[n
 	double Eice = 0.0; // Internal energy of the ice (non-rock) in erg cm-3
 
 	FILE *f;
-	char filename[1024];
-	char *title = (char*)malloc(1024*sizeof(char));
+	char filename[2048];
+	char title[2048];
 
 	double **M = (double**) malloc((nmoons)*sizeof(double*));      // Mass inside a radius
 	if (M == NULL) printf("PlanetSystem: Not enough memory to create M[nmoons]\n");
@@ -1664,7 +1664,6 @@ int recov(int argc, char *argv[], char path[1024], int nmoons, char outputpath[n
 	free (thermalout);
 	free (orbitout);
 	free (M);
-	free (title);
 
 	printf("Previous state recovered\n");
 	return 0;

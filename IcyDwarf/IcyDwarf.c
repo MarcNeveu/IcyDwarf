@@ -188,7 +188,7 @@ int main(int argc, char *argv[]){
 	// Read input
 	//-------------------------------------------------------------------
 
-	input = icy_dwarf_input (input, path); // Input is read as long doubles
+	input = icy_dwarf_input (input, path);
 
 	i = 0;
 	//-----------------------------

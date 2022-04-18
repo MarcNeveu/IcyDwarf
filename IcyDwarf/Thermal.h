@@ -644,7 +644,7 @@ int state (char path[1024], int itime, int im, int ir, double E, double *frock, 
     		// to IcyDwarf (e.g., removing "Release/IcyDwarf" characters) and specifying
     		// the right path end.
 
-    		char *title = (char*)malloc(2048*sizeof(char));
+    		char title[2048];
     		title[0] = '\0';
     		char im_str[2];
     		im_str[0] = '\0';
@@ -667,7 +667,6 @@ int state (char path[1024], int itime, int im, int ir, double E, double *frock, 
 				fprintf(fout,"Thermal: frock=%g, gh2os=%g, gadhs=%g, gh2ol=%g, gnh3l=%g, X=%g\n", (*frock), gh2os, gadhs, gh2ol, gnh3l, X);
     		}
     		fclose (fout);
-    		free (title);
     		exit(0);
     	}
 	}
@@ -1140,35 +1139,17 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 	int ir = 0;
 	int jr = 0;
 
-	double *Mrocknew = (double*) malloc((NR)*sizeof(double));      // New mass of rock
-	if (Mrocknew == NULL) printf("Thermal: Not enough memory to create Mrocknew[NR]\n");
+	double Mrocknew[NR];      // New mass of rock
+	double Mh2osnew[NR];      // New mass of water ice
+	double Madhsnew[NR];      // New mass of ADH ice
+	double Mh2olnew[NR];      // New mass of liquid water
+	double Mnh3lnew[NR];      // New mass of liquid ammonia
 
-	double *Mh2osnew = (double*) malloc((NR)*sizeof(double));      // New mass of water ice
-	if (Mh2osnew == NULL) printf("Thermal: Not enough memory to create Mh2osnew[NR]\n");
-
-	double *Madhsnew = (double*) malloc((NR)*sizeof(double));      // New mass of ADH ice
-	if (Madhsnew == NULL) printf("Thermal: Not enough memory to create Madhsnew[NR]\n");
-
-	double *Mh2olnew = (double*) malloc((NR)*sizeof(double));      // New mass of liquid water
-	if (Mh2olnew == NULL) printf("Thermal: Not enough memory to create Mh2olnew[NR]\n");
-
-	double *Mnh3lnew = (double*) malloc((NR)*sizeof(double));      // New mass of liquid ammonia
-	if (Mnh3lnew == NULL) printf("Thermal: Not enough memory to create Mnh3lnew[NR]\n");
-
-	double *Vrocknew = (double*) malloc((NR)*sizeof(double));      // New volume of rock
-	if (Vrocknew == NULL) printf("Thermal: Not enough memory to create Vrocknew[NR]\n");
-
-	double *Vh2osnew = (double*) malloc((NR)*sizeof(double));      // New volume of water ice
-	if (Vh2osnew == NULL) printf("Thermal: Not enough memory to create Vh2osnew[NR]\n");
-
-	double *Vadhsnew = (double*) malloc((NR)*sizeof(double));      // New volume of ADH ice
-	if (Vadhsnew == NULL) printf("Thermal: Not enough memory to create Vadhsnew[NR]\n");
-
-	double *Vh2olnew = (double*) malloc((NR)*sizeof(double));      // New volume of liquid water
-	if (Vh2olnew == NULL) printf("Thermal: Not enough memory to create Vh2olnew[NR]\n");
-
-	double *Vnh3lnew = (double*) malloc((NR)*sizeof(double));      // New volume of liquid ammonia
-	if (Vnh3lnew == NULL) printf("Thermal: Not enough memory to create Vnh3lnew[NR]\n");
+	double Vrocknew[NR];      // New volume of rock
+	double Vh2osnew[NR];      // New volume of water ice
+	double Vadhsnew[NR];      // New volume of ADH ice
+	double Vh2olnew[NR];      // New volume of liquid water
+	double Vnh3lnew[NR];      // New volume of liquid ammonia
 
 //	double *Erocknew = (double*) malloc((NR)*sizeof(double));      // New energy of rock
 //	if (Erocknew == NULL) printf("Thermal: Not enough memory to create Erocknew[NR]\n");
@@ -1179,8 +1160,7 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 //	double *Eslushnew = (double*) malloc((NR)*sizeof(double));     // New energy of slush
 //	if (Eslushnew == NULL) printf("Thermal: Not enough memory to create Eslushnew[NR]\n");
 
-	double *Volcell = (double*) malloc((NR)*sizeof(double));      // Cell volume
-	if (Volcell == NULL) printf("Thermal: Not enough memory to create Volcell[NR]\n");
+	double Volcell[NR];      // Cell volume
 
 	double q = 0.0;                                               // Volume that does not fit into cell jr, scaled, not necessarily < 1
 	double Volume1 = 0.0;
@@ -1436,20 +1416,10 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 	//-------------------------------------------------------------------
 	//                           Release memory
 	//-------------------------------------------------------------------
-	free (Mrocknew);
-	free (Mh2osnew);
-	free (Madhsnew);
-	free (Mh2olnew);
-	free (Mnh3lnew);
-	free (Vrocknew);
-	free (Vh2osnew);
-	free (Vadhsnew);
-	free (Vh2olnew);
-	free (Vnh3lnew);
+
 //	free (Erocknew);
 //	free (Eh2osnew);
 //	free (Eslushnew);
-	free (Volcell);
 
 	return 0;
 }

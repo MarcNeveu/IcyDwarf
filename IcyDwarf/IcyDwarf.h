@@ -233,26 +233,13 @@ double *calculate_pressure (double *Pressure, int NR, double *dM, double *Mrock,
 	int ir = 0;
 
 	// Calculate the mass fractions of material in each layer over time
-	double *M = (double*) malloc(NR*sizeof(double));                // Mass in and under the shell
-	if (M == NULL) printf("IcyDwarf: Not enough memory to create M[NR]\n");
-
-	double *frock = (double*) malloc(NR*sizeof(double));            // Fraction of rock in a shell
-	if (frock == NULL) printf("IcyDwarf: Not enough memory to create frock[NR]\n");
-
-	double *fh2os = (double*) malloc(NR*sizeof(double));            // Fraction of H2O ice in a shell
-	if (fh2os == NULL) printf("IcyDwarf: Not enough memory to create fh2os[NR]\n");
-
-	double *fh2ol = (double*) malloc(NR*sizeof(double));            // Fraction of liquid H2O in a shell
-	if (fh2ol == NULL) printf("IcyDwarf: Not enough memory to create fh2ol[NR]\n");
-
-	double *fadhs = (double*) malloc(NR*sizeof(double));            // Fraction of solid ammonia dihydrate in a shell
-	if (fadhs == NULL) printf("IcyDwarf: Not enough memory to create fadhs[NR]\n");
-
-	double *fnh3l = (double*) malloc(NR*sizeof(double));            // Fraction of liquid ammonia in a shell
-	if (fnh3l == NULL) printf("IcyDwarf: Not enough memory to create fnh3l[NR]\n");
-
-	double *g = (double*) malloc(NR*sizeof(double));                // Gravitational acceleration
-	if (g == NULL) printf("IcyDwarf: Not enough memory to create g[NR]\n");
+	double M[NR];
+	double frock[NR];
+	double fh2os[NR];
+	double fh2ol[NR];
+	double fadhs[NR];
+	double fnh3l[NR];
+	double g[NR];
 
 	M[0] = dM[0];
 
@@ -275,15 +262,6 @@ double *calculate_pressure (double *Pressure, int NR, double *dM, double *Mrock,
 						(frock[ir+1]*(Xhydr[ir]*rhoHydr + (1.0-Xhydr[ir])*rhoDry) + fh2os[ir+1]*rhoH2os +
 						 fh2ol[ir+1]*rhoH2ol + fadhs[ir+1]*rhoAdhs +
 						 fnh3l[ir+1]*rhoNh3l);
-
-	// Release memory
-	free(M);
-	free(frock);
-	free(fh2os);
-	free(fadhs);
-	free(fh2ol);
-	free(fnh3l);
-	free(g);
 
 	return Pressure;
 }
@@ -370,7 +348,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 	int tab_world = 11;     // Column spacing between worlds
 	fpos_t pos;
 
-	char *idi = (char*)malloc(2048*sizeof(char));
+	char idi[2048];
 	idi[0] = '\0';
 	if (v_release == 1) strncat(idi,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(idi,path,strlen(path)-18);
@@ -790,7 +768,6 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 	}
 	fclose(f);
 
-	free (idi);
 	return input;
 }
 
@@ -810,7 +787,7 @@ thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char pa
 	// to IcyDwarf (i.e., removing "Release/IcyDwarf" characters) and specifying
 	// the right path end.
 
-	char *kbo_dat = (char*)malloc(2048*sizeof(char));
+	char kbo_dat[2048];
 	kbo_dat[0] = '\0';
 	if (v_release == 1) strncat(kbo_dat,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(kbo_dat,path,strlen(path)-18);
@@ -837,7 +814,6 @@ thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char pa
 	}
 
 	fclose(fid);
-	free(kbo_dat);
 
 	return thoutput;
 }
@@ -856,7 +832,7 @@ double **read_input (int H, int L, double **Input, char path[1024], const char f
 	// to IcyDwarf (i.e., removing "Release/IcyDwarf" characters) and specifying
 	// the right path end.
 
-	char *title = (char*)malloc(2048*sizeof(char));
+	char title[2048];
 	title[0] = '\0';
 	if (v_release == 1) strncat(title,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(title,path,strlen(path)-18);
@@ -877,7 +853,6 @@ double **read_input (int H, int L, double **Input, char path[1024], const char f
 	}
 
 	fclose (fin);
-	free (title);
 
 	return Input;
 }
@@ -894,7 +869,7 @@ int create_output (char path[1024], const char filename[1024]) {
 	// to IcyDwarf (e.g., removing "Release/IcyDwarf" characters) and specifying
 	// the right path end.
 
-	char *title = (char*)malloc(2048*sizeof(char));
+	char title[2048];
 	title[0] = '\0';
 	if (v_release == 1) strncat(title,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(title,path,strlen(path)-18);
@@ -905,7 +880,6 @@ int create_output (char path[1024], const char filename[1024]) {
 		printf("IcyDwarf: Error opening %s output file.\n",title);
 	}
 	fclose (fout);
-	free (title);
 
 	return 0;
 }
@@ -924,7 +898,7 @@ int write_output (int H, int L, double **Output, char path[1024], const char fil
 	// to IcyDwarf (e.g., removing "Release/IcyDwarf" characters) and specifying
 	// the right path end.
 
-	char *title = (char*)malloc(2048*sizeof(char));
+	char title[2048];
 	title[0] = '\0';
 	if (v_release == 1) strncat(title,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(title,path,strlen(path)-18);
@@ -943,7 +917,6 @@ int write_output (int H, int L, double **Output, char path[1024], const char fil
 		}
 	}
 	fclose (fout);
-	free (title);
 
 	return 0;
 }
@@ -961,7 +934,7 @@ int append_output (int L, double *Output, char path[1024], const char filename[1
 	// to IcyDwarf (e.g., removing "Release/IcyDwarf" characters) and specifying
 	// the right path end.
 
-	char *title = (char*)malloc(2048*sizeof(char));
+	char title[2048];
 	title[0] = '\0';
 	if (v_release == 1) strncat(title,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(title,path,strlen(path)-18);
@@ -978,7 +951,6 @@ int append_output (int L, double *Output, char path[1024], const char filename[1
 		fprintf(fout,"\n");
 	}
 	fclose (fout);
-	free (title);
 
 	return 0;
 }
