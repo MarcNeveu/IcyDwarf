@@ -370,7 +370,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 	int tab_world = 11;     // Column spacing between worlds
 	fpos_t pos;
 
-	char *idi = (char*)malloc(1024);
+	char *idi = (char*)malloc(2048*sizeof(char));
 	idi[0] = '\0';
 	if (v_release == 1) strncat(idi,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(idi,path,strlen(path)-18);
@@ -389,53 +389,53 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 			line_no++;
 			if (line_no == 6) {
 				fgets(line, tab, f);  // Warnings?
-				scan = fscanf(f, "%lg", &input[i]), i++;   // Somehow Valgrind indicates a memory leak here.
+				scan = fscanf(f, "%lf", &input[i]), i++;   // Somehow Valgrind indicates a memory leak here.
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 7) {
 				fgets(line, tab, f);  // Messages?
-				scan = fscanf(f, "%lg", &input[i]), i++;
+				scan = fscanf(f, "%lf", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 11) {
 				fgets(line, tab, f);  // Number of grid zones
-				scan = fscanf(f, "%lg", &input[i]), i++;
+				scan = fscanf(f, "%lf", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 12) {
 				fgets(line, tab, f);  // Thermal-orbital sim time step (yr)
-				scan = fscanf(f, "%lg", &input[i]), i++;
+				scan = fscanf(f, "%lf", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 13) {
 				fgets(line, tab, f);  // Thermal sim speedup factor
-				scan = fscanf(f, "%lg", &input[i]), i++;
+				scan = fscanf(f, "%lf", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 14) {
 				fgets(line, tab, f);  // Total time of thermal sim (Myr)
-				scan = fscanf(f, "%lg", &input[i]), i++;
+				scan = fscanf(f, "%lf", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 15) {
 				fgets(line, tab, f);  // Output every... (Myr)
-				scan = fscanf(f, "%lg", &input[i]), i++;
+				scan = fscanf(f, "%lf", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 19) {
 				fgets(line, tab, f);  // Host planet mass (kg)
-				scan = fscanf(f, "%lg", &input[i]), i++;
+				scan = fscanf(f, "%lf", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 20) {
 				fgets(line, tab, f);  // Host planet radius (km)
-				scan = fscanf(f, "%lg", &input[i]), i++;
+				scan = fscanf(f, "%lf", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 21) {
 				fgets(line, tab, f);  // Host planet initial tidal Q, final tidal Q, mode of tidal Q change
 				for (j=0;j<3;j++) {
-					scan = fscanf(f, "%lg", &input[i]), i++;
+					scan = fscanf(f, "%lf", &input[i]), i++;
 					if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 					fgets(line, 1, f);
 				}
@@ -443,41 +443,41 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 			else if (line_no == 22) {
 				fgets(line, tab, f);  // Host planet initial tidal Love number k2, zonal gravity harmonics J2 and J4
 				for (j=0;j<3;j++) {
-					scan = fscanf(f, "%lg", &input[i]), i++;
+					scan = fscanf(f, "%lf", &input[i]), i++;
 					if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 					fgets(line, 1, f);
 				}
 			}
 			else if (line_no == 23) { // Resonance locking for orbital expansion
 				fgets(line, tab, f);
-				scan = fscanf(f, "%lg", &input[i]); i++;
+				scan = fscanf(f, "%lf", &input[i]); i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 24) { // Number of moons
 				fgets(line, tab, f);
-				scan = fscanf(f, "%lg", &input[i]), nmoons = (int) input[i]; i++;
+				scan = fscanf(f, "%lf", &input[i]), nmoons = (int) input[i]; i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 25) { // Host planet ring mass (kg)
 				fgets(line, tab, f);
-				scan = fscanf(f, "%lg", &input[i]); i++;
+				scan = fscanf(f, "%lf", &input[i]); i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 26) {
 				fgets(line, tab, f);  // Host planet ring inner edge (km)
-				scan = fscanf(f, "%lg", &input[i]), i++;
+				scan = fscanf(f, "%lf", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 27) {
 				fgets(line, tab, f);  // Host planet ring outer edge (km)
-				scan = fscanf(f, "%lg", &input[i]), i++;
+				scan = fscanf(f, "%lf", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 31) { // Radius (km)
 				fgetpos (f, &pos);
 				for (j=0;j<nmoons;j++) {
 					fgets(line, tab+j*tab_world, f);
-					scan = fscanf(f, "%lg", &input[i]), i++;
+					scan = fscanf(f, "%lf", &input[i]), i++;
 					if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 					fsetpos (f, &pos);
 				}
@@ -486,7 +486,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 				fgetpos (f, &pos);
 				for (j=0;j<nmoons;j++) {
 					fgets(line, tab+j*tab_world, f);
-					scan = fscanf(f, "%lg", &input[i]), i++;
+					scan = fscanf(f, "%lf", &input[i]), i++;
 					if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 					fsetpos (f, &pos);
 				}
@@ -495,7 +495,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 				fgetpos (f, &pos);
 				for (j=0;j<nmoons;j++) {
 					fgets(line, tab+j*tab_world, f);
-					scan = fscanf(f, "%lg", &input[i]), i++;
+					scan = fscanf(f, "%lf", &input[i]), i++;
 					if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 					fsetpos (f, &pos);
 				}
@@ -504,7 +504,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 				fgetpos (f, &pos);
 				for (j=0;j<nmoons;j++) {
 					fgets(line, tab+j*tab_world, f);
-					scan = fscanf(f, "%lg", &input[i]), i++;
+					scan = fscanf(f, "%lf", &input[i]), i++;
 					if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 					fsetpos (f, &pos);
 				}
@@ -513,7 +513,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 				fgetpos (f, &pos);
 				for (j=0;j<nmoons;j++) {
 					fgets(line, tab+j*tab_world, f);
-					scan = fscanf(f, "%lg", &input[i]), i++;
+					scan = fscanf(f, "%lf", &input[i]), i++;
 					if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 					fsetpos (f, &pos);
 				}
@@ -522,7 +522,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 				fgetpos (f, &pos);
 				for (j=0;j<nmoons;j++) {
 					fgets(line, tab+j*tab_world, f);
-					scan = fscanf(f, "%lg", &input[i]), i++;
+					scan = fscanf(f, "%lf", &input[i]), i++;
 					if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 					fsetpos (f, &pos);
 				}
@@ -531,7 +531,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 				fgetpos (f, &pos);
 				for (j=0;j<nmoons;j++) {
 					fgets(line, tab+j*tab_world, f);
-					scan = fscanf(f, "%lg", &input[i]), i++;
+					scan = fscanf(f, "%lf", &input[i]), i++;
 					if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 					fsetpos (f, &pos);
 				}
@@ -540,7 +540,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 				fgetpos (f, &pos);
 				for (j=0;j<nmoons;j++) {
 					fgets(line, tab+j*tab_world, f);
-					scan = fscanf(f, "%lg", &input[i]), i++;
+					scan = fscanf(f, "%lf", &input[i]), i++;
 					if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 					fsetpos (f, &pos);
 				}
@@ -549,7 +549,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 				fgetpos (f, &pos);
 				for (j=0;j<nmoons;j++) {
 					fgets(line, tab+j*tab_world, f);
-					scan = fscanf(f, "%lg", &input[i]), i++;
+					scan = fscanf(f, "%lf", &input[i]), i++;
 					if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 					fsetpos (f, &pos);
 				}
@@ -558,7 +558,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 				fgetpos (f, &pos);
 				for (j=0;j<nmoons;j++) {
 					fgets(line, tab+j*tab_world, f);
-					scan = fscanf(f, "%lg", &input[i]), i++;
+					scan = fscanf(f, "%lf", &input[i]), i++;
 					if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 					fsetpos (f, &pos);
 				}
@@ -567,7 +567,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 				fgetpos (f, &pos);
 				for (j=0;j<nmoons;j++) {
 					fgets(line, tab+j*tab_world, f);
-					scan = fscanf(f, "%lg", &input[i]), i++;
+					scan = fscanf(f, "%lf", &input[i]), i++;
 					if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 					fsetpos (f, &pos);
 				}
@@ -576,7 +576,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 				fgetpos (f, &pos);
 				for (j=0;j<nmoons;j++) {
 					fgets(line, tab+j*tab_world, f);
-					scan = fscanf(f, "%lg", &input[i]), i++;
+					scan = fscanf(f, "%lf", &input[i]), i++;
 					if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 					fsetpos (f, &pos);
 				}
@@ -585,7 +585,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 				fgetpos (f, &pos);
 				for (j=0;j<nmoons;j++) {
 					fgets(line, tab+j*tab_world, f);
-					scan = fscanf(f, "%lg", &input[i]), i++;
+					scan = fscanf(f, "%lf", &input[i]), i++;
 					if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 					fsetpos (f, &pos);
 				}
@@ -594,7 +594,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 				fgetpos (f, &pos);
 				for (j=0;j<nmoons;j++) {
 					fgets(line, tab+j*tab_world, f);
-					scan = fscanf(f, "%lg", &input[i]), i++;
+					scan = fscanf(f, "%lf", &input[i]), i++;
 					if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 					fsetpos (f, &pos);
 				}
@@ -603,7 +603,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 				fgetpos (f, &pos);
 				for (j=0;j<nmoons;j++) {
 					fgets(line, tab+j*tab_world, f);
-					scan = fscanf(f, "%lg", &input[i]), i++;
+					scan = fscanf(f, "%lf", &input[i]), i++;
 					if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 					fsetpos (f, &pos);
 				}
@@ -612,7 +612,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 				fgetpos (f, &pos);
 				for (j=0;j<nmoons;j++) {
 					fgets(line, tab+j*tab_world, f);
-					scan = fscanf(f, "%lg", &input[i]), i++;
+					scan = fscanf(f, "%lf", &input[i]), i++;
 					if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 					fsetpos (f, &pos);
 				}
@@ -621,7 +621,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 				fgetpos (f, &pos);
 				for (j=0;j<nmoons;j++) {
 					fgets(line, tab+j*tab_world, f);
-					scan = fscanf(f, "%lg", &input[i]), i++;
+					scan = fscanf(f, "%lf", &input[i]), i++;
 					if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 					fsetpos (f, &pos);
 				}
@@ -630,7 +630,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 				fgetpos (f, &pos);
 				for (j=0;j<nmoons;j++) {
 					fgets(line, tab+j*tab_world, f);
-					scan = fscanf(f, "%lg", &input[i]), i++;
+					scan = fscanf(f, "%lf", &input[i]), i++;
 					if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 					fsetpos (f, &pos);
 				}
@@ -639,70 +639,70 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 				fgetpos (f, &pos);
 				for (j=0;j<nmoons;j++) {
 					fgets(line, tab+j*tab_world, f);
-					scan = fscanf(f, "%lg", &input[i]), i++;
+					scan = fscanf(f, "%lf", &input[i]), i++;
 					if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 					fsetpos (f, &pos);
 				}
 			}
 			else if (line_no == 51) {
 				fgets(line, tab, f);  // Dry rock density (g cm-3)
-				scan = fscanf(f, "%lg", &input[i]), i++;
+				scan = fscanf(f, "%lf", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 52) {
 				fgets(line, tab, f);  // Hydrated rock density (g cm-3)
-				scan = fscanf(f, "%lg", &input[i]), i++;
+				scan = fscanf(f, "%lf", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 53) {
 				fgets(line, tab, f);  // Chondrite type
-				scan = fscanf(f, "%lg", &input[i]), i++;
+				scan = fscanf(f, "%lf", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 54) {
 				fgets(line, tab, f);  // Tidal model? 2: Maxwell, 3: Burgers, 4: Andrade, 5: Sundberg-Cooper
-				scan = fscanf(f, "%lg", &input[i]), i++;
+				scan = fscanf(f, "%lf", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 55) {
 				fgets(line, tab, f);  // Eccentricity model?
-				scan = fscanf(f, "%lg", &input[i]), i++;
+				scan = fscanf(f, "%lf", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 56) {
 				fgets(line, tab, f);  // Tides x...? (realistically up to 10, McCarthy & Cooper 2016)
-				scan = fscanf(f, "%lg", &input[i]), i++;
+				scan = fscanf(f, "%lf", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 60) {
 				fgets(line, tab, f);  // Run thermal-orbital evolution code?
-				scan = fscanf(f, "%lg", &input[i]), i++;
+				scan = fscanf(f, "%lf", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 61) {
 				fgets(line, tab, f);  // Generate a table of crack flaw sizes as a function of T and P?
-				scan = fscanf(f, "%lg", &input[i]), i++;
+				scan = fscanf(f, "%lf", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 62) {
 				fgets(line, tab, f);  // Generate tables of water expansivity and compressibility as a function of T and P?
-				scan = fscanf(f, "%lg", &input[i]), i++;
+				scan = fscanf(f, "%lf", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 63) {
 				fgets(line, tab, f);  // Generate tables of log K for crack chemical species as a function of T and P?
-				scan = fscanf(f, "%lg", &input[i]), i++;
+				scan = fscanf(f, "%lf", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 64) {
 				fgets(line, tab, f);  // Run geochemistry code?
-				scan = fscanf(f, "%lg", &input[i]), i++;
+				scan = fscanf(f, "%lf", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 65) { // Tmin, Tmax, Tstep
 				fgets(line, tab, f);
 				for (j=0;j<3;j++) {
-					scan = fscanf(f, "%lg", &input[i]), i++;
+					scan = fscanf(f, "%lf", &input[i]), i++;
 					if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 					fgets(line, 1, f);
 				}
@@ -710,7 +710,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 			else if (line_no == 66) { // Pmin, Pmax, Pstep
 				fgets(line, tab, f);
 				for (j=0;j<3;j++) {
-					scan = fscanf(f, "%lg", &input[i]), i++;
+					scan = fscanf(f, "%lf", &input[i]), i++;
 					if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 					fgets(line, 1, f);
 				}
@@ -718,7 +718,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 			else if (line_no == 67) { // pemin, pemax, pestep
 				fgets(line, tab, f);
 				for (j=0;j<3;j++) {
-					scan = fscanf(f, "%lg", &input[i]), i++;
+					scan = fscanf(f, "%lf", &input[i]), i++;
 					if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 					fgets(line, 1, f);
 				}
@@ -726,64 +726,64 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 			else if (line_no == 68) { // WRmin, WRmax, WRstep
 				fgets(line, tab, f);
 				for (j=0;j<3;j++) {
-					scan = fscanf(f, "%lg", &input[i]), i++;
+					scan = fscanf(f, "%lf", &input[i]), i++;
 					if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 					fgets(line, 1, f);
 				}
 			}
 			else if (line_no == 69) {
 				fgets(line, tab, f);  // Run compression code?
-				scan = fscanf(f, "%lg", &input[i]), i++;
+				scan = fscanf(f, "%lf", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 70) {
 				fgets(line, tab, f);  // Run cryovolcanism code?
-				scan = fscanf(f, "%lg", &input[i]), i++;
+				scan = fscanf(f, "%lf", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 71) {
 				fgets(line, tab, f);  // After how many Myr?
-				scan = fscanf(f, "%lg", &input[i]), i++;
+				scan = fscanf(f, "%lf", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 72) {
 				fgets(line, tab, f);  // Minimum temperature to run CHNOSZ (K)
-				scan = fscanf(f, "%lg", &input[i]), i++;
+				scan = fscanf(f, "%lf", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 76) {
 				fgets(line, tab, f);  // Account for thermal expansion/contraction mismatch in cracking calculations?
-				scan = fscanf(f, "%lg", &input[i]), i++;
+				scan = fscanf(f, "%lf", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 77) {
 				fgets(line, tab, f);  // Account for pore water pressurization in cracking calculations?
-				scan = fscanf(f, "%lg", &input[i]), i++;
+				scan = fscanf(f, "%lf", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 78) {
 				fgets(line, tab, f);  // Account for volume changes due to hydration and dehydration in cracking calculations?
-				scan = fscanf(f, "%lg", &input[i]), i++;
+				scan = fscanf(f, "%lf", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 79) {
 				fgets(line, tab, f);  // Account for dissolution and precipitation in cracking calculations?
-				scan = fscanf(f, "%lg", &input[i]), i++;
+				scan = fscanf(f, "%lf", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 80) {
 				fgets(line, tab, f);  // Dissolution/precipitation of silica?
-				scan = fscanf(f, "%lg", &input[i]), i++;
+				scan = fscanf(f, "%lf", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 81) {
 				fgets(line, tab, f);  // Dissolution/precipitation of serpentine?
-				scan = fscanf(f, "%lg", &input[i]), i++;
+				scan = fscanf(f, "%lf", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 			else if (line_no == 82) {
 				fgets(line, tab, f);  // Dissolution/precipitation of carbonate (magnesite)?
-				scan = fscanf(f, "%lg", &input[i]), i++;
+				scan = fscanf(f, "%lf", &input[i]), i++;
 				if (scan != 1) printf("Error scanning Icy Dwarf input file at entry i = %d\n",i);
 			}
 		}
@@ -810,7 +810,7 @@ thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char pa
 	// to IcyDwarf (i.e., removing "Release/IcyDwarf" characters) and specifying
 	// the right path end.
 
-	char *kbo_dat = (char*)malloc(1024);
+	char *kbo_dat = (char*)malloc(2048*sizeof(char));
 	kbo_dat[0] = '\0';
 	if (v_release == 1) strncat(kbo_dat,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(kbo_dat,path,strlen(path)-18);
@@ -856,7 +856,7 @@ double **read_input (int H, int L, double **Input, char path[1024], const char f
 	// to IcyDwarf (i.e., removing "Release/IcyDwarf" characters) and specifying
 	// the right path end.
 
-	char *title = (char*)malloc(1024);
+	char *title = (char*)malloc(2048*sizeof(char));
 	title[0] = '\0';
 	if (v_release == 1) strncat(title,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(title,path,strlen(path)-18);
@@ -894,7 +894,7 @@ int create_output (char path[1024], const char filename[1024]) {
 	// to IcyDwarf (e.g., removing "Release/IcyDwarf" characters) and specifying
 	// the right path end.
 
-	char *title = (char*)malloc(1024*sizeof(char));
+	char *title = (char*)malloc(2048*sizeof(char));
 	title[0] = '\0';
 	if (v_release == 1) strncat(title,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(title,path,strlen(path)-18);
@@ -924,7 +924,7 @@ int write_output (int H, int L, double **Output, char path[1024], const char fil
 	// to IcyDwarf (e.g., removing "Release/IcyDwarf" characters) and specifying
 	// the right path end.
 
-	char *title = (char*)malloc(1024*sizeof(char));
+	char *title = (char*)malloc(2048*sizeof(char));
 	title[0] = '\0';
 	if (v_release == 1) strncat(title,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(title,path,strlen(path)-18);
@@ -961,7 +961,7 @@ int append_output (int L, double *Output, char path[1024], const char filename[1
 	// to IcyDwarf (e.g., removing "Release/IcyDwarf" characters) and specifying
 	// the right path end.
 
-	char *title = (char*)malloc(1024*sizeof(char));
+	char *title = (char*)malloc(2048*sizeof(char));
 	title[0] = '\0';
 	if (v_release == 1) strncat(title,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(title,path,strlen(path)-18);

@@ -54,10 +54,10 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 	double pe = 0.0;
 	double WR = 0.0;											 // Water:rock ratio by mass
 
-	char *dbase = (char*)malloc(1024);                           // Path to thermodynamic database
-	char *infile = (char*)malloc(1024);                          // Path to initial input file
-	char *solfile = (char*)malloc(1024);                         // Path to input solution file (to find solution pH that balances charge)
-	char *outfile = (char*)malloc(1024);                         // Path to output file
+	char *dbase = (char*)malloc(2048*sizeof(char));                           // Path to thermodynamic database
+	char *infile = (char*)malloc(2048*sizeof(char));                          // Path to initial input file
+	char *solfile = (char*)malloc(2048*sizeof(char));                         // Path to input solution file (to find solution pH that balances charge)
+	char *outfile = (char*)malloc(2048*sizeof(char));                         // Path to output file
 
 	int nloops = 0;
 	double logfO2 = 0.0;                                         // O2 fugacity for the Fayalite-Magnetite-Quartz buffer at T,P
@@ -142,7 +142,7 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 
 #pragma omp parallel private(thread_id, phreeqc, pH, pe, FMQ, nloops)
 					{
-				char *tempinput = (char*)malloc(1024);
+				char *tempinput = (char*)malloc(2048*sizeof(char));
 				tempinput[0] = '\0';
 
 				thread_id = omp_get_thread_num();
@@ -334,12 +334,12 @@ int WritePHREEQCInput(const char *TemplateFile, double temp, double pressure, do
 	// Open input file
 	FILE *fin;
 	FILE *fout;
-	char temp_str[10];
-	char pressure_str[10];
-	char pH_str[10];
-	char rel_pe_str[10];
-	char pe_str[10];
-	char WR_str[10];
+	char temp_str[14];
+	char pressure_str[14];
+	char pH_str[14];
+	char rel_pe_str[14];
+	char pe_str[14];
+	char WR_str[14];
 	temp_str[0] = '\0';
 	pressure_str[0] = '\0';
 	pH_str[0] = '\0';

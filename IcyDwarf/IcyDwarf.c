@@ -35,7 +35,7 @@ int main(int argc, char *argv[]){
 	int j = 0;
 	int im = 0;
 
-	int nmoons_max = 100;
+	int nmoons_max = 10;
 
 	// Grid inputs
     double timestep = 0.0;             // Time step of the sim (yr)
@@ -150,7 +150,7 @@ int main(int argc, char *argv[]){
     double CHNOSZ_T_MIN = 0.0;         // Minimum temperature for the subcrt() routine of CHNOSZ to work
                                        // Default: 235 K (Cryolava), 245 K (Crack, P>200 bar)
 
-	int n_inputs = 200;
+	int n_inputs = 1024;
 
 	double *input = (double*) malloc(n_inputs*sizeof(double));
 	if (input == NULL) printf("IcyDwarf: Not enough memory to create input[%d]\n", n_inputs);
@@ -162,7 +162,7 @@ int main(int argc, char *argv[]){
 
 	printf("\n");
 	printf("-------------------------------------------------------------------\n");
-	printf("IcyDwarf v21.10\n");
+	printf("IcyDwarf v22.4\n");
 	if (v_release == 1) printf("Release mode\n");
 	else if (cmdline == 1) printf("Command line mode\n");
 	printf("-------------------------------------------------------------------\n");
@@ -188,88 +188,88 @@ int main(int argc, char *argv[]){
 	// Read input
 	//-------------------------------------------------------------------
 
-	input = icy_dwarf_input (input, path);
+	input = icy_dwarf_input (input, path); // Input is read as long doubles
 
 	i = 0;
 	//-----------------------------
 	warnings = (int) input[i]; i++;
 	recover = (int) input[i]; i++;
 	//-----------------------------
-	NR = input[i]; i++;
-	timestep = input[i]; i++;          // yr
-	speedup = input[i]; i++;
-	total_time = input[i]; i++;        // Myr
-	output_every = input[i]; i++;      // Myr
+	NR = (int) input[i]; i++;
+	timestep = (double) input[i]; i++;          // yr
+	speedup = (double) input[i]; i++;
+	total_time = (double) input[i]; i++;        // Myr
+	output_every = (double) input[i]; i++;      // Myr
 	//-----------------------------
-	Mprim = input[i]; i++;             // kg
-	Rprim = input[i]; i++;             // km
-	Qprimi = input[i]; i++; Qprimf = input[i]; i++; Qmode = (int) input[i]; i++;
-	k2prim = input[i]; i++; J2prim = input[i]; i++; J4prim = input[i]; i++;
+	Mprim = (double) input[i]; i++;             // kg
+	Rprim = (double) input[i]; i++;             // km
+	Qprimi = (double) input[i]; i++; Qprimf = (double) input[i]; i++; Qmode = (int) input[i]; i++;
+	k2prim = (double) input[i]; i++; J2prim = (double) input[i]; i++; J4prim = (double) input[i]; i++;
 	reslock = (int) input[i]; i++;
 	nmoons = (int) input[i]; i++;
-	Mring = input[i]; i++;             // kg
-	aring_in = input[i]; i++;          // cm
-	aring_out = input[i]; i++;         // cm
+	Mring = (double) input[i]; i++;             // kg
+	aring_in = (double) input[i]; i++;          // cm
+	aring_out = (double) input[i]; i++;         // cm
 	//-----------------------------
-	for (im=0;im<nmoons;im++) r_p[im] = input[i+im];             // km
+	for (im=0;im<nmoons;im++) r_p[im] = (double) input[i+im];             // km
 	i=i+nmoons;
-	for (im=0;im<nmoons;im++) rho_p[im] = input[i+im];           // g cm-3
+	for (im=0;im<nmoons;im++) rho_p[im] = (double) input[i+im];           // g cm-3
 	i=i+nmoons;
-	for (im=0;im<nmoons;im++) Tsurf[im] = input[i+im];           // K
+	for (im=0;im<nmoons;im++) Tsurf[im] = (double) input[i+im];           // K
 	i=i+nmoons;
-	for (im=0;im<nmoons;im++) Tinit[im] = input[i+im];           // K
+	for (im=0;im<nmoons;im++) Tinit[im] = (double) input[i+im];           // K
 	i=i+nmoons;
-	for (im=0;im<nmoons;im++) tzero[im] = input[i+im];           // Myr
+	for (im=0;im<nmoons;im++) tzero[im] = (double) input[i+im];           // Myr
 	i=i+nmoons;
 	for (im=0;im<nmoons;im++) fromRing[im] = (int) input[i+im];  // 0 or 1
 	i=i+nmoons;
-	for (im=0;im<nmoons;im++) nh3[im] = input[i+im];             // Fraction w.r.t. H2O
+	for (im=0;im<nmoons;im++) nh3[im] = (double) input[i+im];             // Fraction w.r.t. H2O
 	i=i+nmoons;
-	for (im=0;im<nmoons;im++) salt[im] = input[i+im];            // 0 or 1
+	for (im=0;im<nmoons;im++) salt[im] = (double) input[i+im];            // 0 or 1
 	i=i+nmoons;
-	for (im=0;im<nmoons;im++) Xhydr_init[im] = input[i+im];
+	for (im=0;im<nmoons;im++) Xhydr_init[im] = (double) input[i+im];
 	i=i+nmoons;
 	for (im=0;im<nmoons;im++) hy[im] = (int) input[i+im];
 	i=i+nmoons;
-	for (im=0;im<nmoons;im++) porosity[im] = input[i+im];        // vol fraction
+	for (im=0;im<nmoons;im++) porosity[im] = (double) input[i+im];        // vol fraction
 	i=i+nmoons;
-	for (im=0;im<nmoons;im++) Xfines[im] = input[i+im];          // mass fraction = vol fraction
+	for (im=0;im<nmoons;im++) Xfines[im] = (double) input[i+im];          // mass fraction = vol fraction
 	i=i+nmoons;
-	for (im=0;im<nmoons;im++) Xpores[im] = input[i+im];          // vol fraction
+	for (im=0;im<nmoons;im++) Xpores[im] = (double) input[i+im];          // vol fraction
 	i=i+nmoons;
 	for (im=0;im<nmoons;im++) startdiff[im] = (int) input[i+im];
 	i=i+nmoons;
-	for (im=0;im<nmoons;im++) aorb[im] = input[i+im];            // km
+	for (im=0;im<nmoons;im++) aorb[im] = (double) input[i+im];            // km
 	i=i+nmoons;
-	for (im=0;im<nmoons;im++) eorb[im] = input[i+im];
+	for (im=0;im<nmoons;im++) eorb[im] = (double) input[i+im];
 	i=i+nmoons;
 	for (im=0;im<nmoons;im++) orbevol[im] = (int) input[i+im];
 	i=i+nmoons;
 	for (im=0;im<nmoons;im++) retrograde[im] = (int) input[i+im];
 	i=i+nmoons;
-	for (im=0;im<nmoons;im++) t_tidereslock[im] = input[i+im];
+	for (im=0;im<nmoons;im++) t_tidereslock[im] = (double) input[i+im];
 	i=i+nmoons;
 	//-----------------------------
-	rhoDryRock = input[i]; i++;        // g cm-3
-	rhoHydrRock = input[i]; i++;       // g cm-3
+	rhoDryRock = (double) input[i]; i++;        // g cm-3
+	rhoHydrRock = (double) input[i]; i++;       // g cm-3
 	chondr = (int) input[i]; i++;
 	tidalmodel = (int) input[i]; i++;
     eccentricitymodel = (int) input[i]; i++;
-	tidetimes = input[i]; i++;
+	tidetimes = (double) input[i]; i++;
 	//-----------------------------
 	run_thermal = (int) input[i]; i++;
 	run_aTP = (int) input[i]; i++;
 	run_alpha_beta = (int) input[i]; i++;
 	run_crack_species = (int) input[i]; i++;
 	run_geochem = (int) input[i]; i++;
-	Tmin = input[i]; i++; Tmax = input[i]; i++; Tstep = input[i]; i++;
-	Pmin = input[i]; i++; Pmax = input[i]; i++; Pstep = input[i]; i++;
-	pemin = input[i]; i++; pemax = input[i]; i++; pestep = input[i]; i++;
-	WRmin = input[i]; i++; WRmax = input[i]; i++; WRstep = input[i]; i++;
+	Tmin = (double) input[i]; i++; Tmax = (double) input[i]; i++; Tstep = (double) input[i]; i++;
+	Pmin = (double) input[i]; i++; Pmax = (double) input[i]; i++; Pstep = (double) input[i]; i++;
+	pemin = (double) input[i]; i++; pemax = (double) input[i]; i++; pestep = (double) input[i]; i++;
+	WRmin = (double) input[i]; i++; WRmax = (double) input[i]; i++; WRstep = (double) input[i]; i++;
 	run_compression = (int) input[i]; i++;
 	run_cryolava = (int) input[i]; i++;
 	t_cryolava = (int) input[i]/output_every; i++; // Myr
-	CHNOSZ_T_MIN = input[i]; i++;      // K
+	CHNOSZ_T_MIN = (double) input[i]; i++;      // K
 	//-----------------------------
 	for (j=0;j<4;j++) {
 		crack_input[j] = (int) input[i]; i++;
@@ -438,7 +438,7 @@ int main(int argc, char *argv[]){
     if (Xhydr == NULL) printf("IcyDwarf: Not enough memory to create Xhydr[nmoons]\n");
 	for (im=0;im<nmoons;im++) {
 		Xhydr[im] = (double*) malloc(NR*sizeof(double));
-		if (Xhydr[im] == NULL) printf("Thermal: Not enough memory to create Xhydr[nmoons][NR]\n");
+		if (Xhydr[im] == NULL) printf("IcyDwarf: Not enough memory to create Xhydr[nmoons][NR]\n");
 	}
 
 	for (im=0;im<nmoons;im++) {

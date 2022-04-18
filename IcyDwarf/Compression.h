@@ -366,7 +366,7 @@ int compression(int NR, int NT, thermalout **thoutput, int t, int dbincore, int 
 	// to IcyDwarf (e.g., removing "Release/IcyDwarf" characters) and specifying
 	// the right path end.
 
-	char *title = (char*)malloc(1024*sizeof(char));
+	char *title = (char*)malloc(2048*sizeof(char));
 	title[0] = '\0';
 	if (v_release == 1) strncat(title,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(title,path,strlen(path)-18);
@@ -476,7 +476,7 @@ int planmat(int ncomp, int **dbindex, int **eos, double **rho0, double **c, doub
 	int i = 0;
 	char str[1024];
 
-	char *planmatdb = (char*)malloc(1024);
+	char *planmatdb = (char*)malloc(2048*sizeof(char));
 	planmatdb[0] = '\0';
 	if (v_release == 1) strncat(planmatdb,path,strlen(path)-16);
 	else if (cmdline == 1) strncat(planmatdb,path,strlen(path)-18);

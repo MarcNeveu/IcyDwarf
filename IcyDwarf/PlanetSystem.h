@@ -507,7 +507,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 	}
 
 	char outputpath[nmoons][1024];
-	char im_str[2];
+	char im_str[12];
 	char filename[1024];
 
 	// Initialize all the arrays
@@ -603,6 +603,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 	    	for (i=0;i<n_species_crack;i++) Act[im][ir][i] = 0.0;
 	    	for (i=0;i<ncrkstrs;i++) Stress[im][ir][i] = 0.0;
 	    }
+	    for (ir=0;ir<NR+1;ir++) r[im][ir] = 0.0;
 	}
 	for (i=0;i<int_size;i++) {
 		integral[i][0] = 0.0;
@@ -986,7 +987,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 			if (Qprim <= 0.0) {
 				// Turn working directory into full file path by moving up two directories to IcyDwarf (e.g., removing
 				// "Release/IcyDwarf" characters) and specifying the right path end.
-				char *title = (char*)malloc(1024*sizeof(char));
+				char *title = (char*)malloc(2048*sizeof(char));
 				title[0] = '\0';
 				if (v_release == 1) strncat(title,path,strlen(path)-16);
 				else if (cmdline == 1) strncat(title,path,strlen(path)-18);

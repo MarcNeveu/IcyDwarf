@@ -644,7 +644,7 @@ int state (char path[1024], int itime, int im, int ir, double E, double *frock, 
     		// to IcyDwarf (e.g., removing "Release/IcyDwarf" characters) and specifying
     		// the right path end.
 
-    		char *title = (char*)malloc(1024*sizeof(char));
+    		char *title = (char*)malloc(2048*sizeof(char));
     		title[0] = '\0';
     		char im_str[2];
     		im_str[0] = '\0';
@@ -1436,7 +1436,6 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 	//-------------------------------------------------------------------
 	//                           Release memory
 	//-------------------------------------------------------------------
-
 	free (Mrocknew);
 	free (Mh2osnew);
 	free (Madhsnew);
@@ -1825,7 +1824,7 @@ int tide(int tidalmodel, int eccentricitymodel, double tidetimes, double eorb, d
     double eterm_3 = 0.0;                // 3rd Eccentricity Subterm
     double eterm_4 = 0.0;                // 4th Eccentricity Subterm
     double eterm_5 = 0.0;                // 5th Eccentricity Subterm
-    double dEPS = 2.22e-16;              // Floating point precision of c double
+    double dEPS = 2.22e-16;              // Floating point precision of C double
 
 	double *rho = (double*) malloc(NR*sizeof(double)); // Mean layer density (g cm-3)
 	if (rho == NULL) printf("Thermal: Not enough memory to create rho[NR]\n");
@@ -1836,7 +1835,7 @@ int tide(int tidalmodel, int eccentricitymodel, double tidetimes, double eorb, d
 	double *g = (double*) malloc(NR*sizeof(double));   // Mean gravity in layer (cm s-2)
 	if (g == NULL) printf("Thermal: Not enough memory to create g[NR]\n");
 
-	double complex *shearmod = (complex double*) malloc(NR*sizeof(double complex)); // Frequency-dependent complex rigidity (g cm-1 s-2)
+	double complex *shearmod = (double complex*) malloc(NR*sizeof(double complex)); // Frequency-dependent complex rigidity (g cm-1 s-2)
 	if (shearmod == NULL) printf("Thermal: Not enough memory to create shearmod[NR]\n");
 
 	/* Vector of 6 radial functions (Sabadini & Vermeersen 2004; Roberts & Nimmo 2008; Henning & Hurford 2014):
@@ -2129,13 +2128,12 @@ int tide(int tidalmodel, int eccentricitymodel, double tidetimes, double eorb, d
     //      Find eccentricity susceptibility (Renaud et al. 2021)
     //-------------------------------------------------------------------
 
-    // TODO: this may be better suited where ever eccentricity is being updated and then the `eterm` can be
-    //  passed to this function. Putting it here for now.
     e2 = eorb * eorb;
     if (eccentricitymodel == 0) {
         // Classic model which is accurate for eccentricity around 0.1 or less.
         eterm = e2;
-    } else {
+    }
+    else {
         // The other two currently available options are accurate for eccentricity around 0.5 or less.
         // They utilize an eccentricity to the 10th power truncation.
         e4 = e2 * e2;
@@ -2143,8 +2141,8 @@ int tide(int tidalmodel, int eccentricitymodel, double tidetimes, double eorb, d
         e8 = e4 * e4;
         e10 = e8 * e2;
 
-        // See Eq. B4 in Renaud et al (2021; PSJ)
-        // OPT: We can manually collapse all these terms from the git go to increase performance.
+        // See Eq. B2 in Renaud et al. (2021; PSJ)
+        // OPT: We can manually collapse all these terms from the get go to increase performance.
         //  Leaving them separate for now for easier debugging/comparison.
         //  Also could just calculate the decimal form of all these coefficients too as an optimization.
         eterm_1 = e10 * (2555911.0 / 122880.0) -
@@ -2163,17 +2161,19 @@ int tide(int tidalmodel, int eccentricitymodel, double tidetimes, double eorb, d
                   e8  * (2592379.0 / 1152.0);
         eterm_5 = e10 * (6576742601.0 / 737280.0);
 
-        // Note that both the CPL and CTL like models are not physically correct. A real rheology would need to be
+        // Note that both the CPL and CTL-like models are not physically correct. A real rheology would need to be
         //  passed each new frequency (or "tidal mode") individually and then a superposition of the final
-        //  -Im[k2] * specifc_eccentricity_terms would describe the tidal dissipation. This is less of a problem for
+        //  -Im[k2] * specific_eccentricity_terms would describe the tidal dissipation. This is less of a problem for
         //  spin-synchronous as there are only 5 terms (at this truncation level).
         if (eccentricitymodel == 1) {
             // CPL-like model where eccentricity terms collapse assuming -Im[a * k2] = 1 * -Im[k2] for all `a`s.
             eterm = eterm_1 + eterm_2 + eterm_3 + eterm_4 + eterm_5;
-        } else if (eccentricitymodel == 2) {
+        }
+        else if (eccentricitymodel == 2) {
             // CTL-like model where eccentricity terms collapse assuming -Im[a * k2] = a * -Im[k2] for all `a`s.
             eterm = eterm_1 + 2.0 * eterm_2 + 3.0 * eterm_3 + 4.0 * eterm_4 + 5.0 * eterm_5;
-        } else {
+        }
+        else {
             // Unknown or non-implemented model.
             eterm = 0.0;
             printf("IcyDwarf: Thermal: eccentricitymodel must be equal to 0, 1, or 2\n");

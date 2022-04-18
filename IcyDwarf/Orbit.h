@@ -424,7 +424,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 				printf("Time %.3g Myr, eccentricity out of bounds. Stopping. e1=%g, e2=%g\n", (double)l*dtime/Myr2sec, e[0], e[1]);
 				// Turn working directory into full file path by moving up two directories to IcyDwarf (e.g., removing
 				// "Release/IcyDwarf" characters) and specifying the right path end.
-				char *title = (char*)malloc(1024*sizeof(char));
+				char *title = (char*)malloc(2048*sizeof(char));
 				title[0] = '\0';
 				if (v_release == 1) strncat(title,path,strlen(path)-16);
 				else if (cmdline == 1) strncat(title,path,strlen(path)-18);
@@ -458,23 +458,79 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 		// Secular changes in eccentricities and semi-major axes
 		//-------------------------------------------------------------------
 
+	    // Find eccentricity susceptibility (Renaud et al. 2021) TODO replace these terms, from equation B2, with terms from equation B3 instead
+
+//	    e2 = eorb * eorb;
+//	    if (eccentricitymodel == 0) {
+//	        // Classic model which is accurate for eccentricity around 0.1 or less.
+//	        eterm = e2;
+//	    }
+//	    else {
+//	        // The other two currently available options are accurate for eccentricity around 0.5 or less.
+//	        // They utilize an eccentricity to the 10th power truncation.
+//	        e4 = e2 * e2;
+//	        e6 = e2 * e4;
+//	        e8 = e4 * e4;
+//	        e10 = e8 * e2;
+//
+//	        // See Eq. B2 in Renaud et al. (2021; PSJ)
+//	        // OPT: We can manually collapse all these terms from the get go to increase performance.
+//	        //  Leaving them separate for now for easier debugging/comparison.
+//	        //  Also could just calculate the decimal form of all these coefficients too as an optimization.
+//	        eterm_1 = e10 * (2555911.0 / 122880.0) -
+//	                  e8  * (63949.0 / 2304.0) +
+//	                  e6  * (551.0 / 12.0) -
+//	                  e4  * (101.0 / 4.0) +
+//	                  e2  * 7.0;
+//	        eterm_2 = e10 * (-171083.0 / 320.0) +
+//	                  e8  * (339187.0 / 576.0) -
+//	                  e6  * (3847.0 / 12.0) +
+//	                  e4  * (605.0 / 8.0);
+//	        eterm_3 = e10 * (368520907.0 / 81920.0) -
+//	                  e8  * (1709915.0 / 768.0) +
+//	                  e6  * (2855.0 / 6.0);
+//	        eterm_4 = e10 * (-66268493.0 / 5760.0) +
+//	                  e8  * (2592379.0 / 1152.0);
+//	        eterm_5 = e10 * (6576742601.0 / 737280.0);
+//
+//	        // Note that both the CPL and CTL-like models are not physically correct. A real rheology would need to be
+//	        //  passed each new frequency (or "tidal mode") individually and then a superposition of the final
+//	        //  -Im[k2] * specific_eccentricity_terms would describe the tidal dissipation. This is less of a problem for
+//	        //  spin-synchronous as there are only 5 terms (at this truncation level).
+//	        if (eccentricitymodel == 1) {
+//	            // CPL-like model where eccentricity terms collapse assuming -Im[a * k2] = 1 * -Im[k2] for all `a`s.
+//	            eterm = eterm_1 + eterm_2 + eterm_3 + eterm_4 + eterm_5;
+//	        }
+//	        else if (eccentricitymodel == 2) {
+//	            // CTL-like model where eccentricity terms collapse assuming -Im[a * k2] = a * -Im[k2] for all `a`s.
+//	            eterm = eterm_1 + 2.0 * eterm_2 + 3.0 * eterm_3 + 4.0 * eterm_4 + 5.0 * eterm_5;
+//	        }
+//	        else {
+//	            // Unknown or non-implemented model.
+//	            eterm = 0.0;
+//	            printf("IcyDwarf: Thermal: eccentricitymodel must be equal to 0, 1, or 2\n");
+//	            exit(0);
+//	        }
+//
+//	        // The above CPL/CTL-like models carry with them most of the dissipation equations coefficients.
+//	        // The standard version (e^2) used in IcyDwarf does not. To make sure we have the same
+//	        //   coefficients on the eterm we need to divide out a 7 on the CPL/CTL-like models.
+//	        eterm = eterm / 7.0;
+//	    }
+
 		// Dissipation inside moon, decreases its eccentricity (equation 4.170 of Murray & Dermott 1999) TODO Equation below assumes constant phase lag, incorporate results from tidalPy instead
 		d_eorb_moon = - (*Wtide_tot)[im]*(*aorb)[im] / (Gcgs*Mprim*m_p[im]*(*eorb)[im]);
+		// and shrinks its orbit
+		d_aorb_moon = - 2.0*(*Wtide_tot)[im]*(*aorb)[im]*(*aorb)[im] / (Gcgs*Mprim*m_p[im]);
 
 		// Dissipation inside primary, typically increases moon's eccentricity but depends on mode.
 		d_eorb_pl = 57.0/8.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*(*eorb)[im]; // Equation below assumes constant phase lag. Effect of any resonant locking unknown.
-
-		// Interactions with ring TODO Could increase e (Nakajima et al. 2019 Icarus)
-		if (ringSurfaceDensity) d_eorb_ring = 0.0;
-		else d_eorb_ring = 0.0;
-
-		// Dissipation inside moon, shrinks its orbit
-		d_aorb_moon = - 2.0*(*Wtide_tot)[im]*(*aorb)[im]*(*aorb)[im] / (Gcgs*Mprim*m_p[im]);
-
-		// Dissipation inside primary. prim_sign depends on mode. Typical assumption in semimajor axis evolution is > 0 in gas giant systems where primary spins much faster than moons orbit. Otherwise, prim_sign < 0 irrespective of retrograde or prograde motion.
-		if (!reslock) d_aorb_pl = prim_sign[im]*3.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-5.5); // Dissipation inside planet, expands moon's orbit
+		// and generally expands moon's orbit, but prim_sign depends on mode. Typical assumption in semimajor axis evolution is > 0 in gas giant systems where primary spins much faster than moons orbit. Otherwise, prim_sign < 0 irrespective of retrograde or prograde motion.
+		if (!reslock) d_aorb_pl = prim_sign[im]*3.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-5.5);
 		else d_aorb_pl = prim_sign[im] * (*aorb)[im] / t_tide * (4.5682*Gyr2sec)/realtime;
-		if (ringSurfaceDensity) { // Dissipation in the rings, expands moon's orbit if exterior to rings (Meyer-Vernet & Sicardy 1987, http://dx.doi.org/10.1016/0019-1035(87)90011-X)
+
+		// Interactions with rings, expands moon's orbit if exterior to rings (Meyer-Vernet & Sicardy 1987, http://dx.doi.org/10.1016/0019-1035(87)90011-X)
+		if (ringSurfaceDensity) {
 			ringTorque = 0.0;
 			// Find inner Lindblad resonances that matter (kmin, kmax)
 			kmin = floor(1.0 / (1.0-pow(aring_in/(*aorb)[im],1.5))) + 1;
@@ -484,6 +540,8 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 				for (i=kmin;i<=kmax;i++) ringTorque = ringTorque + PI_greek*PI_greek/3.0*ringSurfaceDensity*Gcgs*m_p[im]*m_p[im]*i*(i-1)*(*aorb)[im]/Mprim;
 			}
 			d_aorb_ring = 2.0*ringTorque/m_p[im]*sqrt((*aorb)[im]/(Gcgs*Mprim)); // Charnoz et al. (2011) eq. 2, http://dx.doi.org/10.1016/j.icarus.2011.09.017
+
+			d_eorb_ring = 0.0; // TODO Could increase e (Nakajima et al. 2019 Icarus)
 		}
 
 		// Update eccentricities and semi-major axes; they cannot be negative
