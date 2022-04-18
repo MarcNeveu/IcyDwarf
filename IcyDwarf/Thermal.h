@@ -1964,11 +1964,12 @@ int tide(int tidalmodel, int eccentricitymodel, double tidetimes, double eorb, d
 
 		case 2: // Maxwell viscoelastic model (Henning et al. 2009), assumes steady-state response
             // Check if the frequency is zero. Return no dissipation if that is the case.
-            if (abs(omega_tide) < 100.0 * dEPS) {
+            if (fabs(omega_tide) < 100.0 * dEPS) {
                 // The frequency is zero -> no dissipation -> Im[shear] = 0
                 shearmod[ir] = mu_rigid*omega_tide*omega_tide*mu_visc*mu_visc / (mu_rigid*mu_rigid + omega_tide*omega_tide*mu_visc*mu_visc)
                                + 0.0 * I;
-            } else {
+            }
+            else {
                 shearmod[ir] = mu_rigid*omega_tide*omega_tide*mu_visc*mu_visc / (mu_rigid*mu_rigid + omega_tide*omega_tide*mu_visc*mu_visc)
                                + mu_rigid*mu_rigid*omega_tide*mu_visc / (mu_rigid*mu_rigid + omega_tide*omega_tide*mu_visc*mu_visc) * I;
             }
@@ -1982,11 +1983,12 @@ int tide(int tidalmodel, int eccentricitymodel, double tidetimes, double eorb, d
 			C2 = 1.0/mu_visc - mu2*omega_tide*omega_tide/(mu_rigid_1*mu_rigid_2);
 			D_Burgers = (pow(C2,2) + pow(omega_tide,2)*pow(C1,2));
             // Check if the frequency is zero. Return no dissipation if that is the case.
-            if (abs(omega_tide) < 100.0 * dEPS) {
+            if (fabs(omega_tide) < 100.0 * dEPS) {
                 // The frequency is zero -> no dissipation -> Im[shear] = 0
                 shearmod[ir] = omega_tide*omega_tide*(C1 - mu2*C2/mu_rigid_1) / D_Burgers
                                + 0.0 * I;
-            } else {
+            }
+            else {
                 shearmod[ir] = omega_tide*omega_tide*(C1 - mu2*C2/mu_rigid_1) / D_Burgers
                                + omega_tide*(C2 + mu2*omega_tide*omega_tide*C1/mu_rigid_1) / D_Burgers * I;
             }
@@ -2008,12 +2010,13 @@ int tide(int tidalmodel, int eccentricitymodel, double tidetimes, double eorb, d
 			D_Andrade = pow(A_Andrade,2) + pow(B_Andrade,2);
 
             // Check if the frequency is zero. Return no dissipation if that is the case.
-            if (abs(omega_tide) < 100.0 * dEPS) {
+            if (fabs(omega_tide) < 100.0 * dEPS) {
                 // The frequency is zero -> no dissipation -> Im[shear] = 0
-                // TODO: The andrade component of the Real[compliance] goes to a very large value at zero freq (very small Re[shear]). This is not implemented yet.
+                // TODO: The Andrade component of the Real[compliance] goes to a very large value at zero freq (very small Re[shear]). This is not implemented yet.
                 shearmod[ir] = A_Andrade/D_Andrade
                              + 0.0 * I;
-            } else {
+            }
+            else {
                 shearmod[ir] = A_Andrade/D_Andrade
                                + B_Andrade/D_Andrade * I;
             }
@@ -2042,9 +2045,9 @@ int tide(int tidalmodel, int eccentricitymodel, double tidetimes, double eorb, d
             visc_Voigt = voigt_viscosity_offset * mu_visc;
 
             // Check if the frequency is zero. Return no dissipation if that is the case.
-            if (abs(omega_tide) < 100.0 * dEPS) {
+            if (fabs(omega_tide) < 100.0 * dEPS) {
                 // The frequency is zero -> no dissipation -> Im[shear] = 0
-                // TODO: The andrade component of the Real[compliance] goes to a very large value at zero freq (very small Re[shear]). This is not implemented yet.
+                // TODO: The Andrade component of the Real[compliance] goes to a very large value at zero freq (very small Re[shear]). This is not implemented yet.
                 // Solve Andrade components
                 sine_Andrade = (cos(alpha_Andrade * PI_greek / 2.0) - I * 0.0) * gamma_Andrade;
 
@@ -2056,7 +2059,8 @@ int tide(int tidalmodel, int eccentricitymodel, double tidetimes, double eorb, d
                 cmplx_compliance_Voigt =
                         (1.0 / (comp_Voigt * comp_Voigt * visc_Voigt * visc_Voigt * omega_tide * omega_tide + 1.0)) *
                         (comp_Voigt - I * 0.0);
-            } else {
+            }
+            else {
                 // Solve Andrade components
                 sine_Andrade = (cos(alpha_Andrade * PI_greek / 2.0) -
                                 I * sin(alpha_Andrade * PI_greek / 2.0)) * gamma_Andrade;
@@ -2183,6 +2187,7 @@ int tide(int tidalmodel, int eccentricitymodel, double tidetimes, double eorb, d
 
 		Wtide = 0.0;
 	}
+
 
 // // End plots in viscosity-rigidity space
 //		printf("%g \t",log10((*Wtide_tot)/1.0e7));

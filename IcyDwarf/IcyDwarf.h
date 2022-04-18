@@ -233,13 +233,13 @@ double *calculate_pressure (double *Pressure, int NR, double *dM, double *Mrock,
 	int ir = 0;
 
 	// Calculate the mass fractions of material in each layer over time
-	double M[NR];
-	double frock[NR];
-	double fh2os[NR];
-	double fh2ol[NR];
-	double fadhs[NR];
-	double fnh3l[NR];
-	double g[NR];
+	double M[NR];     // Mass in and under the shell (g)
+	double frock[NR]; // Mass fraction of rock in a shell
+	double fh2os[NR]; // Mass fraction of H2O ice in a shell
+	double fh2ol[NR]; // Mass fraction of liquid H2O in a shell
+	double fadhs[NR]; // Mass fraction of solid ammonia dihydrate in a shell
+	double fnh3l[NR]; // Mass fraction of liquid ammonia in a shell
+	double g[NR];     // Gravitational acceleration (cm s-2)
 
 	M[0] = dM[0];
 
