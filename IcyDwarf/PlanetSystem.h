@@ -17,8 +17,8 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 		double dtoutput, int nmoons, double Mprim, double Rprim, double Qprimi, double Qprimf, int Qmode, double k2prim, double J2prim, double J4prim, int reslock,
 		double Mring_init, double aring_out, double aring_in, double *r_p, double *rho_p, double rhoHydr, double rhoDry, double *Xp, double *Xsalt,
 		double **Xhydr, double *porosity, double *Xpores, double *Xfines, double *Tinit, double *Tsurf, int *fromRing, int *startdiff,
-		double *aorb_init, double *eorb_init, int tidalmodel, int eccentricitymodel, double tidetimes, int *orbevol, int* retrograde, double *t_tidereslock, int *hy, int chondr, int *crack_input,
-		int *crack_species);
+		double *aorb_init, double *eorb_init, int tidalmodel, int eccentricitymodel, double tidetimes, int *orbevol, int* retrograde, double *t_reslock, double nprim,
+		int *hy, int chondr, int *crack_input, int *crack_species);
 
 int recov(int argc, char *argv[], char path[1024], int nmoons, char outputpath[nmoons][1024], int NR, int ntherm, int norbit, int ncrkstrs, double ****Stress, double *Xp,
 		double *Xsalt, double Mprim, double Rprim, double k2prim, double Qprim, double *Mring, double aring_out, int *orbevol, double rhoRockth, double rhoHydrth, double rhoH2olth,
@@ -36,8 +36,8 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 		double dtoutput, int nmoons, double Mprim, double Rprim, double Qprimi, double Qprimf, int Qmode, double k2prim, double J2prim, double J4prim, int reslock,
 		double Mring_init, double aring_out, double aring_in, double *r_p, double *rho_p, double rhoHydr, double rhoDry, double *Xp, double *Xsalt,
 		double **Xhydr, double *porosity, double *Xpores, double *Xfines, double *Tinit, double *Tsurf, int *fromRing, int *startdiff,
-		double *aorb_init, double *eorb_init, int tidalmodel, int eccentricitymodel, double tidetimes, int *orbevol, int* retrograde, double *t_tidereslock, int *hy, int chondr, int *crack_input,
-		int *crack_species) {
+		double *aorb_init, double *eorb_init, int tidalmodel, int eccentricitymodel, double tidetimes, int *orbevol, int* retrograde, double *t_reslock, double nprim,
+		int *hy, int chondr, int *crack_input, int *crack_species) {
 
 	//-------------------------------------------------------------------
 	//                 Declarations and initializations
@@ -127,6 +127,9 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 
 	double *norb = (double*) malloc((nmoons)*sizeof(double));       // Orbital mean motions = 2*pi/period = sqrt(GM/a3) (s-1) = d/dt(lambda)
 	if (norb == NULL) printf("PlanetSystem: Not enough memory to create norb[nmoons]\n");
+
+	double *t_tide = (double*) malloc((nmoons)*sizeof(double));     // Orbital evolution time scale for resonance locking (Fuller et al. 2016) (s)
+	if (t_tide == NULL) printf("PlanetSystem: Not enough memory to create t_tide[nmoons]\n");
 
 	double *dnorb_dt = (double*) malloc((nmoons)*sizeof(double));   // d/dt[Orbital mean motions = 2*pi/period = sqrt(GM/a3) (s-1)]
 	if (dnorb_dt == NULL) printf("PlanetSystem: Not enough memory to create dnorb_dt[nmoons]\n");
@@ -1057,11 +1060,14 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 					norb[im] = sqrt(Gcgs*Mprim/pow(aorb[im],3)); // Otherwise, norb[im] is zero and the moon im doesn't influence the others gravitationally
 					// TODO Add a non-Keplerian term due to planetary oblateness?
 					dnorb_dt[im] = (norb[im]-dnorb_dt[im])/dtime;
+//					t_tide[im] = 1.5*norb[im]/(nprim-norb[im])*t_reslock[im]; // Gravitational modes
+					t_tide[im] = 1.5*                          t_reslock[im]; // Inertial modes, favored (Lainey et al. 2020 SOM p. 7)
+					t_tide[im] *= realtime/(4.5682*Gyr2sec);                  // Scale evolution timescale with host planet age (Lainey et al. SOM equation 16)
 
 					// TODO switch r_p to outerrad[nmoons] = r[im][NR]? Could matter if very porous
 					Orbit (argc, argv, path, im, dtime, speedup, itime, nmoons, m_p, r_p, resAcctFor, &aorb, &eorb, norb,
 							lambda, omega, &h_old, &k_old, &a__old, &Cs_ee_old, &Cs_eep_old, &Cr_e_old, &Cr_ep_old, &Cr_ee_old, &Cr_eep_old, &Cr_epep_old,
-							&Wtide_tot, Mprim, Rprim, J2prim, J4prim, k2prim, Qprim, reslock, t_tidereslock[im],
+							&Wtide_tot, Mprim, Rprim, J2prim, J4prim, k2prim, Qprim, reslock, t_tide[im],
 							aring_out, aring_in, alpha_Lind, ringSurfaceDensity, realtime-tzero_min, realtime, retrograde);
 				}
 //				++nloops;
@@ -1304,6 +1310,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 	free (aorb);
 	free (eorb);
 	free (norb);
+	free (t_tide);
 	free (dnorb_dt);
 	free (lambda);
 	free (omega);

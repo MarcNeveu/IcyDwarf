@@ -55,6 +55,7 @@ int main(int argc, char *argv[]){
 	double J2prim = 0.0;               // 2nd zonal harmonic of gravity field (Saturn: 16290.71±0.27e-6, Jacobson et al., 2006)
 	double J4prim = 0.0;               // 4th zonal harmonic of gravity field (-935.83±2.77e-6, Jacobson et al., 2006)
 	int reslock = 0;                   // Resonance locking mechanism of orbital evolution due to dissipation of tides by inertial (not gravity) waves?
+	double nprim = 0.0;                // Spin frequency of primary
 	int nmoons = 0;                    // User-specified number of moons
 	double Mring = 0.0;                // Mass of planet rings (kg). For Saturn, 4 to 7e19 kg (Robbins et al. 2010, http://dx.doi.org/10.1016/j.icarus.2009.09.012)
 	double aring_in = 0.0;             // Inner orbital radius of rings (km). for Saturn B ring, 92000 km
@@ -92,7 +93,7 @@ int main(int argc, char *argv[]){
     double aorb[nmoons_max];               // Moon orbital semi-major axis (km)
 	double eorb[nmoons_max];               // Moon orbital eccentricity
 	int retrograde[nmoons_max];            // 0 if prograde orbit, 1 if retrograde orbit
-	double t_tidereslock[nmoons_max];      // Present-day timescale of primary internal evolution for resonance locking mechanism (Gyr)
+	double t_reslock[nmoons_max];          // Present-day timescale of primary internal evolution for resonance locking mechanism (Gyr)
 	for (im=0;im<nmoons_max;im++) {
 		tzero[im] = 0.0;
 		fromRing[im] = 0;
@@ -112,7 +113,7 @@ int main(int argc, char *argv[]){
 		aorb[im] = 0.0;
 		eorb[im] = 0.0;
 		retrograde[im] = 0;
-		t_tidereslock[im] = 0.0;
+		t_reslock[im] = 0.0;
 	}
 
     // Call specific subroutines
@@ -206,6 +207,7 @@ int main(int argc, char *argv[]){
 	Qprimi = (double) input[i]; i++; Qprimf = (double) input[i]; i++; Qmode = (int) input[i]; i++;
 	k2prim = (double) input[i]; i++; J2prim = (double) input[i]; i++; J4prim = (double) input[i]; i++;
 	reslock = (int) input[i]; i++;
+	nprim = (double) 2.0*PI_greek/input[i]/3600.0; i++;
 	nmoons = (int) input[i]; i++;
 	Mring = (double) input[i]; i++;             // kg
 	aring_in = (double) input[i]; i++;          // cm
@@ -247,7 +249,7 @@ int main(int argc, char *argv[]){
 	i=i+nmoons;
 	for (im=0;im<nmoons;im++) retrograde[im] = (int) input[i+im];
 	i=i+nmoons;
-	for (im=0;im<nmoons;im++) t_tidereslock[im] = (double) input[i+im];
+	for (im=0;im<nmoons;im++) t_reslock[im] = (double) input[i+im];
 	i=i+nmoons;
 	//-----------------------------
 	rhoDryRock = (double) input[i]; i++;        // g cm-3
@@ -309,6 +311,7 @@ int main(int argc, char *argv[]){
 	printf("| Tidal Q (initial,today,{0:lin 1:exp 2:1-exp}) | %g %g %d\n", Qprimi, Qprimf, Qmode);
 	printf("| Love number k2; zonal gravity harmonics J2, J4| %g %g %g\n", k2prim, J2prim, J4prim);
 	printf("| Resonant tidal locking with inertial waves?   | %d\n", reslock);
+	printf("| Spin period (h)                               | %g\n", 2.0*PI_greek/nprim/3600.0);
 	printf("| Number of worlds                              | %d\n", nmoons);
 	printf("| Ring mass (kg) (0 if no rings)                | %g\n", Mring);
 	printf("| Ring inner edge (km)                          | %g\n", aring_in);
@@ -353,7 +356,7 @@ int main(int argc, char *argv[]){
 	printf("\n| Retrograde orbit?                             |");
 	for (im=0;im<nmoons;im++) printf(" %d \t", retrograde[im]);
 	printf("\n| Resonant tidal locking timescale (Gyr)        |");
-	for (im=0;im<nmoons;im++) printf(" %g \t", t_tidereslock[im]);
+	for (im=0;im<nmoons;im++) printf(" %g \t", t_reslock[im]);
     printf("\n|---------------------------------------------------------------|------------------------------------------------------|\n");
     printf("| Dry rock density (g cm-3)                                       | %g\n", rhoDryRock);
     printf("| Hydrated rock density (g cm-3)                                  | %g\n", rhoHydrRock);
@@ -401,7 +404,7 @@ int main(int argc, char *argv[]){
 		r_p[im] = r_p[im]*km2cm;
 		tzero[im] = tzero[im]*Myr2sec;
 		aorb[im] = aorb[im]*km2cm;
-		t_tidereslock[im] = t_tidereslock[im]*Gyr2sec;
+		t_reslock[im] = t_reslock[im]*Gyr2sec;
 	}
 	// Conversions to SI
 	rhoDryRock = rhoDryRock*gram/cm/cm/cm;
@@ -449,7 +452,8 @@ int main(int argc, char *argv[]){
 		printf("Running thermal evolution code...\n");
 		PlanetSystem(argc, argv, path, warnings, recover, NR, timestep, speedup, tzero, total_time, output_every, nmoons, Mprim, Rprim, Qprimi, Qprimf,
 				Qmode, k2prim, J2prim, J4prim, reslock, Mring, aring_out, aring_in, r_p, rho_p, rhoHydrRock, rhoDryRock, nh3, salt, Xhydr, porosity, Xpores,
-				Xfines, Tinit, Tsurf, fromRing, startdiff, aorb, eorb, tidalmodel, eccentricitymodel, tidetimes, orbevol, retrograde, t_tidereslock, hy, chondr, crack_input, crack_species);
+				Xfines, Tinit, Tsurf, fromRing, startdiff, aorb, eorb, tidalmodel, eccentricitymodel, tidetimes, orbevol, retrograde, t_reslock, nprim, hy,
+				chondr, crack_input, crack_species);
 		printf("\n");
 	}
 

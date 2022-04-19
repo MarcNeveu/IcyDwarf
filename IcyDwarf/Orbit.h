@@ -527,7 +527,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 		d_eorb_pl = 57.0/8.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*(*eorb)[im]; // Equation below assumes constant phase lag. Effect of any resonant locking unknown.
 		// and generally expands moon's orbit, but prim_sign depends on mode. Typical assumption in semimajor axis evolution is > 0 in gas giant systems where primary spins much faster than moons orbit. Otherwise, prim_sign < 0 irrespective of retrograde or prograde motion.
 		if (!reslock) d_aorb_pl = prim_sign[im]*3.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-5.5);
-		else d_aorb_pl = prim_sign[im] * (*aorb)[im] / t_tide * (4.5682*Gyr2sec)/realtime;
+		else d_aorb_pl = prim_sign[im] * (*aorb)[im] / t_tide; // Lainey et al. (2020) equation (17)
 
 		// Interactions with rings, expands moon's orbit if exterior to rings (Meyer-Vernet & Sicardy 1987, http://dx.doi.org/10.1016/0019-1035(87)90011-X)
 		if (ringSurfaceDensity) {
