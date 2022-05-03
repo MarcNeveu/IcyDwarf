@@ -18,7 +18,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 		double **aorb, double **eorb, double *norb, double *lambda, double *omega,
 		double **h_old, double **k_old, double **a__old,
 		double **Cs_ee_old, double **Cs_eep_old, double **Cr_e_old, double **Cr_ep_old, double **Cr_ee_old, double **Cr_eep_old, double **Cr_epep_old,
-		double **Wtide_tot, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim, int reslock, double t_tide,
+		double **Wtide_tot, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim, int reslock, double t_tide, int eccentricitymodel,
 		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity, double elapsed, double realtime, int* retrograde);
 
 int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, double *a__old, double *eorb, double *m_p, double Mprim, double Rprim, double k2prim, double Qprim,
@@ -50,7 +50,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 		double **aorb, double **eorb, double *norb, double *lambda, double *omega,
 		double **h_old, double **k_old, double **a__old,
 		double **Cs_ee_old, double **Cs_eep_old, double **Cr_e_old, double **Cr_ep_old, double **Cr_ee_old, double **Cr_eep_old, double **Cr_epep_old,
-		double **Wtide_tot, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim, int reslock, double t_tide,
+		double **Wtide_tot, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim, int reslock, double t_tide, int eccentricitymodel,
 		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity, double elapsed, double realtime, int* retrograde) {
 
 	FILE *fout;
@@ -76,6 +76,20 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 	double d_aorb_ring = 0.0;            // Change rate in moon orbital semi-major axis due to interactions with ring (cm s-1)
 
 	double ringTorque = 0.0;             // Torque exerted by ring on moon (g cm2 s-2)
+
+	double e2 = 0.0;                     // Square of orbital eccentricity
+    double e4 = 0.0;                     // Eccentricity^4
+    double e6 = 0.0;                     // Eccentricity^6
+    double e8 = 0.0;                     // Eccentricity^8
+    double e10 = 0.0;                    // Eccentricity^10
+    double eterm = 0.0;                  // Multiplier to the tidal heat given a planet's susceptibility to eccentricity tides.
+    double eterm_1 = 0.0;                // 1st Eccentricity Subterm
+    double eterm_2 = 0.0;                // 2nd Eccentricity Subterm
+    double eterm_3 = 0.0;                // 3rd Eccentricity Subterm
+    double eterm_4 = 0.0;                // 4th Eccentricity Subterm
+    double eterm_5 = 0.0;                // 5th Eccentricity Subterm
+    double dEPS = 2.22e-16;              // Floating point precision of C double
+
 	double prim_sign[nmoons];            // Sign of primary term in secular da/dt equation (positive i.e. +1 if prograde moon; negative i.e. -1 if retrograde moon)
 	for (i=0;i<nmoons;i++) {
 		if (retrograde[i]) prim_sign[i] = -1.0;
@@ -460,7 +474,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 
 	    // Find eccentricity susceptibility (Renaud et al. 2021) TODO replace these terms, from equation B2, with terms from equation B3 instead
 
-//	    e2 = eorb * eorb;
+//	    e2 = eorb[im] * eorb[im];
 //	    if (eccentricitymodel == 0) {
 //	        // Classic model which is accurate for eccentricity around 0.1 or less.
 //	        eterm = e2;
@@ -473,25 +487,25 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 //	        e8 = e4 * e4;
 //	        e10 = e8 * e2;
 //
-//	        // See Eq. B2 in Renaud et al. (2021; PSJ)
+//	        // See Eq. B3 in Renaud et al. (2021; PSJ)
 //	        // OPT: We can manually collapse all these terms from the get go to increase performance.
 //	        //  Leaving them separate for now for easier debugging/comparison.
 //	        //  Also could just calculate the decimal form of all these coefficients too as an optimization.
-//	        eterm_1 = e10 * (2555911.0 / 122880.0) -
-//	                  e8  * (63949.0 / 2304.0) +
-//	                  e6  * (551.0 / 12.0) -
-//	                  e4  * (101.0 / 4.0) +
-//	                  e2  * 7.0;
-//	        eterm_2 = e10 * (-171083.0 / 320.0) +
-//	                  e8  * (339187.0 / 576.0) -
-//	                  e6  * (3847.0 / 12.0) +
-//	                  e4  * (605.0 / 8.0);
-//	        eterm_3 = e10 * (368520907.0 / 81920.0) -
-//	                  e8  * (1709915.0 / 768.0) +
-//	                  e6  * (2855.0 / 6.0);
-//	        eterm_4 = e10 * (-66268493.0 / 5760.0) +
-//	                  e8  * (2592379.0 / 1152.0);
-//	        eterm_5 = e10 * (6576742601.0 / 737280.0);
+//	        eterm_1 = e10 * (6046043.0 / 122880.0) -
+//	                  e8  * (426355.0 / 4608.0) +
+//	                  e6  * (12647.0 / 96.0) -
+//	                  e4  * (79.0) +
+//	                  e2  * 19.0;
+//	        eterm_2 = e10 * (-69235.0 / 64.0) +
+//	                  e8  * (673391.0 / 576.0) -
+//	                  e6  * (7757.0 / 12.0) +
+//	                  e4  * (1183.0 / 8.0);
+//	        eterm_3 = e10 * (122639619.0 / 16384.0) -
+//	                  e8  * (5710133.0 / 1536.0) +
+//	                  e6  * (75431.0 / 96.0);
+//	        eterm_4 = e10 * (-198865133.0 / 11520.0) +
+//	                  e8  * (7741555.0 / 2304.0);
+//	        eterm_5 = e10 * (9183857269.0 / 737280.0);
 //
 //	        // Note that both the CPL and CTL-like models are not physically correct. A real rheology would need to be
 //	        //  passed each new frequency (or "tidal mode") individually and then a superposition of the final
@@ -508,7 +522,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 //	        else {
 //	            // Unknown or non-implemented model.
 //	            eterm = 0.0;
-//	            printf("IcyDwarf: Thermal: eccentricitymodel must be equal to 0, 1, or 2\n");
+//	            printf("IcyDwarf: Orbit: eccentricitymodel must be equal to 0, 1, or 2\n");
 //	            exit(0);
 //	        }
 //
@@ -517,6 +531,12 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 //	        //   coefficients on the eterm we need to divide out a 7 on the CPL/CTL-like models.
 //	        eterm = eterm / 7.0;
 //	    }
+//
+//	    // Equations (4) and (5) of Renaud et al. (2021, PSJ)
+//	    d_aorb_moon = -2.0/(norb*aorb[im]) * (Mprim+m_p[im])/(Mprim*m_p[im]) * d/dM(m_p[im]<Uh>+Mprim<Us>);
+//
+//	    d_eorb_moon = sqrt(1.0-e2)/(norb*eorb[im]*aorb[im]*aorb[im]) * (Mprim+m_p[im])/(Mprim*m_p[im]) * (m_p[im]d<Uh>/dwh + Mprim d<Us>/dws
+//	    		                     - sqrt(1.0-e2) d/dM(m_p[im]<Uh>+Mprim<Us>));
 
 		// Dissipation inside moon, decreases its eccentricity (equation 4.170 of Murray & Dermott 1999) TODO Equation below assumes constant phase lag, incorporate results from tidalPy instead
 		d_eorb_moon = - (*Wtide_tot)[im]*(*aorb)[im] / (Gcgs*Mprim*m_p[im]*(*eorb)[im]);
@@ -568,6 +588,8 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 					itime, (double)itime*dtime/Gyr2sec, -dtime*d_aorb_pl, -dtime*d_aorb_ring, (*aorb)[im]);
 			fclose (fout);
 			free (title);
+			printf("Orbit: itime=%d, time=%g, -dtime*d_aorb_pl = %g - -dtime*d_aorb_ring (= %g) > aorb = %g, moon crashes into planet\n",
+					itime, (double)itime*dtime/Gyr2sec, -dtime*d_aorb_pl, -dtime*d_aorb_ring, (*aorb)[im]);
 			exit(0);
 		}
 	}

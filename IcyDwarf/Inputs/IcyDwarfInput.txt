@@ -22,6 +22,7 @@ ICY DWARF v20.x INPUT FILE - Saturn system
 | Tidal Q (initial,today,{0:lin 1:exp 2:1-exp}) | 20000 20000 0                                        |
 | Love number k2; zonal gravity harmonics J2, J4| 0.382 16290.573e-6 -935.314e-6                       |
 | Resonant tidal locking with inertial waves?   | 1                                                    |
+| Spin period (h)                               | 10.546   (Helled et al. 2015)                        |
 | Number of moons                               | 7                                                    |
 | Ring mass (kg) (0 if no rings)                | 1.54e19                                              |
 | Ring inner edge (km)                          | 92000                                                |

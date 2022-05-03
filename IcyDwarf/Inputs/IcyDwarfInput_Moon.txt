@@ -21,6 +21,8 @@ ICY DWARF v20.x INPUT FILE - Saturn system as moon system template
 | Radius (km)                                   | 58232                                                |
 | Tidal Q (initial,today,{0:lin 1:exp 2:1-exp}) | 80000 2452.8 0                                       |
 | Love number k2; zonal gravity harmonics J2, J4| 0.39 16290.71e-6 -935.83e-6                          |
+| Spin period (h)                               | 10.546   (Helled et al. 2015)                        |
+| Resonant tidal locking with inertial waves?   | 0                                                    |
 | Number of moons                               | 5                                                    |
 | Ring mass (kg) (0 if no rings)                | 1.5e19                                               |
 | Ring inner edge (km)                          | 92000                                                |

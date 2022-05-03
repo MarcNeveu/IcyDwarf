@@ -22,6 +22,7 @@ ICY DWARF v20.x INPUT FILE - Pluto as single object template
 | Tidal Q (initial,today,{0:lin 1:exp 2:1-exp}) | 0 0 0                                                |
 | Love number k2; zonal gravity harmonics J2, J4| 0 0 0                                                |
 | Resonant tidal locking with inertial waves?   | 0                                                    |
+| Spin period (h)                               | 10.546   (Helled et al. 2015)                        |
 | Number of moons (1 if world is not a moon)    | 0                                                    |
 | Ring mass (kg) (0 if no rings)                | 0                                                    |
 | Ring inner edge (km)                          | 0                                                    |

@@ -163,7 +163,7 @@ int main(int argc, char *argv[]){
 
 	printf("\n");
 	printf("-------------------------------------------------------------------\n");
-	printf("IcyDwarf v22.4\n");
+	printf("IcyDwarf v22.5\n");
 	if (v_release == 1) printf("Release mode\n");
 	else if (cmdline == 1) printf("Command line mode\n");
 	printf("-------------------------------------------------------------------\n");
@@ -357,7 +357,7 @@ int main(int argc, char *argv[]){
 	for (im=0;im<nmoons;im++) printf(" %d \t", retrograde[im]);
 	printf("\n| Resonant tidal locking timescale (Gyr)        |");
 	for (im=0;im<nmoons;im++) printf(" %g \t", t_reslock[im]);
-    printf("\n|---------------------------------------------------------------|------------------------------------------------------|\n");
+    printf("\n|-----------------------------------------------------------------|------------------------------------------------------|\n");
     printf("| Dry rock density (g cm-3)                                       | %g\n", rhoDryRock);
     printf("| Hydrated rock density (g cm-3)                                  | %g\n", rhoHydrRock);
     printf("| Chondrite type? CI=0 CO=1 CV=2                                  | %d\n", chondr);
