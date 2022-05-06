@@ -18,7 +18,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 		double **aorb, double **eorb, double *norb, double *lambda, double *omega,
 		double **h_old, double **k_old, double **a__old,
 		double **Cs_ee_old, double **Cs_eep_old, double **Cr_e_old, double **Cr_ep_old, double **Cr_ee_old, double **Cr_eep_old, double **Cr_epep_old,
-		double **Wtide_tot, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim, int reslock, double t_tide, int eccentricitymodel,
+		double **Wtide_tot, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim, int reslock, double *t_tide, int eccentricitymodel,
 		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity, double elapsed, double realtime, int* retrograde);
 
 int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, double *a__old, double *eorb, double *m_p, double Mprim, double Rprim, double k2prim, double Qprim,
@@ -50,7 +50,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 		double **aorb, double **eorb, double *norb, double *lambda, double *omega,
 		double **h_old, double **k_old, double **a__old,
 		double **Cs_ee_old, double **Cs_eep_old, double **Cr_e_old, double **Cr_ep_old, double **Cr_ee_old, double **Cr_eep_old, double **Cr_epep_old,
-		double **Wtide_tot, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim, int reslock, double t_tide, int eccentricitymodel,
+		double **Wtide_tot, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim, int reslock, double *t_tide, int eccentricitymodel,
 		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity, double elapsed, double realtime, int* retrograde) {
 
 	FILE *fout;
@@ -114,7 +114,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 			j = resAcctFor[im][i] + 1.0;
 
 			int nv = 6;
-			int nparamorb = 23;
+			int nparamorb = 26;
 
 			double *ystart = (double*) malloc((nv)*sizeof(double)); // Input vector for integration
 			if (ystart == NULL) printf("Orbit: Not enough memory to create ystart[nv]\n");
@@ -136,6 +136,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 			double W[2];         // Moon tidal dissipation
 
 			double psgn[2];      // Sign of primary term in da/dt
+			double ttide[2];     // Orbital expansion timescale (Lainey et al. 2020)
 
 			double h[2];         // State variable
 			double k[2];         // State variable
@@ -163,6 +164,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 				W[l] = 0.0;
 
 				psgn[l] = 0.0;
+				ttide[l] = 0.0;
 
 				h[l] = 0.0;
 				k[l] = 0.0;
@@ -200,6 +202,9 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 
 					psgn[0] = prim_sign[im];
 					psgn[1] = prim_sign[i];
+
+					ttide[0] = t_tide[im];
+					ttide[1] = t_tide[i];
 				}
 				else {
 					h[0] = (*h_old)[i];
@@ -218,6 +223,9 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 
 					psgn[0] = prim_sign[i];
 					psgn[1] = prim_sign[im];
+
+					ttide[0] = t_tide[i];
+					ttide[1] = t_tide[im];
 				}
 				// Convert tidal heating rate W to k2/Q (Segatz et al. (1988); Henning & Hurford (2014))
 				for (l=0;l<2;l++) W[l] = W[l]/(11.5*pow(r[l],5)*pow(Gcgs*Mprim/pow(a_[l],3), 2.5)*(h[l]*h[l]+k[l]*k[l])/Gcgs);
@@ -256,6 +264,9 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 
 					psgn[0] = prim_sign[im];
 					psgn[1] = prim_sign[i];
+
+					ttide[0] = t_tide[im];
+					ttide[1] = t_tide[i];
 				}
 				else {
 					a[0] = (*aorb)[i];
@@ -276,6 +287,9 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 
 					psgn[0] = prim_sign[i];
 					psgn[1] = prim_sign[im];
+
+					ttide[0] = t_tide[i];
+					ttide[1] = t_tide[im];
 				}
 				// Convert tidal heating rate W to k2/Q (Segatz et al. (1988); Henning & Hurford (2014))
 				for (l=0;l<2;l++) W[l] = W[l]/(11.5*pow(r[l],5)*pow(Gcgs*Mprim/pow(a[l],3), 2.5)*pow(e[l],2)/Gcgs); // k2/Q, Segatz et al. (1988); Henning & Hurford (2014)
@@ -332,6 +346,10 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 
 			param[21] = psgn[0];
 			param[22] = psgn[1];
+
+			param[23] = (double) reslock;
+			param[24] = ttide[0];
+			param[25] = ttide[1];
 
 			// Integration by Euler method
 //			double dydx[nv];
@@ -547,7 +565,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 		d_eorb_pl = 57.0/8.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*(*eorb)[im]; // Equation below assumes constant phase lag. Effect of any resonant locking unknown.
 		// and generally expands moon's orbit, but prim_sign depends on mode. Typical assumption in semimajor axis evolution is > 0 in gas giant systems where primary spins much faster than moons orbit. Otherwise, prim_sign < 0 irrespective of retrograde or prograde motion.
 		if (!reslock) d_aorb_pl = prim_sign[im]*3.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-5.5);
-		else d_aorb_pl = prim_sign[im] * (*aorb)[im] / t_tide; // Lainey et al. (2020) equation (17)
+		else d_aorb_pl = prim_sign[im] * (*aorb)[im] / t_tide[im]; // Lainey et al. (2020) equation (17)
 
 		// Interactions with rings, expands moon's orbit if exterior to rings (Meyer-Vernet & Sicardy 1987, http://dx.doi.org/10.1016/0019-1035(87)90011-X)
 		if (ringSurfaceDensity) {
@@ -584,11 +602,11 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 
 			fout = fopen(title,"a");
 			if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
-			else fprintf(fout,"Orbit: itime=%d, time=%g, -dtime*d_aorb_pl = %g - -dtime*d_aorb_ring (= %g) > aorb = %g, moon crashes into planet\n",
+			else fprintf(fout,"Orbit: itime=%d time steps, time=%g Gyr, -dtime*d_aorb_pl = %g m - -dtime*d_aorb_ring (= %g m) > aorb = %g m, moon crashes into planet\n",
 					itime, (double)itime*dtime/Gyr2sec, -dtime*d_aorb_pl, -dtime*d_aorb_ring, (*aorb)[im]);
 			fclose (fout);
 			free (title);
-			printf("Orbit: itime=%d, time=%g, -dtime*d_aorb_pl = %g - -dtime*d_aorb_ring (= %g) > aorb = %g, moon crashes into planet\n",
+			printf("Orbit: itime=%d time steps, time=%g Gyr, -dtime*d_aorb_pl = %g m - -dtime*d_aorb_ring (= %g m) > aorb = %g m, moon crashes into planet\n",
 					itime, (double)itime*dtime/Gyr2sec, -dtime*d_aorb_pl, -dtime*d_aorb_ring, (*aorb)[im]);
 			exit(0);
 		}
@@ -628,6 +646,7 @@ int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, d
 		// 1- Moon i has to be different from im and already spawned
 		// 2- Moons i and im have to be beyond the gravitational influence of the ring, otherwise we assume that they don't get captured into resonance
 		if (i < im && realtime >= tzero[i] && aorb[i]/aring_out > pow(2.0,2.0/3.0) && aorb[im]/aring_out > pow(2.0,2.0/3.0)) {
+//		if (i < im && realtime >= tzero[i] && ((aorb[i]/aring_out > pow(2.0,2.0/3.0) && aorb[im]/aring_out > pow(2.0,2.0/3.0)) || realtime > 4.0*Gyr2sec)) {
 			/* Find out if there is an orbital resonance */
 
 			// Find index of inner moon
@@ -914,6 +933,7 @@ int MMR_AvgHam (double x, double y[], double dydx[], double param[]) {
 	double m[2];         // Moon mass
 	double r[2];         // Moon radius
 	double prim_sign[2]; // 1 if orbit prograde, -1 if orbit retrograde
+	double t_tide[2];    // Semimajor axis expansion time scale (Lainey et al. 2020)
 
 	m[0] = param[0];
 	r[0] = param[1];
@@ -922,8 +942,8 @@ int MMR_AvgHam (double x, double y[], double dydx[], double param[]) {
 	r[1] = param[4];
 	k2Q[1] = param[5];
 
-	k2Q[0] = 7.0e-4;
-	k2Q[1] = 1.0e-4;
+//	k2Q[0] = 7.0e-4; // For benchmark with Zhang & Nimmo (2009)
+//	k2Q[1] = 1.0e-4;
 
 	double j = param[6];
 
@@ -969,6 +989,10 @@ int MMR_AvgHam (double x, double y[], double dydx[], double param[]) {
 	prim_sign[0] = param[21]; // Sign of semi-major axis tidal evolution due to dissipation in primary, 1 if prograde orbit with longer period than planet spin period,
 	                                 // -1 if retrograde or prograde orbit with shorter period than planet spin period
 	prim_sign[1] = param[22];
+
+	int reslock = (int) param[23]; // Resonance locking with primary? (Fuller et al. 2016; Lainey et al. 2020)
+	t_tide[0] = param[24]; // Semimajor axis expansion time scale (Lainey et al. 2020)
+	t_tide[1] = param[25];
 
 	// Initialize parameters
 	for (im=0;im<2;im++) {
@@ -1017,7 +1041,7 @@ int MMR_AvgHam (double x, double y[], double dydx[], double param[]) {
 
 	for (im=0;im<2;im++) dHk[im] = (1.0-j)*n[0] + j*n[1];
 
-	// Calculate precession terms for mean longitude and argument of perihelion
+	// Calculate precession terms for mean longitude and argument of periapsis
 	for (im=0;im<2;im++) {
 		Delta_n[im] = n_[im]*(3.0*J2prim*pow(Rprim/a_[im],2) + (45.0/4.0*J2prim*J2prim - 15.0/4.0*J4prim)*pow(Rprim/a_[im],4));
 		omdot[im] = n_[im]*(1.5*J2prim*pow(Rprim/a_[im],2) + (63.0/8.0*J2prim*J2prim - 15.0/4.0*J4prim)*pow(Rprim/a_[im],4));
@@ -1031,7 +1055,8 @@ int MMR_AvgHam (double x, double y[], double dydx[], double param[]) {
 		D[im] = k2Q[im] / (k2prim/Qprim) * pow(Mprim/m[im],2) * pow(r[im]/Rprim,5);
 		dk_tide[im] = -3.5*c[im]*D[im]*pow(a[im],-6.5)*k[im]*mw_speedup;
 		dh_tide[im] = -3.5*c[im]*D[im]*pow(a[im],-6.5)*h[im]*mw_speedup;
-		da_tide[im] = c[im] * (prim_sign[im]-7.0*D[im]*e2[im]) * pow(a[im],-5.5)*mw_speedup;
+		if (!reslock) da_tide[im] = c[im] * (prim_sign[im]-7.0*D[im]*e2[im]) * pow(a[im],-5.5)*mw_speedup;
+		else da_tide[im] = (prim_sign[im]*a[im]/t_tide[im] - 7.0*c[im]*D[im]*e2[im]*pow(a[im],-5.5))*mw_speedup;
 	}
 
 	// Equations of motion

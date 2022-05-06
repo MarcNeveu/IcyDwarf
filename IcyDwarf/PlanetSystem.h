@@ -1067,7 +1067,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 					// TODO switch r_p to outerrad[nmoons] = r[im][NR]? Could matter if very porous
 					Orbit (argc, argv, path, im, dtime, speedup, itime, nmoons, m_p, r_p, resAcctFor, &aorb, &eorb, norb,
 							lambda, omega, &h_old, &k_old, &a__old, &Cs_ee_old, &Cs_eep_old, &Cr_e_old, &Cr_ep_old, &Cr_ee_old, &Cr_eep_old, &Cr_epep_old,
-							&Wtide_tot, Mprim, Rprim, J2prim, J4prim, k2prim, Qprim, reslock, t_tide[im], eccentricitymodel,
+							&Wtide_tot, Mprim, Rprim, J2prim, J4prim, k2prim, Qprim, reslock, t_tide, eccentricitymodel,
 							aring_out, aring_in, alpha_Lind, ringSurfaceDensity, realtime-tzero_min, realtime, retrograde);
 				}
 //				++nloops;

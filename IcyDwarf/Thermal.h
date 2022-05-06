@@ -1889,9 +1889,9 @@ int tide(int tidalmodel, int eccentricitymodel, double tidetimes, double eorb, d
 
 		// If there is ammonia in partially melted layers, decrease viscosity according to Fig. 6 of Arakawa & Maeno (1994)
 		if (Mh2os[ir] > 0.0 && Mnh3l[ir]+Madhs[ir] >= 0.01*Mh2os[ir] && T[ir] > 140.0) {
-			if (T[ir] < 176.0) mu_visc = mu_visc*1.0e-3;
-			else if (T[ir] < 250.0) mu_visc = mu_visc*1.0e-8;
-			else if (T[ir] < 271.0) mu_visc = mu_visc*1.0e-15;
+			if (T[ir] < 176.0) mu_visc = mu_visc*1.0e-2;
+			else if (T[ir] < 250.0) mu_visc = mu_visc*1.0e-6;
+			else if (T[ir] < 271.0) mu_visc = mu_visc*1.0e-14;
 			if (mu_visc < 1.0e3) mu_visc = 1.0e3;
 		}
 //		if (Mh2os[ir]+Madhs[ir]+Mh2ol[ir]+Mnh3l[ir] > 0.0) { // Benchmark against Roberts (2015)
