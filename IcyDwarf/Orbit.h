@@ -114,7 +114,7 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 			j = resAcctFor[im][i] + 1.0;
 
 			int nv = 6;
-			int nparamorb = 26;
+			int nparamorb = 30;
 
 			double *ystart = (double*) malloc((nv)*sizeof(double)); // Input vector for integration
 			if (ystart == NULL) printf("Orbit: Not enough memory to create ystart[nv]\n");
@@ -350,6 +350,11 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 			param[23] = (double) reslock;
 			param[24] = ttide[0];
 			param[25] = ttide[1];
+
+			param[26] = alpha_Lind;
+			param[27] = ringSurfaceDensity;
+			param[28] = aring_in;
+			param[29] = aring_out;
 
 			// Integration by Euler method
 //			double dydx[nv];
@@ -645,8 +650,9 @@ int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, d
 	for (i=0;i<nmoons;i++) {
 		// 1- Moon i has to be different from im and already spawned
 		// 2- Moons i and im have to be beyond the gravitational influence of the ring, otherwise we assume that they don't get captured into resonance
-		if (i < im && realtime >= tzero[i] && aorb[i]/aring_out > pow(2.0,2.0/3.0) && aorb[im]/aring_out > pow(2.0,2.0/3.0)) {
+//		if (i < im && realtime >= tzero[i] && aorb[i]/aring_out > pow(2.0,2.0/3.0) && aorb[im]/aring_out > pow(2.0,2.0/3.0)) {
 //		if (i < im && realtime >= tzero[i] && ((aorb[i]/aring_out > pow(2.0,2.0/3.0) && aorb[im]/aring_out > pow(2.0,2.0/3.0)) || realtime > 4.0*Gyr2sec)) {
+		if (i < im && realtime >= tzero[i]) { // Effect of ring on resonant orbital evolution is accounted for in MMR_AvgHam
 			/* Find out if there is an orbital resonance */
 
 			// Find index of inner moon
@@ -927,6 +933,7 @@ double D2Laplace_coef(double alpha, double j, double s) {
 
 int MMR_AvgHam (double x, double y[], double dydx[], double param[]) {
 
+	int i = 0;           // Generic counter
 	int im = 0;          // Moon counter
 
 	double k2Q[2];       // k2/Q of moons
@@ -994,6 +1001,11 @@ int MMR_AvgHam (double x, double y[], double dydx[], double param[]) {
 	t_tide[0] = param[24]; // Semimajor axis expansion time scale (Lainey et al. 2020)
 	t_tide[1] = param[25];
 
+	double alpha_Lind = param[26];
+	double ringSurfaceDensity = param[27];
+	double aring_in = param[28];
+	double aring_out = param[29];
+
 	// Initialize parameters
 	for (im=0;im<2;im++) {
 		Lambda[im] = 0.0;
@@ -1057,6 +1069,18 @@ int MMR_AvgHam (double x, double y[], double dydx[], double param[]) {
 		dh_tide[im] = -3.5*c[im]*D[im]*pow(a[im],-6.5)*h[im]*mw_speedup;
 		if (!reslock) da_tide[im] = c[im] * (prim_sign[im]-7.0*D[im]*e2[im]) * pow(a[im],-5.5)*mw_speedup;
 		else da_tide[im] = (prim_sign[im]*a[im]/t_tide[im] - 7.0*c[im]*D[im]*e2[im]*pow(a[im],-5.5))*mw_speedup;
+		// Interactions with rings, expands moon's orbit if exterior to rings (Meyer-Vernet & Sicardy 1987, http://dx.doi.org/10.1016/0019-1035(87)90011-X)
+		if (ringSurfaceDensity) {
+			double ringTorque = 0.0;
+			// Find inner Lindblad resonances that matter (kmin, kmax)
+			int kmin = floor(1.0 / (1.0-pow(aring_in/a[im],1.5))) + 1;
+			int kmax = floor(1.0 / (1.0-pow(aring_out/a[im],1.5)));
+
+			if (kmin <= kmax && kmax <= floor(1.0/sqrt(alpha_Lind))) {
+				for (i=kmin;i<=kmax;i++) ringTorque = ringTorque + PI_greek*PI_greek/3.0*ringSurfaceDensity*Gcgs*m[im]*m[im]*i*(i-1)*a[im]/Mprim;
+			}
+			da_tide[im] = da_tide[im] + 2.0*ringTorque/m[im]*sqrt(a[im]/(Gcgs*Mprim)) * mw_speedup; // Charnoz et al. (2011) eq. 2, http://dx.doi.org/10.1016/j.icarus.2011.09.017
+		}
 	}
 
 	// Equations of motion
