@@ -648,8 +648,8 @@ int state (char path[1024], int itime, int im, int ir, double E, double *frock, 
     		title[0] = '\0';
     		char im_str[2];
     		im_str[0] = '\0';
-    		if (v_release == 1) strncat(title,path,strlen(path)-16);
-    		else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+    		if (monterey == 1) strncat(title,path,strlen(path)-16);
+    		else strncat(title,path,strlen(path)-18);
     		strcat(title,"Outputs/");
     		sprintf(im_str, "%d", im);
     		strcat(title, im_str);

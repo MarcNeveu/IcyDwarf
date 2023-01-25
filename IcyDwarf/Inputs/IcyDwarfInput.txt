@@ -1,55 +1,55 @@
-ICY DWARF v20.x INPUT FILE - Saturn system
+ICY DWARF v19.x INPUT FILE - Uranian system with collided moon "Cascada"
 
 1 for Yes, 0 for No
 --------------------------------------------------------------------------------------------------------
 | Housekeeping |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 |-----------------------------------------------|------------------------------------------------------|
 | Warnings?                                     | 0                                                    |
-| Recover?                                      | 0                                                    |
+| Recover?                                      | 1                                                    |
 |-----------------------------------------------|------------------------------------------------------|
 | Grid |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 |-----------------------------------------------|------------------------------------------------------|
-| Number of grid zones                          | 50                                                   |
-| Thermal simulation time step (yr)             | 800                                                  |
+| Number of grid zones                          | 54                                                   |
+| Thermal simulation time step (yr)             | 500                                                  |
 | Moon-moon interaction speedup factor          | 1000                                                 |
-| Total time of thermal simulation (Myr)        | 4560                                                 |
+| Total time of thermal simulation (Myr)        | 4500                                                 |
 | Output every (Myr)                            | 10                                                   |
 |-----------------------------------------------|------------------------------------------------------|
-| Host planet parameters |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+| Uranus parameters      |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 |-----------------------------------------------|------------------------------------------------------|
-| Mass (kg) (0 if world is not a moon)          | 5.68e26                                              |
-| Radius (km)                                   | 60330                                                |
-| Tidal Q (initial,today,{0:lin 1:exp 2:1-exp}) | 20000 20000 0                                        |
-| Love number k2; zonal gravity harmonics J2, J4| 0.382 16290.573e-6 -935.314e-6                       |
-| Resonant tidal locking with inertial waves?   | 1                                                    |
-| Spin period (h)                               | 10.546   (Helled et al. 2015)                        |
-| Number of moons                               | 7                                                    |
-| Ring mass (kg) (0 if no rings)                | 1.54e19                                              |
-| Ring inner edge (km)                          | 92000                                                |
-| Ring outer edge (km)                          | 140000                                               |
-|-----------------------------------------------|------------------------------------------------------|----------|----------|
-| Icy world parameters |||||||||||||||||||||||||| Mimas    | Enceladus| Tethys   | Dione    | Rhea     | Titan    | Iapetus  |
-|-----------------------------------------------|----------|----------|----------|----------|----------|----------|----------|
-| Radius assuming zero porosity (km)            | 186.5    | 252.0    | 507.7    | 556.5    | 762.2    | 2576.0   | 734.3    |
-| Density assuming zero porosity (g cm-3)       | 1.378    | 1.611    | 1.127    | 1.517    | 1.267    | 1.879    | 1.089    |
-| Surface temperature (K)                       | 76       | 68       | 68       | 70       | 72       | 85       | 82       |
-| Initial temperature (K)                       | 100      | 100      | 100      | 100      | 100      | 100      | 100      |
-| Time of formation (Myr)                       | 4117     | 3300     | 2440     | 1430     | 680      | 100      | 100      |
-| Formed from ring?                             | 1        | 1        | 1        | 1        | 0        | 0        | 0        |
-| Ammonia w.r.t. water                          | 0        | 0        | 0        | 0        | 0        | 0        | 0        |
-| Briny liquid? y=1, n=0                        | 0        | 0        | 0        | 0        | 0        | 0        | 0        |
-| Initial degree of hydration                   | 1        | 1        | 1        | 1        | 1        | 1        | 1        |
-| Hydrate/dehydrate?                            | 1        | 1        | 1        | 1        | 1        | 0        | 1        |
-| Initial porosity volume fraction              | 0.2      | 0.2      | 0.2      | 0.2      | 0.2      | 0        | 0.2      |
-| Fraction of rock in fines                     | 0        | 0        | 0        | 0        | 0        | 0        | 0        |
-| Core ice/liquid water volume fraction         | 0.25     | 0.25     | 0.25     | 0.25     | 0.25     | 0        | 0.25     |
-| Start differentiated?                         | 1        | 1        | 1        | 1        | 0        | 0        | 0        |
-| Initial orbital semi-major axis (km)          | 160000   | 160000   | 160000   | 160000   | 160000   | 213024   | 620907   |
-| Initial orbital eccentricity                  | 0.016    | 0.016    | 0.016    | 0.016    | 0.016    | 0.016    | 0.016    |
-| Allow orbit to change?                        | 1        | 1        | 1        | 1        | 1        | 1        | 1        |
-| Retrograde orbit?                             | 0        | 0        | 0        | 0        | 0        | 0        | 0        |
-| Current resonant tidal locking timescale (Gyr)| 10       | 10       | 10       | 10       | 10       | 10       | 10       |
-|-----------------------------------------------|------------------------------------------------------|----------|----------|
+| Mass (kg) (0 if world is not a moon)          | 8.68e25                                              |
+| Radius (km)                                   | 25362                                                |
+| Tidal Q (initial,today,{0:lin 1:exp 2:1-exp}) | 11000 11000 0                                        |
+| Love number k2; zonal gravity harmonics J2, J4| 0.104 3510.99e-6 -33.6e-6 # GavZhar79, Helled+ 2010  |
+| Resonant tidal locking with inertial waves?   | 0                                                    |
+| Spin period (h)                               | 16.58   (Helled et al. 2020)                         |
+| Number of moons                               | 1                                                    |
+| Ring mass (kg) (0 if no rings)                | 4e16  # 2*(epsilon+alpha+beta) (Wikipedia)           |
+| Ring inner edge (km)                          | 41837 # 6 ring (Jacobson 14)                         |
+| Ring outer edge (km)                          | 51149 # epsilon ring (Jacobson 14)                   |
+|-----------------------------------------------|------------------------------------------------------|
+| Icy world parameters |||||||||||||||||||||||||| Cascada  | Miranda  | Ariel    | Umbriel  | Titania  | Oberon   |
+|-----------------------------------------------|----------|----------|----------|----------|----------|
+| Radius assuming zero porosity (km)            | 1000     | 235.8    | 578.9    | 584.7    | 788.9    | 761.4    | # Thomas88
+| Density assuming zero porosity (g cm-3)       | 1.3      | 1.200    | 1.665    | 1.400    | 1.715    | 1.630    | # Jacobson14
+| Surface temperature (K)                       | 55       | 55       | 53       | 60       | 57       | 58       | # Karkoschka01
+| Initial temperature (K)                       | 100      | 100      | 100      | 100      | 100      | 100      |
+| Time of formation (Myr)                       | 10       | 10       | 10       | 10       | 10       | 10       |
+| Formed from ring?                             | 0        | 0        | 0        | 0        | 0        | 0        |
+| Ammonia w.r.t. water                          | 0.02     | 0        | 0        | 0        | 0        | 0        |
+| Briny liquid? y=1, n=0                        | 0        | 0        | 0        | 0        | 0        | 0        |
+| Initial degree of hydration                   | 0        | 1        | 1        | 1        | 1        | 1        |
+| Hydrate/dehydrate?                            | 1        | 1        | 1        | 1        | 1        | 1        |
+| Initial porosity volume fraction              | 0.3      | 0.3      | 0.3      | 0.3      | 0.3      | 0.3      |
+| Fraction of rock in fines                     | 0        | 0        | 0        | 0        | 0        | 0        |
+| Core ice/liquid water volume fraction         | 0        | 0        | 0        | 0        | 0        | 0        |
+| Start differentiated?                         | 0        | 0        | 0        | 0        | 0        | 0        |
+| Initial orbital semi-major axis (km)          | 253620   | 123066   | 171942   | 263908   | 435879   | 583380   |
+| Initial orbital eccentricity                  | 0.016    | 0.016    | 0.016    | 0.016    | 0.016    | 0.016    |
+| Allow orbit to change?                        | 1        | 1        | 1        | 1        | 1        | 1        |
+| Retrograde orbit?                             | 0        | 0        | 0        | 0        | 0        | 0        |
+| Resonant tidal locking timescale (Gyr)        | 0        | 0        | 0        | 0        | 0        | 0        |
+|-----------------------------------------------|------------------------------------------------------|
 | Dry rock density (g cm-3)                     | 3.8                                                  |
 | Hydrated rock density (g cm-3)                | 2.9                                                  |
 | Chondrite type? CI=0 CO=1                     | 0                                                    |

@@ -95,9 +95,8 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 	solfile[0] = '\0';
 	outfile[0] = '\0';
 
-	if (v_release == 1) strncat(dbase,path,strlen(path)-16);
-	else if (cmdline == 1) strncat(dbase,path,strlen(path)-18);
-	else strncat(dbase,path,strlen(path)-16);
+	if (monterey == 1) strncat(dbase,path,strlen(path)-16);
+	else strncat(dbase,path,strlen(path)-18);
 	strcat(dbase,"PHREEQC-3.1.2/core10.dat");
 
 	strncat(infile,dbase,strlen(dbase)-10);
@@ -109,9 +108,8 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 	nloops = 0;
 
 	// Create output
-	if (v_release == 1) strncat(outfile,path,strlen(path)-16);
-	else if (cmdline == 1) strncat(outfile,path,strlen(path)-18);
-	else strcpy(outfile,path);
+	if (monterey == 1) strncat(outfile,path,strlen(path)-16);
+	else strncat(outfile,path,strlen(path)-18);
 	create_output(path, "Outputs/ParamExploration.txt");
 
 	// nsim PHREEQC simulations = (1 + nTempIter)*(1 + nPressureIter)*(1 + npHiter)*(1 + npeIter)*(1 + nWRiter)

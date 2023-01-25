@@ -992,8 +992,8 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 				// "Release/IcyDwarf" characters) and specifying the right path end.
 				char *title = (char*)malloc(2048*sizeof(char));
 				title[0] = '\0';
-				if (v_release == 1) strncat(title,path,strlen(path)-16);
-				else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+				if (monterey == 1) strncat(title,path,strlen(path)-16);
+				else strncat(title,path,strlen(path)-18);
 				strcat(title,"Outputs/Primary.txt");
 				fout = fopen(title,"a");
 				if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
@@ -1118,7 +1118,8 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
     			char *title = (char*)malloc(1024*sizeof(char));
 
     			title[0] = '\0';
-    			if (v_release == 1) strncat(title,path,strlen(path)-16); else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+    			if (monterey == 1) strncat(title,path,strlen(path)-16);
+    			else strncat(title,path,strlen(path)-18);
     			strcat(title,"Outputs/Resonances.txt");
     			fout = fopen(title,"a");
     			if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
@@ -1128,7 +1129,8 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
     			for (im=0;im<nmoons;im++) append_output(nmoons, resonance[im], path, "Outputs/Resonances.txt");
 
     			title[0] = '\0';
-    			if (v_release == 1) strncat(title,path,strlen(path)-16); else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+    			if (monterey == 1) strncat(title,path,strlen(path)-16);
+    			else strncat(title,path,strlen(path)-18);
     			strcat(title,"Outputs/ResAcctFor.txt");
     			fout = fopen(title,"a");
     			if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
@@ -1138,7 +1140,8 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
     			for (im=0;im<nmoons;im++) append_output(nmoons, resAcctFor[im], path, "Outputs/ResAcctFor.txt");
 
     			title[0] = '\0';
-    			if (v_release == 1) strncat(title,path,strlen(path)-16); else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+    			if (monterey == 1) strncat(title,path,strlen(path)-16);
+    			else strncat(title,path,strlen(path)-18);
     			strcat(title,"Outputs/PCapture.txt");
     			fout = fopen(title,"a");
     			if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
@@ -1456,8 +1459,8 @@ int recov(int argc, char *argv[], char path[1024], int nmoons, char outputpath[n
 		// Thermal.txt
 		title[0] = '\0';
 		filename[0] = '\0';
-		if (v_release == 1) strncat(title,path,strlen(path)-16);
-		else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+		if (monterey == 1) strncat(title,path,strlen(path)-16);
+		else strncat(title,path,strlen(path)-18);
 
 		strcat(filename, outputpath[im]); strcat(filename, "Thermal.txt");
 		strcat(title, filename);
@@ -1471,8 +1474,8 @@ int recov(int argc, char *argv[], char path[1024], int nmoons, char outputpath[n
 		if (Mprim > 0.0 && orbevol[im]) {
 			title[0] = '\0';
 			filename[0] = '\0';
-			if (v_release == 1) strncat(title,path,strlen(path)-16);
-			else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+			if (monterey == 1) strncat(title,path,strlen(path)-16);
+			else strncat(title,path,strlen(path)-18);
 
 			strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt");
 			strcat(title, filename);
@@ -1486,8 +1489,8 @@ int recov(int argc, char *argv[], char path[1024], int nmoons, char outputpath[n
 		// Crack_stresses.txt
 		title[0] = '\0';
 		filename[0] = '\0';
-		if (v_release == 1) strncat(title,path,strlen(path)-16);
-		else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+		if (monterey == 1) strncat(title,path,strlen(path)-16);
+		else strncat(title,path,strlen(path)-18);
 
 		strcat(filename, outputpath[im]); strcat(filename, "Crack_stresses.txt");
 		strcat(title, filename);
@@ -1604,6 +1607,9 @@ int recov(int argc, char *argv[], char path[1024], int nmoons, char outputpath[n
 			(*Eslush)[im][ir] = ((*Madhs)[im][ir] + (*Mh2ol)[im][ir] + (*Mnh3l)[im][ir]) * Eice;
 
 			(*dE)[im][ir] = (*Erock)[im][ir] + (*Eh2os)[im][ir] + (*Eslush)[im][ir];
+
+			// Recalculate thermal conductivities to overwrite any effective thermal conductivities that were read in zones experiencing convection
+			(*kappa)[im][ir] = kapcond((*T)[im][ir], frock, fh2os, fadhs, fh2ol, fnh3l, (*Xhydr)[im][ir], (*pore)[im][ir]);
 		}
 	}
 

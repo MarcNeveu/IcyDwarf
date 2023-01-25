@@ -32,6 +32,7 @@
 // FLAGS
 //-------------------------------------------------------------------
 
+#define monterey 1                                         // 0 for Mac versions older than Monterey (OS 12), 1 for Monterey and newer, relevant for file opening
 #define v_release 0                                        // 0 for Debug, 1 for Release
 #define cmdline 1										  // If execution from terminal as "./IcyDwarf",
                                                            // overwritten by v_release.
@@ -350,8 +351,8 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 
 	char idi[2048];
 	idi[0] = '\0';
-	if (v_release == 1) strncat(idi,path,strlen(path)-16);
-	else if (cmdline == 1) strncat(idi,path,strlen(path)-18);
+	if (monterey == 1) strncat(idi,path,strlen(path)-16);
+	else strncat(idi,path,strlen(path)-18);
 	strcat(idi,"Inputs/IcyDwarfInput.txt");
 
 	i = 0;
@@ -794,8 +795,8 @@ thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char pa
 
 	char kbo_dat[2048];
 	kbo_dat[0] = '\0';
-	if (v_release == 1) strncat(kbo_dat,path,strlen(path)-16);
-	else if (cmdline == 1) strncat(kbo_dat,path,strlen(path)-18);
+	if (monterey == 1) strncat(kbo_dat,path,strlen(path)-16);
+	else strncat(kbo_dat,path,strlen(path)-18);
 	strcat(kbo_dat,"Outputs/Thermal.txt");
 
 	fid = fopen (kbo_dat,"r");
@@ -839,8 +840,8 @@ double **read_input (int H, int L, double **Input, char path[1024], const char f
 
 	char title[2048];
 	title[0] = '\0';
-	if (v_release == 1) strncat(title,path,strlen(path)-16);
-	else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+	if (monterey == 1) strncat(title,path,strlen(path)-16);
+	else strncat(title,path,strlen(path)-18);
 	strcat(title,filename);
 
 	fin = fopen (title,"r");
@@ -876,8 +877,8 @@ int create_output (char path[1024], const char filename[1024]) {
 
 	char title[2048];
 	title[0] = '\0';
-	if (v_release == 1) strncat(title,path,strlen(path)-16);
-	else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+	if (monterey == 1) strncat(title,path,strlen(path)-16);
+	else strncat(title,path,strlen(path)-18);
 	strcat(title,filename);
 
 	fout = fopen(title,"w");
@@ -905,8 +906,8 @@ int write_output (int H, int L, double **Output, char path[1024], const char fil
 
 	char title[2048];
 	title[0] = '\0';
-	if (v_release == 1) strncat(title,path,strlen(path)-16);
-	else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+	if (monterey == 1) strncat(title,path,strlen(path)-16);
+	else strncat(title,path,strlen(path)-18);
 	strcat(title,filename);
 
 	fout = fopen(title,"w");
@@ -941,8 +942,8 @@ int append_output (int L, double *Output, char path[1024], const char filename[1
 
 	char title[2048];
 	title[0] = '\0';
-	if (v_release == 1) strncat(title,path,strlen(path)-16);
-	else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+	if (monterey == 1) strncat(title,path,strlen(path)-16);
+	else strncat(title,path,strlen(path)-18);
 	strcat(title,filename);
 
 	fout = fopen(title,"a");

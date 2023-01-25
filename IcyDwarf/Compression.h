@@ -368,8 +368,8 @@ int compression(int NR, int NT, thermalout **thoutput, int t, int dbincore, int 
 
 	char *title = (char*)malloc(2048*sizeof(char));
 	title[0] = '\0';
-	if (v_release == 1) strncat(title,path,strlen(path)-16);
-	else if (cmdline == 1) strncat(title,path,strlen(path)-18);
+	if (monterey == 1) strncat(title,path,strlen(path)-16);
+	else strncat(title,path,strlen(path)-18);
 	strcat(title,"Outputs/Compression.txt");
 
 	fout = fopen(title,"w");
@@ -478,8 +478,8 @@ int planmat(int ncomp, int **dbindex, int **eos, double **rho0, double **c, doub
 
 	char *planmatdb = (char*)malloc(2048*sizeof(char));
 	planmatdb[0] = '\0';
-	if (v_release == 1) strncat(planmatdb,path,strlen(path)-16);
-	else if (cmdline == 1) strncat(planmatdb,path,strlen(path)-18);
+	if (monterey == 1) strncat(planmatdb,path,strlen(path)-16);
+	else strncat(planmatdb,path,strlen(path)-18);
 	strcat(planmatdb,"Data/Compression_planmat.txt");
 
 	fid = fopen (planmatdb,"r");

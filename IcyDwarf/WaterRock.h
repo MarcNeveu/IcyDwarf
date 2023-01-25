@@ -56,9 +56,8 @@ int WaterRock (char path[1024], double T, double P, double WR, double *fracKleac
 	infile[0] = '\0';
 	tempinput[0] = '\0';
 
-	if (v_release == 1) strncat(dbase,path,strlen(path)-16);
-	else if (cmdline == 1) strncat(dbase,path,strlen(path)-18);
-	else strncat(dbase,path,strlen(path)-16);
+	if (monterey == 1) strncat(dbase,path,strlen(path)-16);
+	else strncat(dbase,path,strlen(path)-18);
 	strcat(dbase,"PHREEQC-3.1.2/core9.dat");
 
 	strncat(infile,dbase,strlen(dbase)-9);
