@@ -152,6 +152,7 @@ int main(int argc, char *argv[]){
                                        // Default: 235 K (Cryolava), 245 K (Crack, P>200 bar)
 
 	int n_inputs = 1024;
+	int os = 0;
 
 	double *input = (double*) malloc(n_inputs*sizeof(double));
 	if (input == NULL) printf("IcyDwarf: Not enough memory to create input[%d]\n", n_inputs);
@@ -183,11 +184,21 @@ int main(int argc, char *argv[]){
 	else
 	    printf("IcyDwarf: Couldn't retrieve executable directory. Buffer too small; need size %u\n", size);
 
+	// Get OS version
+	struct utsname uts;
+	uname(&uts);
+	printf("System is %s on %s hardware\n",uts.sysname, uts.machine);
+	printf("OS Release is %s\n",uts.release);
+//	printf("OS Version is\n",uts.version);
+
+	char *ptr;
+	os = strtod(uts.release, &ptr);
+
 	//-------------------------------------------------------------------
 	// Read input
 	//-------------------------------------------------------------------
 
-	input = icy_dwarf_input (input, path);
+	input = icy_dwarf_input (os, input, path);
 
 	i = 0;
 	//-----------------------------
@@ -415,19 +426,19 @@ int main(int argc, char *argv[]){
 
 	if (run_aTP == 1) {
 		printf("Calculating expansion mismatch optimal flaw size matrix...\n");
-		aTP(path, warnings);
+		aTP(os, path, warnings);
 		printf("\n");
 	}
 
 	if (run_alpha_beta == 1) {
 		printf("Calculating alpha(T,P) and beta(T,P) tables for water using CHNOSZ...\n");
-		Crack_water_CHNOSZ(argc, argv, path, warnings);
+		Crack_water_CHNOSZ(os, argc, argv, path, warnings);
 		printf("\n");
 	}
 
 	if (run_crack_species == 1) {
 		printf("Calculating log K for crack species using CHNOSZ...\n");
-		Crack_species_CHNOSZ(argc, argv, path, warnings);
+		Crack_species_CHNOSZ(os, argc, argv, path, warnings);
 		printf("\n");
 	}
 
@@ -448,7 +459,7 @@ int main(int argc, char *argv[]){
 
 	if (run_thermal == 1) {
 		printf("Running thermal evolution code...\n");
-		PlanetSystem(argc, argv, path, warnings, recover, NR, timestep, speedup, tzero, total_time, output_every, nmoons, Mprim, Rprim, Qprimi, Qprimf,
+		PlanetSystem(os, argc, argv, path, warnings, recover, NR, timestep, speedup, tzero, total_time, output_every, nmoons, Mprim, Rprim, Qprimi, Qprimf,
 				Qmode, k2prim, J2prim, J4prim, reslock, Mring, aring_out, aring_in, r_p, rho_p, rhoHydrRock, rhoDryRock, nh3, salt, Xhydr, porosity, Xpores,
 				Xfines, Tinit, Tsurf, fromRing, startdiff, aorb, eorb, tidalmodel, eccentricitymodel, tidetimes, orbevol, retrograde, t_reslock, nprim, hy,
 				chondr, crack_input, crack_species);
@@ -461,7 +472,7 @@ int main(int argc, char *argv[]){
 
 	if (run_geochem == 1) {
 		printf("Running PHREEQC across the specified range of parameters...\n");
-		ParamExploration(path, Tmin, Tmax, Tstep,
+		ParamExploration(os, path, Tmin, Tmax, Tstep,
 				Pmin, Pmax, Pstep,
 				pemin, pemax, pestep,
 				WRmin, WRmax, WRstep);
@@ -481,9 +492,9 @@ int main(int argc, char *argv[]){
 			thoutput[ir] = (thermalout*) malloc(NT_output*sizeof(thermalout));
 			if (thoutput[ir] == NULL) printf("IcyDwarf: Not enough memory to create the thoutput structure\n");
 		}
-		thoutput = read_thermal_output (thoutput, NR, NT_output, path);
+		thoutput = read_thermal_output (os, thoutput, NR, NT_output, path);
 
-		compression(NR, NT_output, thoutput, NT_output-1, 205, 302, 403, 0, path, rhoHydrRock, rhoDryRock, Xhydr[0]);
+		compression(os, NR, NT_output, thoutput, NT_output-1, 205, 302, 403, 0, path, rhoHydrRock, rhoDryRock, Xhydr[0]);
 
 		for (ir=0;ir<NR;ir++) free (thoutput[ir]);
 		free (thoutput);
@@ -504,14 +515,14 @@ int main(int argc, char *argv[]){
 			thoutput[ir] = (thermalout*) malloc(NT_output*sizeof(thermalout));
 			if (thoutput[ir] == NULL) printf("IcyDwarf: Not enough memory to create the thoutput structure\n");
 		}
-		thoutput = read_thermal_output (thoutput, NR, NT_output, path);
+		thoutput = read_thermal_output (os, thoutput, NR, NT_output, path);
 		for (ir=0;ir<NR;ir++) Xhydr[0][ir] = thoutput[ir][NT_output].xhydr;
 
 		if (t_cryolava > NT_output) {
 			printf("Icy Dwarf: t_cryolava > total time of sim\n");
 			return -1;
 		}
-		Cryolava(argc, argv, path, NR, NT_output, (float) r_p[0], thoutput, t_cryolava, CHNOSZ_T_MIN, warnings, rhoHydrRock, rhoDryRock, Xhydr[0]);
+		Cryolava(os, argc, argv, path, NR, NT_output, (float) r_p[0], thoutput, t_cryolava, CHNOSZ_T_MIN, warnings, rhoHydrRock, rhoDryRock, Xhydr[0]);
 
 		for (ir=0;ir<NR;ir++) free (thoutput[ir]);
 		free (thoutput);

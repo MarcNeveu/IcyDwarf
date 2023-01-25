@@ -27,7 +27,7 @@
 #include "IcyDwarf.h"
 #include "Crack.h"
 
-int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int warnings, int NR, double dr_grid,
+int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[1024], int warnings, int NR, double dr_grid,
 		double dtime, double realtime, int itime, double Xp, double Xsalt, double Xfines, double Xpores, double Tsurf,
 		double **r, double **dM, double **dM_old, double *Phi, double *dVol, double **dE, double **T, double **T_old, double **Pressure,
 		double rhoRockth, double rhoHydrth, double rhoH2osth, double rhoAdhsth, double rhoH2olth, double rhoNh3lth,
@@ -41,7 +41,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 		double *norb, double *Wtide_tot, int hy, int chondr, double *Heat_radio, double *Heat_grav, double *Heat_serp, double *Heat_dehydr,
 		double *Heat_tide, double ***Stress, double **TideHeatRate);
 
-int state (char path[1024], int itime, int im, int ir, double E, double *frock, double *fh2os, double *fadhs, double *fh2ol,
+int state (int os, char path[1024], int itime, int im, int ir, double E, double *frock, double *fh2os, double *fadhs, double *fh2ol,
 		double *fnh3l, double Xsalt, double *T);
 
 double heatRock (double T);
@@ -93,7 +93,7 @@ long double complex y2(long double complex x, int mod);
 long double complex y2p(long double complex x, int mod);
 long double complex y2pp(long double complex x, int mod);
 
-int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int warnings, int NR, double dr_grid,
+int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[1024], int warnings, int NR, double dr_grid,
 		double dtime, double realtime, int itime, double Xp, double Xsalt, double Xfines, double Xpores, double Tsurf,
 		double **r, double **dM, double **dM_old, double *Phi, double *dVol, double **dE, double **T, double **T_old, double **Pressure,
 		double rhoRockth, double rhoHydrth, double rhoH2osth, double rhoAdhsth, double rhoH2olth, double rhoNh3lth,
@@ -503,7 +503,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
 		fadhs = (*Madhs)[ir] / (*dM)[ir];
 		fh2ol = (*Mh2ol)[ir] / (*dM)[ir];
 		fnh3l = (*Mnh3l)[ir] / (*dM)[ir];
-		state (path, itime, im, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, Xsalt, &temp1);
+		state (os, path, itime, im, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, Xsalt, &temp1);
 		(*T)[ir] = temp1;
 		(*Mrock)[ir] = (*dM)[ir]*frock;
 		(*Mh2os)[ir] = (*dM)[ir]*fh2os;
@@ -571,7 +571,7 @@ int Thermal (int argc, char *argv[], char path[1024], char outputpath[1024], int
  *
  *--------------------------------------------------------------------*/
 
-int state (char path[1024], int itime, int im, int ir, double E, double *frock, double *fh2os, double *fadhs, double *fh2ol,
+int state (int os, char path[1024], int itime, int im, int ir, double E, double *frock, double *fh2os, double *fadhs, double *fh2ol,
 		double *fnh3l, double Xsalt, double *T) {
 
 	FILE *fout;
@@ -648,8 +648,8 @@ int state (char path[1024], int itime, int im, int ir, double E, double *frock, 
     		title[0] = '\0';
     		char im_str[2];
     		im_str[0] = '\0';
-    		if (monterey == 1) strncat(title,path,strlen(path)-16);
-    		else strncat(title,path,strlen(path)-18);
+    		if (os < 21) strncat(title,path,strlen(path)-18);
+    		else strncat(title,path,strlen(path)-16);
     		strcat(title,"Outputs/");
     		sprintf(im_str, "%d", im);
     		strcat(title, im_str);

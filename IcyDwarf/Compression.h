@@ -24,15 +24,15 @@
 
 #include "IcyDwarf.h"
 
-int compression(int NR, int NT, thermalout **thoutput, int t, int dbincore, int dboutcore, int dbmantle, int specify,
+int compression(int os, int NR, int NT, thermalout **thoutput, int t, int dbincore, int dboutcore, int dbmantle, int specify,
 		char path[1024], double rhoHydr, double rhoDry, double *Xhydr);
 
-int planmat(int ncomp, int **dbindex, int **eos, double **rho0, double **c, double **nn, double **Ks0, double **Ksp,
+int planmat(int os, int ncomp, int **dbindex, int **eos, double **rho0, double **c, double **nn, double **Ks0, double **Ksp,
 		double **V0, double **Tref, double **a0, double **a1, double **b0, double **b1, double **b2, char path[1024]);
 
 int planmat_index(int mat, int ncomp, int *dbindex);
 
-int compression(int NR, int NT, thermalout **thoutput, int t, int dbincore, int dboutcore, int dbmantle, int specify,
+int compression(int os, int NR, int NT, thermalout **thoutput, int t, int dbincore, int dboutcore, int dbmantle, int specify,
 		char path[1024], double rhoHydr, double rhoDry, double *Xhydr) {
 
 	//-------------------------------------------------------------------
@@ -194,7 +194,7 @@ int compression(int NR, int NT, thermalout **thoutput, int t, int dbincore, int 
 	//-------------------------------------------------------------------
 
 	// Load planetary materials database
-	planmat(ncomp, &dbindex, &eos, &rho0, &c, &nn, &Ks0, &Ksp, &V0, &Tref, &a0, &a1, &b0, &b1, &b2, path);
+	planmat(os, ncomp, &dbindex, &eos, &rho0, &c, &nn, &Ks0, &Ksp, &V0, &Tref, &a0, &a1, &b0, &b1, &b2, path);
 
 	iincore = planmat_index(dbincore, ncomp, dbindex);
 	ioutcore = planmat_index(dboutcore, ncomp, dbindex);
@@ -368,8 +368,8 @@ int compression(int NR, int NT, thermalout **thoutput, int t, int dbincore, int 
 
 	char *title = (char*)malloc(2048*sizeof(char));
 	title[0] = '\0';
-	if (monterey == 1) strncat(title,path,strlen(path)-16);
-	else strncat(title,path,strlen(path)-18);
+	if (os < 21) strncat(title,path,strlen(path)-18);
+	else strncat(title,path,strlen(path)-16);
 	strcat(title,"Outputs/Compression.txt");
 
 	fout = fopen(title,"w");
@@ -469,7 +469,7 @@ int compression(int NR, int NT, thermalout **thoutput, int t, int dbincore, int 
  *
  *--------------------------------------------------------------------*/
 
-int planmat(int ncomp, int **dbindex, int **eos, double **rho0, double **c, double **nn, double **Ks0, double **Ksp,
+int planmat(int os, int ncomp, int **dbindex, int **eos, double **rho0, double **c, double **nn, double **Ks0, double **Ksp,
 		double **V0, double **Tref, double **a0, double **a1, double **b0, double **b1, double **b2, char path[1024]) {
 
 	FILE *fid;
@@ -478,8 +478,8 @@ int planmat(int ncomp, int **dbindex, int **eos, double **rho0, double **c, doub
 
 	char *planmatdb = (char*)malloc(2048*sizeof(char));
 	planmatdb[0] = '\0';
-	if (monterey == 1) strncat(planmatdb,path,strlen(path)-16);
-	else strncat(planmatdb,path,strlen(path)-18);
+	if (os < 21) strncat(planmatdb,path,strlen(path)-18);
+	else strncat(planmatdb,path,strlen(path)-16);
 	strcat(planmatdb,"Data/Compression_planmat.txt");
 
 	fid = fopen (planmatdb,"r");

@@ -20,6 +20,7 @@
 #include <complex.h>
 #include <omp.h>                                           // Parallel processing
 #include <unistd.h>                                        // To check current working directory at IcyDwarf startup
+#include <sys/utsname.h>
 #include <R.h>                                             // To use the external R software package
 #include <Rdefines.h>
 #include <Rinternals.h>
@@ -27,12 +28,6 @@
 #include <IPhreeqc.h>                                      // To use the external PHREEQC geochemical code
 #include "modifdyld.h"                                     // Like mach-o/dyld.h but without the boolean DYLD_BOOL typedef
                                                            //   that conflicts with the R_boolean typedef
-
-//-------------------------------------------------------------------
-// FLAGS
-//-------------------------------------------------------------------
-
-#define monterey 1                                         // 0 for Mac versions older than Monterey (OS 12), 1 for Monterey and newer, relevant for file opening
 
 //-------------------------------------------------------------------
 // PHYSICAL AND MATHEMATICAL CONSTANTS
@@ -213,12 +208,12 @@ double *calculate_pressure (double *Pressure, int NR, double *dM, double *Mrock,
 double calculate_mass_liquid (int NR, int NT, int t, thermalout **thoutput);
 int calculate_seafloor (thermalout **thoutput, int NR, int NT, int t);
 int look_up (double x, double x_var, double x_step, int size, int warnings);
-double *icy_dwarf_input (double *input, char path[1024]);
-thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char path[1024]);
-double **read_input (int H, int L, double **Input, char path[1024], const char filename[1024]);
-int create_output (char path[1024], const char filename[1024]);
-int write_output (int H, int L, double **Output, char path[1024], const char filename[1024]);
-int append_output (int L, double *Output, char path[1024], const char filename[1024]);
+double *icy_dwarf_input (int os, double *input, char path[1024]);
+thermalout **read_thermal_output (int os, thermalout **thoutput, int NR, int NT, char path[1024]);
+double **read_input (int os, int H, int L, double **Input, char path[1024], const char filename[1024]);
+int create_output (int os, char path[1024], const char filename[1024]);
+int write_output (int os, int H, int L, double **Output, char path[1024], const char filename[1024]);
+int append_output (int os, int L, double *Output, char path[1024], const char filename[1024]);
 
 //-------------------------------------------------------------------
 //                        Calculate pressure
@@ -332,7 +327,7 @@ int look_up (double x, double x_var, double x_step, int size, int warnings) {
 //                       Read IcyDwarf input file
 //-------------------------------------------------------------------
 
-double *icy_dwarf_input (double *input, char path[1024]) {
+double *icy_dwarf_input (int os, double *input, char path[1024]) {
 
 	FILE *f;
 	int i = 0;
@@ -349,8 +344,8 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 
 	char idi[2048];
 	idi[0] = '\0';
-	if (monterey == 1) strncat(idi,path,strlen(path)-16);
-	else strncat(idi,path,strlen(path)-18);
+	if (os < 21) strncat(idi,path,strlen(path)-18);
+	else strncat(idi,path,strlen(path)-16);
 	strcat(idi,"Inputs/IcyDwarfInput.txt");
 
 	i = 0;
@@ -358,7 +353,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 	if (f == NULL) {
 		printf("IcyDwarf: Cannot find IcyDwarfInput.txt file.\n");
 		printf("Was IcyDwarf launched from the right folder?\n");
-		printf("The following option is active: release %d, command line %d\n", v_release, cmdline);
+		printf("The Darwin OS version is: %d\n", os);
 		exit(0);
 	}
 	else {
@@ -779,7 +774,7 @@ double *icy_dwarf_input (double *input, char path[1024]) {
 //                   Read output of the thermal code
 //-------------------------------------------------------------------
 
-thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char path[1024]) {
+thermalout **read_thermal_output (int os, thermalout **thoutput, int NR, int NT, char path[1024]) {
 
 	FILE *fid;
 	int r = 0;
@@ -793,8 +788,8 @@ thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char pa
 
 	char kbo_dat[2048];
 	kbo_dat[0] = '\0';
-	if (monterey == 1) strncat(kbo_dat,path,strlen(path)-16);
-	else strncat(kbo_dat,path,strlen(path)-18);
+	if (os < 21) strncat(kbo_dat,path,strlen(path)-18);
+	else strncat(kbo_dat,path,strlen(path)-16);
 	strcat(kbo_dat,"Outputs/Thermal.txt");
 
 	fid = fopen (kbo_dat,"r");
@@ -826,7 +821,7 @@ thermalout **read_thermal_output (thermalout **thoutput, int NR, int NT, char pa
 //                            Read input
 //-------------------------------------------------------------------
 
-double **read_input (int H, int L, double **Input, char path[1024], const char filename[1024]) {
+double **read_input (int os, int H, int L, double **Input, char path[1024], const char filename[1024]) {
 
 	FILE *fin;
 	int l = 0;
@@ -838,8 +833,8 @@ double **read_input (int H, int L, double **Input, char path[1024], const char f
 
 	char title[2048];
 	title[0] = '\0';
-	if (monterey == 1) strncat(title,path,strlen(path)-16);
-	else strncat(title,path,strlen(path)-18);
+	if (os < 21) strncat(title,path,strlen(path)-18);
+	else strncat(title,path,strlen(path)-16);
 	strcat(title,filename);
 
 	fin = fopen (title,"r");
@@ -865,7 +860,7 @@ double **read_input (int H, int L, double **Input, char path[1024], const char f
 //                           Create output
 //-------------------------------------------------------------------
 
-int create_output (char path[1024], const char filename[1024]) {
+int create_output (int os, char path[1024], const char filename[1024]) {
 
 	FILE *fout;
 
@@ -875,8 +870,8 @@ int create_output (char path[1024], const char filename[1024]) {
 
 	char title[2048];
 	title[0] = '\0';
-	if (monterey == 1) strncat(title,path,strlen(path)-16);
-	else strncat(title,path,strlen(path)-18);
+	if (os < 21) strncat(title,path,strlen(path)-18);
+	else strncat(title,path,strlen(path)-16);
 	strcat(title,filename);
 
 	fout = fopen(title,"w");
@@ -892,7 +887,7 @@ int create_output (char path[1024], const char filename[1024]) {
 //               Write output (no need to create output)
 //-------------------------------------------------------------------
 
-int write_output (int H, int L, double **Output, char path[1024], const char filename[1024]) {
+int write_output (int os, int H, int L, double **Output, char path[1024], const char filename[1024]) {
 
 	FILE *fout;
 	int l = 0;
@@ -904,8 +899,8 @@ int write_output (int H, int L, double **Output, char path[1024], const char fil
 
 	char title[2048];
 	title[0] = '\0';
-	if (monterey == 1) strncat(title,path,strlen(path)-16);
-	else strncat(title,path,strlen(path)-18);
+	if (os < 21) strncat(title,path,strlen(path)-18);
+	else strncat(title,path,strlen(path)-16);
 	strcat(title,filename);
 
 	fout = fopen(title,"w");
@@ -929,7 +924,7 @@ int write_output (int H, int L, double **Output, char path[1024], const char fil
 //                           Append output
 //-------------------------------------------------------------------
 
-int append_output (int L, double *Output, char path[1024], const char filename[1024]) {
+int append_output (int os, int L, double *Output, char path[1024], const char filename[1024]) {
 
 	FILE *fout;
 	int l = 0;
@@ -940,8 +935,8 @@ int append_output (int L, double *Output, char path[1024], const char filename[1
 
 	char title[2048];
 	title[0] = '\0';
-	if (monterey == 1) strncat(title,path,strlen(path)-16);
-	else strncat(title,path,strlen(path)-18);
+	if (os < 21) strncat(title,path,strlen(path)-18);
+	else strncat(title,path,strlen(path)-16);
 	strcat(title,filename);
 
 	fout = fopen(title,"a");

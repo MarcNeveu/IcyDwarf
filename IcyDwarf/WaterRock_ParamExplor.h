@@ -14,7 +14,7 @@
 
 #include "IcyDwarf.h"
 
-int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, double Pmin, double Pmax, double Pstep,
+int ParamExploration(int os, char path[1024], double Tmin, double Tmax, double Tstep, double Pmin, double Pmax, double Pstep,
 		double pemin, double pemax, double pestep, double WRmin, double WRmax, double WRstep);
 
 int EHandler(int phreeqc);
@@ -30,7 +30,7 @@ const char* ConCat(const char *str1, const char *str2);
 int WritePHREEQCInput(const char *TemplateFile, double temp, double pressure, double pH, double rel_pe, double pe, double WR,
 		char **tempinput);
 
-int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, double Pmin, double Pmax, double Pstep,
+int ParamExploration(int os, char path[1024], double Tmin, double Tmax, double Tstep, double Pmin, double Pmax, double Pstep,
 		double pemin, double pemax, double pestep, double WRmin, double WRmax, double WRstep) {
 
 	int thread_id;
@@ -95,8 +95,8 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 	solfile[0] = '\0';
 	outfile[0] = '\0';
 
-	if (monterey == 1) strncat(dbase,path,strlen(path)-16);
-	else strncat(dbase,path,strlen(path)-18);
+	if (os < 21) strncat(dbase,path,strlen(path)-18);
+	else strncat(dbase,path,strlen(path)-16);
 	strcat(dbase,"PHREEQC-3.1.2/core10.dat");
 
 	strncat(infile,dbase,strlen(dbase)-10);
@@ -108,9 +108,9 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 	nloops = 0;
 
 	// Create output
-	if (monterey == 1) strncat(outfile,path,strlen(path)-16);
-	else strncat(outfile,path,strlen(path)-18);
-	create_output(path, "Outputs/ParamExploration.txt");
+	if (os < 21) strncat(outfile,path,strlen(path)-18);
+	else strncat(outfile,path,strlen(path)-16);
+	create_output(os, path, "Outputs/ParamExploration.txt");
 
 	// nsim PHREEQC simulations = (1 + nTempIter)*(1 + nPressureIter)*(1 + npHiter)*(1 + npeIter)*(1 + nWRiter)
 	for (iPressure=0;iPressure<=nPressureIter;iPressure++) {
@@ -193,7 +193,7 @@ int ParamExploration(char path[1024], double Tmin, double Tmax, double Tstep, do
 
 				// Write output
 				for (ipe=0;ipe<=npeIter;ipe++) {
-					append_output(nvar, simdata[ipe], path, "Outputs/ParamExploration.txt");
+					append_output(os, nvar, simdata[ipe], path, "Outputs/ParamExploration.txt");
 				}
 
 			}

@@ -13,14 +13,14 @@
 #include "Thermal.h"
 #include "Crack.h"
 
-int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int recover, int NR, double dtime, double speedup, double *tzero, double fulltime,
+int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, int recover, int NR, double dtime, double speedup, double *tzero, double fulltime,
 		double dtoutput, int nmoons, double Mprim, double Rprim, double Qprimi, double Qprimf, int Qmode, double k2prim, double J2prim, double J4prim, int reslock,
 		double Mring_init, double aring_out, double aring_in, double *r_p, double *rho_p, double rhoHydr, double rhoDry, double *Xp, double *Xsalt,
 		double **Xhydr, double *porosity, double *Xpores, double *Xfines, double *Tinit, double *Tsurf, int *fromRing, int *startdiff,
 		double *aorb_init, double *eorb_init, int tidalmodel, int eccentricitymodel, double tidetimes, int *orbevol, int* retrograde, double *t_reslock, double nprim,
 		int *hy, int chondr, int *crack_input, int *crack_species);
 
-int recov(int argc, char *argv[], char path[1024], int nmoons, char outputpath[nmoons][1024], int NR, int ntherm, int norbit, int ncrkstrs, double ****Stress, double *Xp,
+int recov(int os, int argc, char *argv[], char path[1024], int nmoons, char outputpath[nmoons][1024], int NR, int ntherm, int norbit, int ncrkstrs, double ****Stress, double *Xp,
 		double *Xsalt, double Mprim, double Rprim, double k2prim, double Qprim, double *Mring, double aring_out, int *orbevol, double rhoRockth, double rhoHydrth, double rhoH2olth,
 		double **dVol, double *tzero, double (*m_p)[nmoons], double *dnorb_dt, double *trecover, double ***r, double ***T, double ***Mrock, double ***Mh2os, double ***Madhs,
 		double ***Mh2ol, double ***Mnh3l, double ***Vrock, double ***Vh2ol, double ***Erock, double ***Eh2os, double ***Eslush, double ***dE, double ***Nu, double ***kappa,
@@ -32,7 +32,7 @@ int recov(int argc, char *argv[], char path[1024], int nmoons, char outputpath[n
 
 int tail(FILE *f, int n, int l, double ***output);
 
-int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int recover, int NR, double dtime, double speedup, double *tzero, double fulltime,
+int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, int recover, int NR, double dtime, double speedup, double *tzero, double fulltime,
 		double dtoutput, int nmoons, double Mprim, double Rprim, double Qprimi, double Qprimf, int Qmode, double k2prim, double J2prim, double J4prim, int reslock,
 		double Mring_init, double aring_out, double aring_in, double *r_p, double *rho_p, double rhoHydr, double rhoDry, double *Xp, double *Xsalt,
 		double **Xhydr, double *porosity, double *Xpores, double *Xfines, double *Tinit, double *Tsurf, int *fromRing, int *startdiff,
@@ -648,25 +648,25 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 	 * - integral: Geometry part of the integral in eqs. (3) and (4) of
 	 * Vance et al. (2007) for various a, to calculate the stress intensity K_I.*/
 	if (thermal_mismatch == 1) {
-		aTP = read_input (sizeaTP, sizeaTP, aTP, path, "Data/Crack_aTP.txt");
+		aTP = read_input (os, sizeaTP, sizeaTP, aTP, path, "Data/Crack_aTP.txt");
 		if (aTP[0][0] == 0) printf("Generate a table of a(T,P) using the aTP routine.\n");
-		integral = read_input (2, int_size, integral, path, "Data/Crack_integral.txt");
+		integral = read_input (os, 2, int_size, integral, path, "Data/Crack_integral.txt");
 		if (integral[0][0] == 0) printf("Generate a table of integral results using the aTP routine.\n");
 	}
 
 	if (pore_water_expansion == 1) {
-		alpha = read_input (sizeaTP, sizeaTP, alpha, path, "Data/Crack_alpha.txt");
+		alpha = read_input (os, sizeaTP, sizeaTP, alpha, path, "Data/Crack_alpha.txt");
 		if (alpha[0][0] == 0) printf("Generate a table of parameter alpha for water using the Crack_water_CHNOSZ routine.\n");
-		beta = read_input (sizeaTP, sizeaTP, beta, path, "Data/Crack_beta.txt");
+		beta = read_input (os, sizeaTP, sizeaTP, beta, path, "Data/Crack_beta.txt");
 		if (beta[0][0] == 0) printf("Generate a table of parameter beta for water using the Crack_water_CHNOSZ routine.\n");
 	}
 
 	if (dissolution_precipitation == 1) {
-		silica = read_input (sizeaTP, sizeaTP, silica, path, "Data/Crack_silica.txt");
+		silica = read_input (os, sizeaTP, sizeaTP, silica, path, "Data/Crack_silica.txt");
 		if (silica[0][0] == 0) printf("Generate a table of silica log K using the Crack_species_CHNOSZ routine.\n");
-		chrysotile = read_input (sizeaTP, sizeaTP, chrysotile, path, "Data/Crack_chrysotile.txt");
+		chrysotile = read_input (os, sizeaTP, sizeaTP, chrysotile, path, "Data/Crack_chrysotile.txt");
 		if (chrysotile[0][0] == 0) printf("Generate a table of chrysotile log K using the Crack_species_CHNOSZ routine.\n");
-		magnesite = read_input (sizeaTP, sizeaTP, magnesite, path, "Data/Crack_magnesite.txt");
+		magnesite = read_input (os, sizeaTP, sizeaTP, magnesite, path, "Data/Crack_magnesite.txt");
 		if (magnesite[0][0] == 0) printf("Generate a table of magnesite log K using the Crack_species_CHNOSZ routine.\n");
 	}
 
@@ -714,7 +714,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 	    //            Recovery init (from existing output files)
 	    //-------------------------------------------------------------------
 
-		recov(argc, argv, path, nmoons, outputpath, NR, ntherm, norbit, ncrkstrs, &Stress, Xp, Xsalt,
+		recov(os, argc, argv, path, nmoons, outputpath, NR, ntherm, norbit, ncrkstrs, &Stress, Xp, Xsalt,
 			Mprim, Rprim, k2prim, Qprim, &Mring, aring_out, orbevol, rhoRockth, rhoHydrth, rhoH2olth, dVol, tzero, &m_p, dnorb_dt,
 			&trecover, &r, &T, &Mrock, &Mh2os, &Madhs, &Mh2ol, &Mnh3l, &Vrock, &Vh2ol, &Erock, &Eh2os, &Eslush, &dE,
 			&Nu, &kappa, &Xhydr, &pore, &T_old, &Mrock_init, &dM, &Xhydr_old, &Crack, &fracOpen, Xpores,
@@ -744,7 +744,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 				fadhs = Madhs[im][ir] / dM[im][ir];
 				fh2ol = Mh2ol[im][ir] / dM[im][ir];
 				fnh3l = Mnh3l[im][ir] / dM[im][ir];
-				state (path, itime, im, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, Xsalt[im], &temp1);
+				state (os, path, itime, im, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, Xsalt[im], &temp1);
 				T[im][ir] = temp1;
 				Mrock[im][ir] = dM[im][ir]*frock;
 				Mh2os[im][ir] = dM[im][ir]*fh2os;
@@ -759,19 +759,19 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 	    //                Normal init (from input file only)
 	    //-------------------------------------------------------------------
 		for (im=0;im<nmoons;im++) {
-			strcat(filename, outputpath[im]); strcat(filename, "Thermal.txt"); create_output(path, filename); filename[0] = '\0';
-			strcat(filename, outputpath[im]); strcat(filename, "Heats.txt"); create_output(path, filename); filename[0] = '\0';
-			strcat(filename, outputpath[im]); strcat(filename, "Crack_depth_WR.txt"); create_output(path, filename); filename[0] = '\0';
-			strcat(filename, outputpath[im]); strcat(filename, "Crack_stresses.txt"); create_output(path, filename); filename[0] = '\0';
+			strcat(filename, outputpath[im]); strcat(filename, "Thermal.txt"); create_output(os, path, filename); filename[0] = '\0';
+			strcat(filename, outputpath[im]); strcat(filename, "Heats.txt"); create_output(os, path, filename); filename[0] = '\0';
+			strcat(filename, outputpath[im]); strcat(filename, "Crack_depth_WR.txt"); create_output(os, path, filename); filename[0] = '\0';
+			strcat(filename, outputpath[im]); strcat(filename, "Crack_stresses.txt"); create_output(os, path, filename); filename[0] = '\0';
 			if (Mprim > 0.0 && orbevol[im]) {
-				strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt"); create_output(path, filename); filename[0] = '\0';
+				strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt"); create_output(os, path, filename); filename[0] = '\0';
 			}
 		}
 		if (Mprim > 0.0) {
-			create_output(path, "Outputs/Primary.txt");
-			create_output(path, "Outputs/Resonances.txt");
-			create_output(path, "Outputs/ResAcctFor.txt");
-			create_output(path, "Outputs/PCapture.txt");
+			create_output(os, path, "Outputs/Primary.txt");
+			create_output(os, path, "Outputs/Resonances.txt");
+			create_output(os, path, "Outputs/ResAcctFor.txt");
+			create_output(os, path, "Outputs/PCapture.txt");
 		}
 
 		for (im=0;im<nmoons;im++) m_p[im] = rho_p[im]*4.0/3.0*PI_greek*r_p[im]*r_p[im]*r_p[im]; // Compute object mass from radius and density
@@ -833,7 +833,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 				fadhs = Madhs[im][ir] / dM[im][ir];
 				fh2ol = Mh2ol[im][ir] / dM[im][ir];
 				fnh3l = Mnh3l[im][ir] / dM[im][ir];
-				state (path, itime, im, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, Xsalt[im], &temp1);
+				state (os, path, itime, im, ir, e1, &frock, &fh2os, &fadhs, &fh2ol, &fnh3l, Xsalt[im], &temp1);
 				T[im][ir] = temp1;
 				Mrock[im][ir] = dM[im][ir]*frock;
 				Mh2os[im][ir] = dM[im][ir]*fh2os;
@@ -863,7 +863,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 				Thermal_output[im][12] = Crack[im][ir];    // 0: not cracked; > 0: cracked by process that depends on value; < 0: healed cracks by process that depends on value
 				Thermal_output[im][13] = TideHeatRate[im][ir]; // Heating rate (W)
 				strcat(filename, outputpath[im]); strcat(filename, "Thermal.txt");
-				append_output(ntherm, Thermal_output[im], path, filename); filename[0] = '\0';
+				append_output(os, ntherm, Thermal_output[im], path, filename); filename[0] = '\0';
 			}
 
 			Heat[im][0] = 0.0;                     // t in Gyr
@@ -873,7 +873,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 			Heat[im][4] = Heat_dehydr[im];
 			Heat[im][5] = Heat_tide[im];
 			strcat(filename, outputpath[im]); strcat(filename, "Heats.txt");
-			append_output(nheat, Heat[im], path, filename); filename[0] = '\0';
+			append_output(os, nheat, Heat[im], path, filename); filename[0] = '\0';
 
 			// Crack depth (km) and water:rock ratio by mass in cracked layer (Mliq/Mcracked_rock)
 			Crack_depth_WR[im][0] = 0.0;              // t in Gyr
@@ -885,13 +885,13 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 			if (Crack_depth_WR[im][1] < 0.0) Crack_depth_WR[im][1] = 0.0;
 			Crack_depth_WR[im][2] = 0.0; // W:R by mass
 			strcat(filename, outputpath[im]); strcat(filename, "Crack_depth_WR.txt");
-			append_output(3, Crack_depth_WR[im], path, filename); filename[0] = '\0';
+			append_output(os, 3, Crack_depth_WR[im], path, filename); filename[0] = '\0';
 
 			// Crack stresses
 			for (ir=0;ir<NR;ir++) {
 				Stress[im][ir][0] = r[im][ir+1]/km2cm;
 				strcat(filename, outputpath[im]); strcat(filename, "Crack_stresses.txt");
-				append_output(ncrkstrs, Stress[im][ir], path, filename); filename[0] = '\0';
+				append_output(os, ncrkstrs, Stress[im][ir], path, filename); filename[0] = '\0';
 			}
 
 			// Orbital parameters
@@ -906,7 +906,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 				Orbit_output[im][7] = Wtide_tot[im];
 				Orbit_output[im][8] = 0.0; // k2/Q
 				strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt");
-				append_output(norbit, Orbit_output[im], path, filename); filename[0] = '\0';
+				append_output(os, norbit, Orbit_output[im], path, filename); filename[0] = '\0';
 			}
 		}
 		if (Mprim > 0.0) {
@@ -914,12 +914,12 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 			Primary[0] = realtime/Gyr2sec; // t in Gyr
 			Primary[1] = Qprimi;
 			Primary[2] = Mring*gram;
-			append_output(3, Primary, path, "Outputs/Primary.txt");
+			append_output(os, 3, Primary, path, "Outputs/Primary.txt");
 
 			// Resonances
-			for (im=0;im<nmoons;im++) append_output(nmoons, resonance[im], path, "Outputs/Resonances.txt");
-			for (im=0;im<nmoons;im++) append_output(nmoons, resAcctFor[im], path, "Outputs/ResAcctFor.txt");
-			for (im=0;im<nmoons;im++) append_output(nmoons, PCapture[im], path, "Outputs/PCapture.txt");
+			for (im=0;im<nmoons;im++) append_output(os, nmoons, resonance[im], path, "Outputs/Resonances.txt");
+			for (im=0;im<nmoons;im++) append_output(os, nmoons, resAcctFor[im], path, "Outputs/ResAcctFor.txt");
+			for (im=0;im<nmoons;im++) append_output(os, nmoons, PCapture[im], path, "Outputs/PCapture.txt");
 		}
 	}
 
@@ -992,8 +992,8 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 				// "Release/IcyDwarf" characters) and specifying the right path end.
 				char *title = (char*)malloc(2048*sizeof(char));
 				title[0] = '\0';
-				if (monterey == 1) strncat(title,path,strlen(path)-16);
-				else strncat(title,path,strlen(path)-18);
+				if (os < 21) strncat(title,path,strlen(path)-18);
+				else strncat(title,path,strlen(path)-16);
 				strcat(title,"Outputs/Primary.txt");
 				fout = fopen(title,"a");
 				if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
@@ -1065,7 +1065,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 					t_tide[im] *= realtime/(4.5682*Gyr2sec);                  // Scale evolution timescale with host planet age (Lainey et al. SOM equation 16)
 
 					// TODO switch r_p to outerrad[nmoons] = r[im][NR]? Could matter if very porous
-					Orbit (argc, argv, path, im, dtime, speedup, itime, nmoons, m_p, r_p, resAcctFor, &aorb, &eorb, norb,
+					Orbit (os, argc, argv, path, im, dtime, speedup, itime, nmoons, m_p, r_p, resAcctFor, &aorb, &eorb, norb,
 							lambda, omega, &h_old, &k_old, &a__old, &Cs_ee_old, &Cs_eep_old, &Cr_e_old, &Cr_ep_old, &Cr_ee_old, &Cr_eep_old, &Cr_epep_old,
 							&Wtide_tot, Mprim, Rprim, J2prim, J4prim, k2prim, Qprim, reslock, t_tide, eccentricitymodel,
 							aring_out, aring_in, alpha_Lind, ringSurfaceDensity, realtime-tzero_min, realtime, retrograde);
@@ -1078,7 +1078,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 			for (im=0;im<nmoons;im++) {
 				if (realtime >= tzero[im]) {
 
-					Thermal(argc, argv, path, outputpath[im], warnings, NR, dr_grid[im],
+					Thermal(os, argc, argv, path, outputpath[im], warnings, NR, dr_grid[im],
 							dtime, realtime, itime, Xp[im], Xsalt[im], Xfines[im], Xpores[im], TsurfMig[im],
 							&r[im], &dM[im], &dM_old[im], &Phi[im], dVol[im], &dE[im], &T[im], &T_old[im], &Pressure[im],
 							rhoRockth, rhoHydrth, rhoH2osth, rhoAdhsth, rhoH2olth, rhoNh3lth,
@@ -1118,37 +1118,37 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
     			char *title = (char*)malloc(1024*sizeof(char));
 
     			title[0] = '\0';
-    			if (monterey == 1) strncat(title,path,strlen(path)-16);
-    			else strncat(title,path,strlen(path)-18);
+    			if (os < 21) strncat(title,path,strlen(path)-18);
+    			else strncat(title,path,strlen(path)-16);
     			strcat(title,"Outputs/Resonances.txt");
     			fout = fopen(title,"a");
     			if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
     			else fprintf(fout,"Time %g Gyr\n", realtime/Gyr2sec);
     			fclose (fout);
 
-    			for (im=0;im<nmoons;im++) append_output(nmoons, resonance[im], path, "Outputs/Resonances.txt");
+    			for (im=0;im<nmoons;im++) append_output(os, nmoons, resonance[im], path, "Outputs/Resonances.txt");
 
     			title[0] = '\0';
-    			if (monterey == 1) strncat(title,path,strlen(path)-16);
-    			else strncat(title,path,strlen(path)-18);
+    			if (os < 21) strncat(title,path,strlen(path)-18);
+    			else strncat(title,path,strlen(path)-16);
     			strcat(title,"Outputs/ResAcctFor.txt");
     			fout = fopen(title,"a");
     			if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
     			else fprintf(fout,"Time %g Gyr\n", realtime/Gyr2sec);
     			fclose (fout);
 
-    			for (im=0;im<nmoons;im++) append_output(nmoons, resAcctFor[im], path, "Outputs/ResAcctFor.txt");
+    			for (im=0;im<nmoons;im++) append_output(os, nmoons, resAcctFor[im], path, "Outputs/ResAcctFor.txt");
 
     			title[0] = '\0';
-    			if (monterey == 1) strncat(title,path,strlen(path)-16);
-    			else strncat(title,path,strlen(path)-18);
+    			if (os < 21) strncat(title,path,strlen(path)-18);
+    			else strncat(title,path,strlen(path)-16);
     			strcat(title,"Outputs/PCapture.txt");
     			fout = fopen(title,"a");
     			if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
     			else fprintf(fout,"Time %g Gyr\n", realtime/Gyr2sec);
     			fclose (fout);
 
-    			for (im=0;im<nmoons;im++) append_output(nmoons, PCapture[im], path, "Outputs/PCapture.txt");
+    			for (im=0;im<nmoons;im++) append_output(os, nmoons, PCapture[im], path, "Outputs/PCapture.txt");
 
     			free (title);
     		}
@@ -1180,7 +1180,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 						Orbit_output[im][7] = Wtide_tot[im]/1.0e7;          // Total tidal dissipation (W)
 						Orbit_output[im][8] = Wtide_tot[im]/(11.5*pow(r_p[im],5)*pow(sqrt(Gcgs*Mprim/pow(aorb[im],3)),5)*pow(eorb[im],2)/Gcgs); // k2/Q (Segatz et al. 1988; Henning & Hurford 2014)
 						strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt");
-						append_output(norbit, Orbit_output[im], path, filename); filename[0] = '\0';
+						append_output(os, norbit, Orbit_output[im], path, filename); filename[0] = '\0';
 					}
 				}
 			}
@@ -1189,7 +1189,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 				Primary[0] = realtime/Gyr2sec;                     // t in Gyr
 				Primary[1] = Qprim;
 				Primary[2] = Mring*gram;
-				append_output(3, Primary, path, "Outputs/Primary.txt");
+				append_output(os, 3, Primary, path, "Outputs/Primary.txt");
 			}
 		}
 
@@ -1215,7 +1215,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 					Thermal_output[im][12] = Crack[im][ir];    // 0: not cracked; > 0: cracked by process that depends on value; < 0: healed cracks by process that depends on value
 					Thermal_output[im][13] = TideHeatRate[im][ir]; // Tidal heating rate (W)
 					strcat(filename, outputpath[im]); strcat(filename, "Thermal.txt");
-					append_output(ntherm, Thermal_output[im], path, filename); filename[0] = '\0';
+					append_output(os, ntherm, Thermal_output[im], path, filename); filename[0] = '\0';
 				}
 				Heat[im][0] = realtime/Gyr2sec;                     // t in Gyr
 				Heat[im][1] = Heat_radio[im]*dtime;
@@ -1224,7 +1224,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 				Heat[im][4] = Heat_dehydr[im]*dtime;
 				Heat[im][5] = Heat_tide[im]*dtime;
 				strcat(filename, outputpath[im]); strcat(filename, "Heats.txt");
-				append_output(nheat, Heat[im], path, filename); filename[0] = '\0';
+				append_output(os, nheat, Heat[im], path, filename); filename[0] = '\0';
 
 				// Crack depth (km) and water:rock ratio by mass in cracked layer (Mliq/Mcracked_rock)
 				Crack_depth_WR[im][0] = realtime/Gyr2sec;              // t in Gyr
@@ -1238,7 +1238,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 				if (Mcracked_rock[im] < 0.000001) Crack_depth_WR[im][2] = 0.0; // If Mcracked_rock is essentially 0, to avoid infinities
 				else Crack_depth_WR[im][2] = Mliq[im]/Mcracked_rock[im];
 				strcat(filename, outputpath[im]); strcat(filename, "Crack_depth_WR.txt");
-				append_output(3, Crack_depth_WR[im], path, filename); filename[0] = '\0';
+				append_output(os, 3, Crack_depth_WR[im], path, filename); filename[0] = '\0';
 
 				// Crack stresses
 				for (ir=0;ir<NR;ir++) {
@@ -1246,7 +1246,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
 					Stress[im][ir][10] = fracOpen[im][ir];
 					Stress[im][ir][11] = Crack[im][ir];
 					strcat(filename, outputpath[im]); strcat(filename, "Crack_stresses.txt");
-					append_output(ncrkstrs, Stress[im][ir], path, filename); filename[0] = '\0';
+					append_output(os, ncrkstrs, Stress[im][ir], path, filename); filename[0] = '\0';
 				}
 			}
 		}
@@ -1387,7 +1387,7 @@ int PlanetSystem(int argc, char *argv[], char path[1024], int warnings, int reco
  *
  * Orbital omegas and lambdas are reset
  */
-int recov(int argc, char *argv[], char path[1024], int nmoons, char outputpath[nmoons][1024], int NR, int ntherm, int norbit, int ncrkstrs, double ****Stress, double *Xp,
+int recov(int os, int argc, char *argv[], char path[1024], int nmoons, char outputpath[nmoons][1024], int NR, int ntherm, int norbit, int ncrkstrs, double ****Stress, double *Xp,
 		double *Xsalt, double Mprim, double Rprim, double k2prim, double Qprim, double *Mring, double aring_out, int *orbevol, double rhoRockth, double rhoHydrth, double rhoH2olth,
 		double **dVol, double *tzero, double (*m_p)[nmoons], double *dnorb_dt, double *trecover, double ***r, double ***T, double ***Mrock, double ***Mh2os, double ***Madhs,
 		double ***Mh2ol, double ***Mnh3l, double ***Vrock, double ***Vh2ol, double ***Erock, double ***Eh2os, double ***Eslush, double ***dE, double ***Nu, double ***kappa,
@@ -1459,8 +1459,8 @@ int recov(int argc, char *argv[], char path[1024], int nmoons, char outputpath[n
 		// Thermal.txt
 		title[0] = '\0';
 		filename[0] = '\0';
-		if (monterey == 1) strncat(title,path,strlen(path)-16);
-		else strncat(title,path,strlen(path)-18);
+		if (os < 21) strncat(title,path,strlen(path)-18);
+		else strncat(title,path,strlen(path)-16);
 
 		strcat(filename, outputpath[im]); strcat(filename, "Thermal.txt");
 		strcat(title, filename);
@@ -1474,8 +1474,8 @@ int recov(int argc, char *argv[], char path[1024], int nmoons, char outputpath[n
 		if (Mprim > 0.0 && orbevol[im]) {
 			title[0] = '\0';
 			filename[0] = '\0';
-			if (monterey == 1) strncat(title,path,strlen(path)-16);
-			else strncat(title,path,strlen(path)-18);
+			if (os < 21) strncat(title,path,strlen(path)-18);
+			else strncat(title,path,strlen(path)-16);
 
 			strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt");
 			strcat(title, filename);
@@ -1489,8 +1489,8 @@ int recov(int argc, char *argv[], char path[1024], int nmoons, char outputpath[n
 		// Crack_stresses.txt
 		title[0] = '\0';
 		filename[0] = '\0';
-		if (monterey == 1) strncat(title,path,strlen(path)-16);
-		else strncat(title,path,strlen(path)-18);
+		if (os < 21) strncat(title,path,strlen(path)-18);
+		else strncat(title,path,strlen(path)-16);
 
 		strcat(filename, outputpath[im]); strcat(filename, "Crack_stresses.txt");
 		strcat(title, filename);

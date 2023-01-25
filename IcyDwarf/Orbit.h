@@ -13,7 +13,7 @@
 
 #include "IcyDwarf.h"
 
-int Orbit (int argc, char *argv[], char path[1024], int im,
+int Orbit (int os, int argc, char *argv[], char path[1024], int im,
 		double dtime, double speedup, int itime, int nmoons, double *m_p, double *r_p, double **resAcctFor,
 		double **aorb, double **eorb, double *norb, double *lambda, double *omega,
 		double **h_old, double **k_old, double **a__old,
@@ -45,7 +45,7 @@ int bsstep(double y[], double dydx[], int nv, double param[], double *xx, double
 
 int mmid(double y[], double dydx[], int nv, double param[], double xs, double htot, int nstep, double yout[], int (*derivs)(double, double[], double[], double[]));
 
-int Orbit (int argc, char *argv[], char path[1024], int im,
+int Orbit (int os, int argc, char *argv[], char path[1024], int im,
 		double dtime, double speedup, int itime, int nmoons, double *m_p, double *r_p, double **resAcctFor,
 		double **aorb, double **eorb, double *norb, double *lambda, double *omega,
 		double **h_old, double **k_old, double **a__old,
@@ -463,8 +463,8 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 				// "Release/IcyDwarf" characters) and specifying the right path end.
 				char *title = (char*)malloc(2048*sizeof(char));
 				title[0] = '\0';
-				if (monterey == 1) strncat(title,path,strlen(path)-16);
-				else strncat(title,path,strlen(path)-18);
+				if (os < 21) strncat(title,path,strlen(path)-18);
+				else strncat(title,path,strlen(path)-16);
 				strcat(title,"Outputs/Resonances.txt");
 				fout = fopen(title,"a");
 				if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
@@ -602,8 +602,8 @@ int Orbit (int argc, char *argv[], char path[1024], int im,
 			// "Release/IcyDwarf" characters) and specifying the right path end.
 			char *title = (char*)malloc(1024*sizeof(char)); title[0] = '\0';
 			char im_str[2]; im_str[0] = '\0';
-			if (monterey == 1) strncat(title,path,strlen(path)-16);
-			else strncat(title,path,strlen(path)-18);
+			if (os < 21) strncat(title,path,strlen(path)-18);
+			else strncat(title,path,strlen(path)-16);
 			strcat(title,"Outputs/"); sprintf(im_str, "%d", im); strcat(title, im_str); strcat(title,"Orbit.txt");
 
 			fout = fopen(title,"a");

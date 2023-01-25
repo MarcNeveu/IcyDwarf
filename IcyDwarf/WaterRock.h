@@ -15,11 +15,11 @@
 #include "IcyDwarf.h"
 #include "WaterRock_ParamExplor.h"
 
-int WaterRock (char path[1024], double T, double P, double WR, double *fracKleached, int chondrite);
+int WaterRock (int os, char path[1024], double T, double P, double WR, double *fracKleached, int chondrite);
 
-int LoadMolMass (char path[1024], double ***molmass);
+int LoadMolMass (int os, char path[1024], double ***molmass);
 
-int WaterRock (char path[1024], double T, double P, double WR, double *fracKleached, int chondrite) {
+int WaterRock (int os, char path[1024], double T, double P, double WR, double *fracKleached, int chondrite) {
 
 	int phreeqc = 0;
 	int i = 0;
@@ -56,14 +56,14 @@ int WaterRock (char path[1024], double T, double P, double WR, double *fracKleac
 	infile[0] = '\0';
 	tempinput[0] = '\0';
 
-	if (monterey == 1) strncat(dbase,path,strlen(path)-16);
-	else strncat(dbase,path,strlen(path)-18);
+	if (os < 21) strncat(dbase,path,strlen(path)-18);
+	else strncat(dbase,path,strlen(path)-16);
 	strcat(dbase,"PHREEQC-3.1.2/core9.dat");
 
 	strncat(infile,dbase,strlen(dbase)-9);
 	strcat(infile,"io/PHREEQCinput");
 
-	LoadMolMass (path, &molmass); // TODO Load it once before the time loop starts to avoid reading the file at each iteration
+	LoadMolMass (os, path, &molmass); // TODO Load it once before the time loop starts to avoid reading the file at each iteration
 
 	// Use CHNOSZ to get log fO2 for fayalite-magnetite-quartz (FMQ) buffer at given T and P
 	logfO2 = -3.0*CHNOSZ_logK("quartz", "cr", T-Kelvin, P, "SUPCRT92")
@@ -113,7 +113,7 @@ int WaterRock (char path[1024], double T, double P, double WR, double *fracKleac
 	return 0;
 }
 
-int LoadMolMass (char path[1024], double ***molmass) {
+int LoadMolMass (int os, char path[1024], double ***molmass) {
 
 	int i = 0;
 	int j = 0;
@@ -132,7 +132,7 @@ int LoadMolMass (char path[1024], double ***molmass) {
 	}
 
 	// Read molmass database
-	molmass_read = read_input(nelts, nmingas, molmass_read, path, "Data/Molar_masses.txt");
+	molmass_read = read_input(os, nelts, nmingas, molmass_read, path, "Data/Molar_masses.txt");
 
 	// Shift to positions corresponding to simdata
 	// Gas species

@@ -28,11 +28,11 @@
 #include "CHNOSZ_commands.h"
 #include "IcyDwarf.h"
 
-int aTP(char path[1024], int warnings);
-int Crack_water_CHNOSZ(int argc, char *argv[], char path[1024], int warnings);
-int Crack_species_CHNOSZ(int argc, char *argv[], char path[1024], int warnings);
+int aTP(int os, char path[1024], int warnings);
+int Crack_water_CHNOSZ(int os, int argc, char *argv[], char path[1024], int warnings);
+int Crack_species_CHNOSZ(int os, int argc, char *argv[], char path[1024], int warnings);
 
-int aTP(char path[1024], int warnings) {
+int aTP(int os, char path[1024], int warnings) {
 
 	/*-------------------------------------------------------------------
 	//Calculate the integral part of equation (4) of Vance et al. (2007),
@@ -138,8 +138,8 @@ int aTP(char path[1024], int warnings) {
 	}
 
 	// Write outputs
-	write_output (2, int_size, integral, path, "Data/Crack_integral.txt");
-	write_output (sizeaTP, sizeaTP, aTP, path, "Data/Crack_aTP.txt");
+	write_output (os, 2, int_size, integral, path, "Data/Crack_integral.txt");
+	write_output (os, sizeaTP, sizeaTP, aTP, path, "Data/Crack_aTP.txt");
 
 	// Release memory
 	for (i=0;i<int_size;i++) {
@@ -158,7 +158,7 @@ int aTP(char path[1024], int warnings) {
 	return 0;
 }
 
-int Crack_water_CHNOSZ(int argc, char *argv[], char path[1024], int warnings) {
+int Crack_water_CHNOSZ(int os, int argc, char *argv[], char path[1024], int warnings) {
 
 	/* 	This routine outputs two table files, one that gives
 	the thermal expansivity of water (alpha in K-1) for a range of T and P,
@@ -212,8 +212,8 @@ int Crack_water_CHNOSZ(int argc, char *argv[], char path[1024], int warnings) {
 	}
 
 	// Write outputs
-	write_output (sizeaTP, sizeaTP, alpha, path, "Data/Crack_alpha.txt");
-	write_output (sizeaTP, sizeaTP, beta, path, "Data/Crack_beta.txt");
+	write_output (os, sizeaTP, sizeaTP, alpha, path, "Data/Crack_alpha.txt");
+	write_output (os, sizeaTP, sizeaTP, beta, path, "Data/Crack_beta.txt");
 
 	// Release memory
 	for (t=0;t<sizeaTP;t++) {
@@ -230,7 +230,7 @@ int Crack_water_CHNOSZ(int argc, char *argv[], char path[1024], int warnings) {
 	return 0;
 }
 
-int Crack_species_CHNOSZ(int argc, char *argv[], char path[1024], int warnings) {
+int Crack_species_CHNOSZ(int os, int argc, char *argv[], char path[1024], int warnings) {
 
 	/* Calculate log K for the species that dissolve or precipitate in cracks at various T and P.
 	 * The model includes amorphous silica, chrysotile, and magnesite.
@@ -298,9 +298,9 @@ int Crack_species_CHNOSZ(int argc, char *argv[], char path[1024], int warnings) 
 	}
 
 	// Write outputs
-	write_output (sizeaTP, sizeaTP, silica, path, "Data/Crack_silica.txt");
-	write_output (sizeaTP, sizeaTP, chrysotile, path, "Data/Crack_chrysotile.txt");
-	write_output (sizeaTP, sizeaTP, magnesite, path, "Data/Crack_magnesite.txt");
+	write_output (os, sizeaTP, sizeaTP, silica, path, "Data/Crack_silica.txt");
+	write_output (os, sizeaTP, sizeaTP, chrysotile, path, "Data/Crack_chrysotile.txt");
+	write_output (os, sizeaTP, sizeaTP, magnesite, path, "Data/Crack_magnesite.txt");
 
 	// Release memory
 	for (t=0;t<sizeaTP;t++) {

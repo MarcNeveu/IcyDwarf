@@ -35,12 +35,12 @@
 #include "IcyDwarf.h"
 #include "CHNOSZ_commands.h"
 
-int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p, thermalout **thoutput, int t_cryolava,
+int Cryolava (int os, int argc, char *argv[], char path[1024], int NR, int NT, float r_p, thermalout **thoutput, int t_cryolava,
 		double CHNOSZ_T_MIN, int warnings, double rhoHydr, double rhoDry, double *Xhydr);
 double f (float P, float Mliq, double *Abundances, double *K_rxn, double x);
 double f_prime (float P, float Mliq, double *Abundances, double *K_rxn, double x);
 
-int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p, thermalout **thoutput, int t_cryolava,
+int Cryolava (int os, int argc, char *argv[], char path[1024], int NR, int NT, float r_p, thermalout **thoutput, int t_cryolava,
 		double CHNOSZ_T_MIN, int warnings, double rhoHydr, double rhoDry, double *Xhydr) {
 
 	// Counters
@@ -372,9 +372,9 @@ int Cryolava (int argc, char *argv[], char path[1024], int NR, int NT, float r_p
 		}
 	}
 
-	write_output (n_species_cryolava, NR-r_seafloor, Molalities, path, "Outputs/Cryolava_molalities.txt");
-	write_output (n_species_cryolava, NR-r_seafloor, Partial_P, path, "Outputs/Cryolava_partialP.txt");
-	write_output (6, NR-r_seafloor, x_vap, path, "Outputs/Cryolava_xvap.txt");
+	write_output (os, n_species_cryolava, NR-r_seafloor, Molalities, path, "Outputs/Cryolava_molalities.txt");
+	write_output (os, n_species_cryolava, NR-r_seafloor, Partial_P, path, "Outputs/Cryolava_partialP.txt");
+	write_output (os, 6, NR-r_seafloor, x_vap, path, "Outputs/Cryolava_xvap.txt");
 
 	//-------------------------------------------------------------------
 	//                           Release memory
