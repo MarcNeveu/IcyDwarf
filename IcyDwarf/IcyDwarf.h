@@ -33,9 +33,7 @@
 //-------------------------------------------------------------------
 
 #define monterey 1                                         // 0 for Mac versions older than Monterey (OS 12), 1 for Monterey and newer, relevant for file opening
-#define v_release 0                                        // 0 for Debug, 1 for Release
-#define cmdline 1										  // If execution from terminal as "./IcyDwarf",
-                                                           // overwritten by v_release.
+
 //-------------------------------------------------------------------
 // PHYSICAL AND MATHEMATICAL CONSTANTS
 //-------------------------------------------------------------------
