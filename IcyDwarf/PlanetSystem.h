@@ -21,9 +21,10 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 		int *hy, int chondr, int *crack_input, int *crack_species);
 
 int recov(int os, int argc, char *argv[], char path[1024], int nmoons, char outputpath[nmoons][1024], int NR, int ntherm, int norbit, int ncrkstrs, double ****Stress, double *Xp,
-		double *Xsalt, double Mprim, double Rprim, double k2prim, double Qprim, double *Mring, double aring_out, int *orbevol, double rhoRockth, double rhoHydrth, double rhoH2olth,
-		double **dVol, double *tzero, double (*m_p)[nmoons], double *dnorb_dt, double *trecover, double ***r, double ***T, double ***Mrock, double ***Mh2os, double ***Madhs,
-		double ***Mh2ol, double ***Mnh3l, double ***Vrock, double ***Vh2ol, double ***Erock, double ***Eh2os, double ***Eslush, double ***dE, double ***Nu, double ***kappa,
+		double *Xsalt, double Mprim, double Rprim, double k2prim, double Qprim, double *Mring, double aring_out, int *orbevol, double rhoRockth, double rhoHydrth,
+		double rhoH2osth, double rhoAdhsth, double rhoH2olth, double rhoNh3lth, double ***dVol, double *tzero, double (*m_p)[nmoons], double *dnorb_dt, double *trecover,
+		double ***r, double ***T, double ***Mrock, double ***Mh2os, double ***Madhs, double ***Mh2ol, double ***Mnh3l, double ***Vrock, double ***Vh2os, double ***Vadhs,
+		double ***Vh2ol, double ***Vnh3l, double ***Erock, double ***Eh2os, double ***Eslush, double ***dE, double ***Nu, double ***kappa,
 		double ***Xhydr, double ***pore, double ***T_old, double ***Mrock_init, double ***dM, double ***Xhydr_old, double ***Crack, double ***fracOpen, double *Xpores,
 		double ***Pressure, double ***P_pore, double ***P_hydr, double ***Crack_size, int (*irdiff)[nmoons], int (*ircore)[nmoons], int (*ircrack)[nmoons],
 		int (*irice)[nmoons], double **aorb, double **a__old, double **eorb, double **h_old, double **k_old, double **Wtide_tot, double **norb, int ***circ,
@@ -715,23 +716,13 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 	    //-------------------------------------------------------------------
 
 		recov(os, argc, argv, path, nmoons, outputpath, NR, ntherm, norbit, ncrkstrs, &Stress, Xp, Xsalt,
-			Mprim, Rprim, k2prim, Qprim, &Mring, aring_out, orbevol, rhoRockth, rhoHydrth, rhoH2olth, dVol, tzero, &m_p, dnorb_dt,
-			&trecover, &r, &T, &Mrock, &Mh2os, &Madhs, &Mh2ol, &Mnh3l, &Vrock, &Vh2ol, &Erock, &Eh2os, &Eslush, &dE,
+			Mprim, Rprim, k2prim, Qprim, &Mring, aring_out, orbevol, rhoRockth, rhoHydrth, rhoH2osth,
+			rhoAdhsth, rhoH2olth, rhoNh3lth, &dVol, tzero, &m_p, dnorb_dt, &trecover, &r, &T, &Mrock, &Mh2os,
+			&Madhs, &Mh2ol, &Mnh3l, &Vrock, &Vh2os, &Vadhs, &Vh2ol, &Vnh3l, &Erock, &Eh2os, &Eslush, &dE,
 			&Nu, &kappa, &Xhydr, &pore, &T_old, &Mrock_init, &dM, &Xhydr_old, &Crack, &fracOpen, Xpores,
 			&Pressure, &P_pore, &P_hydr, &Crack_size, &irdiff, &ircore, &ircrack, &irice, &aorb, &a__old,
 			&eorb, &h_old, &k_old, &Wtide_tot, &norb, &circ, &resonance, &PCapture, &resAcctFor,
 			resAcctFor_old, &Cs_ee_old, &Cs_eep_old, &Cr_e_old, &Cr_ep_old, &Cr_ee_old, &Cr_eep_old, &Cr_epep_old);
-
-		// Volumes
-		for (im=0;im<nmoons;im++) {
-			for (ir=0;ir<NR;ir++) {
-				Vrock[im][ir] = Mrock[im][ir] / (Xhydr[im][ir]*rhoHydrth+(1.0-Xhydr[im][ir])*rhoRockth);
-				Vh2os[im][ir] = Mh2os[im][ir] / rhoH2osth;
-				Vadhs[im][ir] = Madhs[im][ir] / rhoAdhsth;
-				Vh2ol[im][ir] = Mh2ol[im][ir] / rhoH2olth;
-				Vnh3l[im][ir] = Mnh3l[im][ir] / rhoNh3lth;
-			}
-		}
 
 		//-------------------------------------------------------------------
 		//                  Allow for chemical equilibrium
@@ -1388,9 +1379,10 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
  * Orbital omegas and lambdas are reset
  */
 int recov(int os, int argc, char *argv[], char path[1024], int nmoons, char outputpath[nmoons][1024], int NR, int ntherm, int norbit, int ncrkstrs, double ****Stress, double *Xp,
-		double *Xsalt, double Mprim, double Rprim, double k2prim, double Qprim, double *Mring, double aring_out, int *orbevol, double rhoRockth, double rhoHydrth, double rhoH2olth,
-		double **dVol, double *tzero, double (*m_p)[nmoons], double *dnorb_dt, double *trecover, double ***r, double ***T, double ***Mrock, double ***Mh2os, double ***Madhs,
-		double ***Mh2ol, double ***Mnh3l, double ***Vrock, double ***Vh2ol, double ***Erock, double ***Eh2os, double ***Eslush, double ***dE, double ***Nu, double ***kappa,
+		double *Xsalt, double Mprim, double Rprim, double k2prim, double Qprim, double *Mring, double aring_out, int *orbevol, double rhoRockth, double rhoHydrth,
+		double rhoH2osth, double rhoAdhsth, double rhoH2olth, double rhoNh3lth, double ***dVol, double *tzero, double (*m_p)[nmoons], double *dnorb_dt, double *trecover,
+		double ***r, double ***T, double ***Mrock, double ***Mh2os, double ***Madhs, double ***Mh2ol, double ***Mnh3l, double ***Vrock, double ***Vh2os, double ***Vadhs,
+		double ***Vh2ol, double ***Vnh3l, double ***Erock, double ***Eh2os, double ***Eslush, double ***dE, double ***Nu, double ***kappa,
 		double ***Xhydr, double ***pore, double ***T_old, double ***Mrock_init, double ***dM, double ***Xhydr_old, double ***Crack, double ***fracOpen, double *Xpores,
 		double ***Pressure, double ***P_pore, double ***P_hydr, double ***Crack_size, int (*irdiff)[nmoons], int (*ircore)[nmoons], int (*ircrack)[nmoons],
 		int (*irice)[nmoons], double **aorb, double **a__old, double **eorb, double **h_old, double **k_old, double **Wtide_tot, double **norb, int ***circ,
@@ -1523,9 +1515,13 @@ int recov(int os, int argc, char *argv[], char path[1024], int nmoons, char outp
 			M[im][ir] = (*dM)[im][ir];
 			if (ir > 0) M[im][ir] = M[im][ir] + M[im][ir-1];
 			(*Xhydr_old)[im][ir] = (*Xhydr)[im][ir];
-			// Volumes only used to compute circ[im] below, volumes are recomputed before the time loop starts
+
 			(*Vrock)[im][ir] = (*Mrock)[im][ir] / ((*Xhydr)[im][ir]*rhoHydrth + (1.0-(*Xhydr)[im][ir])*rhoRockth);
+			(*Vh2os)[im][ir] = (*Mh2os)[im][ir] / rhoH2osth;
+			(*Vadhs)[im][ir] = (*Madhs)[im][ir] / rhoAdhsth;
 			(*Vh2ol)[im][ir] = (*Mh2ol)[im][ir] / rhoH2olth;
+			(*Vnh3l)[im][ir] = (*Mnh3l)[im][ir] / rhoNh3lth;
+			(*dVol)[im][ir] = (*Vrock)[im][ir] + (*Vh2os)[im][ir] + (*Vadhs)[im][ir] + (*Vh2ol)[im][ir] + (*Vnh3l)[im][ir];
 
 			(*fracOpen)[im][ir] = (*pore)[im][ir]/Xpores[im]; // Approximation
 
@@ -1618,7 +1614,7 @@ int recov(int os, int argc, char *argv[], char path[1024], int nmoons, char outp
 		// Calculate fine volume fraction in liquid
 		if ((*ircore)[im] < NR) {
 			fineMassFrac = (*Mrock)[im][(*ircore)[im]+1] / ((*Mh2ol)[im][(*ircore)[im]+1] + (*Mh2os)[im][(*ircore)[im]+1] + (*Mrock)[im][(*ircore)[im]+1]);
-			fineVolFrac = fineMassFrac * (*dM)[im][(*ircore)[im]+1] / dVol[im][(*ircore)[im]+1] / ((*Xhydr)[im][(*ircore)[im]+1]*rhoHydrth+(1.0-(*Xhydr)[im][(*ircore)[im]+1])*rhoRockth);
+			fineVolFrac = fineMassFrac * (*dM)[im][(*ircore)[im]+1] / (*dVol)[im][(*ircore)[im]+1] / ((*Xhydr)[im][(*ircore)[im]+1]*rhoHydrth+(1.0-(*Xhydr)[im][(*ircore)[im]+1])*rhoRockth);
 		}
 		irin = (*ircore)[im]; irout = (*ircore)[im];
 		for (ir=0;ir<(*ircore)[im];ir++) {

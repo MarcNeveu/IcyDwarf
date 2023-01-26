@@ -151,8 +151,8 @@ int main(int argc, char *argv[]){
     double CHNOSZ_T_MIN = 0.0;         // Minimum temperature for the subcrt() routine of CHNOSZ to work
                                        // Default: 235 K (Cryolava), 245 K (Crack, P>200 bar)
 
-	int n_inputs = 1024;
-	int os = 0;
+	int n_inputs = 1024;               // Maximum number of input variables
+	int os = 0;                        // Operating system version (for Apple's Darwin UNIX OS)
 
 	double *input = (double*) malloc(n_inputs*sizeof(double));
 	if (input == NULL) printf("IcyDwarf: Not enough memory to create input[%d]\n", n_inputs);
