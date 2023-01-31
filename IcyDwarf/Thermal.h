@@ -308,10 +308,6 @@ int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[10
 	if ((*irdiff) > 0 && ((*irdiff) != irdiffold || (*irice) != iriceold || structure_changed == 1)) {
 		separate(NR, &(*irdiff), &(*ircore), &(*irice), dVol, &(*dM), &(*dE), &(*Mrock), &(*Mh2os), &(*Madhs), &(*Mh2ol), &(*Mnh3l),
 				 &(*Vrock), &(*Vh2os), &(*Vadhs), &(*Vh2ol), &(*Vnh3l), &(*Erock), &(*Eh2os), &(*Eslush), rhoAdhsth, rhoH2olth, rhoNh3lth, Xfines, Xpores);
-		for (ir=0;ir<NR;ir++) {
-			printf ("%d \t %g \t %g \t %g \t %g \t %g \t %g \t %g\n", ir, (*r)[ir], (*Mrock)[ir], (*Mh2os)[ir], (*Mh2ol)[ir],
-					((*Mrock)[ir] + (*Mh2os)[ir] + (*Mh2ol)[ir])/(4.0/3.0*PI_greek*(pow((*r)[ir+1],3.0)-pow((*r)[ir],3.0))), ((*Mrock)[ir] + (*Mh2os)[ir] + (*Mh2ol)[ir])/((*Vrock)[ir] + (*Vh2os)[ir] + (*Vh2ol)[ir]), (*pore)[ir]);
-		}
 	}
 
 	// Update Xhydr
@@ -648,29 +644,29 @@ int state (int os, char path[1024], int itime, int im, int ir, double E, double 
     		// to IcyDwarf (e.g., removing "Release/IcyDwarf" characters) and specifying
     		// the right path end.
 
-//    		char title[2048];
-//    		title[0] = '\0';
-//    		char im_str[2];
-//    		im_str[0] = '\0';
-//    		if (os < 21) strncat(title,path,strlen(path)-18);
-//    		else strncat(title,path,strlen(path)-16);
-//    		strcat(title,"Outputs/");
-//    		sprintf(im_str, "%d", im);
-//    		strcat(title, im_str);
-//    		strcat(title,"Thermal.txt");
-//
-//    		fout = fopen(title,"a");
-//    		if (fout == NULL) {
-//    			printf("IcyDwarf: Error opening %s output file.\n",title);
-//    		}
-//    		else {
-//    	  		fprintf(fout,"Thermal: Could not compute temperature\n");
-//				fprintf(fout,"Thermal: itime=%d, im=%d, ir=%d\n",itime, im, ir);
-//				fprintf(fout,"Thermal: Tlo=%g K, Thi=%g K, Tmd=%g K\n", Tlo, Thi, Tmd);
-//				fprintf(fout,"Thermal: Elo=%g, Ehi=%g, Emd=%g, E=%g\n", Elo, Ehi, Emd, E);
-//				fprintf(fout,"Thermal: frock=%g, gh2os=%g, gadhs=%g, gh2ol=%g, gnh3l=%g, X=%g\n", (*frock), gh2os, gadhs, gh2ol, gnh3l, X);
-//    		}
-//    		fclose (fout);
+    		char title[2048];
+    		title[0] = '\0';
+    		char im_str[2];
+    		im_str[0] = '\0';
+    		if (os < 21) strncat(title,path,strlen(path)-18);
+    		else strncat(title,path,strlen(path)-16);
+    		strcat(title,"Outputs/");
+    		sprintf(im_str, "%d", im);
+    		strcat(title, im_str);
+    		strcat(title,"Thermal.txt");
+
+    		fout = fopen(title,"a");
+    		if (fout == NULL) {
+    			printf("IcyDwarf: Error opening %s output file.\n",title);
+    		}
+    		else {
+    	  		fprintf(fout,"Thermal: Could not compute temperature\n");
+				fprintf(fout,"Thermal: itime=%d, im=%d, ir=%d\n",itime, im, ir);
+				fprintf(fout,"Thermal: Tlo=%g K, Thi=%g K, Tmd=%g K\n", Tlo, Thi, Tmd);
+				fprintf(fout,"Thermal: Elo=%g, Ehi=%g, Emd=%g, E=%g\n", Elo, Ehi, Emd, E);
+				fprintf(fout,"Thermal: frock=%g, gh2os=%g, gadhs=%g, gh2ol=%g, gnh3l=%g, X=%g\n", (*frock), gh2os, gadhs, gh2ol, gnh3l, X);
+    		}
+    		fclose (fout);
     		exit(0);
     	}
 	}
@@ -1274,6 +1270,7 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 
 		Volume1 = Vadhsnew[jr] + Vh2olnew[jr] + Vnh3lnew[jr];
 		Volume2 = (*Vadhs)[ir] + (*Vh2ol)[ir] + (*Vnh3l)[ir];
+
 		if (Volume1 >= Volcell[jr] && Volume2 > 0.0) {
 			nextcell = 1;                        // Switch to indicate that slush fills more than one layer, to determine irice
 			q = (Volume1-Volcell[jr]) / Volume2; // Numerator = excess volume, Denominator = scaling factor for species moved

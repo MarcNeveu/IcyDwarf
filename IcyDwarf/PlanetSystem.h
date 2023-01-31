@@ -743,6 +743,15 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 				Mh2ol[im][ir] = dM[im][ir]*fh2ol;
 				Mnh3l[im][ir] = dM[im][ir]*fnh3l;
 			}
+
+			// Update volumes
+			for (ir=0;ir<NR;ir++) {
+				Vrock[im][ir] = Mrock[im][ir] / (Xhydr[im][ir]*rhoHydrth+(1.0-Xhydr[im][ir])*rhoRockth); // /rhoRockth where there is no rock (Xhydr = 0)
+				Vh2os[im][ir] = Mh2os[im][ir] / rhoH2osth;
+				Vadhs[im][ir] = Madhs[im][ir] / rhoAdhsth;
+				Vh2ol[im][ir] = Mh2ol[im][ir] / rhoH2olth;
+				Vnh3l[im][ir] = Mnh3l[im][ir] / rhoNh3lth;
+			}
 		}
 	}
 	else {
@@ -833,6 +842,15 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 				Mnh3l[im][ir] = dM[im][ir]*fnh3l;
 			}
 			for (ir=0;ir<NR;ir++) dM_old[im][ir] = dM[im][ir];
+
+			// Update volumes
+			for (ir=0;ir<NR;ir++) {
+				Vrock[im][ir] = Mrock[im][ir] / (Xhydr[im][ir]*rhoHydrth+(1.0-Xhydr[im][ir])*rhoRockth); // /rhoRockth where there is no rock (Xhydr = 0)
+				Vh2os[im][ir] = Mh2os[im][ir] / rhoH2osth;
+				Vadhs[im][ir] = Madhs[im][ir] / rhoAdhsth;
+				Vh2ol[im][ir] = Mh2ol[im][ir] / rhoH2olth;
+				Vnh3l[im][ir] = Mnh3l[im][ir] / rhoNh3lth;
+			}
 
 			//-------------------------------------------------------------------
 			//                      Output initial configuration
@@ -1549,16 +1567,16 @@ int recov(int os, int argc, char *argv[], char path[1024], int nmoons, char outp
 		for (ir=(*ircore)[im];ir<NR;ir++) {
 			if ((*Mh2ol)[im][ir] > 0.0) (*irice)[im] = ir;
 		}
-		if (Xp[im] >= 1.0e-2) Tliq = 174.0; // Differentiation occurs at the solidus (first melt). We set 174 K instead of 176 K for consistency with the heatIce() subroutine.
-		else Tliq = 271.0;              // instead of 273 K for consistency with heatIce().
-		for (ir=0;ir<NR-1;ir++) {
-			if (ir > (*irdiff)[im] && (*T)[im][ir] > Tliq) (*irdiff)[im] = ir;
-		}
-		if ((*irdiff)[im] > NR/2) {      // Subsequent differentiation by Rayleigh-Taylor instabilities
-			for (ir=0;ir<NR-1;ir++) {
-				if (ir > (*irdiff)[im] && (*T)[im][ir] > Tdiff) (*irdiff)[im] = ir;
-			}
-		}
+//		if (Xp[im] >= 1.0e-2) Tliq = 174.0; // Differentiation occurs at the solidus (first melt). We set 174 K instead of 176 K for consistency with the heatIce() subroutine.
+//		else Tliq = 271.0;              // instead of 273 K for consistency with heatIce().
+//		for (ir=0;ir<NR-1;ir++) {
+//			if (ir > (*irdiff)[im] && (*T)[im][ir] > Tliq) (*irdiff)[im] = ir;
+//		}
+//		if ((*irdiff)[im] > NR/2) {      // Subsequent differentiation by Rayleigh-Taylor instabilities
+//			for (ir=0;ir<NR-1;ir++) {
+//				if (ir > (*irdiff)[im] && (*T)[im][ir] > Tdiff) (*irdiff)[im] = ir;
+//			}
+//		}
 
 		(*aorb)[im] = orbitout[im][0][1]*km2cm;
 		(*a__old)[im] = orbitout[im][0][2]*km2cm;
