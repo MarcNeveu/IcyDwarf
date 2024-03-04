@@ -764,6 +764,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 			strcat(filename, outputpath[im]); strcat(filename, "Crack_depth_WR.txt"); create_output(os, path, filename); filename[0] = '\0';
 			strcat(filename, outputpath[im]); strcat(filename, "Crack_stresses.txt"); create_output(os, path, filename); filename[0] = '\0';
 			if (Mprim > 0.0 && orbevol[im]) {
+			if (Mprim > 0.0) {
 				strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt"); create_output(os, path, filename); filename[0] = '\0';
 			}
 		}
@@ -904,7 +905,8 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 			}
 
 			// Orbital parameters
-			if (Mprim > 0.0 && orbevol[im]) {
+//			if (Mprim > 0.0 && orbevol[im]) {
+			if (Mprim > 0.0)
 				Orbit_output[im][0] = realtime/Gyr2sec; // t in Gyr
 				Orbit_output[im][1] = aorb[im]/km2cm;
 				Orbit_output[im][2] = a__old[im]/km2cm;
@@ -1170,7 +1172,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 			// Orbital parameters at intervals 10 times smaller
 			if (!(isteps%(nsteps/10))) {
 				for (im=0;im<nmoons;im++) {
-					if (orbevol[im]) {
+//					if (orbevol[im]) {
 						Orbit_output[im][0] = realtime/Gyr2sec; // t in Gyr
 						Orbit_output[im][1] = aorb[im]/km2cm;               // Semi-major axis in km
 						Orbit_output[im][2] = a__old[im]/km2cm;             // Osculating semimajor axis in km
@@ -1190,7 +1192,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 						Orbit_output[im][8] = Wtide_tot[im]/(11.5*pow(r_p[im],5)*pow(sqrt(Gcgs*Mprim/pow(aorb[im],3)),5)*pow(eorb[im],2)/Gcgs); // k2/Q (Segatz et al. 1988; Henning & Hurford 2014)
 						strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt");
 						append_output(os, norbit, Orbit_output[im], path, filename); filename[0] = '\0';
-					}
+//					}
 				}
 			}
 			if (isteps == nsteps) {
@@ -1481,7 +1483,8 @@ int recov(int os, int argc, char *argv[], char path[1024], int nmoons, char outp
 		fclose (f);
 
 		// Orbit.txt
-		if (Mprim > 0.0 && orbevol[im]) {
+//		if (Mprim > 0.0 && orbevol[im]) {
+		if (Mprim > 0.0) {
 			title[0] = '\0';
 			filename[0] = '\0';
 			if (os < 21) strncat(title,path,strlen(path)-18);

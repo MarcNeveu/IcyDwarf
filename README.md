@@ -160,10 +160,10 @@ If you wish to modify the code, set up your compiler and linker so that all the 
 
 My compiling instructions look like this:
 
-For IcyDwarf (*gcc 9.2* on Mac OS 11.6 Big Sur):
+For IcyDwarf (*gcc 11.2.0* on Mac OS 13.6 Ventura):
  
     gcc -I/usr/local/include -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include -I/Library/Frameworks/R.framework/Versions/4.1/Resources/include -I/Library/Frameworks/R.framework/Versions/4.1/Resources/library/RInside/include -O3 -g -Wall -c -fmessage-length=0 -arch x86_64 -fopenmp -o IcyDwarf.o ../IcyDwarf.c
-    gcc -L/usr/lib -L/usr/local/lib -L/Library/Frameworks/R.framework/Versions/4.1/Resources/lib -o IcyDwarf IcyDwarf.o /usr/local/lib/libiphreeqc-3.7.3.dylib /usr/local/lib/libiphreeqc.dylib /usr/local/lib/libiphreeqc.a -lgomp -lR
+    gcc -L/usr/lib -L/usr/local/lib -L/Library/Frameworks/R.framework/Versions/4.1/Resources/lib -o IcyDwarf IcyDwarf.o /usr/local/lib/libiphreeqc-3.7.3.dylib /usr/local/lib/libiphreeqc.dylib /usr/local/lib/libiphreeqc.a -lgomp -lR -ld64
 
 For IcyDwarfPlot (*gcc 6.2* on Mac OS 10.12 Sierra):
 
