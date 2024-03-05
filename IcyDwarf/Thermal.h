@@ -1192,14 +1192,14 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 	double Vh2olnew[NR];      // New volume of liquid water
 	double Vnh3lnew[NR];      // New volume of liquid ammonia
 
-	double *Erocknew = (double*) malloc((NR)*sizeof(double));      // New energy of rock
-	if (Erocknew == NULL) printf("Thermal: Not enough memory to create Erocknew[NR]\n");
-
-	double *Eh2osnew = (double*) malloc((NR)*sizeof(double));      // New energy of water ice
-	if (Eh2osnew == NULL) printf("Thermal: Not enough memory to create Eh2osnew[NR]\n");
-
-	double *Eslushnew = (double*) malloc((NR)*sizeof(double));     // New energy of slush
-	if (Eslushnew == NULL) printf("Thermal: Not enough memory to create Eslushnew[NR]\n");
+//	double *Erocknew = (double*) malloc((NR)*sizeof(double));      // New energy of rock
+//	if (Erocknew == NULL) printf("Thermal: Not enough memory to create Erocknew[NR]\n");
+//
+//	double *Eh2osnew = (double*) malloc((NR)*sizeof(double));      // New energy of water ice
+//	if (Eh2osnew == NULL) printf("Thermal: Not enough memory to create Eh2osnew[NR]\n");
+//
+//	double *Eslushnew = (double*) malloc((NR)*sizeof(double));     // New energy of slush
+//	if (Eslushnew == NULL) printf("Thermal: Not enough memory to create Eslushnew[NR]\n");
 
 	double Volcell[NR];      // Cell volume
 
@@ -1214,7 +1214,7 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 	int nextcell = 0;
 	double Mfines = 0.0; // Total mass of rock fines that don't settle into a core
 	double Vfines = 0.0; // Total volume of rock fines that don't settle into a core
-	double Efines = 0.0; // Total energy of rock fines that don't settle into a core
+//	double Efines = 0.0; // Total energy of rock fines that don't settle into a core
 	double Vice = 0.0; // Total volume of ice shell
 
 	for (ir=0;ir<NR;ir++) {
@@ -1228,9 +1228,9 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 		Vadhsnew[ir] = 0.0;
 		Vh2olnew[ir] = 0.0;
 		Vnh3lnew[ir] = 0.0;
-		Erocknew[ir] = 0.0;
-		Eh2osnew[ir] = 0.0;
-		Eslushnew[ir] = 0.0;
+//		Erocknew[ir] = 0.0;
+//		Eh2osnew[ir] = 0.0;
+//		Eslushnew[ir] = 0.0;
 		Volcell[ir] = 0.0;
 	}
 
@@ -1248,30 +1248,30 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 			q = (Vrocknew[jr]-Volcell[jr]*(1.0-Xpores)) / (*Vrock)[ir]; // Numerator = excess volume, Denominator = scaling factor for species moved, (1.0-Xfines) cancel out here
 			Vrocknew[jr] = Volcell[jr]*(1.0-Xpores);
 			Mrocknew[jr] = Mrocknew[jr] - q*(*Mrock)[ir];
-			Erocknew[jr] = Erocknew[jr] - q*(*Erock)[ir];
+//			Erocknew[jr] = Erocknew[jr] - q*(*Erock)[ir];
 			Volcell[jr] = Volcell[jr]*Xpores;
 			jr++;
 			(*ircore) = jr;
 			Vrocknew[jr] = q*(*Vrock)[ir];
 			Mrocknew[jr] = q*(*Mrock)[ir];
-			Erocknew[jr] = q*(*Erock)[ir];
+//			Erocknew[jr] = q*(*Erock)[ir];
 		}
 
 		Vrocknew[jr] = Vrocknew[jr] + (*Vrock)[ir]*(1.0 - Xfines);
 		Mrocknew[jr] = Mrocknew[jr] + (*Mrock)[ir]*(1.0 - Xfines);
-		Erocknew[jr] = Erocknew[jr] + (*Erock)[ir]*(1.0 - Xfines);
+//		Erocknew[jr] = Erocknew[jr] + (*Erock)[ir]*(1.0 - Xfines);
 
 		if (Vrocknew[jr] >= Volcell[jr]*(1.0-Xpores) && (*Vrock)[ir] > 0.0) {
 			q = (Vrocknew[jr]-Volcell[jr]*(1.0-Xpores)) / (*Vrock)[ir]; // Numerator = excess volume, Denominator = scaling factor for species moved
 			Vrocknew[jr] = Volcell[jr]*(1.0-Xpores);
 			Mrocknew[jr] = Mrocknew[jr] - q*(*Mrock)[ir];
-			Erocknew[jr] = Erocknew[jr] - q*(*Erock)[ir];
+//			Erocknew[jr] = Erocknew[jr] - q*(*Erock)[ir];
 			Volcell[jr] = Volcell[jr]*Xpores;
 			jr++;
 			(*ircore) = jr;
 			Vrocknew[jr] = q*(*Vrock)[ir];
 			Mrocknew[jr] = q*(*Mrock)[ir];
-			Erocknew[jr] = q*(*Erock)[ir];
+//			Erocknew[jr] = q*(*Erock)[ir];
 		}
 	}
 	Volcell[*ircore] = Volcell[*ircore] - Vrocknew[*ircore];
@@ -1286,18 +1286,18 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 		if (ir >= (*ircore)+1) Vice = Vice + dVol[ir];
 		Mfines = Mfines + (*Mrock)[ir]*Xfines;
 		Vfines = Vfines + (*Vrock)[ir]*Xfines;
-		Efines = Efines + (*Erock)[ir]*Xfines;
+//		Efines = Efines + (*Erock)[ir]*Xfines;
 	}
 
 	Mrocknew[*ircore] = Mrocknew[*ircore] + Mfines*Volcell[*ircore]/Vice; // Limit case of *ircore
 	Vrocknew[*ircore] = Vrocknew[*ircore] + Vfines*Volcell[*ircore]/Vice;
-	Erocknew[*ircore] = Erocknew[*ircore] + Efines*Volcell[*ircore]/Vice;
+//	Erocknew[*ircore] = Erocknew[*ircore] + Efines*Volcell[*ircore]/Vice;
 	Volcell[*ircore] = Volcell[*ircore] - Vfines*Volcell[*ircore]/Vice;
 
 	for (ir=(*ircore)+1;ir<=(*irdiff);ir++) {
 		Mrocknew[ir] = Mrocknew[ir] + Mfines*dVol[ir]/Vice;
 		Vrocknew[ir] = Vrocknew[ir] + Vfines*dVol[ir]/Vice;
-		Erocknew[ir] = Erocknew[ir] + Efines*dVol[ir]/Vice;
+//		Erocknew[ir] = Erocknew[ir] + Efines*dVol[ir]/Vice;
 		Volcell[ir] = Volcell[ir] - Vfines*dVol[ir]/Vice; // i.e. Vfines*dVol[ir]/Vice = Vrocknew[ir] except for ir=ircore where there is already rock
 	}
 
@@ -1320,7 +1320,7 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 			Mh2olnew[jr] = Mh2olnew[jr] - q*(*Mh2ol)[ir];
 			Mnh3lnew[jr] = Mnh3lnew[jr] - q*(*Mnh3l)[ir];
 			Madhsnew[jr] = Madhsnew[jr] - q*(*Madhs)[ir];
-			Eslushnew[jr] = Eslushnew[jr] - q*(*Eslush)[ir];
+//			Eslushnew[jr] = Eslushnew[jr] - q*(*Eslush)[ir];
 			Volcell[jr] = 0.0;
 			jr++;
 			(*irice) = jr;
@@ -1330,7 +1330,7 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 			Madhsnew[jr] = q*(*Madhs)[ir];
 			Mh2olnew[jr] = q*(*Mh2ol)[ir];
 			Mnh3lnew[jr] = q*(*Mnh3l)[ir];
-			Eslushnew[jr] = q*(*Eslush)[ir];
+//			Eslushnew[jr] = q*(*Eslush)[ir];
 		}
 
 		Vadhsnew[jr] = Vadhsnew[jr] + (*Vadhs)[ir];
@@ -1339,7 +1339,7 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 		Madhsnew[jr] = Madhsnew[jr] + (*Madhs)[ir];
 		Mh2olnew[jr] = Mh2olnew[jr] + (*Mh2ol)[ir];
 		Mnh3lnew[jr] = Mnh3lnew[jr] + (*Mnh3l)[ir];
-		Eslushnew[jr] = Eslushnew[jr] + (*Eslush)[ir];
+//		Eslushnew[jr] = Eslushnew[jr] + (*Eslush)[ir];
 
 		Volume1 = Vadhsnew[jr] + Vh2olnew[jr] + Vnh3lnew[jr];
 		Volume2 = (*Vadhs)[ir] + (*Vh2ol)[ir] + (*Vnh3l)[ir];
@@ -1352,7 +1352,7 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 			Mh2olnew[jr] = Mh2olnew[jr] - q*(*Mh2ol)[ir];
 			Mnh3lnew[jr] = Mnh3lnew[jr] - q*(*Mnh3l)[ir];
 			Madhsnew[jr] = Madhsnew[jr] - q*(*Madhs)[ir];
-			Eslushnew[jr] = Eslushnew[jr] - q*(*Eslush)[ir];
+//			Eslushnew[jr] = Eslushnew[jr] - q*(*Eslush)[ir];
 			Volcell[jr] = 0.0;
 			jr++;
 			(*irice) = jr;
@@ -1362,7 +1362,7 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 			Madhsnew[jr] = q*(*Madhs)[ir];
 			Mh2olnew[jr] = q*(*Mh2ol)[ir];
 			Mnh3lnew[jr] = q*(*Mnh3l)[ir];
-			Eslushnew[jr] = q*(*Eslush)[ir];
+//			Eslushnew[jr] = q*(*Eslush)[ir];
 		}
 	}
 	if (nextcell == 0) (*irice) = jr;       // Slush fills less than one layer
@@ -1379,28 +1379,28 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 			q = (Vh2osnew[jr] - Volcell[jr]) / (*Vh2os)[ir]; // Numerator = excess volume, Denominator = scaling factor for species moved
 			Vh2osnew[jr] = Vh2osnew[jr] - q*(*Vh2os)[ir];
 			Mh2osnew[jr] = Mh2osnew[jr] - q*(*Mh2os)[ir];
-			Eh2osnew[jr] = Eh2osnew[jr] - q*(*Eh2os)[ir];
+//			Eh2osnew[jr] = Eh2osnew[jr] - q*(*Eh2os)[ir];
 			Volcell[jr] = 0.0;
 			jr++;
 			Vh2osnew[jr] = q*(*Vh2os)[ir];
 			Mh2osnew[jr] = q*(*Mh2os)[ir];
-			Eh2osnew[jr] = q*(*Eh2os)[ir];
+//			Eh2osnew[jr] = q*(*Eh2os)[ir];
 		}
 
 		Vh2osnew[jr] = Vh2osnew[jr] + (*Vh2os)[ir];
 		Mh2osnew[jr] = Mh2osnew[jr] + (*Mh2os)[ir];
-		Eh2osnew[jr] = Eh2osnew[jr] + (*Eh2os)[ir];
+//		Eh2osnew[jr] = Eh2osnew[jr] + (*Eh2os)[ir];
 
 		if (Vh2osnew[jr] >= Volcell[jr] && (*Vh2os)[ir] > 0.0) {
 			q = (Vh2osnew[jr] - Volcell[jr]) / (*Vh2os)[ir]; // Numerator = excess volume, Denominator = scaling factor for species moved
 			Vh2osnew[jr] = Vh2osnew[jr] - q*(*Vh2os)[ir];
 			Mh2osnew[jr] = Mh2osnew[jr] - q*(*Mh2os)[ir];
-			Eh2osnew[jr] = Eh2osnew[jr] - q*(*Eh2os)[ir];
+//			Eh2osnew[jr] = Eh2osnew[jr] - q*(*Eh2os)[ir];
 			Volcell[jr] = 0.0;
 			jr++;
 			Vh2osnew[jr] = q*(*Vh2os)[ir];
 			Mh2osnew[jr] = q*(*Mh2os)[ir];
-			Eh2osnew[jr] = q*(*Eh2os)[ir];
+//			Eh2osnew[jr] = q*(*Eh2os)[ir];
 		}
 	}
 	Volcell[jr] = Volcell[jr] - Vh2osnew[jr];
@@ -1413,7 +1413,7 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 		Madh = Madh + Madhsnew[jr];
 		Mwater = Mwater + Mh2olnew[jr];
 		Mammonia = Mammonia + Mnh3lnew[jr];
-		Eslushtot = Eslushtot + Eslushnew[jr];
+//		Eslushtot = Eslushtot + Eslushnew[jr];
 		Vslushtot = Vslushtot + Vadhsnew[jr] + Vh2olnew[jr] + Vnh3lnew[jr];
 	}
 
@@ -1421,7 +1421,7 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 		// Rock
 		(*Vrock)[ir] = Vrocknew[ir];
 		(*Mrock)[ir] = Mrocknew[ir];
-		(*Erock)[ir] = Erocknew[ir];
+//		(*Erock)[ir] = Erocknew[ir];
 
 		// Slush
 		if (Vslushtot > 0.0) {
@@ -1447,7 +1447,7 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 		// H2O ice
 		(*Vh2os)[ir] = Vh2osnew[ir];
 		(*Mh2os)[ir] = Mh2osnew[ir];
-		(*Eh2os)[ir] = Eh2osnew[ir];
+//		(*Eh2os)[ir] = Eh2osnew[ir];
 
 		// Totals
 		(*dM)[ir] = (*Mrock)[ir] + (*Mh2os)[ir] + (*Madhs)[ir] + (*Mh2ol)[ir] + (*Mnh3l)[ir];
@@ -1458,9 +1458,9 @@ int separate(int NR, int *irdiff, int *ircore, int *irice, double *dVol, double 
 	//                           Release memory
 	//-------------------------------------------------------------------
 
-	free (Erocknew);
-	free (Eh2osnew);
-	free (Eslushnew);
+//	free (Erocknew);
+//	free (Eh2osnew);
+//	free (Eslushnew);
 
 	return 0;
 }
