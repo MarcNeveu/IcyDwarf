@@ -743,7 +743,6 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 				Mh2ol[im][ir] = dM[im][ir]*fh2ol;
 				Mnh3l[im][ir] = dM[im][ir]*fnh3l;
 			}
-
 			// Update volumes
 			for (ir=0;ir<NR;ir++) {
 				Vrock[im][ir] = Mrock[im][ir] / (Xhydr[im][ir]*rhoHydrth+(1.0-Xhydr[im][ir])*rhoRockth); // /rhoRockth where there is no rock (Xhydr = 0)
@@ -1721,7 +1720,7 @@ int tail(FILE *f, int n, int l, double ***output) {
             if (!fseek(f, --pos, SEEK_SET)) {   // Move 'pos' away from end of file.
                 line_length++;
             	if (fgetc(f) == '\n') {
-                    if (newlines++ == n) break; // Stop reading when n newlines is found
+                    if (newlines++ == n+1) break; // Stop reading when n newlines is found, +1 otherwise it'll miss the first entry on line n from the bottom
                 }
             }
             else perror("tail(): fseek() failed");
@@ -1730,6 +1729,7 @@ int tail(FILE *f, int n, int l, double ***output) {
     	char line[line_length]; // Individual line
 
         // Return last n lines
+    	fgets(line, line_length, f);
     	for (j=0;j<l;j++) {
     		scan = fscanf(f, "%lg", &(*output)[i][j]);
     		if (scan != 1) printf("tail(): Error scanning Icy Dwarf output file at entry i = %d\n",i);
@@ -1745,7 +1745,7 @@ int tail(FILE *f, int n, int l, double ***output) {
         	i++;
         }
 
-//		// Print last n lines
+		// Print last n lines
 //        printf("Printing last %d lines -\n", n);
 //        while (fgets(line, sizeof(line), f)) printf("%s", line);
     }

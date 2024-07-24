@@ -1,0 +1,85 @@
+ICY DWARF v20.x INPUT FILE - Pluto as single object template
+
+1 for Yes, 0 for No
+--------------------------------------------------------------------------------------------------------
+| Housekeeping |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+|-----------------------------------------------|------------------------------------------------------|
+| Warnings?                                     | 0                                                    |
+| Recover?                                      | 0                                                    |
+|-----------------------------------------------|------------------------------------------------------|
+| Grid |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+|-----------------------------------------------|------------------------------------------------------|
+| Number of grid zones                          | 100                                                  |
+| Thermal simulation time step (yr)             | 200                                                  |
+| Moon-moon interaction speedup factor          | 0                                                    |
+| Total time of thermal simulation (Myr)        | 4500                                                 |
+| Output every (Myr)                            | 10                                                   |
+|-----------------------------------------------|------------------------------------------------------|
+| Host planet parameters |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+|-----------------------------------------------|------------------------------------------------------|
+| Mass (kg) (0 if world is not a moon)          | 0                                                    |
+| Radius (km)                                   | 0                                                    |
+| Tidal Q (initial,today,{0:lin 1:exp 2:1-exp}) | 0 0 0                                                |
+| Love number k2; zonal gravity harmonics J2, J4| 0 0 0                                                |
+| Resonant tidal locking with inertial waves?   | 0                                                    |
+| Spin period (h)                               | 10.546   (Helled et al. 2015)                        |
+| Number of moons (1 if world is not a moon)    | 1                                                    |
+| Ring mass (kg) (0 if no rings)                | 0                                                    |
+| Ring inner edge (km)                          | 0                                                    |
+| Ring outer edge (km)                          | 0                                                    |
+|-----------------------------------------------|------------------------------------------------------|
+| Icy world parameters |||||||||||||||||||||||||| World 1  | World 2  | World 3  | World 4  | World 5  |
+|-----------------------------------------------|----------|----------|----------|----------|----------|
+| Radius assuming zero porosity (km)            | 781      |          |          |          |          |
+| Density assuming zero porosity (g cm-3)       | 2.008    |          |          |          |          |
+| Surface temperature (K)                       | 40       |          |          |          |          |
+| Initial temperature (K)                       | 100      |          |          |          |          |
+| Time of formation (Myr)                       | 50       |          |          |          |          |
+| Formed from ring?                             | 0        |          |          |          |          |
+| Ammonia w.r.t. water                          | 0.02     |          |          |          |          |
+| Briny liquid? y=1, n=0                        | 0        |          |          |          |          |
+| Initial degree of hydration                   | 0.1      |          |          |          |          |
+| Hydrate/dehydrate?                            | 1        |          |          |          |          |
+| Initial porosity volume fraction              | 0        |          |          |          |          |
+| Fraction of rock in fines                     | 0        |          |          |          |          |
+| Core ice/liquid water volume fraction         | 0        |          |          |          |          |
+| Start differentiated?                         | 0        |          |          |          |          |
+| Initial orbital semi-major axis (km)          | 0        |          |          |          |          |
+| Initial orbital eccentricity                  | 0        |          |          |          |          |
+| Allow orbit to change?                        | 0        |          |          |          |          |
+| Retrograde orbit?                             | 0        |          |          |          |          |
+| Resonant tidal locking timescale (Gyr)        | 0        |          |          |          |          |
+|-----------------------------------------------|------------------------------------------------------|
+| Dry rock density (g cm-3)                     | 3.82                                                 |
+| Hydrated rock density (g cm-3)                | 2.7                                                  |
+| Chondrite type? CI=0 CO=1 CV=2                | 2                                                    |
+| Tidal rheology? Maxw=2 Burg=3 Andr=4 SunCoop=5| 4                                                    |
+| Eccentricity Model? e2=0 e10-CPL=1 e10-CTL=2  | 0                                                    |
+| Tidal heating x...?                           | 1                                                    |
+|-----------------------------------------------|------------------------------------------------------|
+| Subroutines ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+|-----------------------------------------------|------------------------------------------------------|
+| Run thermal code?                             | 1                                                    |
+| Generate core crack aTP table?                | 0                                                    |
+| Generate water alpha beta table?              | 0                                                    |
+| Generate crack species log K with CHNOSZ?     | 0                                                    |
+| Run geochemistry code? (min max step)         | 0                                                    |
+|   Temperature                                 | 0 300 50                                             |
+|   Pressure                                    | 200 1400 200                                         |
+|   pe = FMQ + ...                              | -6 6 1                                               |
+|   Water:rock mass ratio                       | 0.1 10 10                                            |
+| Run compression code?                         | 0                                                    |
+| Run cryovolcanism code?                       | 0                                                    |
+|   After how many Myr?                         | 2500                                                 |
+|   Minimum temperature to run CHNOSZ (K)       | 273                                                  |
+|-----------------------------------------------|------------------------------------------------------|
+| Core crack options |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+|-----------------------------------------------|------------------------------------------------------|
+| Include thermal expansion/contrac mismatch?   | 1                                                    |
+| Include pore water expansion?                 | 1                                                    |
+| Include hydration/dehydration vol changes?    | 0                                                    |
+| Include dissolution/precipitation...?         | 0                                                    |
+|   ... of silica?                              | 1                                                    |
+|   ... of serpentine?                          | 1                                                    |
+|   ... of carbonate (magnesite)?               | 1                                                    |
+|-------------------------------------------------------------------------------------------------------
