@@ -20,8 +20,8 @@
 #include "Crack.h"
 #include "Crack_tables.h"
 #include "Cryolava.h"
-#include "WaterRock.h"
-#include "WaterRock_ParamExplor.h"
+//#include "WaterRock.h"
+//#include "WaterRock_ParamExplor.h"
 #include "Thermal.h"
 
 int main(int argc, char *argv[]){
@@ -472,10 +472,10 @@ int main(int argc, char *argv[]){
 
 	if (run_geochem == 1) {
 		printf("Running PHREEQC across the specified range of parameters...\n");
-		ParamExploration(os, path, Tmin, Tmax, Tstep,
-				Pmin, Pmax, Pstep,
-				pemin, pemax, pestep,
-				WRmin, WRmax, WRstep);
+//		ParamExploration(os, path, Tmin, Tmax, Tstep,
+//				Pmin, Pmax, Pstep,
+//				pemin, pemax, pestep,
+//				WRmin, WRmax, WRstep);
 		printf("\n");
 	}
 

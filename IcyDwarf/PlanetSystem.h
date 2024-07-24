@@ -1729,7 +1729,7 @@ int tail(FILE *f, int n, int l, double ***output) {
     	char line[line_length]; // Individual line
 
         // Return last n lines
-    	fgets(line, line_length, f);
+    	fgets(line, line_length, f); // Go 1 line down, from n+1 from the bottom to just n from the bottom
     	for (j=0;j<l;j++) {
     		scan = fscanf(f, "%lg", &(*output)[i][j]);
     		if (scan != 1) printf("tail(): Error scanning Icy Dwarf output file at entry i = %d\n",i);

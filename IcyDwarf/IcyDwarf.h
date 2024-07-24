@@ -25,7 +25,7 @@
 #include <Rdefines.h>
 #include <Rinternals.h>
 #include <Rembedded.h>
-#include <IPhreeqc.h>                                      // To use the external PHREEQC geochemical code
+//#include <IPhreeqc.h>                                      // To use the external PHREEQC geochemical code
 #include "modifdyld.h"                                     // Like mach-o/dyld.h but without the boolean DYLD_BOOL typedef
                                                            //   that conflicts with the R_boolean typedef
 
