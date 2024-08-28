@@ -29,7 +29,7 @@ int recov(int os, int argc, char *argv[], char path[1024], int nmoons, char outp
 		double ***Pressure, double ***P_pore, double ***P_hydr, double ***Crack_size, int (*irdiff)[nmoons], int (*ircore)[nmoons], int (*ircrack)[nmoons],
 		int (*irice)[nmoons], double **aorb, double **a__old, double **eorb, double **h_old, double **k_old, double **Wtide_tot, double **norb, int ***circ,
 		double ***resonance, double ***PCapture, double ***resAcctFor, double **resAcctFor_old, double **Cs_ee, double **Cs_eep, double **Cr_e, double **Cr_ep,
-		double **Cr_ee, double **Cr_eep, double **Cr_epep);
+		double **Cr_ee, double **Cr_eep, double **Cr_epep, double reslock, double *t_tide, double *prim_sign);
 
 int tail(FILE *f, int n, int l, double ***output);
 
@@ -114,6 +114,8 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 	double Mliq[nmoons];                 // Mass of liquid in the icy world (g)
 	double Mcracked_rock[nmoons];        // Mass of cracked rock in the icy world (g)
 	double TsurfMig[nmoons];             // Surface temperature of the icy world post-heliocentric migration (K)
+	double prim_sign[nmoons];            // Sign of primary term in secular da/dt equation (positive i.e. +1 if prograde moon; negative i.e. -1 if retrograde moon)
+
 	double Crack_depth_WR[nmoons][3];	 // Crack_depth_WR[3] (multiple units), output
 	double Heat[nmoons][nheat];          // Heat[6] (erg), output
 	double Thermal_output[nmoons][ntherm]; // Thermal_output[ntherm] (multiple units), output
@@ -543,8 +545,10 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 		eorb[im] = eorb_init[im];
 		norb[im] = sqrt(Gcgs*Mprim/pow(aorb_init[im],3));
 		dnorb_dt[im] = 0.0;
-		lambda[im] = 0.32 + (double)im*0.77; // As good an initial value as any, but could randomize
-		omega[im] = 0.58 + (double)im*0.27; // As good an initial value as any, but could randomize
+//		lambda[im] = 0.32 + (double)im*0.77; // As good an initial value as any, but could randomize
+//		omega[im] = 0.58 + (double)im*0.27; // As good an initial value as any, but could randomize
+		lambda[im] = 0.22 - (double)im*0.67; // As good an initial value as any, but could randomize
+		omega[im] = 0.48 - (double)im*0.17; // As good an initial value as any, but could randomize
 		h_old[im] = 0.0;
 		k_old[im] = 0.0;
 		a__old[im] = 0.0;
@@ -560,6 +564,10 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 		outputpath[im][0] = '\0';
 
 		TsurfMig[im] = 0.0;
+
+		if (retrograde[im]) prim_sign[im] = -1.0;
+		else prim_sign[im] = 1.0;         // Assuming primary spins faster than secondary orbits, otherwise prim_sign should be -1 even if prograde
+
 		for (ir=0;ir<nmoons;ir++) {
 			PCapture[im][ir] = 0.0;
 			resonance[im][ir] = 0.0;
@@ -722,7 +730,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 			&Nu, &kappa, &Xhydr, &pore, &T_old, &Mrock_init, &dM, &Xhydr_old, &Crack, &fracOpen, Xpores,
 			&Pressure, &P_pore, &P_hydr, &Crack_size, &irdiff, &ircore, &ircrack, &irice, &aorb, &a__old,
 			&eorb, &h_old, &k_old, &Wtide_tot, &norb, &circ, &resonance, &PCapture, &resAcctFor,
-			resAcctFor_old, &Cs_ee_old, &Cs_eep_old, &Cr_e_old, &Cr_ep_old, &Cr_ee_old, &Cr_eep_old, &Cr_epep_old);
+			resAcctFor_old, &Cs_ee_old, &Cs_eep_old, &Cr_e_old, &Cr_ep_old, &Cr_ee_old, &Cr_eep_old, &Cr_epep_old, reslock, t_tide, prim_sign);
 
 		//-------------------------------------------------------------------
 		//                  Allow for chemical equilibrium
@@ -762,7 +770,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 			strcat(filename, outputpath[im]); strcat(filename, "Heats.txt"); create_output(os, path, filename); filename[0] = '\0';
 			strcat(filename, outputpath[im]); strcat(filename, "Crack_depth_WR.txt"); create_output(os, path, filename); filename[0] = '\0';
 			strcat(filename, outputpath[im]); strcat(filename, "Crack_stresses.txt"); create_output(os, path, filename); filename[0] = '\0';
-			if (Mprim > 0.0 && orbevol[im]) {
+//			if (Mprim > 0.0 && orbevol[im]) {
 			if (Mprim > 0.0) {
 				strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt"); create_output(os, path, filename); filename[0] = '\0';
 			}
@@ -905,7 +913,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 
 			// Orbital parameters
 //			if (Mprim > 0.0 && orbevol[im]) {
-			if (Mprim > 0.0)
+			if (Mprim > 0.0) {
 				Orbit_output[im][0] = realtime/Gyr2sec; // t in Gyr
 				Orbit_output[im][1] = aorb[im]/km2cm;
 				Orbit_output[im][2] = a__old[im]/km2cm;
@@ -1031,7 +1039,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 			// Check for orbital resonances
 			for (im=0;im<nmoons;im++) {
 				if (realtime >= tzero[im]) rescheck(nmoons, im, norb, dnorb_dt, aorb, a__old, eorb, m_p, Mprim, Rprim, k2prim, Qprim,
-						&resonance, &PCapture, tzero, realtime, aring_out, resAcctFor);
+						&resonance, &PCapture, tzero, realtime, aring_out, resAcctFor, reslock, t_tide, prim_sign);
 			}
 			// Only one moon-moon resonance per moon max, so account for only lower-order (stronger) or older resonances
 			for (im=0;im<nmoons;im++) resscreen (nmoons, resonance[im], &resAcctFor[im], resAcctFor_old[im]);
@@ -1078,7 +1086,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 					Orbit (os, argc, argv, path, im, dtime, speedup, itime, nmoons, m_p, r_p, resAcctFor, &aorb, &eorb, norb,
 							lambda, omega, &h_old, &k_old, &a__old, &Cs_ee_old, &Cs_eep_old, &Cr_e_old, &Cr_ep_old, &Cr_ee_old, &Cr_eep_old, &Cr_epep_old,
 							&Wtide_tot, Mprim, Rprim, J2prim, J4prim, k2prim, Qprim, reslock, t_tide, eccentricitymodel,
-							aring_out, aring_in, alpha_Lind, ringSurfaceDensity, realtime-tzero_min, realtime, retrograde);
+							aring_out, aring_in, alpha_Lind, ringSurfaceDensity, realtime-tzero_min, realtime, prim_sign);
 				}
 //				++nloops;
 			}
@@ -1088,7 +1096,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 			for (im=0;im<nmoons;im++) {
 				if (realtime >= tzero[im]) {
 
-					Thermal(os, argc, argv, path, outputpath[im], warnings, NR, dr_grid[im],
+					Thermal(os, argc, argv, path, outputpath[im], warnings, recover, NR, dr_grid[im],
 							dtime, realtime, itime, Xp[im], Xsalt[im], Xfines[im], Xpores[im], TsurfMig[im],
 							&r[im], &dM[im], &dM_old[im], &Phi[im], dVol[im], &dE[im], &T[im], &T_old[im], &Pressure[im],
 							rhoRockth, rhoHydrth, rhoH2osth, rhoAdhsth, rhoH2olth, rhoNh3lth,
@@ -1406,7 +1414,7 @@ int recov(int os, int argc, char *argv[], char path[1024], int nmoons, char outp
 		double ***Pressure, double ***P_pore, double ***P_hydr, double ***Crack_size, int (*irdiff)[nmoons], int (*ircore)[nmoons], int (*ircrack)[nmoons],
 		int (*irice)[nmoons], double **aorb, double **a__old, double **eorb, double **h_old, double **k_old, double **Wtide_tot, double **norb, int ***circ,
 		double ***resonance, double ***PCapture, double ***resAcctFor, double **resAcctFor_old, double **Cs_ee, double **Cs_eep, double **Cr_e, double **Cr_ep,
-		double **Cr_ee, double **Cr_eep, double **Cr_epep) {
+		double **Cr_ee, double **Cr_eep, double **Cr_epep, double reslock, double *t_tide, double *prim_sign) {
 
 	int i = 0;
 	int ir = 0;
@@ -1654,7 +1662,7 @@ int recov(int os, int argc, char *argv[], char path[1024], int nmoons, char outp
 	// Check for orbital resonances
 	for (im=0;im<nmoons;im++) {
 		if ((*trecover) >= tzero[im]) rescheck(nmoons, im, *norb, dnorb_dt, *aorb, *a__old, *eorb, *m_p, Mprim, Rprim, k2prim, Qprim,
-				&(*resonance), &(*PCapture), tzero, *trecover, aring_out, resAcctFor_old);
+				&(*resonance), &(*PCapture), tzero, *trecover, aring_out, resAcctFor_old, reslock, t_tide, prim_sign);
 	}
 	// Only one moon-moon resonance per moon max, so account for only lower-order (stronger) or older resonances
 	for (im=0;im<nmoons;im++) resscreen (nmoons, (*resonance)[im], &(*resAcctFor)[im], resAcctFor_old[im]);

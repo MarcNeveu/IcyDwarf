@@ -19,10 +19,10 @@ int Orbit (int os, int argc, char *argv[], char path[1024], int im,
 		double **h_old, double **k_old, double **a__old,
 		double **Cs_ee_old, double **Cs_eep_old, double **Cr_e_old, double **Cr_ep_old, double **Cr_ee_old, double **Cr_eep_old, double **Cr_epep_old,
 		double **Wtide_tot, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim, int reslock, double *t_tide, int eccentricitymodel,
-		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity, double elapsed, double realtime, int* retrograde);
+		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity, double elapsed, double realtime, double *prim_sign);
 
 int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, double *a__old, double *eorb, double *m_p, double Mprim, double Rprim, double k2prim, double Qprim,
-		double ***resonance, double ***PCapture, double *tzero, double realtime, double aring_out, double **resAcctFor);
+		double ***resonance, double ***PCapture, double *tzero, double realtime, double aring_out, double **resAcctFor, double reslock, double *t_tide, double *prim_sign);
 
 int resscreen (int nmoons, double *resonance, double **resAcctFor, double *resAcctFor_old);
 
@@ -51,7 +51,7 @@ int Orbit (int os, int argc, char *argv[], char path[1024], int im,
 		double **h_old, double **k_old, double **a__old,
 		double **Cs_ee_old, double **Cs_eep_old, double **Cr_e_old, double **Cr_ep_old, double **Cr_ee_old, double **Cr_eep_old, double **Cr_epep_old,
 		double **Wtide_tot, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim, int reslock, double *t_tide, int eccentricitymodel,
-		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity, double elapsed, double realtime, int* retrograde) {
+		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity, double elapsed, double realtime, double *prim_sign) {
 
 	FILE *fout;
 
@@ -89,12 +89,6 @@ int Orbit (int os, int argc, char *argv[], char path[1024], int im,
     double eterm_4 = 0.0;                // 4th Eccentricity Subterm
     double eterm_5 = 0.0;                // 5th Eccentricity Subterm
     double dEPS = 2.22e-16;              // Floating point precision of C double
-
-	double prim_sign[nmoons];            // Sign of primary term in secular da/dt equation (positive i.e. +1 if prograde moon; negative i.e. -1 if retrograde moon)
-	for (i=0;i<nmoons;i++) {
-		if (retrograde[i]) prim_sign[i] = -1.0;
-		else prim_sign[i] = 1.0;         // Assuming primary spins faster than secondary orbits, otherwise prim_sign should be -1 even if prograde
-	}
 
 	// Calculate tidal dissipation in the host planet (k2prim & Qprim)
 //	tideprim(Rprim, Mprim, omega_tide, &k2prim, &Qprim);
@@ -634,7 +628,7 @@ int Orbit (int os, int argc, char *argv[], char path[1024], int im,
  *--------------------------------------------------------------------*/
 
 int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, double *a__old, double *eorb, double *m_p, double Mprim, double Rprim, double k2prim, double Qprim,
-		double ***resonance, double ***PCapture, double *tzero, double realtime, double aring_out, double **resAcctFor) {
+		double ***resonance, double ***PCapture, double *tzero, double realtime, double aring_out, double **resAcctFor, double reslock, double *t_tide, double *prim_sign) {
 
 	int i = 0;
 	int l = 0;
@@ -644,6 +638,10 @@ int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, d
 	int outer = 0;                       // Index of outer moon
 
 	double commensurability = 0.0;
+
+	double dnorb_dt_inner = 0.0;         // Change in mean motion of inner moon (s-2)
+	double dnorb_dt_outer = 0.0;         // Change in mean motion of outer moon (s-2)
+
 //	double dice = 0.0;                   // Random number
 
 	for (i=0;i<nmoons;i++) (*resonance)[im][i] = 0.0;
@@ -666,7 +664,7 @@ int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, d
 				outer = im;
 			}
 			for (j=ijmax;j>=1;j--) { // Go decreasing, from the weakest to the strongest resonances, because resonance[im][i] gets overprinted
-				for (l=1;l>=1;l--) { // Borderies & Goldreich (1984) derivation of PCapture valid for j:j+k resonances up to k=2, but TODO for now MMR_AvgHam only handles k=1
+				for (l=2;l>=1;l--) { // Borderies & Goldreich (1984) derivation of PCapture valid for j:j+k resonances up to k=2, MMR_AvgHam handles arbitrary k
 
 					// MMR if mean motions are commensurate by <1%
 					if (resAcctFor[inner][outer]) commensurability = pow(a__old[inner]/a__old[outer],-1.5) * (double)j/(double)(j+l);
@@ -674,10 +672,19 @@ int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, d
 					if ((commensurability > 0.99 && commensurability < 1.01) ||                                   // 1% tolerance to consider capture
 						(resAcctFor[inner][outer] && commensurability > 0.985 && commensurability < 1.015)) { // 1.5% tolerance if already captured, to avoid always going in and out of resonance near the 1% limit
 
-						// No resonance if divergent secular migration: j*dnorb_dt[inner] <= (j+l)*dnorb_dt[outer], Peale (1976) equation (25), Yoder (1973), Sinclair (1972), Lissauer et al. (1984)
-						if (       (double)j*(-1.5)*sqrt(Gcgs*Mprim)*3.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[inner]/Qprim*pow(aorb[inner],-5.5)*pow(aorb[inner],-2.5)
-							<= (double)(j+l)*(-1.5)*sqrt(Gcgs*Mprim)*3.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[outer]/Qprim*pow(aorb[outer],-5.5)*pow(aorb[outer],-2.5)) {
+						// Check that moon orbits are converging.
+						// No resonance if divergent secular migration: j*dnorb_dt[inner] > (j+l)*dnorb_dt[outer], Peale (1976) equation (25), Yoder (1973), Sinclair (1972), Lissauer et al. (1984)
+						// dn/dt = -3/2 sqrt(GM) a^(-5/2) da/dt
+						if (reslock) {
+							dnorb_dt_inner = (-1.5)*sqrt(Gcgs*Mprim)*pow(aorb[inner],-2.5)*prim_sign[im]*aorb[inner]/t_tide[inner];
+							dnorb_dt_outer = (-1.5)*sqrt(Gcgs*Mprim)*pow(aorb[outer],-2.5)*prim_sign[im]*aorb[outer]/t_tide[outer];
+						}
+						else {
+							dnorb_dt_inner = (-1.5)*sqrt(Gcgs*Mprim)*pow(aorb[inner],-2.5)*prim_sign[im]*3.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[inner]/Qprim*pow(aorb[inner],-5.5);
+							dnorb_dt_outer = (-1.5)*sqrt(Gcgs*Mprim)*pow(aorb[outer],-2.5)*prim_sign[im]*3.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[outer]/Qprim*pow(aorb[outer],-5.5);
+						}
 
+						if ((double)j*dnorb_dt_inner <= (double)(j+l)*dnorb_dt_outer) {
 							(*resonance)[inner][outer] = (double)j;
 							(*resonance)[outer][inner] = (double)j;
 

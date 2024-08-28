@@ -27,7 +27,7 @@
 #include "IcyDwarf.h"
 #include "Crack.h"
 
-int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[1024], int warnings, int NR, double dr_grid,
+int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[1024], int warnings, int recover, int NR, double dr_grid,
 		double dtime, double realtime, int itime, double Xp, double Xsalt, double Xfines, double Xpores, double Tsurf,
 		double **r, double **dM, double **dM_old, double *Phi, double *dVol, double **dE, double **T, double **T_old, double **Pressure,
 		double rhoRockth, double rhoHydrth, double rhoH2osth, double rhoAdhsth, double rhoH2olth, double rhoNh3lth,
@@ -93,7 +93,7 @@ long double complex y2(long double complex x, int mod);
 long double complex y2p(long double complex x, int mod);
 long double complex y2pp(long double complex x, int mod);
 
-int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[1024], int warnings, int NR, double dr_grid,
+int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[1024], int warnings, int recover, int NR, double dr_grid,
 		double dtime, double realtime, int itime, double Xp, double Xsalt, double Xfines, double Xpores, double Tsurf,
 		double **r, double **dM, double **dM_old, double *Phi, double *dVol, double **dE, double **T, double **T_old, double **Pressure,
 		double rhoRockth, double rhoHydrth, double rhoH2osth, double rhoAdhsth, double rhoH2olth, double rhoNh3lth,
@@ -344,7 +344,7 @@ int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[10
 	if ((*irdiff) > 0 && ((*irdiff) != irdiffold || (*irice) != iriceold || structure_changed == 1)) {
 		separate(NR, &(*irdiff), &(*ircore), &(*irice), dVol, &(*dM), &(*dE), &(*Mrock), &(*Mh2os), &(*Madhs), &(*Mh2ol), &(*Mnh3l),
 				 &(*Vrock), &(*Vh2os), &(*Vadhs), &(*Vh2ol), &(*Vnh3l), &(*Erock), &(*Eh2os), &(*Eslush), rhoAdhsth, rhoH2olth, rhoNh3lth, Xfines, Xpores);
-		for (ir=0;ir<NR;ir++) {
+//		for (ir=0;ir<NR;ir++) {
 //			printf ("%d \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g \t %g\n", ir, (*r)[ir+1], (*Mrock)[ir], (*Mh2os)[ir], (*Mh2ol)[ir],
 //					((*Mrock)[ir] + (*Mh2os)[ir] + (*Mh2ol)[ir])/(4.0/3.0*PI_greek*(pow((*r)[ir+1],3.0)-pow((*r)[ir],3.0)))/(1.0-(*pore)[ir]),
 //					((*Mrock)[ir] + (*Mh2os)[ir] + (*Mh2ol)[ir])/((*Vrock)[ir] + (*Vh2os)[ir] + (*Vh2ol)[ir]), (*pore)[ir], (*Erock)[ir], (*Eh2os)[ir], (*Eslush)[ir]);
@@ -419,11 +419,13 @@ int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[10
 	}
 
 	// Heats of hydration/dehydration
-	for (ir=0;ir<NR;ir++) {
-		if (fabs((*Xhydr_old)[ir] - (*Xhydr)[ir]) > 1.0e-10) {
-			Qth[ir] = Qth[ir] + ((*Xhydr)[ir] - (*Xhydr_old)[ir])*(*Mrock)[ir]*Hhydr/dtime;
-			if ((*Xhydr)[ir] - (*Xhydr_old)[ir] > 0.0) (*Heat_serp) = (*Heat_serp) + ((*Xhydr)[ir] - (*Xhydr_old)[ir])*(*Mrock)[ir]*Hhydr/dtime;
-			else (*Heat_dehydr) = (*Heat_dehydr) + ((*Xhydr_old)[ir] - (*Xhydr)[ir])*(*Mrock)[ir]*Hhydr/dtime;
+	if (!recover || itime) { // Anytime except first time step of a recovery init, in case there is an arbitrary jumbled structure at init (e.g., post-impact) that's re-differentiated
+		for (ir=0;ir<NR;ir++) {
+			if (fabs((*Xhydr_old)[ir] - (*Xhydr)[ir]) > 1.0e-10) {
+				Qth[ir] = Qth[ir] + ((*Xhydr)[ir] - (*Xhydr_old)[ir])*(*Mrock)[ir]*Hhydr/dtime;
+				if ((*Xhydr)[ir] - (*Xhydr_old)[ir] > 0.0) (*Heat_serp) = (*Heat_serp) + ((*Xhydr)[ir] - (*Xhydr_old)[ir])*(*Mrock)[ir]*Hhydr/dtime;
+				else (*Heat_dehydr) = (*Heat_dehydr) + ((*Xhydr_old)[ir] - (*Xhydr)[ir])*(*Mrock)[ir]*Hhydr/dtime;
+			}
 		}
 	}
 
@@ -539,6 +541,7 @@ int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[10
 	// Chemical equilibrium
 	for (ir=0;ir<NR;ir++) {
 		e1 = (*dE)[ir] / (*dM)[ir];
+//		printf("%d \t %g \t %g \t %g \t %g, hy=%d\n", ir, (*dE)[ir], e1, (*Xhydr)[ir], (*Xhydr_old)[ir], hy);
 		frock = (*Mrock)[ir] / (*dM)[ir];
 		fh2os = (*Mh2os)[ir] / (*dM)[ir];
 		fadhs = (*Madhs)[ir] / (*dM)[ir];
