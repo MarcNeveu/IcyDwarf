@@ -545,10 +545,10 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 		eorb[im] = eorb_init[im];
 		norb[im] = sqrt(Gcgs*Mprim/pow(aorb_init[im],3));
 		dnorb_dt[im] = 0.0;
-//		lambda[im] = 0.32 + (double)im*0.77; // As good an initial value as any, but could randomize
-//		omega[im] = 0.58 + (double)im*0.27; // As good an initial value as any, but could randomize
-		lambda[im] = 0.22 - (double)im*0.67; // As good an initial value as any, but could randomize
-		omega[im] = 0.48 - (double)im*0.17; // As good an initial value as any, but could randomize
+		lambda[im] = 0.32 + (double)im*0.77; // As good an initial value as any, but could randomize
+		omega[im] = 0.58 + (double)im*0.27; // As good an initial value as any, but could randomize
+//		lambda[im] = 0.22 - (double)im*0.67; // As good an initial value as any, but could randomize
+//		omega[im] = 0.48 - (double)im*0.17; // As good an initial value as any, but could randomize
 		h_old[im] = 0.0;
 		k_old[im] = 0.0;
 		a__old[im] = 0.0;
@@ -1653,7 +1653,7 @@ int recov(int os, int argc, char *argv[], char path[1024], int nmoons, char outp
 			if ((*Mh2ol)[im][ir] == 0.0) irout = ir;
 			break;
 		}
-		if (irin < (*ircore)[im]) convect(irin, irout, (*T)[im], (*r)[im], NR, (*Pressure)[im], M[im], dVol[im],
+		if (irin < (*ircore)[im]) convect(irin, irout, (*T)[im], (*r)[im], NR, (*Pressure)[im], M[im], (*dVol)[im],
 				(*Vrock)[im], (*Vh2ol)[im],(*pore)[im], (*Mh2ol)[im], (*Mnh3l)[im], (*Xhydr)[im], &((*kappa)[im]), &((*Nu)[im]),
 				(*Crack_size)[im], rhoH2olth, rhoRockth, rhoHydrth, fineMassFrac, fineVolFrac, (*ircore)[im], (*irdiff)[im], &((*circ)[im]), 0.0, 0);
 	}

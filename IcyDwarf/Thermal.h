@@ -35,7 +35,7 @@ int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[10
 		double **Vrock, double **Vh2os, double **Vadhs, double **Vh2ol, double **Vnh3l, double **Erock, double **Eh2os, double **Eslush,
 		double **Xhydr, double **Xhydr_old, double **kappa, double **pore, double *Mliq, double *Mcracked_rock,
 		int **circ, double **Crack, double **Crack_size, double **fracOpen, double **P_pore,
-		double **P_hydr, double ***Act, double *fracKleached, int *crack_input, int *crack_species, double **aTP, double **integral,
+		double **P_hydr, double ***Act, double *fracKleached, int *crack_input, int *crack_species, double **aTPth, double **integral,
 		double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite, int *ircrack, int *ircore, int *irice,
 		int *irdiff, int forced_hydcirc, double **Nu, int tidalmodel, int eccentricitymodel, double tidetimes, int im, int moonspawn, double Mprim, double *eorb,
 		double *norb, double *Wtide_tot, int hy, int chondr, double *Heat_radio, double *Heat_grav, double *Heat_serp, double *Heat_dehydr,
@@ -101,7 +101,7 @@ int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[10
 		double **Vrock, double **Vh2os, double **Vadhs, double **Vh2ol, double **Vnh3l, double **Erock, double **Eh2os, double **Eslush,
 		double **Xhydr, double **Xhydr_old, double **kappa, double **pore, double *Mliq, double *Mcracked_rock,
 		int **circ, double **Crack, double **Crack_size, double **fracOpen, double **P_pore,
-		double **P_hydr, double ***Act, double *fracKleached, int *crack_input, int *crack_species, double **aTP, double **integral,
+		double **P_hydr, double ***Act, double *fracKleached, int *crack_input, int *crack_species, double **aTPth, double **integral,
 		double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite, int *ircrack, int *ircore, int *irice,
 		int *irdiff, int forced_hydcirc, double **Nu, int tidalmodel, int eccentricitymodel, double tidetimes, int im, int moonspawn, double Mprim, double *eorb,
 		double *norb, double *Wtide_tot, int hy, int chondr, double *Heat_radio, double *Heat_grav, double *Heat_serp, double *Heat_dehydr,
@@ -255,7 +255,7 @@ int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[10
 				if (1.0/strain_rate[ir] > dtime) {
 					crack((*T)[ir], (*T_old)[ir], (*Pressure)[ir], &(*Crack)[ir], &(*Crack_size)[ir], (*Xhydr)[ir], (*Xhydr_old)[ir],
 							dtime, (*Mrock)[ir], (*Mrock_init)[ir], &(*Act)[ir], warnings, crack_input, crack_species,
-							aTP, integral, alpha, beta, silica, chrysotile, magnesite, (*circ)[ir], &(*Stress)[ir],
+							aTPth, integral, alpha, beta, silica, chrysotile, magnesite, (*circ)[ir], &(*Stress)[ir],
 							&(*P_pore)[ir], &(*P_hydr)[ir], Brittle_strength[ir], rhoHydrth, rhoRockth);
 				}
 				else { // Reset all the variables modified by crack()
