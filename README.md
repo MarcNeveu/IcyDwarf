@@ -1,6 +1,6 @@
 IcyDwarf
 ========
-*IcyDwarf* calculates the coupled physical-chemical evolution of an icy dwarf planet or moon. As of version 16.3, the code calculates:
+*IcyDwarf* calculates the coupled physical-chemical evolution of an icy dwarf planet or moon. As of version 16.3 and more recent, the code calculates:
 - The thermal evolution of an icy planetary body (moon or dwarf planet), with no chemistry, but with rock hydration, dehydration, hydrothermal circulation, core cracking, tidal heating, and porosity. The depth of cracking and a bulk water:rock ratio by mass in the rocky core are also computed.
 - Whether cryovolcanism is possible by the exsolution of volatiles from cryolavas.
 - Equilibrium fluid and rock chemistries resulting from water-rock interaction in subsurface oceans in contact with a rocky core, up to 200ºC and 1000 bar.
@@ -10,7 +10,7 @@ IcyDwarf
 - Core cracking
 - Equilibrium fluid and rock compositions.
 
-There is currently no display of cryovolcanism or geochemistry outputs from *IcyDwarf*.
+However, *IcyDwarfPlot* has not recently been maintained to keep up with updates in MacOS, so minor updates are likely needed to get it back to working. There is currently no display of cryovolcanism outputs from *IcyDwarf*.
 
 The two codes can run independently of each other, so it's not necessary to install both if you only need one.
 
@@ -41,11 +41,18 @@ The *IPHREEQC* library is a module that allows the *PHREEQC* application to be e
 	make
 	make install
 
-## Install *gcc*
-In Mac OS 10.8+, the default compiler *clang* has replaced the compiler *gcc*, which is needed to take advantage of the parallel computing capabilities of the *PlanetSystem* and *WaterRock_ParamExplor* routines of *IcyDwarf*. Go to http://hpc.sourceforge.net and follow the instructions there to download and install *gcc*.
+## Install parallel processing capabilities
+
+In Mac OS 10.8+, the default compiler *clang* has replaced the compiler *gcc*. By default, *clang* does not include parallel processing capabilities, slowing down execution of the *PlanetSystem* (moon system evolution) and *WaterRock_ParamExploration* (aqueous geochemical equilibrium computation across a wide parameter space) routines of *IcyDwarf* by a factor of ~5-8. Two options exist to remedy this:
+
+### Option 1: Install HPC's *gcc*
+This option does not appear to work for Mac Intel machines with recent MacOS software (e.g., *XCode* 15+), because the compiler either works for Intel chips (*gcc* version 11 or older) or recent Mac *Xcode* command line tools (*gcc* version 12 or more recent). It worked for *Xcode* 14 and older on Intel machines. It should work for recent Macs with current *Xcode* and M1-M3 chips, but this has not been tested. Go to http://hpc.sourceforge.net and follow the instructions there to download and install *gcc*.
 Once installed, you might need to break the symbolic link between the command *gcc* and *clang* by typing:
 
     alias gcc=/usr/local/bin/gcc
+
+### Option 2: Install OpenMP on macOS with Xcode tools
+This option should work for *XCode* 10.2+ by providing *Clang* with the needed parallel processing libraries (*OpenMP*). It works for a Mac Intel machine with *XCode* 15. Go to https://mac.r-project.org/openmp and follow the instructions there to download and install *OpenMP* libraries.
 
 ## Install *SDL2* (*IcyDwarfPlot* only)
 *SDL2* is a graphic library. Go to http://www.libsdl.org/projects. Download and install *SDL2*, *SDL2_image*, and *SDL2_ttf*. *SDL2_mixer* is not needed as the code doesn't play music for you yet.
@@ -160,9 +167,15 @@ If you wish to modify the code, set up your compiler and linker so that all the 
 
 My compiling instructions look like this:
 
+For IcyDwarf (*clang gcc* with *XCode* 15 on Mac OS 14.6 Sonoma):
+
+	gcc -I/usr/local/include -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include -I/Library/Frameworks/R.framework/Versions/Current/Resources/include -I/Library/Frameworks/R.framework/Versions/Current/Resources/library/RInside/include -O3 -g -Wall -c -fmessage-length=0 -arch x86_64 -o IcyDwarf.o ../IcyDwarf.c -Xclang -fopenmp
+	gcc -L/usr/lib -L/usr/local/lib -L/Library/Frameworks/R.framework/Versions/4.1/Resources/lib -o IcyDwarf IcyDwarf.o -lR -ld_classic -lomp
+(remove the '-ld_classic' flag for compilation on Apple M1-M3 machine).
+
 For IcyDwarf (*gcc 11.2.0* on Mac OS 13.6 Ventura):
  
-    gcc -I/usr/local/include -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include -I/Library/Frameworks/R.framework/Versions/4.1/Resources/include -I/Library/Frameworks/R.framework/Versions/4.1/Resources/library/RInside/include -O3 -g -Wall -c -fmessage-length=0 -arch x86_64 -fopenmp -o IcyDwarf.o ../IcyDwarf.c
+    gcc -I/usr/local/include -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include -I/Library/Frameworks/R.framework/Versions/Current/Resources/include -I/Library/Frameworks/R.framework/Versions/Current/Resources/library/RInside/include -O3 -g -Wall -c -fmessage-length=0 -arch x86_64 -fopenmp -o IcyDwarf.o ../IcyDwarf.c
     gcc -L/usr/lib -L/usr/local/lib -L/Library/Frameworks/R.framework/Versions/4.1/Resources/lib -o IcyDwarf IcyDwarf.o /usr/local/lib/libiphreeqc-3.7.3.dylib /usr/local/lib/libiphreeqc.dylib /usr/local/lib/libiphreeqc.a -lgomp -lR -ld64
 
 For IcyDwarfPlot (*gcc 6.2* on Mac OS 10.12 Sierra):

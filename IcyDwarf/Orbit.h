@@ -411,6 +411,17 @@ int Orbit (int os, int argc, char *argv[], char path[1024], int im,
 			L[1] = Lambda[1] + j*(Lambda[0]+Lambda[1])*(1.0/sqrt(1.0-e[0]*e[0]) - 1.0) / (1.0-j*(1.0-sqrt((1.0-e[1]*e[1])/(1.0-e[0]*e[0]))));
 			L[0] = (Lambda[0]+Lambda[1])/sqrt(1.0-e[0]*e[0]) - L[1]*sqrt((1.0-e[1]*e[1])/(1.0-e[0]*e[0]));
 
+			// Other expressions that give about the same results (within rounding error at each step?):
+
+//			L[1] = (Lambda[1] + j*(Lambda[0]*(1.0-sqrt(1.0-e[0]*e[0]))) / (1.0 - (1.0-j)*(1.0-sqrt(1.0-e[0]*e[0]))))
+//				  *(1.0 / (1.0 - j * (1.0-j)*(1.0-sqrt(1.0-e[1]*e[1]))*(1.0-sqrt(1.0-e[0]*e[0])) / (1.0-(1.0-j)*(1.0-sqrt(1.0-e[0]*e[0]))) - j*(1.0-sqrt(1.0-e[1]*e[1]))));
+//			L[0] = (Lambda[0] + (1.0-j)*L[1]*(1.0-sqrt(1.0-e[1]*e[1])))
+//				  /(1.0 - (1.0-j)*(1.0-sqrt(1.0-e[0]*e[0])));
+
+//			L[0] = (Lambda[0] + (-j*Lambda[0]+(1.0-j)*Lambda[1])*(1.0-sqrt(1.0-e[1]*e[1])))
+//				  /(1.0 - (1.0-j)*(1.0-sqrt(1.0-e[0]*e[0])) - j*(1.0-sqrt(1.0-e[1]*e[1])));
+//			L[1] = (-j*Lambda[0] + (1.0-j)*Lambda[1] + j*L[0]) / (1.0-j);
+
 			for (l=0;l<2;l++) a[l] = L[l]*L[l]/(Gcgs*m[l]*m[l]*Mprim);
 
 			// Return orbital properties for printout and store state variables

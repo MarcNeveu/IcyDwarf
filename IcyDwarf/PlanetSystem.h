@@ -1049,7 +1049,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 				}
 			}
 
-			// Impact that raises Tethys' orbit and knocks it out of resonance with Dione (Zhang & Nimmo 2012) TODO comment out
+			// Impact that raises Tethys' orbit and knocks it out of resonance with Dione (Zhang & Nimmo 2012)
 	//		if (realtime > 1.0*Gyr2sec - dtime && realtime < 1.0*Gyr2sec + dtime) {
 	//			aorb[2] = aorb[2] + 300.0*km2cm;
 	//			if (a__old[2] > 0) a__old[2] = a__old[2] + 300.0*km2cm;
