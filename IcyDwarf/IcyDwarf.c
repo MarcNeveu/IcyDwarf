@@ -164,7 +164,7 @@ int main(int argc, char *argv[]){
 
 	printf("\n");
 	printf("-------------------------------------------------------------------\n");
-	printf("IcyDwarf v24.8\n");
+	printf("IcyDwarf v24.10\n");
 	printf("-------------------------------------------------------------------\n");
 
 	// Initialize the R environment. We do it here, in the main loop, because this can be done only once.

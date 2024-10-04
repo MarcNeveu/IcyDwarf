@@ -1078,8 +1078,8 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 					norb[im] = sqrt(Gcgs*Mprim/pow(aorb[im],3)); // Otherwise, norb[im] is zero and the moon im doesn't influence the others gravitationally
 					// TODO Add a non-Keplerian term due to planetary oblateness?
 					dnorb_dt[im] = (norb[im]-dnorb_dt[im])/dtime;
-//					t_tide[im] = 1.5*norb[im]/(nprim-norb[im])*t_reslock[im]; // Gravitational modes
-					t_tide[im] = 1.5*                          t_reslock[im]; // Inertial modes, favored (Lainey et al. 2020 SOM p. 7)
+//					t_tide[im] = 1.0*norb[im]/(nprim-norb[im])*t_reslock[im]; // Gravitational modes
+					t_tide[im] = 1.0*                          t_reslock[im]; // Inertial modes, favored (Lainey et al. 2020 SOM p. 8)
 					t_tide[im] *= realtime/(4.5682*Gyr2sec);                  // Scale evolution timescale with host planet age (Lainey et al. SOM equation 16)
 
 					// TODO switch r_p to outerrad[nmoons] = r[im][NR]? Could matter if very porous
@@ -1125,7 +1125,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
     			for (i=0;i<nmoons;i++) {
     				if (resonance[im][i] != resonance_old[im][i] && reso_print_switch) {
     					reso_print = 1;
-    					reso_print_switch = 0;
+//    					reso_print_switch = 0;
     					resonance_old[im][i] = resonance[im][i];
     					resAcctFor_old[im][i] = resAcctFor[im][i];
     				}
@@ -1213,7 +1213,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 
 		if (isteps == nsteps) {
 			isteps = 0;
-			reso_print_switch = 1;
+//			reso_print_switch = 1;
 
 			for (im=0;im<nmoons;im++) {
 				// Thermal outputs
