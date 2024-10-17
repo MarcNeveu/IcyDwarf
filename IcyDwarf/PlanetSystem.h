@@ -1073,7 +1073,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 //			nloops = 0;
 #pragma omp for
 			for (im=0;im<nmoons;im++) {
-				if (realtime >= tzero[im] && orbevol[im]) {
+				if (realtime >= tzero[im] && orbevol[im] && aorb[im] > 0.0) {
 					dnorb_dt[im] = norb[im];
 					norb[im] = sqrt(Gcgs*Mprim/pow(aorb[im],3)); // Otherwise, norb[im] is zero and the moon im doesn't influence the others gravitationally
 					// TODO Add a non-Keplerian term due to planetary oblateness?
@@ -1094,7 +1094,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 
 #pragma omp for
 			for (im=0;im<nmoons;im++) {
-				if (realtime >= tzero[im]) {
+				if (realtime >= tzero[im] && aorb[im] > 0.0) {
 
 					Thermal(os, argc, argv, path, outputpath[im], warnings, recover, NR, dr_grid[im],
 							dtime, realtime, itime, Xp[im], Xsalt[im], Xfines[im], Xpores[im], TsurfMig[im],

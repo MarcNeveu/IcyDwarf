@@ -613,13 +613,14 @@ int Orbit (int os, int argc, char *argv[], char path[1024], int im,
 
 			fout = fopen(title,"a");
 			if (fout == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
-			else fprintf(fout,"Orbit: itime=%d time steps, time=%g Gyr, -dtime*d_aorb_pl = %g m - -dtime*d_aorb_ring (= %g m) > aorb = %g m, moon crashes into planet\n",
-					itime, (double)itime*dtime/Gyr2sec, -dtime*d_aorb_pl, -dtime*d_aorb_ring, (*aorb)[im]);
+			else fprintf(fout,"Orbit: itime=%d time steps, time=%g Gyr, -dtime*d_aorb_pl = %g m - -dtime*d_aorb_ring (= %g m) > aorb = %g m, moon %d crashes into planet\n",
+					itime, (double)itime*dtime/Gyr2sec, -dtime*d_aorb_pl, -dtime*d_aorb_ring, (*aorb)[im], im);
 			fclose (fout);
 			free (title);
-			printf("Orbit: itime=%d time steps, time=%g Gyr, -dtime*d_aorb_pl = %g m - -dtime*d_aorb_ring (= %g m) > aorb = %g m, moon crashes into planet\n",
-					itime, (double)itime*dtime/Gyr2sec, -dtime*d_aorb_pl, -dtime*d_aorb_ring, (*aorb)[im]);
-			exit(0);
+			printf("Orbit: itime=%d time steps, time=%g Gyr, -dtime*d_aorb_pl = %g m - -dtime*d_aorb_ring (= %g m) > aorb = %g m, moon %d crashes into planet\n",
+					itime, (double)itime*dtime/Gyr2sec, -dtime*d_aorb_pl, -dtime*d_aorb_ring, (*aorb)[im], im);
+			(*aorb)[im] = -1.0e-10; // Not 0 so the switches in PlanetSystem.h allow running Thermal() for objects whose orbital evolution is not tracked (e.g., dwarf planets)
+			(*eorb)[im] = 0.0;
 		}
 	}
 
@@ -683,8 +684,12 @@ int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, d
 					if ((commensurability > 0.99 && commensurability < 1.01) ||                                   // 1% tolerance to consider capture
 						(resAcctFor[inner][outer] && commensurability > 0.985 && commensurability < 1.015)) { // 1.5% tolerance if already captured, to avoid always going in and out of resonance near the 1% limit
 
+						(*resonance)[inner][outer] = (double)j;
+						(*resonance)[outer][inner] = (double)j;
+
 						// Check that moon orbits are converging.
 						// No resonance if divergent secular migration: j*dnorb_dt[inner] > (j+l)*dnorb_dt[outer], Peale (1976) equation (25), Yoder (1973), Sinclair (1972), Lissauer et al. (1984)
+						// In the divergent case, eccentricity kick only (e.g., Dermott et al. 1988); that can be computed also by the resonant evolution routine.
 						// dn/dt = -3/2 sqrt(GM) a^(-5/2) da/dt
 						if (reslock) {
 							dnorb_dt_inner = (-1.5)*sqrt(Gcgs*Mprim)*pow(aorb[inner],-2.5)*prim_sign[im]*aorb[inner]/t_tide[inner];
@@ -696,9 +701,6 @@ int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, d
 						}
 
 						if ((double)j*dnorb_dt_inner <= (double)(j+l)*dnorb_dt_outer) {
-							(*resonance)[inner][outer] = (double)j;
-							(*resonance)[outer][inner] = (double)j;
-
 							// Also, determine analytically the probability of capture in resonance with moon i further out (just for output)
 							if (inner > outer) (*PCapture)[inner][outer] = MMR_PCapture(m_p, norb, aorb, inner, outer, eorb[inner], (double)j, l, Mprim);
 							else               (*PCapture)[outer][inner] = MMR_PCapture(m_p, norb, aorb, inner, outer, eorb[inner], (double)j, l, Mprim);

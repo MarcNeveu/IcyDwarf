@@ -648,7 +648,7 @@ int state (int os, char path[1024], int itime, int im, int ir, double E, double 
 
 	// Bisect to find the temperature from the energy
 	Tlo = 20.0;
-	Thi = 5000.0;
+	Thi = 20000.0;
 	Tmd = (Tlo+Thi)/2.0;
 
 	for (iter=0;iter<30;iter++) {
