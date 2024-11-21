@@ -1,4 +1,4 @@
-ICY DWARF v19.x INPUT FILE - Uranian system with collided moon "Cascada"
+ICY DWARF v24.x INPUT FILE - Uranian system
 
 1 for Yes, 0 for No
 --------------------------------------------------------------------------------------------------------
@@ -9,31 +9,31 @@ ICY DWARF v19.x INPUT FILE - Uranian system with collided moon "Cascada"
 |-----------------------------------------------|------------------------------------------------------|
 | Grid |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 |-----------------------------------------------|------------------------------------------------------|
-| Number of grid zones                          | 54                                                   |
-| Thermal simulation time step (yr)             | 500                                                  |
+| Number of grid zones                          | 200                                                  |
+| Thermal simulation time step (yr)             | 100                                                  |
 | Moon-moon interaction speedup factor          | 1000                                                 |
-| Total time of thermal simulation (Myr)        | 4500                                                 |
+| Total time of thermal simulation (Myr)        | 162.180                                              |
 | Output every (Myr)                            | 10                                                   |
 |-----------------------------------------------|------------------------------------------------------|
 | Uranus parameters      |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 |-----------------------------------------------|------------------------------------------------------|
 | Mass (kg) (0 if world is not a moon)          | 8.68e25                                              |
 | Radius (km)                                   | 25362                                                |
-| Tidal Q (initial,today,{0:lin 1:exp 2:1-exp}) | 11000 11000 0                                        |
+| Tidal Q (initial,today,{0:lin 1:exp 2:1-exp}) | 20000 20000 0                                        |
 | Love number k2; zonal gravity harmonics J2, J4| 0.104 3510.99e-6 -33.6e-6 # GavZhar79, Helled+ 2010  |
 | Resonant tidal locking with inertial waves?   | 0                                                    |
-| Spin period (h)                               | 10.546   (Saturn, Helled et al. 2015)                |
+| Spin period (h)                               | 17.24                                                |
 | Number of moons                               | 5                                                    |
 | Ring mass (kg) (0 if no rings)                | 4e16  # 2*(epsilon+alpha+beta) (Wikipedia)           |
 | Ring inner edge (km)                          | 41837 # 6 ring (Jacobson 14)                         |
 | Ring outer edge (km)                          | 51149 # epsilon ring (Jacobson 14)                   |
 |-----------------------------------------------|------------------------------------------------------|
-| Icy world parameters |||||||||||||||||||||||||| Miranda  | Ariel    | Umbriel  | Cascada  | Oberon   |
+| Icy world parameters |||||||||||||||||||||||||| Miranda  | Ariel    | Umbriel  | Titania  | Oberon   |
 |-----------------------------------------------|----------|----------|----------|----------|----------|
-| Radius assuming zero porosity (km)            | 235.8    | 578.9    | 584.7    | 1410     | 761.4    | # Thomas88
-| Density assuming zero porosity (g cm-3)       | 1.200    | 1.665    | 1.400    | 1.803    | 1.630    | # Jacobson14
+| Radius assuming zero porosity (km)            | 235.8    | 578.9    | 584.7    | 788.9    | 761.4    | # Thomas88
+| Density assuming zero porosity (g cm-3)       | 1.200    | 1.665    | 1.400    | 1.715    | 1.630    | # Jacobson14
 | Surface temperature (K)                       | 55       | 53       | 60       | 57       | 58       | # Karkoschka01
-| Initial temperature (K)                       | 175      | 175      | 175      | 113      | 175      |
+| Initial temperature (K)                       | 100      | 100      | 100      | 100      | 100      |
 | Time of formation (Myr)                       | 10       | 10       | 10       | 10       | 10       |
 | Formed from ring?                             | 0        | 0        | 0        | 0        | 0        |
 | Ammonia w.r.t. water                          | 0        | 0        | 0        | 0        | 0        |
@@ -44,11 +44,11 @@ ICY DWARF v19.x INPUT FILE - Uranian system with collided moon "Cascada"
 | Fraction of rock in fines                     | 0        | 0        | 0        | 0        | 0        |
 | Core ice/liquid water volume fraction         | 0        | 0        | 0        | 0        | 0        |
 | Start differentiated?                         | 0        | 0        | 0        | 0        | 0        |
-| Initial orbital semi-major axis (km)          | 123066   | 171942   | 263908   | 335000   | 583380   |
-| Initial orbital eccentricity                  | 0.016    | 0.016    | 0.016    | 0.016    | 0.016    |
+| Initial orbital semi-major axis (km)          | 126378   | 181859   | 264854   | 436061   | 583411   |
+| Initial orbital eccentricity                  | 0.02     | 0.02     | 0.02     | 0.02     | 0.02     |
 | Allow orbit to change?                        | 1        | 1        | 1        | 1        | 1        |
 | Retrograde orbit?                             | 0        | 0        | 0        | 0        | 0        |
-| Resonant tidal locking timescale (Gyr)        | 0        | 0        | 0        | 0        | 0        |
+| Resonant tidal locking timescale (Gyr)        | 107.1    | 150.2    | 174.1    | 164.2    | 155.5    |
 |-----------------------------------------------|------------------------------------------------------|
 | Dry rock density (g cm-3)                     | 3.8                                                  |
 | Hydrated rock density (g cm-3)                | 2.9                                                  |
