@@ -20,6 +20,16 @@
  * 		calculate a(max K_I) at each timestep and gridpoint. Calculating
  * 		a(T,P) once already takes time (integration of K_I and search for
  * 		its maximum at many T and P).
+ *
+ * 	Copyright (C) 2013-2024 Marc Neveu (marc.f.neveu@nasa.gov)
+ *
+ *  This program is free software: you can redistribute it and/or modify it under the terms of the
+ *  GNU General Public License as published by the Free Software Foundation, either version 3 of
+ *  the License, or (at your option) any later version. This program is distributed in the hope
+ *  that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ *  more details. You should have received a copy of the GNU General Public License along with this
+ *  program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #ifndef ATP_H_

@@ -11,6 +11,16 @@
  *      1. The thermal evolution of a dwarf planet, including core cracking, hydration, dehydration,
  *         and hydrothermal circulation
  *      2. Gas exsolution in icy shell cracks (gas-driven cryovolcanism)
+ *
+ *  Copyright (C) 2013-2024 Marc Neveu (marc.f.neveu@nasa.gov)
+ *
+ *  This program is free software: you can redistribute it and/or modify it under the terms of the
+ *  GNU General Public License as published by the Free Software Foundation, either version 3 of
+ *  the License, or (at your option) any later version. This program is distributed in the hope
+ *  that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ *  more details. You should have received a copy of the GNU General Public License along with this
+ *  program. If not, see <http://www.gnu.org/licenses/>.
  */
 
 #include "IcyDwarf.h"
@@ -164,7 +174,15 @@ int main(int argc, char *argv[]){
 
 	printf("\n");
 	printf("-------------------------------------------------------------------\n");
-	printf("IcyDwarf v24.11\n");
+	printf("IcyDwarf v24.12\n"                                                    );
+	printf("Copyright (C) 2013-2024 Marc Neveu (marc.f.neveu@nasa.gov)\n\n"       );
+	printf("This program is free software: you can redistribute it and/or\n"      );
+	printf("modify it under the terms of the GNU General Public License as\n"     );
+	printf("published by the Free Software Foundation, either version 3 of the\n" );
+	printf("License, or (at your option) any later version. This program is\n"    );
+	printf("distributed in the hope that it will be useful, but without any\n"    );
+	printf("warranty. See the GNU General Public License for more details:\n"     );
+	printf("<http://www.gnu.org/licenses/>.\n"                                    );
 	printf("-------------------------------------------------------------------\n");
 
 	// Initialize the R environment. We do it here, in the main loop, because this can be done only once.
