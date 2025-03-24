@@ -66,6 +66,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 	int norbit = 9;                      // Number of quantities output in Orbit.txt
 	int ncrkstrs = 12;                   // Number of quantities output in Crack_stresses.txt
 	int nheat = 6;                       // Number of quantities output in Heats.txt
+	int nREBOUND = 6;                    // Number of quantities output in REBOUND.txt
 
 	// Variables common to all moons
 	int forced_hydcirc = 0;              // Switch to force hydrothermal circulation
@@ -125,11 +126,14 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 	double Mcracked_rock[nmoons];        // Mass of cracked rock in the icy world (g)
 	double TsurfMig[nmoons];             // Surface temperature of the icy world post-heliocentric migration (K)
 	double prim_sign[nmoons];            // Sign of primary term in secular da/dt equation (positive i.e. +1 if prograde moon; negative i.e. -1 if retrograde moon)
+	double k2[nmoons];                   // Love number k2
+	double MOI[nmoons];                  // Coefficient of moment of inertia
 
 	double Crack_depth_WR[nmoons][3];	 // Crack_depth_WR[3] (multiple units), output
 	double Heat[nmoons][nheat];          // Heat[6] (erg), output
 	double Thermal_output[nmoons][ntherm]; // Thermal_output[ntherm] (multiple units), output
 	double Orbit_output[nmoons][norbit]; // Orbit_output[norbit] (multiple units), output
+	double REBOUND_output[nmoons][nREBOUND]; // Orbit_output[norbit] (multiple units), output
 	double Primary[3];                   // Primary[3], output of primary's tidal Q and ring mass (kg) vs. time (Gyr)
 
 	double *aorb = (double*) malloc((nmoons)*sizeof(double));       // Moon orbital semi-major axis (cm)
@@ -578,6 +582,9 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 		if (retrograde[im]) prim_sign[im] = -1.0;
 		else prim_sign[im] = 1.0;         // Assuming primary spins faster than secondary orbits, otherwise prim_sign should be -1 even if prograde
 
+		k2[im] = 0.0;
+		MOI[im] = 0.0;
+
 		for (ir=0;ir<nmoons;ir++) {
 			PCapture[im][ir] = 0.0;
 			resonance[im][ir] = 0.0;
@@ -588,6 +595,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 
 		for (i=0;i<ntherm;i++) Thermal_output[im][i] = 0.0;
 		for (i=0;i<norbit;i++) Orbit_output[im][i] = 0.0;
+		for (i=0;i<nREBOUND;i++) REBOUND_output[im][i] = 0.0;
 		for (i=0;i<nheat;i++) Heat[im][i] = 0.0;
 	    for (ir=0;ir<NR;ir++) {
 			dVol[im][ir] = 0.0;
@@ -783,6 +791,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 //			if (Mprim > 0.0 && orbevol[im]) {
 			if (Mprim > 0.0) {
 				strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt"); create_output(os, path, filename); filename[0] = '\0';
+				strcat(filename, outputpath[im]); strcat(filename, "REBOUND.txt"); create_output(os, path, filename); filename[0] = '\0';
 			}
 		}
 		if (Mprim > 0.0) {
@@ -936,6 +945,22 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 				strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt");
 				append_output(os, norbit, Orbit_output[im], path, filename); filename[0] = '\0';
 			}
+
+			// Parameters for REBOUND calculations
+			if (Mprim > 0.0) {
+				MOI[im] = 0.0;
+				for (ir=0;ir<NR;ir++) MOI[im] = MOI[im] + 2.0/3.0*dM[im][ir]*r[im][ir+1]*r[im][ir+1];
+				MOI[im] = MOI[im] / (m_p[im] * r[im][NR] * r[im][NR]);
+
+				REBOUND_output[im][0] = realtime/Gyr2sec; // t in Gyr
+				REBOUND_output[im][1] = k2[im];
+				REBOUND_output[im][2] = 0.0; // k2[im] / Wtide_tot[im]/(11.5*pow(r_p[im],5)*pow(sqrt(Gcgs*Mprim/pow(aorb[im],3)),5)*pow(eorb[im],2)/Gcgs); // Q = k2/(k2/Q) (Segatz et al. 1988; Henning & Hurford 2014);
+				REBOUND_output[im][3] = MOI[im];
+				REBOUND_output[im][4] = norb[im];
+				REBOUND_output[im][5] = r[im][NR]/km2cm;
+				strcat(filename, outputpath[im]); strcat(filename, "REBOUND.txt");
+				append_output(os, nREBOUND, REBOUND_output[im], path, filename); filename[0] = '\0';
+			}
 		}
 		if (Mprim > 0.0) {
 			// Primary Q and ring mass
@@ -984,6 +1009,11 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
     nsteps = (int) (dtoutput / dtime + 1.0e-3);
 
     for (itime=0;itime<=ntime;itime++) {
+
+        // To output every orbital time step + every 10 interior time steps at a desired time
+//        if (realtime > 2.803*Gyr2sec) nsteps = 10;
+//        if (realtime > 2.804*Gyr2sec) exit(0);
+        //
 
 		realtime = realtime + dtime;
 
@@ -1056,6 +1086,8 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 			for (im=0;im<nmoons;im++) {
 				for (i=0;i<nmoons;i++) {
 					if (i != im && resAcctFor[im][i] == 0.0) resAcctFor[i][im] = 0.0;
+
+					resAcctFor[i][im] = 0.0; // TODO remove to bring back resonant evolution
 				}
 			}
 
@@ -1118,7 +1150,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 							&ircrack[im], &ircore[im], &irice[im], &irdiff[im], forced_hydcirc, &Nu[im],
 							tidalmodel, eccentricitymodel, tidetimes, im, moonspawn[im], Mprim, eorb, norb, &Wtide_tot[im], hy[im], chondr,
 							&Heat_radio[im], &Heat_grav[im], &Heat_serp[im], &Heat_dehydr[im], &Heat_tide[im],
-							&Stress[im], &TideHeatRate[im]);
+							&Stress[im], &TideHeatRate[im], &k2[im]);
 //					++nloops;
 				}
 			}
@@ -1209,6 +1241,20 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 						Orbit_output[im][8] = Wtide_tot[im]/(11.5*pow(r_p[im],5)*pow(sqrt(Gcgs*Mprim/pow(aorb[im],3)),5)*pow(eorb[im],2)/Gcgs); // k2/Q (Segatz et al. 1988; Henning & Hurford 2014)
 						strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt");
 						append_output(os, norbit, Orbit_output[im], path, filename); filename[0] = '\0';
+
+						// Parameters for REBOUND calculations
+						MOI[im] = 0.0;
+						for (ir=0;ir<NR;ir++) MOI[im] = MOI[im] + 2.0/3.0*dM[im][ir]*r[im][ir+1]*r[im][ir+1];
+						MOI[im] = MOI[im] / (m_p[im] * r[im][NR] * r[im][NR]);
+
+						REBOUND_output[im][0] = realtime/Gyr2sec; // t in Gyr
+						REBOUND_output[im][1] = k2[im];
+						REBOUND_output[im][2] = k2[im] / (Wtide_tot[im]/(11.5*pow(r_p[im],5)*pow(sqrt(Gcgs*Mprim/pow(aorb[im],3)),5)*pow(eorb[im],2)/Gcgs)); // Q = k2/(k2/Q) (Segatz et al. 1988; Henning & Hurford 2014);
+						REBOUND_output[im][3] = MOI[im];
+						REBOUND_output[im][4] = norb[im];
+						REBOUND_output[im][5] = r[im][NR]/km2cm;
+						strcat(filename, outputpath[im]); strcat(filename, "REBOUND.txt");
+						append_output(os, nREBOUND, REBOUND_output[im], path, filename); filename[0] = '\0';
 //					}
 				}
 			}
@@ -1527,7 +1573,7 @@ int recov(int os, int argc, char *argv[], char path[1024], int nmoons, char outp
 
 		f = fopen(title,"r");
 		if (f == NULL) printf("IcyDwarf: Error opening %s output file.\n",title);
-		else tail(f, NR, norbit, &(*Stress)[im]); // Read the last NR lines
+		else tail(f, NR, ncrkstrs, &(*Stress)[im]); // Read the last NR lines
 		fclose (f);
 	}
 

@@ -49,7 +49,7 @@ int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[10
 		double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite, int *ircrack, int *ircore, int *irice,
 		int *irdiff, int forced_hydcirc, double **Nu, int tidalmodel, int eccentricitymodel, double tidetimes, int im, int moonspawn, double Mprim, double *eorb,
 		double *norb, double *Wtide_tot, int hy, int chondr, double *Heat_radio, double *Heat_grav, double *Heat_serp, double *Heat_dehydr,
-		double *Heat_tide, double ***Stress, double **TideHeatRate);
+		double *Heat_tide, double ***Stress, double **TideHeatRate, double *k2);
 
 int state (int os, char path[1024], int itime, int im, int ir, double E, double *frock, double *fh2os, double *fadhs, double *fh2ol,
 		double *fnh3l, double Xsalt, double *T);
@@ -84,7 +84,7 @@ double viscosity(double T, double Mh2ol, double Mnh3l);
 
 int tide(int tidalmodel, int eccentricitymodel, double tidetimes, double eorb, double omega_tide, double **Qth, int NR, double *Wtide_tot, double *Mh2os,
 		double *Madhs, double *Mh2ol, double *Mnh3l, double *dM,  double *Vrock, double *dVol, double *r, double *T, double *Xhydr,
-		double *Pressure, double *pore, int im);
+		double *Pressure, double *pore, int im, double *k2);
 
 int propmtx(int NR, double *r, double *rho, double *g, double complex *shearmod, double complex ***ytide, int ircore);
 
@@ -115,7 +115,7 @@ int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[10
 		double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite, int *ircrack, int *ircore, int *irice,
 		int *irdiff, int forced_hydcirc, double **Nu, int tidalmodel, int eccentricitymodel, double tidetimes, int im, int moonspawn, double Mprim, double *eorb,
 		double *norb, double *Wtide_tot, int hy, int chondr, double *Heat_radio, double *Heat_grav, double *Heat_serp, double *Heat_dehydr,
-		double *Heat_tide, double ***Stress, double **TideHeatRate) {
+		double *Heat_tide, double ***Stress, double **TideHeatRate, double *k2) {
 
 	int ir = 0;                          // Grid counter
 	int jr = 0;                          // Secondary grid counter
@@ -447,7 +447,7 @@ int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[10
 		}
 		(*Wtide_tot) = 0.0;
 		tide(tidalmodel, eccentricitymodel, tidetimes, eorb[im], omega_tide, &Qth, NR, &(*Wtide_tot), (*Mh2os), (*Madhs), (*Mh2ol), (*Mnh3l), (*dM),
-				(*Vrock), dVol, (*r), (*T), (*Xhydr), (*Pressure), (*pore), im);
+				(*Vrock), dVol, (*r), (*T), (*Xhydr), (*Pressure), (*pore), im, &(*k2));
 		(*Heat_tide) = (*Heat_tide) + (*Wtide_tot);
 
 		for (ir=0;ir<NR;ir++) (*TideHeatRate)[ir] = (*TideHeatRate)[ir] + Qth[ir]/1.0e7;
@@ -1803,7 +1803,7 @@ double viscosity(double T, double Mh2ol, double Mnh3l) {
 int tide(int tidalmodel, int eccentricitymodel, double tidetimes, double eorb, double omega_tide, double **Qth, int NR,
          double *Wtide_tot, double *Mh2os,
 		 double *Madhs, double *Mh2ol, double *Mnh3l, double *dM,  double *Vrock, double *dVol, double *r, double *T, double *Xhydr,
-		 double *Pressure, double *pore, int im) {
+		 double *Pressure, double *pore, int im, double *k2) {
 
 	int ir = 0;                          // Counters
 	int i = 0;
@@ -2235,6 +2235,7 @@ int tide(int tidalmodel, int eccentricitymodel, double tidetimes, double eorb, d
 		// Note Im(k2) = -Im(y5) (Henning & Hurford 2014 eq. A9), the opposite convention of Tobie et al. (2005, eqs. 9 & 36).
 		// And k2 = |-y5-1| (Roberts & Nimmo 2008 equation A8), not 1-y5 as in Henning & Hurford (2014) equation A9
 		// If shearmod << 1, k2->3/2 (fluid-dominated); if shearmod->inf, k2->0 (strength-dominated) (Henning et al. 2009 p. 1006)
+		(*k2) = cabs(-ytide[ir][4]-1.0);
 		Wtide = dVol[ir] * 2.1*pow(omega_tide,5)*pow(r[NR-1],4)*eterm/r[ir+1]/r[ir+1]*H_mu*cimag(shearmod[ir]);
 		if (tidetimes) Wtide = tidetimes*Wtide;
 		(*Qth)[ir] = (*Qth)[ir] + Wtide;
