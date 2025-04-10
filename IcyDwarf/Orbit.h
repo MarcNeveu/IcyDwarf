@@ -25,11 +25,12 @@
 
 int Orbit (int os, int argc, char *argv[], char path[1024], int im,
 		double dtime, double speedup, int itime, int nmoons, double *m_p, double *r_p, double **resAcctFor,
-		double **aorb, double **eorb, double *norb, double *lambda, double *omega,
+		double **aorb, double **eorb, double *iorb, double *obl, double *norb, double *lambda, double *omega,
 		double **h_old, double **k_old, double **a__old,
 		double **Cs_ee_old, double **Cs_eep_old, double **Cr_e_old, double **Cr_ep_old, double **Cr_ee_old, double **Cr_eep_old, double **Cr_epep_old,
 		double **Wtide_tot, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim, int reslock, double *t_tide, int eccentricitymodel,
-		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity, double elapsed, double realtime, double *prim_sign);
+		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity, double elapsed, double realtime, double *prim_sign, double *k2, double *Qtide,
+		double nprim, double Ip, double *spin, double MOI, int CTL);
 
 int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, double *a__old, double *eorb, double *m_p, double Mprim, double Rprim, double k2prim, double Qprim,
 		double ***resonance, double ***PCapture, double *tzero, double realtime, double aring_out, double **resAcctFor, double reslock, double *t_tide, double *prim_sign);
@@ -57,11 +58,12 @@ int mmid(double y[], double dydx[], int nv, double param[], double xs, double ht
 
 int Orbit (int os, int argc, char *argv[], char path[1024], int im,
 		double dtime, double speedup, int itime, int nmoons, double *m_p, double *r_p, double **resAcctFor,
-		double **aorb, double **eorb, double *norb, double *lambda, double *omega,
+		double **aorb, double **eorb, double *iorb, double *obl, double *norb, double *lambda, double *omega,
 		double **h_old, double **k_old, double **a__old,
 		double **Cs_ee_old, double **Cs_eep_old, double **Cr_e_old, double **Cr_ep_old, double **Cr_ee_old, double **Cr_eep_old, double **Cr_epep_old,
 		double **Wtide_tot, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim, int reslock, double *t_tide, int eccentricitymodel,
-		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity, double elapsed, double realtime, double *prim_sign) {
+		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity, double elapsed, double realtime, double *prim_sign, double *k2, double *Qtide,
+		double nprim, double Ip, double *spin, double MOI, int CTL) {
 
 	FILE *fout;
 
@@ -99,6 +101,29 @@ int Orbit (int os, int argc, char *argv[], char path[1024], int im,
     double eterm_4 = 0.0;                // 4th Eccentricity Subterm
     double eterm_5 = 0.0;                // 5th Eccentricity Subterm
     double dEPS = 2.22e-16;              // Floating point precision of C double
+
+	double d_iorb = 0.0;                 // Change in orbital inclination (rad s-1)
+	double d_obl = 0.0;                  // Change in moon obliquity (rad s-1)
+
+	double d_spin_pl = 0.0;              // Change in planet spin rate (s-2)
+	double d_spin_moon = 0.0;            // Change in moon spin rate (s-2)
+
+	double Im = 0.0;                     // Fully dimensional moment of inertia of moon (kg m2)
+
+	// Coefficients used in CTL model of Lu et al. (2023)
+	double taup = 0.0;                   // Tidal time lag for planet
+	double taum = 0.0;                   // Tidal time lag for moon
+	double Kp = 0.0;
+	double Km = 0.0;
+	double xp = 0.0;
+	double xm = 0.0;
+	double etap = 0.0;
+	double etam = 0.0;
+	double N  = 0.0;
+	double Na = 0.0;
+	double Oe = 0.0;
+	double Ne = 0.0;
+	double oe = 0.0;
 
 	// Calculate tidal dissipation in the host planet (k2prim & Qprim)
 //	tideprim(Rprim, Mprim, omega_tide, &k2prim, &Qprim);
@@ -510,82 +535,119 @@ int Orbit (int os, int argc, char *argv[], char path[1024], int im,
 		// Secular changes in eccentricities and semi-major axes
 		//-------------------------------------------------------------------
 
-	    // Find eccentricity susceptibility (Renaud et al. 2021) TODO replace these terms, from equation B2, with terms from equation B3 instead
+		if (!CTL) {
 
-//	    e2 = eorb[im] * eorb[im];
-//	    if (eccentricitymodel == 0) {
-//	        // Classic model which is accurate for eccentricity around 0.1 or less.
-//	        eterm = e2;
-//	    }
-//	    else {
-//	        // The other two currently available options are accurate for eccentricity around 0.5 or less.
-//	        // They utilize an eccentricity to the 10th power truncation.
-//	        e4 = e2 * e2;
-//	        e6 = e2 * e4;
-//	        e8 = e4 * e4;
-//	        e10 = e8 * e2;
-//
-//	        // See Eq. B3 in Renaud et al. (2021; PSJ)
-//	        // OPT: We can manually collapse all these terms from the get go to increase performance.
-//	        //  Leaving them separate for now for easier debugging/comparison.
-//	        //  Also could just calculate the decimal form of all these coefficients too as an optimization.
-//	        eterm_1 = e10 * (6046043.0 / 122880.0) -
-//	                  e8  * (426355.0 / 4608.0) +
-//	                  e6  * (12647.0 / 96.0) -
-//	                  e4  * (79.0) +
-//	                  e2  * 19.0;
-//	        eterm_2 = e10 * (-69235.0 / 64.0) +
-//	                  e8  * (673391.0 / 576.0) -
-//	                  e6  * (7757.0 / 12.0) +
-//	                  e4  * (1183.0 / 8.0);
-//	        eterm_3 = e10 * (122639619.0 / 16384.0) -
-//	                  e8  * (5710133.0 / 1536.0) +
-//	                  e6  * (75431.0 / 96.0);
-//	        eterm_4 = e10 * (-198865133.0 / 11520.0) +
-//	                  e8  * (7741555.0 / 2304.0);
-//	        eterm_5 = e10 * (9183857269.0 / 737280.0);
-//
-//	        // Note that both the CPL and CTL-like models are not physically correct. A real rheology would need to be
-//	        //  passed each new frequency (or "tidal mode") individually and then a superposition of the final
-//	        //  -Im[k2] * specific_eccentricity_terms would describe the tidal dissipation. This is less of a problem for
-//	        //  spin-synchronous as there are only 5 terms (at this truncation level).
-//	        if (eccentricitymodel == 1) {
-//	            // CPL-like model where eccentricity terms collapse assuming -Im[a * k2] = 1 * -Im[k2] for all `a`s.
-//	            eterm = eterm_1 + eterm_2 + eterm_3 + eterm_4 + eterm_5;
-//	        }
-//	        else if (eccentricitymodel == 2) {
-//	            // CTL-like model where eccentricity terms collapse assuming -Im[a * k2] = a * -Im[k2] for all `a`s.
-//	            eterm = eterm_1 + 2.0 * eterm_2 + 3.0 * eterm_3 + 4.0 * eterm_4 + 5.0 * eterm_5;
-//	        }
-//	        else {
-//	            // Unknown or non-implemented model.
-//	            eterm = 0.0;
-//	            printf("IcyDwarf: Orbit: eccentricitymodel must be equal to 0, 1, or 2\n");
-//	            exit(0);
-//	        }
-//
-//	        // The above CPL/CTL-like models carry with them most of the dissipation equations coefficients.
-//	        // The standard version (e^2) used in IcyDwarf does not. To make sure we have the same
-//	        //   coefficients on the eterm we need to divide out a 7 on the CPL/CTL-like models.
-//	        eterm = eterm / 7.0;
-//	    }
-//
-//	    // Equations (4) and (5) of Renaud et al. (2021, PSJ)
-//	    d_aorb_moon = -2.0/(norb*aorb[im]) * (Mprim+m_p[im])/(Mprim*m_p[im]) * d/dM(m_p[im]<Uh>+Mprim<Us>);
-//
-//	    d_eorb_moon = sqrt(1.0-e2)/(norb*eorb[im]*aorb[im]*aorb[im]) * (Mprim+m_p[im])/(Mprim*m_p[im]) * (m_p[im]d<Uh>/dwh + Mprim d<Us>/dws
-//	    		                     - sqrt(1.0-e2) d/dM(m_p[im]<Uh>+Mprim<Us>));
+			// Find eccentricity susceptibility (Renaud et al. 2021) TODO replace these terms, from equation B2, with terms from equation B3 instead
 
-		// Dissipation inside moon, decreases its eccentricity (equation 4.170 of Murray & Dermott 1999) TODO Equation below assumes constant phase lag, incorporate results from tidalPy instead
-		d_eorb_moon = - (*Wtide_tot)[im]*(*aorb)[im] / (Gcgs*Mprim*m_p[im]*(*eorb)[im]);
-		// and shrinks its orbit
-		d_aorb_moon = - 2.0*(*Wtide_tot)[im]*(*aorb)[im]*(*aorb)[im] / (Gcgs*Mprim*m_p[im]);
+		    e2 = (*eorb)[im] * (*eorb)[im];
+	//	    if (eccentricitymodel == 0) {
+	//	        // Classic model which is accurate for eccentricity around 0.1 or less.
+	//	        eterm = e2;
+	//	    }
+	//	    else {
+		        // The other two currently available options are accurate for eccentricity around 0.5 or less.
+		        // They utilize an eccentricity to the 10th power truncation.
+		        e4 = e2 * e2;
+		        e6 = e2 * e4;
+		        e8 = e4 * e4;
+		        e10 = e8 * e2;
+	//
+	//	        // See Eq. B3 in Renaud et al. (2021; PSJ)
+	//	        // OPT: We can manually collapse all these terms from the get go to increase performance.
+	//	        //  Leaving them separate for now for easier debugging/comparison.
+	//	        //  Also could just calculate the decimal form of all these coefficients too as an optimization.
+	//	        eterm_1 = e10 * (6046043.0 / 122880.0) -
+	//	                  e8  * (426355.0 / 4608.0) +
+	//	                  e6  * (12647.0 / 96.0) -
+	//	                  e4  * (79.0) +
+	//	                  e2  * 19.0;
+	//	        eterm_2 = e10 * (-69235.0 / 64.0) +
+	//	                  e8  * (673391.0 / 576.0) -
+	//	                  e6  * (7757.0 / 12.0) +
+	//	                  e4  * (1183.0 / 8.0);
+	//	        eterm_3 = e10 * (122639619.0 / 16384.0) -
+	//	                  e8  * (5710133.0 / 1536.0) +
+	//	                  e6  * (75431.0 / 96.0);
+	//	        eterm_4 = e10 * (-198865133.0 / 11520.0) +
+	//	                  e8  * (7741555.0 / 2304.0);
+	//	        eterm_5 = e10 * (9183857269.0 / 737280.0);
+	//
+	//	        // Note that both the CPL and CTL-like models are not physically correct. A real rheology would need to be
+	//	        //  passed each new frequency (or "tidal mode") individually and then a superposition of the final
+	//	        //  -Im[k2] * specific_eccentricity_terms would describe the tidal dissipation. This is less of a problem for
+	//	        //  spin-synchronous as there are only 5 terms (at this truncation level).
+	//	        if (eccentricitymodel == 1) {
+	//	            // CPL-like model where eccentricity terms collapse assuming -Im[a * k2] = 1 * -Im[k2] for all `a`s.
+	//	            eterm = eterm_1 + eterm_2 + eterm_3 + eterm_4 + eterm_5;
+	//	        }
+	//	        else if (eccentricitymodel == 2) {
+	//	            // CTL-like model where eccentricity terms collapse assuming -Im[a * k2] = a * -Im[k2] for all `a`s.
+	//	            eterm = eterm_1 + 2.0 * eterm_2 + 3.0 * eterm_3 + 4.0 * eterm_4 + 5.0 * eterm_5;
+	//	        }
+	//	        else {
+	//	            // Unknown or non-implemented model.
+	//	            eterm = 0.0;
+	//	            printf("IcyDwarf: Orbit: eccentricitymodel must be equal to 0, 1, or 2\n");
+	//	            exit(0);
+	//	        }
+	//
+	//	        // The above CPL/CTL-like models carry with them most of the dissipation equations coefficients.
+	//	        // The standard version (e^2) used in IcyDwarf does not. To make sure we have the same
+	//	        //   coefficients on the eterm we need to divide out a 7 on the CPL/CTL-like models.
+	//	        eterm = eterm / 7.0;
+	//	    }
+	//
+	//	    // Equations (4) and (5) of Renaud et al. (2021, PSJ)
+	//	    d_aorb_moon = -2.0/(norb*aorb[im]) * (Mprim+m_p[im])/(Mprim*m_p[im]) * d/dM(m_p[im]<Uh>+Mprim<Us>);
+	//
+	//	    d_eorb_moon = sqrt(1.0-e2)/(norb*eorb[im]*aorb[im]*aorb[im]) * (Mprim+m_p[im])/(Mprim*m_p[im]) * (m_p[im]d<Uh>/dwh + Mprim d<Us>/dws
+	//	    		                     - sqrt(1.0-e2) d/dM(m_p[im]<Uh>+Mprim<Us>));
 
-		// Dissipation inside primary, typically increases moon's eccentricity but depends on mode.
-		d_eorb_pl = 57.0/8.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*(*eorb)[im]; // Equation below assumes constant phase lag. Effect of any resonant locking unknown.
-		// and generally expands moon's orbit, but prim_sign depends on mode. Typical assumption in semimajor axis evolution is > 0 in gas giant systems where primary spins much faster than moons orbit. Otherwise, prim_sign < 0 irrespective of retrograde or prograde motion.
-		if (!reslock) d_aorb_pl = prim_sign[im]*3.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-5.5);
-		else d_aorb_pl = prim_sign[im] * (*aorb)[im] / t_tide[im]; // Lainey et al. (2020) equation (16)
+			// Dissipation inside moon, decreases its eccentricity (equation 4.170 of Murray & Dermott 1999) TODO Equation below assumes constant phase lag, incorporate results from tidalPy instead
+			d_eorb_moon = - (*Wtide_tot)[im]*(*aorb)[im] / (Gcgs*Mprim*m_p[im]*(*eorb)[im]);
+			// and shrinks its orbit
+			d_aorb_moon = - 2.0*(*Wtide_tot)[im]*(*aorb)[im]*(*aorb)[im] / (Gcgs*Mprim*m_p[im]);
+
+			// Dissipation inside primary, typically increases moon's eccentricity but depends on mode.
+			d_eorb_pl = 57.0/8.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*(*eorb)[im]; // Equation below assumes constant phase lag. Effect of any resonant locking unknown.
+			// and generally expands moon's orbit, but prim_sign depends on mode. Typical assumption in semimajor axis evolution is > 0 in gas giant systems where primary spins much faster than moons orbit. Otherwise, prim_sign < 0 irrespective of retrograde or prograde motion.
+			if (!reslock) d_aorb_pl = prim_sign[im]*3.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-5.5);
+			else d_aorb_pl = prim_sign[im] * (*aorb)[im] / t_tide[im]; // Lainey et al. (2020) equation (16)
+		}
+		else { // CTL model of Lu et al. (2023, https://doi.org/10.3847/1538-4357/acc06d), qeuations (A1)-(A3)
+
+			Im = MOI*m_p[im]*r_p[im]*r_p[im];  // Fully dimensional moment of inertia of moon (kg m2)
+
+			taup = 1.0/(2.0*norb[im]*Qprim);       // Tidal time lags
+			taum = 1.0/(2.0*norb[im]*Qtide[im]);
+			Kp = 3.0*k2prim*taup * (Gcgs* Mprim * Mprim / Rprim ) * m_p[im]*m_p[im]/(Mprim*Mprim) * pow( Rprim /(*aorb)[im],6.0) * norb[im]*norb[im];
+			Km = 3.0*k2[im]*taum * (Gcgs*m_p[im]*m_p[im]/r_p[im]) * Mprim*Mprim/(m_p[im]*m_p[im]) * pow(r_p[im]/(*aorb)[im],6.0) * norb[im]*norb[im];
+			xp = cos(*iorb);
+			xm = cos(*obl);
+			etap = (Mprim + m_p[im])/(Mprim*m_p[im]) * Ip* nprim   / ((*aorb)[im]*(*aorb)[im]*norb[im]*sqrt(1.0-e2));
+			etam = (Mprim + m_p[im])/(Mprim*m_p[im]) * Im*(*spin)  / ((*aorb)[im]*(*aorb)[im]*norb[im]*sqrt(1.0-e2));
+			N  = (1.0 +  7.5 *e2 +  45.0/8.0*e4 +   5.0/16.0*e6)                / (pow(1.0-e2,6.0));
+			Na = (1.0 + 16.5 *e2 + 255.0/8.0*e4 + 185.0/16.0*e6 + 25.0/64.0*e8) / (pow(1.0-e2,7.5));
+			Oe = (1.0 +  1.5 *e2 +   1.0/8.0*e4)                                / (pow(1.0-e2,5.0));
+			Ne = (1.0 +  3.25*e2 +  15.0/8.0*e4 +   5.0/64.0*e6)                / (pow(1.0-e2,6.5));
+			oe = (1.0 +  3.0 *e2 +   3.0/8.0*e4)                                / (pow(1.0-e2,4.5));
+
+			d_aorb_pl   = 4.0 * (*aorb)[im] * (*aorb)[im] / (Gcgs*Mprim*m_p[im]) * Kp * (N * xp *  nprim  /norb[im] - Na);
+			d_aorb_moon = 4.0 * (*aorb)[im] * (*aorb)[im] / (Gcgs*Mprim*m_p[im]) * Km * (N * xm * (*spin) /norb[im] - Na);
+
+			d_eorb_pl   = 11.0* (*aorb)[im] * (*eorb)[im] / (Gcgs*Mprim*m_p[im]) * Kp * (Oe* xp *  nprim  /norb[im] - 18.0/11.0*Ne);
+			d_eorb_moon = 11.0* (*aorb)[im] * (*eorb)[im] / (Gcgs*Mprim*m_p[im]) * Km * (Oe* xm * (*spin) /norb[im] - 18.0/11.0*Ne);
+
+			d_spin_pl   = -Kp / (Ip*norb[im]) * ((1.0+xp*xp) * oe *  nprim  /norb[im] - 2.0 * xp * N);
+			d_spin_moon = -Km / (Im*norb[im]) * ((1.0+xm*xm) * oe * (*spin) /norb[im] - 2.0 * xm * N);
+
+			d_iorb = sin(*iorb) * Kp / (Ip* nprim  *norb[im]) * ((xp - etap)*oe* nprim  /norb[im] - 2.0*N);
+			d_obl  = sin(*obl)  * Km / (Im*(*spin) *norb[im]) * ((xm - etam)*oe*(*spin) /norb[im] - 2.0*N);
+
+			*spin = *spin + dtime*d_spin_moon;
+			*iorb = *iorb + dtime*d_iorb;
+			*obl  = *obl  + dtime*d_obl;
+		}
 
 		// Interactions with rings, expands moon's orbit if exterior to rings (Meyer-Vernet & Sicardy 1987, http://dx.doi.org/10.1016/0019-1035(87)90011-X)
 		if (ringSurfaceDensity) {

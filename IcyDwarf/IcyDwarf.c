@@ -30,8 +30,8 @@
 #include "Crack.h"
 #include "Crack_tables.h"
 #include "Cryolava.h"
-//#include "WaterRock.h"
-//#include "WaterRock_ParamExplor.h"
+#include "WaterRock.h"
+#include "WaterRock_ParamExplor.h"
 #include "Thermal.h"
 
 int main(int argc, char *argv[]){
@@ -58,6 +58,7 @@ int main(int argc, char *argv[]){
 	// Planet inputs
 	double Mprim = 0.0;                // Mass of the primary (host planet) (kg)
 	double Rprim = 0.0;				   // Radius of the primary (host planet) (km)
+	double MOIprim = 0.0;              // Coefficient of moment of inertia of th eprimary (dimensionless, 0.4 if homogeneous, less if centrally concentrated)
 	double Qprimi = 0.0;			   // Initial tidal Q of the primary (host planet)
 	double Qprimf = 0.0;               // Final tidal Q of the primary
 	int Qmode = 0;                     // How Q changes over time between Qprimi and Qprimf. 0:linearly; 1:exponential decay; 2:exponential change
@@ -76,7 +77,8 @@ int main(int argc, char *argv[]){
     double tidetimes = 0.0;            // Multiply tidal dissipation by this factor, realistically up to 10 (McCarthy & Cooper 2016)
 
     // Orbit inputs
-    int eccentricitymodel = 0;         // 0: Standard e^2; 1: e^10 using CPL-like assumption; 2: e^10 using CTL-like assumption. TODO: currently only effects heating.
+    int eccentricitymodel = 0;         // 0: Standard e^2; 1: e^10 using CPL-like assumption; 2: e^10 using CTL-like assumption. TODO: currently only affects heating.
+    int CTL = 0;
 
     // Geophysical inputs
 	double rhoHydrRock = 0.0;          // Density of hydrated rock endmember (kg m-3)
@@ -102,6 +104,8 @@ int main(int argc, char *argv[]){
 	int orbevol[nmoons_max];               // Orbital evolution?
     double aorb[nmoons_max];               // Moon orbital semi-major axis (km)
 	double eorb[nmoons_max];               // Moon orbital eccentricity
+    double iorb[nmoons_max];               // Moon orbital inclination (radians)
+	double obl[nmoons_max];                // Moon obliquity (radians)
 	int retrograde[nmoons_max];            // 0 if prograde orbit, 1 if retrograde orbit
 	double t_reslock[nmoons_max];          // Present-day timescale of primary internal evolution for resonance locking mechanism (Gyr)
 	for (im=0;im<nmoons_max;im++) {
@@ -122,6 +126,8 @@ int main(int argc, char *argv[]){
 		orbevol[im] = 0;
 		aorb[im] = 0.0;
 		eorb[im] = 0.0;
+		iorb[im] = 0.0;
+		obl[im] = 0.0;
 		retrograde[im] = 0;
 		t_reslock[im] = 0.0;
 	}
@@ -174,8 +180,8 @@ int main(int argc, char *argv[]){
 
 	printf("\n");
 	printf("-------------------------------------------------------------------\n");
-	printf("IcyDwarf v24.12\n"                                                    );
-	printf("Copyright (C) 2013-2024 Marc Neveu (marc.f.neveu@nasa.gov)\n\n"       );
+	printf("IcyDwarf v25.4\n"                                                    );
+	printf("Copyright (C) 2013-2025 Marc Neveu (marc.f.neveu@nasa.gov)\n\n"       );
 	printf("This program is free software: you can redistribute it and/or\n"      );
 	printf("modify it under the terms of the GNU General Public License as\n"     );
 	printf("published by the Free Software Foundation, either version 3 of the\n" );
@@ -231,6 +237,7 @@ int main(int argc, char *argv[]){
 	//-----------------------------
 	Mprim = (double) input[i]; i++;             // kg
 	Rprim = (double) input[i]; i++;             // km
+	MOIprim = (double) input[i]; i++;           // Dimensionless
 	Qprimi = (double) input[i]; i++; Qprimf = (double) input[i]; i++; Qmode = (int) input[i]; i++;
 	k2prim = (double) input[i]; i++; J2prim = (double) input[i]; i++; J4prim = (double) input[i]; i++;
 	reslock = (int) input[i]; i++;
@@ -271,6 +278,10 @@ int main(int argc, char *argv[]){
 	for (im=0;im<nmoons;im++) aorb[im] = (double) input[i+im];            // km
 	i=i+nmoons;
 	for (im=0;im<nmoons;im++) eorb[im] = (double) input[i+im];
+	i=i+nmoons;
+	for (im=0;im<nmoons;im++) iorb[im] = (double) input[i+im];
+	i=i+nmoons;
+	for (im=0;im<nmoons;im++) obl[im] = (double) input[i+im];
 	i=i+nmoons;
 	for (im=0;im<nmoons;im++) orbevol[im] = (int) input[i+im];
 	i=i+nmoons;
@@ -335,6 +346,7 @@ int main(int argc, char *argv[]){
 	printf("|-----------------------------------------------|------------------------------------------------------|\n");
 	printf("| Mass (kg) (0 if world is not a moon)          | %g\n", Mprim);
 	printf("| Radius (km)                                   | %g\n", Rprim);
+	printf("| Coef of moment of inertia (.4 if homogeneous) | %g\n", MOIprim);
 	printf("| Tidal Q (initial,today,{0:lin 1:exp 2:1-exp}) | %g %g %d\n", Qprimi, Qprimf, Qmode);
 	printf("| Love number k2; zonal gravity harmonics J2, J4| %g %g %g\n", k2prim, J2prim, J4prim);
 	printf("| Resonant tidal locking with inertial waves?   | %d\n", reslock);
@@ -378,6 +390,10 @@ int main(int argc, char *argv[]){
 	for (im=0;im<nmoons;im++) printf(" %g ", aorb[im]);
 	printf("\n| Initial orbital eccentricity                  |");
 	for (im=0;im<nmoons;im++) printf(" %g \t", eorb[im]);
+	printf("\n| Initial orbital inclination (º)               |");
+	for (im=0;im<nmoons;im++) printf(" %g \t", iorb[im]);
+	printf("\n| Initial obliquity (º)                         |");
+	for (im=0;im<nmoons;im++) printf(" %g \t", obl[im]);
 	printf("\n| Allow orbit to change?                        |");
 	for (im=0;im<nmoons;im++) printf(" %d \t", orbevol[im]);
 	printf("\n| Retrograde orbit?                             |");
@@ -431,12 +447,16 @@ int main(int argc, char *argv[]){
 		r_p[im] = r_p[im]*km2cm;
 		tzero[im] = tzero[im]*Myr2sec;
 		aorb[im] = aorb[im]*km2cm;
+		iorb[im] = iorb[im]*PI_greek/180.0;
+		obl[im] = obl[im]*PI_greek/180.0;
 		t_reslock[im] = t_reslock[im]*Gyr2sec;
 	}
 	// Conversions to SI
 	rhoDryRock = rhoDryRock*gram/cm/cm/cm;
 	rhoHydrRock = rhoHydrRock*gram/cm/cm/cm;
 	NT_output = floor(total_time/output_every)+1;
+
+	if (eccentricitymodel == 2) CTL = 1;
 
 	//-------------------------------------------------------------------
 	// Cracking depth calculations
@@ -477,10 +497,10 @@ int main(int argc, char *argv[]){
 
 	if (run_thermal == 1) {
 		printf("Running thermal evolution code...\n");
-		PlanetSystem(os, argc, argv, path, warnings, recover, NR, timestep, speedup, tzero, total_time, output_every, nmoons, Mprim, Rprim, Qprimi, Qprimf,
+		PlanetSystem(os, argc, argv, path, warnings, recover, NR, timestep, speedup, tzero, total_time, output_every, nmoons, Mprim, Rprim, MOIprim, Qprimi, Qprimf,
 				Qmode, k2prim, J2prim, J4prim, reslock, Mring, aring_out, aring_in, r_p, rho_p, rhoHydrRock, rhoDryRock, nh3, salt, Xhydr, porosity, Xpores,
-				Xfines, Tinit, Tsurf, fromRing, startdiff, aorb, eorb, tidalmodel, eccentricitymodel, tidetimes, orbevol, retrograde, t_reslock, nprim, hy,
-				chondr, crack_input, crack_species);
+				Xfines, Tinit, Tsurf, fromRing, startdiff, aorb, eorb, iorb, obl, tidalmodel, eccentricitymodel, tidetimes, orbevol, retrograde, t_reslock, nprim, hy,
+				chondr, crack_input, crack_species, CTL);
 		printf("\n");
 	}
 
@@ -490,10 +510,10 @@ int main(int argc, char *argv[]){
 
 	if (run_geochem == 1) {
 		printf("Running PHREEQC across the specified range of parameters...\n");
-//		ParamExploration(os, path, Tmin, Tmax, Tstep,
-//				Pmin, Pmax, Pstep,
-//				pemin, pemax, pestep,
-//				WRmin, WRmax, WRstep);
+		ParamExploration(os, path, Tmin, Tmax, Tstep,
+				Pmin, Pmax, Pstep,
+				pemin, pemax, pestep,
+				WRmin, WRmax, WRstep);
 		printf("\n");
 	}
 
