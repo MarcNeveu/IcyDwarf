@@ -32,14 +32,19 @@ In *R*, type the command
 	install.packages("CHNOSZ")
 
 ## Install *Rcpp* and *RInside*
-*Rcpp* and *RInside* are libraries that allow *R* applications to be embedded in C or C++ codes. They are needed only for *IcyDwarf*. Go to http://cran.r-project.org/web/packages/Rcpp/index.html and http://cran.r-project.org/web/packages/RInside/index.html, or directly to http://dirk.eddelbuettel.com/code/rcpp to download the respective archives. On Mac, unzip the archives in */Library/Frameworks/R.framework/Resources/library/*, so that *Rcpp* and *RInside* are two subfolders of *library*.
+*Rcpp* and *RInside* are libraries that allow *R* applications to be embedded in C or C++ codes. From a Terminal window, open *R* and install the *Rcpp* and *RInside* packages:
+
+	install.packages("Rcpp")
+	install.packages("RInside")
 
 ## Install *IPHREEQC*
-The *IPHREEQC* library is a module that allows the *PHREEQC* application to be embedded in C or C++ codes. It is needed only for *IcyDwarf*. Go to http://wwwbrr.cr.usgs.gov/projects/GWC_coupled/phreeqc to download *IPHREEQC* and follow the default installation instructions:
+The *IPHREEQC* library is a module that allows the *PHREEQC* application to be embedded in C or C++ codes. Go to http://wwwbrr.cr.usgs.gov/projects/GWC_coupled/phreeqc to download *IPHREEQC* (for Linux), unzip it, and follow the default installation instructions (you need admin credentials on your machine):
 
 	./configure
 	make
 	make install
+
+In v3.8.6, the *./configure* script omits copying a header file *PHRQ_exports.h* to the include folder. You can manually remedy this by copying, from the unzipped folder, *src/phreeqcpp/common/PHRQ_exports.h* to the */usr/local/include/* folder.
 
 ## Install parallel processing capabilities
 
@@ -166,6 +171,11 @@ If you wish to modify the code, set up your compiler and linker so that all the 
 ## Compiler setup
 
 My compiling instructions look like this:
+
+For IcyDwarf (M3 Mac with Mac OS 14 Sonoma):
+
+	gcc -I/usr/local/include -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include -I/Library/Frameworks/R.framework/Versions/Current/Resources/include -I/Library/Frameworks/R.framework/Versions/Current/Resources/library/RInside/include -O3 -g -Wall -c -fmessage-length=0 -o IcyDwarf.o ../IcyDwarf.c -fopenmp
+	gcc -L/usr/lib -L/usr/local/lib -L/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/lib /usr/local/lib/libiphreeqc-3.8.6.dylib /usr/local/lib/libiphreeqc.dylib /usr/local/lib/libiphreeqc.a -o IcyDwarf IcyDwarf.o -lR -lomp
 
 For IcyDwarf (*clang gcc* with *XCode* 15 on Mac OS 14.6 Sonoma):
 
