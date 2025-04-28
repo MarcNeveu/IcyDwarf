@@ -78,7 +78,11 @@ int main(int argc, char *argv[]){
 
     // Orbit inputs
     int eccentricitymodel = 0;         // 0: Standard e^2; 1: e^10 using CPL-like assumption; 2: e^10 using CTL-like assumption. TODO: currently only affects heating.
-    int CTL = 0;
+    int CTL = 0;                       // 0: CPL model for secular evolution; 1: CTL model (Leconte et al. 2010)
+    int lookuporbit = 0;               // 0: Compute orbital evolution, 1: Look up orbital evolution in file called REBOUNDin.txt
+    int nOrbTabParams = 0;             // Number of orbital parameters per moon to look up
+    int orbTabRows = 0;                // Number of time steps per moon to look up
+    double orbTab_dtime = 0.0;         // Time step of lookup file
 
     // Geophysical inputs
 	double rhoHydrRock = 0.0;          // Density of hydrated rock endmember (kg m-3)
@@ -407,6 +411,7 @@ int main(int argc, char *argv[]){
     printf("| Tidal rheology? Maxwell=2 Burgers=3 Andrade=4 Sundberg-Cooper=5 | %d\n", tidalmodel);
     printf("| Eccentricity Model? e^2=0 e^10-CPL=1 e^10-CTL=2                 | %d\n", eccentricitymodel);
     printf("| Tidal heating x...?                                             | %g\n", tidetimes);
+    printf("| Lookup table for orbit evolution? #params #rows ∆time(y)        | %d %d %d %g\n", lookuporbit, nOrbTabParams, orbTabRows, orbTab_dtime);
     printf("|-----------------------------------------------------------------|------------------------------------------------------|\n");
     printf("| Subroutines ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||\n");
     printf("|-----------------------------------------------------------------|------------------------------------------------------|\n");
@@ -457,6 +462,7 @@ int main(int argc, char *argv[]){
 	NT_output = floor(total_time/output_every)+1;
 
 	if (eccentricitymodel == 2) CTL = 1;
+	orbTab_dtime = orbTab_dtime/1.0e9*Gyr2sec;
 
 	//-------------------------------------------------------------------
 	// Cracking depth calculations
@@ -500,7 +506,7 @@ int main(int argc, char *argv[]){
 		PlanetSystem(os, argc, argv, path, warnings, recover, NR, timestep, speedup, tzero, total_time, output_every, nmoons, Mprim, Rprim, MOIprim, Qprimi, Qprimf,
 				Qmode, k2prim, J2prim, J4prim, reslock, Mring, aring_out, aring_in, r_p, rho_p, rhoHydrRock, rhoDryRock, nh3, salt, Xhydr, porosity, Xpores,
 				Xfines, Tinit, Tsurf, fromRing, startdiff, aorb, eorb, iorb, obl, tidalmodel, eccentricitymodel, tidetimes, orbevol, retrograde, t_reslock, nprim, hy,
-				chondr, crack_input, crack_species, CTL);
+				chondr, crack_input, crack_species, CTL, lookuporbit, nOrbTabParams, orbTabRows, orbTab_dtime);
 		printf("\n");
 	}
 

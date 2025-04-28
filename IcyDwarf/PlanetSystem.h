@@ -28,7 +28,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 		double Mring_init, double aring_out, double aring_in, double *r_p, double *rho_p, double rhoHydr, double rhoDry, double *Xp, double *Xsalt,
 		double **Xhydr, double *porosity, double *Xpores, double *Xfines, double *Tinit, double *Tsurf, int *fromRing, int *startdiff,
 		double *aorb_init, double *eorb_init, double *iorb_init, double *obl_init, int tidalmodel, int eccentricitymodel, double tidetimes, int *orbevol, int* retrograde, double *t_reslock, double nprim,
-		int *hy, int chondr, int *crack_input, int *crack_species, int CTL);
+		int *hy, int chondr, int *crack_input, int *crack_species, int CTL, int lookuporbit, int norbTabParams, int orbTabRows, double orbTab_dtime);
 
 int recov(int os, int argc, char *argv[], char path[1024], int nmoons, char outputpath[nmoons][1024], int NR, int ntherm, int norbit, int ncrkstrs, double ****Stress, double *Xp,
 		double *Xsalt, double Mprim, double Rprim, double k2prim, double Qprim, double *Mring, double aring_out, int *orbevol, double rhoRockth, double rhoHydrth,
@@ -48,7 +48,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 		double Mring_init, double aring_out, double aring_in, double *r_p, double *rho_p, double rhoHydr, double rhoDry, double *Xp, double *Xsalt,
 		double **Xhydr, double *porosity, double *Xpores, double *Xfines, double *Tinit, double *Tsurf, int *fromRing, int *startdiff,
 		double *aorb_init, double *eorb_init, double *iorb_init, double *obl_init, int tidalmodel, int eccentricitymodel, double tidetimes, int *orbevol, int* retrograde, double *t_reslock, double nprim,
-		int *hy, int chondr, int *crack_input, int *crack_species, int CTL) {
+		int *hy, int chondr, int *crack_input, int *crack_species, int CTL, int lookuporbit, int norbTabParams, int orbTabRows, double orbTab_dtime) {
 
 	//-------------------------------------------------------------------
 	//                 Declarations and initializations
@@ -954,8 +954,8 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 				Orbit_output[im][1] = aorb[im]/km2cm;
 				Orbit_output[im][2] = a__old[im]/km2cm;
 				Orbit_output[im][3] = eorb[im];
-				Orbit_output[im][4] = iorb[im];
-				Orbit_output[im][5] = obl[im];
+				Orbit_output[im][4] = iorb[im]*180.0/PI_greek;
+				Orbit_output[im][5] = obl[im]*180.0/PI_greek;
 				Orbit_output[im][6] = spin[im];
 				Orbit_output[im][7] = h_old[im];
 				Orbit_output[im][8] = k_old[im];
@@ -1011,6 +1011,33 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 			Phi[im] = Phi[im] + Gcgs*M[im][ir-1]*dM[im][ir] / ravg[im];
 			M[im][ir] = M[im][ir-1] + dM[im][ir];
 		}
+	}
+
+	//-------------------------------------------------------------------
+	//  Orbital evolution from lookup table (e.g., N-body code output)
+	//-------------------------------------------------------------------
+
+	int orbTabCols = nmoons*norbTabParams+1; // +1 for time column
+	double interp = 0.0;
+	double fracInterp = 0.0;
+
+	double **orbTab = (double**) malloc(orbTabRows*sizeof(double*)); // log K of magnesite dissolution
+	if (orbTab == NULL) printf("PlanetSystem: Not enough memory to create orbTab[orbTabRows]\n");
+	for (i=0;i<orbTabRows;i++) {
+		orbTab[i] = (double*) malloc(orbTabCols*sizeof(double));
+		if (orbTab[i] == NULL) printf("PlanetSystem: Not enough memory to create orbTab[orbTabRows][orbTabCols]\n");
+	}
+
+	for (i=0;i<orbTabRows;i++) {
+		for (im=0;im<orbTabCols;im++) {
+			orbTab[i][im] = 0.0;
+		}
+	}
+
+	if (lookuporbit) {
+		// Open lookup file
+		orbTab = read_input (os, orbTabCols, orbTabRows, orbTab, path, "Inputs/REBOUNDin.txt");
+		if (orbTab[0][1] == 0) printf("No lookup table found for orbital evolution. Did you mean to compute orbital evolution? If so, set lookuporbit to 0\n");
 	}
 
 	//-------------------------------------------------------------------
@@ -1135,7 +1162,26 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 //			nloops = 0;
 #pragma omp for
 			for (im=0;im<nmoons;im++) {
-				if (realtime >= tzero[im] && orbevol[im] && aorb[im] >= 0.0) {
+
+				if (lookuporbit) {
+					// Linear interpolation of orbital parameters
+					interp = (double)itime*dtime/orbTab_dtime;
+					if (ceil(interp) > 0.0) fracInterp = interp - floor(interp) / (ceil(interp) - floor(interp));
+					else fracInterp = 0.0;
+					norb[im] = (1.0-fracInterp) * orbTab[(int)floor(interp)][im*10+1  ] + fracInterp * orbTab[(int)ceil(interp)][im*10+1  ]; // Period (years)
+					aorb[im] = (1.0-fracInterp) * orbTab[(int)floor(interp)][im*10+1+1] + fracInterp * orbTab[(int)ceil(interp)][im*10+1+1]; // In host planet radii
+					eorb[im] = (1.0-fracInterp) * orbTab[(int)floor(interp)][im*10+1+2] + fracInterp * orbTab[(int)ceil(interp)][im*10+1+2];
+					iorb[im] = (1.0-fracInterp) * orbTab[(int)floor(interp)][im*10+1+3] + fracInterp * orbTab[(int)ceil(interp)][im*10+1+3]; // Radians
+					spin[im] = (1.0-fracInterp) * orbTab[(int)floor(interp)][im*10+1+7] + fracInterp * orbTab[(int)ceil(interp)][im*10+1+7]; // 1/(2 pi years)
+					obl[im]  = (1.0-fracInterp) * orbTab[(int)floor(interp)][im*10+1+8] + fracInterp * orbTab[(int)ceil(interp)][im*10+1+8]; // Radians
+
+					// Unit conversions
+					norb[im] = 2.0*PI_greek/(norb[im]/1.0e9*Gyr2sec);
+					aorb[im] = aorb[im]*Rprim;
+					spin[im] = 2.0*PI_greek*spin[im]*1.0e9/Gyr2sec;
+				}
+
+				if (realtime >= tzero[im] && orbevol[im] && aorb[im] >= 0.0 && !lookuporbit) {
 					dnorb_dt[im] = norb[im];
 					norb[im] = sqrt(Gcgs*Mprim/pow(aorb[im],3)); // Otherwise, norb[im] is zero and the moon im doesn't influence the others gravitationally
 					// TODO Add a non-Keplerian term due to planetary oblateness?
@@ -1151,7 +1197,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 
 					// Update Qtide
 					Qtide[im] = k2[im] / (Wtide_tot[im]/(11.5*pow(r_p[im],5)*pow(sqrt(Gcgs*Mprim/pow(aorb[im],3)),5)*pow(eorb[im],2)/Gcgs));
-					// TODO !! remove
+					// TODO !! for benchmarking, remove
 					MOI[0] = 0.402497;
 					MOI[1] = 0.402245;
 					MOI[2] = 0.402452;
@@ -1167,9 +1213,16 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 					k2[2] = 0.00796741;
 					k2[3] = 0.0130312;
 					k2[4] = 0.0117737;
+					if (itime == 0) {
+						spin[0] = 270.464662/365.25/86400.0*2.0*PI_greek;
+						spin[1] = 151.37055/365.25/86400.0*2.0*PI_greek;
+						spin[2] = 89.345254/365.25/86400.0*2.0*PI_greek;
+						spin[3] = 42.460965/365.25/86400.0*2.0*PI_greek;
+						spin[4] = 27.44983/365.25/86400.0*2.0*PI_greek;
+					}
 
 					// TODO switch r_p to outerrad[nmoons] = r[im][NR]? Could matter if very porous
-					Orbit (os, argc, argv, path, im, dtime, speedup, itime, nmoons, m_p, r_p, resAcctFor, &aorb, &eorb, &(iorb[im]), &(obl[im]), norb,
+					Orbit (os, argc, argv, path, im, dtime, speedup, itime, nmoons, m_p, r, NR, resAcctFor, &aorb, &eorb, &(iorb[im]), &(obl[im]), norb,
 							lambda, omega, &h_old, &k_old, &a__old, &Cs_ee_old, &Cs_eep_old, &Cr_e_old, &Cr_ep_old, &Cr_ee_old, &Cr_eep_old, &Cr_epep_old,
 							&Wtide_tot, Mprim, Rprim, J2prim, J4prim, k2prim, Qprim, reslock, t_tide, eccentricitymodel,
 							aring_out, aring_in, alpha_Lind, ringSurfaceDensity, realtime-tzero_min, realtime, prim_sign, k2, Qtide, nprim, Ip, &(spin[im]), MOI[im], CTL);
@@ -1192,7 +1245,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 							&circ[im], &Crack[im], &Crack_size[im], &fracOpen[im], &P_pore[im], &P_hydr[im], &Act[im], &fracKleached[im],
 							crack_input, crack_species, aTP, integral, alpha, beta, silica, chrysotile, magnesite,
 							&ircrack[im], &ircore[im], &irice[im], &irdiff[im], forced_hydcirc, &Nu[im],
-							tidalmodel, eccentricitymodel, tidetimes, im, moonspawn[im], Mprim, eorb, norb, &Wtide_tot[im], hy[im], chondr,
+							tidalmodel, eccentricitymodel, tidetimes, im, moonspawn[im], Mprim, eorb[im], obl[im], norb[im], &Wtide_tot[im], hy[im], chondr,
 							&Heat_radio[im], &Heat_grav[im], &Heat_serp[im], &Heat_dehydr[im], &Heat_tide[im],
 							&Stress[im], &TideHeatRate[im], &k2[im]);
 //					++nloops;
@@ -1270,8 +1323,8 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 						Orbit_output[im][1] = aorb[im]/km2cm;           // Semi-major axis in km
 						Orbit_output[im][2] = a__old[im]/km2cm;         // Osculating semimajor axis in km
 						Orbit_output[im][3] = eorb[im];                 // Eccentricity, unitless
-						Orbit_output[im][4] = iorb[im];                 // Inclination, radians
-						Orbit_output[im][5] = obl[im];                  // Obliquity, radians
+						Orbit_output[im][4] = iorb[im]*180.0/PI_greek;  // Inclination, radians
+						Orbit_output[im][5] = obl[im]*180.0/PI_greek;   // Obliquity, radians
 						Orbit_output[im][6] = spin[im];                 // spin rate, s-1
 						Orbit_output[im][7] = h_old[im];                // e*cos(resonant angle)
 						Orbit_output[im][8] = k_old[im];                // e*sin(resonant angle)
@@ -1382,6 +1435,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 		free (chrysotile[i]);
 		free (magnesite[i]);
 	}
+	for (i=0;i<orbTabRows;i++) free (orbTab[i]);
 	for (im=0;im<nmoons;im++) {
 		free (circ[im]);
 		free (r[im]);
@@ -1478,6 +1532,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 	free (silica);          // Dissolution/precipitation-specific
 	free (chrysotile);
 	free (magnesite);
+	free (orbTab);
 	free (TideHeatRate);
 	free (resonance);
 	free (resonance_old);

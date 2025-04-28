@@ -24,7 +24,7 @@
 #include "IcyDwarf.h"
 
 int Orbit (int os, int argc, char *argv[], char path[1024], int im,
-		double dtime, double speedup, int itime, int nmoons, double *m_p, double *r_p, double **resAcctFor,
+		double dtime, double speedup, int itime, int nmoons, double *m_p, double **rad, int NR, double **resAcctFor,
 		double **aorb, double **eorb, double *iorb, double *obl, double *norb, double *lambda, double *omega,
 		double **h_old, double **k_old, double **a__old,
 		double **Cs_ee_old, double **Cs_eep_old, double **Cr_e_old, double **Cr_ep_old, double **Cr_ee_old, double **Cr_eep_old, double **Cr_epep_old,
@@ -57,7 +57,7 @@ int bsstep(double y[], double dydx[], int nv, double param[], double *xx, double
 int mmid(double y[], double dydx[], int nv, double param[], double xs, double htot, int nstep, double yout[], int (*derivs)(double, double[], double[], double[]));
 
 int Orbit (int os, int argc, char *argv[], char path[1024], int im,
-		double dtime, double speedup, int itime, int nmoons, double *m_p, double *r_p, double **resAcctFor,
+		double dtime, double speedup, int itime, int nmoons, double *m_p, double **rad, int NR, double **resAcctFor,
 		double **aorb, double **eorb, double *iorb, double *obl, double *norb, double *lambda, double *omega,
 		double **h_old, double **k_old, double **a__old,
 		double **Cs_ee_old, double **Cs_eep_old, double **Cr_e_old, double **Cr_ep_old, double **Cr_ee_old, double **Cr_eep_old, double **Cr_epep_old,
@@ -223,10 +223,10 @@ int Orbit (int os, int argc, char *argv[], char path[1024], int im,
 					a_[1] = (*a__old)[i];
 
 					m[0] = m_p[im];
-					r[0] = r_p[im];
+					r[0] = rad[im][NR];
 					W[0] = (*Wtide_tot)[im];
 					m[1] = m_p[i];
-					r[1] = r_p[i];
+					r[1] = rad[i][NR];
 					W[1] = (*Wtide_tot)[i];
 
 					psgn[0] = prim_sign[im];
@@ -244,10 +244,10 @@ int Orbit (int os, int argc, char *argv[], char path[1024], int im,
 					a_[1] = (*a__old)[im];
 
 					m[0] = m_p[i];
-					r[0] = r_p[i];
+					r[0] = rad[i][NR];
 					W[0] = (*Wtide_tot)[i];
 					m[1] = m_p[im];
-					r[1] = r_p[im];
+					r[1] = rad[im][NR];
 					W[1] = (*Wtide_tot)[im];
 
 					psgn[0] = prim_sign[i];
@@ -285,10 +285,10 @@ int Orbit (int os, int argc, char *argv[], char path[1024], int im,
 					omeg[1] = omega[i];
 
 					m[0] = m_p[im];
-					r[0] = r_p[im];
+					r[0] = rad[im][NR];
 					W[0] = (*Wtide_tot)[im];
 					m[1] = m_p[i];
-					r[1] = r_p[i];
+					r[1] = rad[i][NR];
 					W[1] = (*Wtide_tot)[i];
 
 					psgn[0] = prim_sign[im];
@@ -308,10 +308,10 @@ int Orbit (int os, int argc, char *argv[], char path[1024], int im,
 					omeg[1] = omega[im];
 
 					m[0] = m_p[i];
-					r[0] = r_p[i];
+					r[0] = rad[i][NR];
 					W[0] = (*Wtide_tot)[i];
 					m[1] = m_p[im];
-					r[1] = r_p[im];
+					r[1] = rad[im][NR];
 					W[1] = (*Wtide_tot)[im];
 
 					psgn[0] = prim_sign[i];
@@ -616,12 +616,12 @@ int Orbit (int os, int argc, char *argv[], char path[1024], int im,
 		}
 		else { // CTL model of Lu et al. (2023, https://doi.org/10.3847/1538-4357/acc06d), qeuations (A1)-(A3)
 
-			Im = MOI*m_p[im]*r_p[im]*r_p[im];  // Fully dimensional moment of inertia of moon (kg m2)
+			Im = MOI*m_p[im]*rad[im][NR]*rad[im][NR];  // Fully dimensional moment of inertia of moon (kg m2)
 
 			taup = 1.0/(2.0*norb[im]*Qprim);       // Tidal time lags
 			taum = 1.0/(2.0*norb[im]*Qtide[im]);
-			Kp = 3.0*k2prim*taup * (Gcgs* Mprim * Mprim / Rprim ) * m_p[im]*m_p[im]/(Mprim*Mprim) * pow( Rprim /(*aorb)[im],6.0) * norb[im]*norb[im];
-			Km = 3.0*k2[im]*taum * (Gcgs*m_p[im]*m_p[im]/r_p[im]) * Mprim*Mprim/(m_p[im]*m_p[im]) * pow(r_p[im]/(*aorb)[im],6.0) * norb[im]*norb[im];
+			Kp = 3.0*k2prim*taup * (Gcgs* Mprim * Mprim /Rprim      ) * m_p[im]*m_p[im]/(Mprim*Mprim) * pow(Rprim      /(*aorb)[im],6.0) * norb[im]*norb[im];
+			Km = 3.0*k2[im]*taum * (Gcgs*m_p[im]*m_p[im]/rad[im][NR]) * Mprim*Mprim/(m_p[im]*m_p[im]) * pow(rad[im][NR]/(*aorb)[im],6.0) * norb[im]*norb[im];
 			xp = cos(*iorb);
 			xm = cos(*obl);
 			etap = (Mprim + m_p[im])/(Mprim*m_p[im]) * Ip* nprim   / ((*aorb)[im]*(*aorb)[im]*norb[im]*sqrt(1.0-e2));
