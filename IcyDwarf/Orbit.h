@@ -614,7 +614,7 @@ int Orbit (int os, int argc, char *argv[], char path[1024], int im,
 			if (!reslock) d_aorb_pl = prim_sign[im]*3.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-5.5);
 			else d_aorb_pl = prim_sign[im] * (*aorb)[im] / t_tide[im]; // Lainey et al. (2020) equation (16)
 		}
-		else { // CTL model of Lu et al. (2023, https://doi.org/10.3847/1538-4357/acc06d), qeuations (A1)-(A3)
+		else { // CTL model of Lu et al. (2023, https://doi.org/10.3847/1538-4357/acc06d), equations (A1)-(A3), currently does not account for resonance locking
 
 			Im = MOI*m_p[im]*rad[im][NR]*rad[im][NR];  // Fully dimensional moment of inertia of moon (kg m2)
 

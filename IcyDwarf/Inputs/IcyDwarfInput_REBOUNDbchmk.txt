@@ -1,4 +1,4 @@
-ICY DWARF v24.x INPUT FILE - Uranian system
+ICY DWARF v25.x INPUT FILE - Uranian system
 
 1 for Yes, 0 for No
 --------------------------------------------------------------------------------------------------------
@@ -12,17 +12,17 @@ ICY DWARF v24.x INPUT FILE - Uranian system
 | Number of grid zones                          | 200                                                  |
 | Thermal simulation time step (yr)             | 100                                                  |
 | Moon-moon interaction speedup factor          | 1000                                                 |
-| Total time of thermal simulation (Myr)        | 4500                                                 |
-| Output every (Myr)                            | 10                                                   |
+| Total time of thermal simulation (Myr)        | 50                                                   |
+| Output every (Myr)                            | 0.05                                                 |
 |-----------------------------------------------|------------------------------------------------------|
 | Uranus parameters      |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 |-----------------------------------------------|------------------------------------------------------|
 | Mass (kg) (0 if world is not a moon)          | 8.68e25                                              |
 | Radius (km)                                   | 25362                                                |
 | Coef of moment of inertia (.4 if homogeneous) | 0.225                                                |
-| Tidal Q (initial,today,{0:lin 1:exp 2:1-exp}) | 15000 15000 0                                        |
+| Tidal Q (initial,today,{0:lin 1:exp 2:1-exp}) | 20000 20000 0                                        |
 | Love number k2; zonal gravity harmonics J2, J4| 0.104 3510.99e-6 -33.6e-6 # GavZhar79, Helled+ 2010  |
-| Resonant tidal locking with inertial waves?   | 1 # ignored if Eccentricity Model = 2                |
+| Resonant tidal locking with inertial waves?   | 1                                                    |
 | Spin period (h)                               | 17.24                                                |
 | Number of moons                               | 5                                                    |
 | Ring mass (kg) (0 if no rings)                | 4e16  # 2*(epsilon+alpha+beta) (Wikipedia)           |
@@ -31,7 +31,7 @@ ICY DWARF v24.x INPUT FILE - Uranian system
 |-----------------------------------------------|------------------------------------------------------|
 | Icy world parameters |||||||||||||||||||||||||| Miranda  | Ariel    | Umbriel  | Titania  | Oberon   |
 |-----------------------------------------------|----------|----------|----------|----------|----------|
-| Radius assuming zero porosity (km)            | 235.8    | 578.9    | 584.7    | 788.9    | 761.4    | # Thomas88
+| Radius assuming zero porosity (km)            | 297.089  | 729.368  | 736.63   | 989.879  | 957.337  | # Thomas88
 | Density assuming zero porosity (g cm-3)       | 1.200    | 1.665    | 1.400    | 1.715    | 1.630    | # Jacobson14
 | Surface temperature (K)                       | 55       | 53       | 60       | 57       | 58       | # Karkoschka01
 | Initial temperature (K)                       | 100      | 100      | 100      | 100      | 100      |
@@ -45,8 +45,8 @@ ICY DWARF v24.x INPUT FILE - Uranian system
 | Fraction of rock in fines                     | 0        | 0        | 0        | 0        | 0        |
 | Core ice/liquid water volume fraction         | 0        | 0        | 0        | 0        | 0        |
 | Start differentiated?                         | 0        | 0        | 0        | 0        | 0        |
-| Initial orbital semi-major axis (km)          | 105950   | 136643   | 205947   | 336911   | 486688   |
-| Initial orbital eccentricity                  | 0.02     | 0.02     | 0.02     | 0.02     | 0.02     |
+| Initial orbital semi-major axis (km)          | 125980   | 185502   | 263631   | 432900   | 579011   |
+| Initial orbital eccentricity                  | 0.004371 | 0.016904 | 0.009688 | 0.017788 | 0.00908  |
 | Initial orbital inclination (º)               | 0.147136 | 0.008308 | 0.029393 | 1.019177 | 0.520246 |
 | Initial obliquity (º)                         | 0.148625 | 0.009855 | 0.030882 | 0.152980 | 0.186784 |
 | Allow orbit to change?                        | 1        | 1        | 1        | 1        | 1        |

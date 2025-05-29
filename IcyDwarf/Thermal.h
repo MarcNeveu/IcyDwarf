@@ -36,6 +36,7 @@
 
 #include "IcyDwarf.h"
 #include "Crack.h"
+#include "TROPF.h"
 
 int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[1024], int warnings, int recover, int NR, double dr_grid,
 		double dtime, double realtime, int itime, double Xp, double Xsalt, double Xfines, double Xpores, double Tsurf,
@@ -442,7 +443,7 @@ int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[10
 		}
 	}
 
-	// Tidal heating
+	// Tidal heating (equilibrium solid tide)
 	if (itime > 0 && Mprim && eorb > 0.0 && !moonspawn) {
 		for (ir=0;ir<NR;ir++) {
 			(*TideHeatRate)[ir] = -Qth[ir]/1.0e7; // To output the distribution of tidal heating rates in each layer = -before+after
@@ -454,6 +455,11 @@ int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[10
 		(*Heat_tide) = (*Heat_tide) + (*Wtide_tot);
 
 		for (ir=0;ir<NR;ir++) (*TideHeatRate)[ir] = (*TideHeatRate)[ir] + Qth[ir]/1.0e7;
+	}
+
+	// Tidal heating (dynamic fluid tide)
+	if (itime > 0 && Mprim && eorb > 0.0 && !moonspawn) {
+		TROPF();
 	}
 
 	//-------------------------------------------------------------------

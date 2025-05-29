@@ -66,7 +66,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 	int norbit = 12;                      // Number of quantities output in Orbit.txt
 	int ncrkstrs = 12;                   // Number of quantities output in Crack_stresses.txt
 	int nheat = 6;                       // Number of quantities output in Heats.txt
-	int nREBOUND = 6;                    // Number of quantities output in REBOUND.txt
+	int nREBOUND = 7;                    // Number of quantities output in REBOUND.txt
 
 	// Variables common to all moons
 	int forced_hydcirc = 0;              // Switch to force hydrothermal circulation
@@ -136,7 +136,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 	double Heat[nmoons][nheat];          // Heat[6] (erg), output
 	double Thermal_output[nmoons][ntherm]; // Thermal_output[ntherm] (multiple units), output
 	double Orbit_output[nmoons][norbit]; // Orbit_output[norbit] (multiple units), output
-	double REBOUND_output[nmoons][nREBOUND]; // Orbit_output[norbit] (multiple units), output
+	double REBOUND_output[nmoons*nREBOUND]; // Orbit_output[norbit] (multiple units), output
 	double Primary[3];                   // Primary[3], output of primary's tidal Q and ring mass (kg) vs. time (Gyr)
 
 	double *aorb = (double*) malloc((nmoons)*sizeof(double));       // Moon orbital semi-major axis (cm)
@@ -608,7 +608,6 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 
 		for (i=0;i<ntherm;i++) Thermal_output[im][i] = 0.0;
 		for (i=0;i<norbit;i++) Orbit_output[im][i] = 0.0;
-		for (i=0;i<nREBOUND;i++) REBOUND_output[im][i] = 0.0;
 		for (i=0;i<nheat;i++) Heat[im][i] = 0.0;
 	    for (ir=0;ir<NR;ir++) {
 			dVol[im][ir] = 0.0;
@@ -648,6 +647,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 	    }
 	    for (ir=0;ir<NR+1;ir++) r[im][ir] = 0.0;
 	}
+	for (i=0;i<nmoons*nREBOUND;i++) REBOUND_output[i] = 0.0;
 	for (i=0;i<int_size;i++) {
 		integral[i][0] = 0.0;
 		integral[i][1] = 0.0;
@@ -804,7 +804,6 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 //			if (Mprim > 0.0 && orbevol[im]) {
 			if (Mprim > 0.0) {
 				strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt"); create_output(os, path, filename); filename[0] = '\0';
-				strcat(filename, outputpath[im]); strcat(filename, "REBOUND.txt"); create_output(os, path, filename); filename[0] = '\0';
 			}
 		}
 		if (Mprim > 0.0) {
@@ -812,6 +811,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 			create_output(os, path, "Outputs/Resonances.txt");
 			create_output(os, path, "Outputs/ResAcctFor.txt");
 			create_output(os, path, "Outputs/PCapture.txt");
+			create_output(os, path, "Outputs/icydwarf_outputs_1.txt");
 		}
 
 		for (im=0;im<nmoons;im++) m_p[im] = rho_p[im]*4.0/3.0*PI_greek*r_p[im]*r_p[im]*r_p[im]; // Compute object mass from radius and density
@@ -965,22 +965,6 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 				strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt");
 				append_output(os, norbit, Orbit_output[im], path, filename); filename[0] = '\0';
 			}
-
-			// Parameters for REBOUND calculations
-			if (Mprim > 0.0) {
-				MOI[im] = 0.0;
-				for (ir=0;ir<NR;ir++) MOI[im] = MOI[im] + 2.0/3.0*dM[im][ir]*r[im][ir+1]*r[im][ir+1];
-				MOI[im] = MOI[im] / (m_p[im] * r[im][NR] * r[im][NR]);
-
-				REBOUND_output[im][0] = realtime/Gyr2sec; // t in Gyr
-				REBOUND_output[im][1] = k2[im];
-				REBOUND_output[im][2] = 0.0; // k2[im] / Wtide_tot[im]/(11.5*pow(r_p[im],5)*pow(sqrt(Gcgs*Mprim/pow(aorb[im],3)),5)*pow(eorb[im],2)/Gcgs); // Q = k2/(k2/Q) (Segatz et al. 1988; Henning & Hurford 2014);
-				REBOUND_output[im][3] = MOI[im];
-				REBOUND_output[im][4] = norb[im];
-				REBOUND_output[im][5] = r[im][NR]/km2cm;
-				strcat(filename, outputpath[im]); strcat(filename, "REBOUND.txt");
-				append_output(os, nREBOUND, REBOUND_output[im], path, filename); filename[0] = '\0';
-			}
 		}
 		if (Mprim > 0.0) {
 			// Primary Q and ring mass
@@ -993,6 +977,17 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 			for (im=0;im<nmoons;im++) append_output(os, nmoons, resonance[im], path, "Outputs/Resonances.txt");
 			for (im=0;im<nmoons;im++) append_output(os, nmoons, resAcctFor[im], path, "Outputs/ResAcctFor.txt");
 			for (im=0;im<nmoons;im++) append_output(os, nmoons, PCapture[im], path, "Outputs/PCapture.txt");
+
+			for (im=0;im<nmoons;im++) {
+				REBOUND_output[im*nREBOUND+0] = aorb[im]/km2cm;
+				REBOUND_output[im*nREBOUND+1] = eorb[im];
+				REBOUND_output[im*nREBOUND+2] = iorb[im];
+				REBOUND_output[im*nREBOUND+3] = r[im][NR]/km2cm;
+				REBOUND_output[im*nREBOUND+4] = k2[im];
+				REBOUND_output[im*nREBOUND+5] = MOI[im];
+				REBOUND_output[im*nREBOUND+6] = Qtide[im];
+			}
+			append_output(os, nmoons*nREBOUND, REBOUND_output, path, "Outputs/icydwarf_outputs_1.txt");
 		}
 	}
 
@@ -1133,8 +1128,14 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 			for (im=0;im<nmoons;im++) {
 				for (i=0;i<nmoons;i++) {
 					if (i != im && resAcctFor[im][i] == 0.0) resAcctFor[i][im] = 0.0;
+//					resAcctFor[i][im] = 0.0; // Uncomment for no resonant evolution
 
-					resAcctFor[i][im] = 0.0; // TODO remove to bring back resonant evolution
+					//For N-body coupling in IcyMoons
+					if (i != im && resAcctFor[im][i] > 0.0) {
+						printf("Resonance found at time %g Gyr: moons %d and %d have mean motion ratio %g.\n"
+								"Interrupting IcyDwarf in order to evolve moon system dynamics with N-body code.\n\n", realtime/Gyr2sec, im, i, norb[im]/norb[i]);
+						exit(0);
+					}
 				}
 			}
 
@@ -1186,7 +1187,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 					norb[im] = sqrt(Gcgs*Mprim/pow(aorb[im],3)); // Otherwise, norb[im] is zero and the moon im doesn't influence the others gravitationally
 					// TODO Add a non-Keplerian term due to planetary oblateness?
 					dnorb_dt[im] = (norb[im]-dnorb_dt[im])/dtime;
-//					t_tide[im] = 1.0*norb[im]/(nprim-norb[im])*t_reslock[im]; // Gravitational modes
+//					t_tide[im] = 1.0*norb[im]/(nprim-norb[im])*t_reslock[im]; // Gravitational modes TODO make switch in input file?
 					t_tide[im] = 1.0*                          t_reslock[im]; // Inertial modes, favored (Lainey et al. 2020 SOM p. 8)
 					t_tide[im] *= realtime/(4.5682*Gyr2sec);                  // Scale evolution timescale with host planet age (Lainey et al. SOM equation 16)
 
@@ -1197,32 +1198,33 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 
 					// Update Qtide
 					Qtide[im] = k2[im] / (Wtide_tot[im]/(11.5*pow(r_p[im],5)*pow(sqrt(Gcgs*Mprim/pow(aorb[im],3)),5)*pow(eorb[im],2)/Gcgs));
-					// TODO !! for benchmarking, remove
-					MOI[0] = 0.402497;
-					MOI[1] = 0.402245;
-					MOI[2] = 0.402452;
-					MOI[3] = 0.399528;
-					MOI[4] = 0.401001;
-					Qtide[0] = 342531;
-					Qtide[1] = 3451.3;
-					Qtide[2] = 5672.47;
-					Qtide[3] = 986.8;
-					Qtide[4] = 1065.5;
-					k2[0] = 0.00537723;
-					k2[1] = 0.00910305;
-					k2[2] = 0.00796741;
-					k2[3] = 0.0130312;
-					k2[4] = 0.0117737;
-					if (itime == 0) {
-						spin[0] = 270.464662/365.25/86400.0*2.0*PI_greek;
-						spin[1] = 151.37055/365.25/86400.0*2.0*PI_greek;
-						spin[2] = 89.345254/365.25/86400.0*2.0*PI_greek;
-						spin[3] = 42.460965/365.25/86400.0*2.0*PI_greek;
-						spin[4] = 27.44983/365.25/86400.0*2.0*PI_greek;
-					}
+					// For benchmarking, comment out
+//					MOI[0] = 0.402497;
+//					MOI[1] = 0.402245;
+//					MOI[2] = 0.402452;
+//					MOI[3] = 0.399528;
+//					MOI[4] = 0.401001;
+//					Qtide[0] = 342531;
+//					Qtide[1] = 3451.3;
+//					Qtide[2] = 5672.47;
+//					Qtide[3] = 986.8;
+//					Qtide[4] = 1065.5;
+//					k2[0] = 0.00537723;
+//					k2[1] = 0.00910305;
+//					k2[2] = 0.00796741;
+//					k2[3] = 0.0130312;
+//					k2[4] = 0.0117737;
+//					if (itime == 0) {
+//						spin[0] = 270.464662/365.25/86400.0*2.0*PI_greek;
+//						spin[1] = 151.37055/365.25/86400.0*2.0*PI_greek;
+//						spin[2] = 89.345254/365.25/86400.0*2.0*PI_greek;
+//						spin[3] = 42.460965/365.25/86400.0*2.0*PI_greek;
+//						spin[4] = 27.44983/365.25/86400.0*2.0*PI_greek;
+//					}
 
 					// TODO switch r_p to outerrad[nmoons] = r[im][NR]? Could matter if very porous
-					Orbit (os, argc, argv, path, im, dtime, speedup, itime, nmoons, m_p, r, NR, resAcctFor, &aorb, &eorb, &(iorb[im]), &(obl[im]), norb,
+					// Change 'resonance' to 'resAcctFor' to screen only for the likely dominant resonance between two moons
+					Orbit (os, argc, argv, path, im, dtime, speedup, itime, nmoons, m_p, r, NR, resonance, &aorb, &eorb, &(iorb[im]), &(obl[im]), norb,
 							lambda, omega, &h_old, &k_old, &a__old, &Cs_ee_old, &Cs_eep_old, &Cr_e_old, &Cr_ep_old, &Cr_ee_old, &Cr_eep_old, &Cr_epep_old,
 							&Wtide_tot, Mprim, Rprim, J2prim, J4prim, k2prim, Qprim, reslock, t_tide, eccentricitymodel,
 							aring_out, aring_in, alpha_Lind, ringSurfaceDensity, realtime-tzero_min, realtime, prim_sign, k2, Qtide, nprim, Ip, &(spin[im]), MOI[im], CTL);
@@ -1341,18 +1343,19 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 						Orbit_output[im][11] = Wtide_tot[im]/(11.5*pow(r_p[im],5)*pow(sqrt(Gcgs*Mprim/pow(aorb[im],3)),5)*pow(eorb[im],2)/Gcgs); // k2/Q (Segatz et al. 1988; Henning & Hurford 2014)
 						strcat(filename, outputpath[im]); strcat(filename, "Orbit.txt");
 						append_output(os, norbit, Orbit_output[im], path, filename); filename[0] = '\0';
-
-						// Parameters for REBOUND calculations
-						REBOUND_output[im][0] = realtime/Gyr2sec; // t in Gyr
-						REBOUND_output[im][1] = k2[im];
-						REBOUND_output[im][2] = Qtide[im]; // Q = k2/(k2/Q) (Segatz et al. 1988; Henning & Hurford 2014);
-						REBOUND_output[im][3] = MOI[im];
-						REBOUND_output[im][4] = norb[im];
-						REBOUND_output[im][5] = r[im][NR]/km2cm;
-						strcat(filename, outputpath[im]); strcat(filename, "REBOUND.txt");
-						append_output(os, nREBOUND, REBOUND_output[im], path, filename); filename[0] = '\0';
 //					}
 				}
+				for (im=0;im<nmoons;im++) {
+					// Parameters for REBOUND calculations
+					REBOUND_output[im*nREBOUND+0] = aorb[im]/km2cm;
+					REBOUND_output[im*nREBOUND+1] = eorb[im];
+					REBOUND_output[im*nREBOUND+2] = iorb[im];
+					REBOUND_output[im*nREBOUND+3] = r[im][NR]/km2cm;
+					REBOUND_output[im*nREBOUND+4] = k2[im];
+					REBOUND_output[im*nREBOUND+5] = MOI[im];
+					REBOUND_output[im*nREBOUND+6] = Qtide[im];
+				}
+				append_output(os, nmoons*nREBOUND, REBOUND_output, path, "Outputs/icydwarf_outputs_1.txt");
 			}
 			if (isteps == nsteps) {
 				// Host planet Q and ring mass

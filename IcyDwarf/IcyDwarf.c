@@ -184,7 +184,7 @@ int main(int argc, char *argv[]){
 
 	printf("\n");
 	printf("-------------------------------------------------------------------\n");
-	printf("IcyDwarf v25.4\n"                                                    );
+	printf("IcyDwarf v25.5\n"                                                    );
 	printf("Copyright (C) 2013-2025 Marc Neveu (marc.f.neveu@nasa.gov)\n\n"       );
 	printf("This program is free software: you can redistribute it and/or\n"      );
 	printf("modify it under the terms of the GNU General Public License as\n"     );
@@ -300,6 +300,7 @@ int main(int argc, char *argv[]){
 	tidalmodel = (int) input[i]; i++;
     eccentricitymodel = (int) input[i]; i++;
 	tidetimes = (double) input[i]; i++;
+	lookuporbit = (int) input[i]; i++; nOrbTabParams = (int) input[i]; i++; orbTabRows = (int) input[i]; i++; orbTab_dtime = (double) input[i]; i++;
 	//-----------------------------
 	run_thermal = (int) input[i]; i++;
 	run_aTP = (int) input[i]; i++;
