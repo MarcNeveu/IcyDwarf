@@ -458,9 +458,9 @@ int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[10
 	}
 
 	// Tidal heating (dynamic fluid tide)
-//	if (itime > 0 && Mprim && eorb > 0.0 && !moonspawn) {
-//		TROPF();
-//	}
+	if (itime > 0 && Mprim && eorb > 0.0 && !moonspawn) {
+		TROPF();
+	}
 
 	//-------------------------------------------------------------------
 	//                     Calculate conductive fluxes

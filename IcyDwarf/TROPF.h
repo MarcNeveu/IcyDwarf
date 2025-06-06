@@ -27,7 +27,7 @@
 typedef struct {
     int rows;
     int cols;
-    double complex *values;      // All non-zero values TODO make it complex
+    double complex *values;      // All non-zero values
     int *colIndices;     // Column indices for each value
     int *rowPointers;    // Points to the start of each row in values/colIndices
     int nnz;             // Number of non-zero elements
@@ -116,16 +116,16 @@ int TROPF() {
 	// Variable names reflect typeset variables in TROPF manual: "til" = tilde; "cal" = calligraphic font; and "n", "s" = sub and superscript degree and order.
 
 	// Method parameters:
-	int N = 6;        // Number of terms in spherical-harmonic expansion, default 500
+	int N = 120;        // Number of terms in spherical-harmonic expansion, default 500
 	int s = 2;          // Order/rank of spherical harmonic terms (longitudinal wavenumber of the forcing), a non-negative scalar. Set to 2 for validation case
 	int Ntrunc = N + s - 1;
 
-	double tilOm = 1.0; // Nondimensionalized fluid rotation rate, default 1
+	double complex tilOm = 1.0 + 0.0*I; // Nondimensionalized fluid rotation rate, default 1
 	                    // (i.e., nondimensionalization factor Ωs for temporal frequencies is equal to rotation rate Ω).
 	                    // Allows a necessarily different choice for the non-rotating case.
 
 	// Nondimensional forcing parameters:
-	double tilom = 0.0; // Forcing frequency. Real scalar, + for prograde propagation, - for retrograde propagation.
+	double complex tilom = 0.0 + 0.0*I; // Forcing frequency. Real scalar, + for prograde propagation, - for retrograde propagation.
 
 	double complex * Gns = (double complex *) malloc(N*sizeof(double complex)); // Spherical-harmonic coefficients for prescribed tidal potential
 	double complex * Kns = (double complex *) malloc(N*sizeof(double complex)); // SH coefs for source/sink term in vertical structure
@@ -173,29 +173,29 @@ int TROPF() {
 
 	double complex knFsF = 0.0 + 0.0*I; // Admittance = ratio of nondimensional pressure response to nondimensional tidal potential = Love number at degree (nF) and order (sF) of forcing
 
-	// ----------------
-	// Validation script
-	// scr_val_eigs.m
-	// ----------------
-
-	double PnFsF_amp = 3.0; // Amplitude of associated Legendre function of degree nF, order sF
-	tilom = -0.766; // Frequency of forcing potential
-	int nF = 2;
-	int sF = 2;
-
-	Gns[nF-sF] = I*0.5/PnFsF_amp; // tilmfG normalized to have unit amplitude
-	double tilcesq = 1.0; // This choice winds up being just a reference value
-
-	for (i=0;i<size_tilal;i++) { // Inviscid following IL1993 assumptions
-		tilalpd[i] = 0.0 + 0.0*I; // should be rand()
-		tilalpr[i] = 0.0 + 0.0*I;
-	}
-	double tilalpp = 0.0;
-
-	// Prescribe squared slowness coeff vector:
-	tilnusqns[0] =  (1.0 + I*tilalpp/tilom)/tilcesq;
-
-	// Rest of script in tropf()
+//	// ----------------
+//	// Validation script
+//	// scr_val_eigs.m
+//	// ----------------
+//
+//	double PnFsF_amp = 3.0; // Amplitude of associated Legendre function of degree nF, order sF
+//	tilom = -0.766 + 0.0*I; // Frequency of forcing potential
+//	int nF = 2;
+//	int sF = 2;
+//
+//	Gns[nF-sF] = I*0.5/PnFsF_amp; // tilmfG normalized to have unit amplitude
+//	double tilcesq = 1.0; // This choice winds up being just a reference value
+//
+//	for (i=0;i<size_tilal;i++) { // Inviscid following IL1993 assumptions
+//		tilalpd[i] = 0.0 + 0.0*I; // should be rand()
+//		tilalpr[i] = 0.0 + 0.0*I;
+//	}
+//	double complex tilalpp = 0.0 + 0.0*I;
+//
+//	// Prescribe squared slowness coeff vector:
+//	tilnusqns[0] =  (1.0 + I*tilalpp/tilom)/tilcesq;
+//
+//	// Rest of script in tropf()
 
     // ----------------
     // Call tropf()
@@ -310,14 +310,13 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 	// LC = spdiags(   tilOm*(-nvec.*(nvec+2).*(nvec-s+1)./(2*nvec+1))   ,-1,N,N)...
 	//    + spdiags(   tilOm*(-(nvec-1).*(nvec+1).*(nvec+s)./(2*nvec+1)) ,+1,N,N) ;
 	double complex *LCvalues = (double complex *) malloc((2*N-2)*sizeof(double complex));
-	LCvalues[0] = tilOm*(double complex)(-(nvec[0]-1) * (nvec[0]+1) * nvec[0]+s  ) / (double complex)(2*nvec[0] + 1); // First value of upper diagonal
+	LCvalues[0] = tilOm*(double complex)(-(nvec[1]-1) * (nvec[1]+1) * (nvec[1]+s)  ) / (double complex)(2*nvec[1] + 1); // First value of upper diagonal
 	int k = 0;
 	for (i=1;i<2*N-2;i=i+2) {
-		k = (int)ceil((double)i/2.0) - 1;
-		LCvalues[i]   = tilOm*(double complex)(- nvec[k]    * (nvec[k]+2) * nvec[k]-s+1) / (double complex)(2*nvec[k] + 1); // Lower diagonal
-		LCvalues[i+1] = tilOm*(double complex)(-(nvec[k]-1) * (nvec[k]+1) * nvec[k]+s  ) / (double complex)(2*nvec[k] + 1); // Upper diagonal
+		k = (int)ceil((double)i/2.0);
+		LCvalues[i]   = tilOm*(double complex)(- nvec[k-1]    * (nvec[k-1]+2) * (nvec[k-1]-s+1)) / (double complex)(2*nvec[k-1] + 1); // Lower diagonal
+		LCvalues[i+1] = tilOm*(double complex)(-(nvec[k+1]-1) * (nvec[k+1]+1) * (nvec[k+1]+s  )) / (double complex)(2*nvec[k+1] + 1); // Upper diagonal
 	}
-	printf("%g + i*%g\n", creal(LCvalues[1]), cimag(LCvalues[1]));
 	int *triDiagRowIndices = (int *)malloc ((2*N-2)*sizeof(int));
 	int *triDiagColIndices = (int *)malloc ((2*N-2)*sizeof(int));
 	triDiagRowIndices[0] = 0; // First element of upper diagonal
@@ -384,6 +383,127 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 
 //	LDi       =  build_LDi(nvec,tilOm, s,tilom, Lalphad,LV, LL);
 
+//	// ----------------
+//	// Validation script
+//	// scr_val_eigs.m
+//	// ----------------
+//
+//	// Also need to build, in addition to LfilmfD:
+////	Ltilp     = build_Ltilp(tilom, LV, LLi,LA,LC,LBi);
+////	LtilmfR   = build_LtilmfR(N,tilOm,  Lalphad,Lalphar,LV,  tilom,s);
+//
+////	%% Eigenvalues in Ltilp formulation:
+////
+////	LVjunk = - ( LLi*(LA - LC*LBi*LC)*tilom*LLi ) \ spdiags(ones(N,1), 0,N,N);
+////	LVjunk_sym = LVjunk(1:2:end,1:2:end); % matrix for symmetric
+////	LVjunk_asy = LVjunk(2:2:end,2:2:end); % matrix for asymmetric
+////	[V,D]  = eig(full(LVjunk_sym));
+////	tilcesqvals  = 1./diag(D); % squared eigen-wavespeeds
+////	[junk,ii_descend] = sort(abs(tilcesqvals),'descend');
+////	tilcesqvals_sym_tilp    = tilcesqvals(ii_descend,:);
+////	[V,D]  = eig(full(LVjunk_asy));
+////	tilcesqvals  = 1./diag(D); % squared eigen-wavespeeds
+////	[junk,ii_descend] = sort(abs(tilcesqvals),'descend');
+////	tilcesqvals_asy_tilp    = tilcesqvals(ii_descend,:);
+////
+////
+////	%% Eigenvalues in LtilmfD formulation:
+//
+////	LVjunk = - tilom*( LLi*(LA - LC*LBi*LC)*LLi )
+//	CSRMatrix LVjunk1 = csrMatrixMultiply(&LBi, &LC);
+//	CSRMatrix LVjunk2 = csrMatrixMultiply(&LC, &LVjunk1);
+//	for (i=0;i<LVjunk2.nnz;i++) LVjunk2.values[i] = -LVjunk2.values[i];
+//	CSRMatrix LVjunk3 = csrMatrixAdd(LA, LVjunk2);
+//	CSRMatrix LVjunk4 = csrMatrixMultiply(&LVjunk3, &LLi);
+//	CSRMatrix LVjunk = csrMatrixMultiply(&LLi, &LVjunk4);
+//	for (i=0;i<LVjunk.nnz;i++) LVjunk.values[i] = -tilom*LVjunk.values[i];
+//
+//	freeCSRMatrix(&LVjunk1);
+//	freeCSRMatrix(&LVjunk2);
+//	freeCSRMatrix(&LVjunk3);
+//	freeCSRMatrix(&LVjunk4);
+//
+////	LVjunk_sym = LVjunk(1:2:end,1:2:end); % matrix for symmetric
+//	CSRMatrix LVjunk_sym = csrSubsample(&LVjunk, 0, 0);
+//
+////	LVjunk_asy = LVjunk(2:2:end,2:2:end); % matrix for asymmetric
+//	CSRMatrix LVjunk_asy = csrSubsample(&LVjunk, 1, 1);
+//
+////	[V,D]  = eig(full(LVjunk_sym));
+//	double complex ** diagLVjunk_sym = csrToDense2D(&LVjunk_sym);
+//
+////	for (i=0;i<N/2;i++) {
+////		for (j=0;j<N/2;j++) {
+////			if (cimag(diagLVjunk_sym[i][j]) < DBL_EPSILON) diagLVjunk_sym[i][j] = (double complex) creal(diagLVjunk_sym[i][j]);
+////			printf("%g +\t%g*i \t\t", creal(diagLVjunk_sym[i][j]), cimag(diagLVjunk_sym[i][j]));
+////		}
+////		printf("\n");
+////	}
+//
+//	int ntest = N/2;
+//	static double R_diagLVjunk_sym[60][60];
+//	static double u[60];
+//	static double v[60];
+//
+//	for (i=0;i<N/2;i++) {
+//		for (j=0;j<N/2;j++) {
+//			R_diagLVjunk_sym[i][j] = creal(diagLVjunk_sym[i][j]);
+//		}
+//	}
+//
+////	for (i = 0; i < ntest; i++) {
+////		for (j = 0; j < ntest; j++)
+////			printf("%.2e ", R_diagLVjunk_sym[i][j]);
+////		printf("\n");
+////	}
+//	n_eigen(R_diagLVjunk_sym[0], ntest, u, v);
+////	qsort((double*) u, N/2, sizeof(double), comp);
+//	for (i=0;i<N/2;i++) printf("%g\n", u[i]);
+//
+////	tilcesqvals  = diag(D); % squared eigen-wavespeeds
+////	[junk,ii_descend] = sort(abs(tilcesqvals),'descend');
+//
+////	for (i=0;i<N/2;i++) eig.values[i] = cabs(eig.values[i]);
+////	qsort(eig.values, N/2, sizeof(eig.values[0]), comp);
+////
+////	for(i=0;i<N/2;i++) printf("%d \t %g\n", i, creal(eig.values[i]));
+//
+////	tilcesqvals_sym_tilmfD    = tilcesqvals(ii_descend,:);
+////	[V,D]  = eig(full(LVjunk_asy));
+////	tilcesqvals  = diag(D); % squared eigen-wavespeeds
+////	[junk,ii_descend] = sort(abs(tilcesqvals),'descend');
+////	tilcesqvals_asy_tilmfD    = tilcesqvals(ii_descend,:);
+////
+//	freeCSRMatrix(&LVjunk);
+//	freeCSRMatrix(&LVjunk_sym);
+//	freeCSRMatrix(&LVjunk_asy);
+//	for(i=0;i<N/2;i++) free(diagLVjunk_sym[i]);
+//	free(diagLVjunk_sym);
+//
+////	for (i=0;i<N;i++) printf("%g + i*%g\n", creal(nvec[i]), cimag(nvec[i]));
+////	printf("%g + i*%g\n", creal(tilnusqns[0]), cimag(tilnusqns[0]));
+////	printCSRMatrix(LD);
+////	printCSRMatrixDense(&LD);
+////	printCSRMatrix(LC);
+////	printCSRMatrixDense(&LC);
+//
+//	freeCSRMatrix(&LA);
+//	
+////	%% Eigenvalues in LtilmfR formulation:
+////	LVjunk =  tilom*LLi* (LC*LBi -LA*inv(LC)) * LC*LLi;
+////	LVjunk_sym = LVjunk(1:2:end,1:2:end); % matrix for symmetric
+////	LVjunk_asy = LVjunk(2:2:end,2:2:end); % matrix for asymmetric
+////	[V,D]  = eig(full(LVjunk_sym));
+////	tilcesqvals  = diag(D); % squared eigen-wavespeeds
+////	[junk,ii_descend] = sort(abs(tilcesqvals),'descend');
+////	tilcesqvals_sym_tilmfR    = tilcesqvals(ii_descend,:);
+////	[V,D]  = eig(full(LVjunk_asy));
+////	tilcesqvals  = diag(D); % squared eigen-wavespeeds
+////	[junk,ii_descend] = sort(abs(tilcesqvals),'descend');
+////	tilcesqvals_asy_tilmfR    = tilcesqvals(ii_descend,:);
+//
+//	exit(0);
+
 	// ------------------------------------
 	// Solve (one of alternate methods)
 	// ------------------------------------
@@ -399,146 +519,6 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 	freeCSRMatrix(&LtilmfD1);
 	freeCSRMatrix(&LtilmfD2);
 	freeCSRMatrix(&LtilmfD3);
-
-	// ----------------
-	// Validation script
-	// scr_val_eigs.m
-	// ----------------
-
-	// Also need to build, in addition to LfilmfD:
-//	Ltilp     = build_Ltilp(tilom, LV, LLi,LA,LC,LBi);
-//	LtilmfR   = build_LtilmfR(N,tilOm,  Lalphad,Lalphar,LV,  tilom,s);
-
-//	%% Eigenvalues in Ltilp formulation:
-//
-//	LVjunk = - ( LLi*(LA - LC*LBi*LC)*tilom*LLi ) \ spdiags(ones(N,1), 0,N,N);
-//	LVjunk_sym = LVjunk(1:2:end,1:2:end); % matrix for symmetric
-//	LVjunk_asy = LVjunk(2:2:end,2:2:end); % matrix for asymmetric
-//	[V,D]  = eig(full(LVjunk_sym));
-//	tilcesqvals  = 1./diag(D); % squared eigen-wavespeeds
-//	[junk,ii_descend] = sort(abs(tilcesqvals),'descend');
-//	tilcesqvals_sym_tilp    = tilcesqvals(ii_descend,:);
-//	[V,D]  = eig(full(LVjunk_asy));
-//	tilcesqvals  = 1./diag(D); % squared eigen-wavespeeds
-//	[junk,ii_descend] = sort(abs(tilcesqvals),'descend');
-//	tilcesqvals_asy_tilp    = tilcesqvals(ii_descend,:);
-//
-//
-//	%% Eigenvalues in LtilmfD formulation:
-
-//	LVjunk = - tilom*( LLi*(LA - LC*LBi*LC)*LLi )
-	CSRMatrix LVjunk1 = csrMatrixMultiply(&LBi, &LC);
-	CSRMatrix LVjunk2 = csrMatrixMultiply(&LC, &LVjunk1);
-	for (i=0;i<LVjunk2.nnz;i++) LVjunk2.values[i] = -LVjunk2.values[i];
-	CSRMatrix LVjunk3 = csrMatrixAdd(LA, LVjunk2);
-	CSRMatrix LVjunk4 = csrMatrixMultiply(&LVjunk3, &LLi);
-	CSRMatrix LVjunk = csrMatrixMultiply(&LLi, &LVjunk4);
-	for (i=0;i<LVjunk.nnz;i++) LVjunk.values[i] = -tilom*LVjunk.values[i];
-
-	freeCSRMatrix(&LVjunk1);
-	freeCSRMatrix(&LVjunk2);
-	freeCSRMatrix(&LVjunk3);
-	freeCSRMatrix(&LVjunk4);
-
-//	LVjunk_sym = LVjunk(1:2:end,1:2:end); % matrix for symmetric
-	CSRMatrix LVjunk_sym = csrSubsample(&LVjunk, 0, 0);
-
-//	LVjunk_asy = LVjunk(2:2:end,2:2:end); % matrix for asymmetric
-	CSRMatrix LVjunk_asy = csrSubsample(&LVjunk, 1, 1);
-
-//	[V,D]  = eig(full(LVjunk_sym));
-	double complex ** diagLVjunk_sym = csrToDense2D(&LVjunk_sym);
-
-//	for (i=0;i<N/2;i++) {
-//		for (j=0;j<N/2;j++) {
-//			if (cimag(diagLVjunk_sym[i][j]) < DBL_EPSILON) diagLVjunk_sym[i][j] = (double complex) creal(diagLVjunk_sym[i][j]);
-//			printf("%g +\t%g*i \t\t", creal(diagLVjunk_sym[i][j]), cimag(diagLVjunk_sym[i][j]));
-//		}
-//		printf("\n");
-//	}
-
-	int ntest = N/2;
-	static double R_diagLVjunk_sym[60][60];
-	static double u[60];
-	static double v[60];
-
-	for (i=0;i<N/2;i++) {
-		for (j=0;j<N/2;j++) {
-			R_diagLVjunk_sym[i][j] = creal(diagLVjunk_sym[i][j]);
-		}
-	}
-
-//	for (i = 0; i < ntest; i++) {
-//		for (j = 0; j < ntest; j++)
-//			printf("%.2e ", R_diagLVjunk_sym[i][j]);
-//		printf("\n");
-//	}
-	n_eigen(R_diagLVjunk_sym[0], ntest, u, v);
-	qsort((double*) u, N/2, sizeof(double), comp);
-//	for (i = 0; i < N/2; i++) {
-//		printf("%.2e + j*%.2e\n", u[i], v[i]);
-//	}
-//	printf("\n");
-
-	   // Clean up
-//	   freeEigenvalues(&eig2);
-
-//	tilcesqvals  = diag(D); % squared eigen-wavespeeds
-//	[junk,ii_descend] = sort(abs(tilcesqvals),'descend');
-
-//	for (i=0;i<N/2;i++) eig.values[i] = cabs(eig.values[i]);
-//	qsort(eig.values, N/2, sizeof(eig.values[0]), comp);
-//
-//	for(i=0;i<N/2;i++) printf("%d \t %g\n", i, creal(eig.values[i]));
-
-//	tilcesqvals_sym_tilmfD    = tilcesqvals(ii_descend,:);
-//	[V,D]  = eig(full(LVjunk_asy));
-//	tilcesqvals  = diag(D); % squared eigen-wavespeeds
-//	[junk,ii_descend] = sort(abs(tilcesqvals),'descend');
-//	tilcesqvals_asy_tilmfD    = tilcesqvals(ii_descend,:);
-//
-	freeCSRMatrix(&LVjunk);
-	freeCSRMatrix(&LVjunk_sym);
-	freeCSRMatrix(&LVjunk_asy);
-	for(i=0;i<N/2;i++) free(diagLVjunk_sym[i]);
-	free(diagLVjunk_sym);
-//	freeEigenvalues(&eig);
-	printf("Marc\n");
-//	for (i=0;i<N;i++) printf("%g + i*%g\n", creal(nvec[i]), cimag(nvec[i]));
-//	printf("%g + i*%g\n", creal(tilnusqns[0]), cimag(tilnusqns[0]));
-	printCSRMatrix(LD);
-	printCSRMatrixDense(&LD);
-	printCSRMatrix(LC);
-	printCSRMatrixDense(&LC);
-
-	freeCSRMatrix(&LA);
-	exit(0);
-//	%% Eigenvalues in LtilmfR formulation:
-//	LVjunk =  tilom*LLi* (LC*LBi -LA*inv(LC)) * LC*LLi;
-//	LVjunk_sym = LVjunk(1:2:end,1:2:end); % matrix for symmetric
-//	LVjunk_asy = LVjunk(2:2:end,2:2:end); % matrix for asymmetric
-//	[V,D]  = eig(full(LVjunk_sym));
-//	tilcesqvals  = diag(D); % squared eigen-wavespeeds
-//	[junk,ii_descend] = sort(abs(tilcesqvals),'descend');
-//	tilcesqvals_sym_tilmfR    = tilcesqvals(ii_descend,:);
-//	[V,D]  = eig(full(LVjunk_asy));
-//	tilcesqvals  = diag(D); % squared eigen-wavespeeds
-//	[junk,ii_descend] = sort(abs(tilcesqvals),'descend');
-//	tilcesqvals_asy_tilmfR    = tilcesqvals(ii_descend,:);
-//
-//
-//
-//	%% For consistency check, show the eigenvalues are the same for the three different formulations:
-
-//	%% Make Table
-//
-//
-//	junk = reshape(tilcesqvals_sym_tilp(1:60),20,3)
-//	dlmwrite('symN120',junk,'delimiter','\t','precision','%10.7e')
-//
-//
-//	junk = reshape(tilcesqvals_asy_tilp(1:60),20,3)
-//	dlmwrite('asyN120',junk,'delimiter','\t','precision','%10.7e')
 
 	// Build QtilmfD: QtilmfD = (1/tilom)*LVi*(Kns) + LLi*dns + LLi*LC*LBi*ens
 	double complex * QtilmfD = (double complex *) malloc(N*sizeof(double complex));
