@@ -41,11 +41,11 @@ typedef struct {
 
 int TROPF();
 
-int tropf(int Ntrunc, double complex tilOm, double complex tilom, int s, double complex *Gns, double complex *Kns, double complex *dns, double complex *ens, int size_tilal,
+int tropf(int N, double complex tilOm, double complex tilom, int s, double complex *Gns, double complex *Kns, double complex *dns, double complex *ens, int size_tilal,
 		  double complex *tilalpd, double complex *tilalpr, int size_tilnusqns, double complex *tilnusqns, double complex **Dns, double complex **Rns, double complex **pns,
 		  double *calWns, double *calDns, double *calEKns, double *calEPns, double complex *knFsF);
 
-double globeTimeAvg(double complex * Ans, double complex * Bns, int s, int *nvec, int Ntrunc);
+double globeTimeAvg(double complex * Ans, double complex * Bns, int s, int *nvec, int N);
 
 double ratiofactorials1(int n, int s);
 
@@ -63,7 +63,7 @@ int csrMatrixVectorMultiply(CSRMatrix A, const double complex *x, double complex
 
 CSRMatrix csrMatrixMultiply(const CSRMatrix *A, const CSRMatrix *B);
 
-CSRMatrix csrMatrixTranspose(const CSRMatrix *A);
+//CSRMatrix csrMatrixTranspose(const CSRMatrix *A);
 
 double complex dotProduct(const double complex *x, const double complex *y, int n);
 
@@ -80,16 +80,16 @@ CSRMatrix csrCopyMatrix(const CSRMatrix *src);
 // For validation script scr_val_eigs.m
 CSRMatrix csrSubsample(const CSRMatrix *mat, int rowOffset, int colOffset);
 double complex ** csrToDense2D(const CSRMatrix *csr);
-double matrixNorm(double complex **A, int n);
-bool isUpperTriangular(double complex **A, int n, double tol);
-double complex ** allocateMatrix(int rows, int cols);
-void freeMatrix(double complex **matrix, int rows);
-void copyDenseMatrix(double complex **dest, double complex **src, int n);
-void hessenbergReduction(double **A, int n);
-void qrIteration(double **A, int n);
-bool isTriangularEnough(double **A, int n, double tol);
-double* computeEigenvalues(double **A, int n);
-int min(int a, int b);
+//double matrixNorm(double complex **A, int n);
+//bool isUpperTriangular(double complex **A, int n, double tol);
+//double complex ** allocateMatrix(int rows, int cols);
+//void freeMatrix(double complex **matrix, int rows);
+//void copyDenseMatrix(double complex **dest, double complex **src, int n);
+//void hessenbergReduction(double **A, int n);
+//void qrIteration(double **A, int n);
+//bool isTriangularEnough(double **A, int n, double tol);
+//double* computeEigenvalues(double **A, int n);
+//int min(int a, int b);
 int comp(const void *a, const void *b);
 //void tqli(float d[], float e[], int n);
 
@@ -116,7 +116,7 @@ int TROPF() {
 	// Variable names reflect typeset variables in TROPF manual: "til" = tilde; "cal" = calligraphic font; and "n", "s" = sub and superscript degree and order.
 
 	// Method parameters:
-	int N = 119;        // Number of terms in spherical-harmonic expansion, default 500
+	int N = 6;        // Number of terms in spherical-harmonic expansion, default 500
 	int s = 2;          // Order/rank of spherical harmonic terms (longitudinal wavenumber of the forcing), a non-negative scalar. Set to 2 for validation case
 	int Ntrunc = N + s - 1;
 
@@ -127,12 +127,12 @@ int TROPF() {
 	// Nondimensional forcing parameters:
 	double tilom = 0.0; // Forcing frequency. Real scalar, + for prograde propagation, - for retrograde propagation.
 
-	double complex * Gns = (double complex *) malloc(Ntrunc*sizeof(double complex)); // Spherical-harmonic coefficients for prescribed tidal potential
-	double complex * Kns = (double complex *) malloc(Ntrunc*sizeof(double complex)); // SH coefs for source/sink term in vertical structure
-	double complex * dns = (double complex *) malloc(Ntrunc*sizeof(double complex)); // SH coefs for prescribed divergence of F^(p) term
-	double complex * ens = (double complex *) malloc(Ntrunc*sizeof(double complex)); // SH coefs for prescribed curl of F^(p) term
+	double complex * Gns = (double complex *) malloc(N*sizeof(double complex)); // Spherical-harmonic coefficients for prescribed tidal potential
+	double complex * Kns = (double complex *) malloc(N*sizeof(double complex)); // SH coefs for source/sink term in vertical structure
+	double complex * dns = (double complex *) malloc(N*sizeof(double complex)); // SH coefs for prescribed divergence of F^(p) term
+	double complex * ens = (double complex *) malloc(N*sizeof(double complex)); // SH coefs for prescribed curl of F^(p) term
 
-	for (i=0;i<Ntrunc;i++) {
+	for (i=0;i<N;i++) {
 		Gns[i] = 0.0 + 0.0*I;
 		Kns[i] = 0.0 + 0.0*I;
 		dns[i] = 0.0 + 0.0*I;
@@ -156,11 +156,11 @@ int TROPF() {
     for (i=0;i<size_tilnusqns;i++) tilnusqns[i] = 0.0 + 0.0*I; // Squared slowness parameter. If vector, slowness varies with degree.
 
     // Outputs of tropf() routine
-    double complex * Dns = (double complex *) malloc(Ntrunc*sizeof(double complex)); // Spherical-harmonic coefficients for divergent flow (Helmholtz) potential
-    double complex * Rns = (double complex *) malloc(Ntrunc*sizeof(double complex)); // SH coefs for rotational flow (Helmholtz) potential
-    double complex * pns = (double complex *) malloc(Ntrunc*sizeof(double complex)); // SH coefs for dynamic pressure
+    double complex * Dns = (double complex *) malloc(N*sizeof(double complex)); // Spherical-harmonic coefficients for divergent flow (Helmholtz) potential
+    double complex * Rns = (double complex *) malloc(N*sizeof(double complex)); // SH coefs for rotational flow (Helmholtz) potential
+    double complex * pns = (double complex *) malloc(N*sizeof(double complex)); // SH coefs for dynamic pressure
 
-	for (i=0;i<Ntrunc;i++) {
+	for (i=0;i<N;i++) {
 		Dns[i] = 0.0 + 0.0*I;
 		Rns[i] = 0.0 + 0.0*I;
 		pns[i] = 0.0 + 0.0*I;
@@ -200,7 +200,7 @@ int TROPF() {
     // ----------------
     // Call tropf()
     // ----------------
-    tropf(Ntrunc, tilOm, tilom, s, Gns, Kns, dns, ens, size_tilal, tilalpd, tilalpr, size_tilnusqns, tilnusqns, &Dns, &Rns, &pns,
+    tropf(N, tilOm, tilom, s, Gns, Kns, dns, ens, size_tilal, tilalpd, tilalpr, size_tilnusqns, tilnusqns, &Dns, &Rns, &pns,
     		&calWns, &calDns, &calEKns, &calEPns, &knFsF);
 
     // Free mallocs
@@ -238,7 +238,7 @@ int TROPF() {
  *
  *--------------------------------------------------------------------*/
 
-int tropf(int Ntrunc, double complex tilOm, double complex tilom, int s, double complex *Gns, double complex *Kns, double complex *dns, double complex *ens, int size_tilal,
+int tropf(int N, double complex tilOm, double complex tilom, int s, double complex *Gns, double complex *Kns, double complex *dns, double complex *ens, int size_tilal,
 		  double complex *tilalpd, double complex *tilalpr, int size_tilnusqns, double complex *tilnusqns, double complex **Dns, double complex **Rns, double complex **pns,
 		  double *calWns, double *calDns, double *calEKns, double *calEPns, double complex *knFsF) {
 
@@ -246,8 +246,8 @@ int tropf(int Ntrunc, double complex tilOm, double complex tilom, int s, double 
 	int j = 0;
 
 	// Create vector of SH degrees (n = s, s+1, s+2 ... Ntrunc):
-	int *nvec = (int *) malloc(Ntrunc*sizeof(int)); //[nvec,Ntrunc] = nVec(N,s); // nvec is the vector of degrees and Ntrunc is the truncation degree.
-	for (i=0;i<Ntrunc;i++) nvec[i] = s + i;
+	int *nvec = (int *) malloc(N*sizeof(int)); //[nvec,Ntrunc] = nVec(N,s); // nvec is the vector of degrees and Ntrunc is the truncation degree.
+	for (i=0;i<N;i++) nvec[i] = s + i;
 
 	// ------------------------------------
 	// Build operator matrices L*
@@ -255,16 +255,16 @@ int tropf(int Ntrunc, double complex tilOm, double complex tilom, int s, double 
 
     // Dissipation and slowness operators:
 	// Lalphad and Lalphar
-	double complex ** dissdvecs = (double complex **) malloc(Ntrunc*sizeof(double complex *));
-	for (i=0;i<Ntrunc;i++) dissdvecs[i] = (double complex *) malloc(size_tilal*sizeof(double complex));
+	double complex ** dissdvecs = (double complex **) malloc(N*sizeof(double complex *));
+	for (i=0;i<N;i++) dissdvecs[i] = (double complex *) malloc(size_tilal*sizeof(double complex));
 
-	double complex ** dissrvecs = (double complex **) malloc(Ntrunc*sizeof(double complex *));
-	for (i=0;i<Ntrunc;i++) dissrvecs[i] = (double complex *) malloc(size_tilal*sizeof(double complex));
+	double complex ** dissrvecs = (double complex **) malloc(N*sizeof(double complex *));
+	for (i=0;i<N;i++) dissrvecs[i] = (double complex *) malloc(size_tilal*sizeof(double complex));
 
-	double complex * sum_dissdvecs = (double complex *) malloc(Ntrunc*sizeof(double complex));
-	double complex * sum_dissrvecs = (double complex *) malloc(Ntrunc*sizeof(double complex));
+	double complex * sum_dissdvecs = (double complex *) malloc(N*sizeof(double complex));
+	double complex * sum_dissrvecs = (double complex *) malloc(N*sizeof(double complex));
 
-	for (i=0;i<Ntrunc;i++) {
+	for (i=0;i<N;i++) {
 		for (j=0;j<size_tilal;j++) {
 			dissdvecs[i][j] = 0.0;
 			dissrvecs[i][j] = 0.0;
@@ -273,7 +273,7 @@ int tropf(int Ntrunc, double complex tilOm, double complex tilom, int s, double 
 		sum_dissrvecs[i] = 0.0;
 	}
 
-	for (i=0;i<Ntrunc;i++) {
+	for (i=0;i<N;i++) {
 		for (j=0;j<size_tilal;j++) {
 			dissdvecs[i][j] = tilalpd[j]*(double complex)pow((double)(-nvec[i] * (nvec[i] + 1)), j);
 			dissrvecs[i][j] = tilalpr[j]*(double complex)pow((double)(-nvec[i] * (nvec[i] + 1)), j);
@@ -284,78 +284,80 @@ int tropf(int Ntrunc, double complex tilOm, double complex tilom, int s, double 
 		if (sum_dissrvecs[i] == 0.0) sum_dissrvecs[i] = DBL_EPSILON;
 	}
 
-	int *diagIndices = (int *)malloc (Ntrunc*sizeof(int));
-	for (i=0;i<Ntrunc;i++) diagIndices[i] = i;
+	int *diagIndices = (int *)malloc (N*sizeof(int));
+	for (i=0;i<N;i++) diagIndices[i] = i;
 
-	CSRMatrix Lalphad = createCSRMatrix(Ntrunc, Ntrunc, Ntrunc, diagIndices, diagIndices, sum_dissdvecs); // Diagonal
-//	for (i=0;i<Ntrunc;i++) printf("%d \t %g + %g*i\n", Lalphad.colIndices[i], creal(Lalphad.values[i]), cimag(Lalphad.values[i]));
-	CSRMatrix Lalphar = createCSRMatrix(Ntrunc, Ntrunc, Ntrunc, diagIndices, diagIndices, sum_dissrvecs); // Diagonal
+	CSRMatrix Lalphad = createCSRMatrix(N, N, N, diagIndices, diagIndices, sum_dissdvecs); // Diagonal
+//	for (i=0;i<N;i++) printf("%d \t %g + %g*i\n", Lalphad.colIndices[i], creal(Lalphad.values[i]), cimag(Lalphad.values[i]));
+	CSRMatrix Lalphar = createCSRMatrix(N, N, N, diagIndices, diagIndices, sum_dissrvecs); // Diagonal
 
 	// LV
-	double complex *LVvalues = (double complex *) malloc(Ntrunc*sizeof(double complex)); // Free'd after LD
-	for (i=0;i<Ntrunc;i++) {
+	double complex *LVvalues = (double complex *) malloc(N*sizeof(double complex)); // Free'd after LD
+	for (i=0;i<N;i++) {
 		if (size_tilnusqns > 1) LVvalues[i] = tilnusqns[i];
 		else LVvalues[i] = tilnusqns[0];
 	}
-	CSRMatrix LV = createCSRMatrix(Ntrunc, Ntrunc, Ntrunc, diagIndices, diagIndices, LVvalues); // Diagonal
+	CSRMatrix LV = createCSRMatrix(N, N, N, diagIndices, diagIndices, LVvalues); // Diagonal
 
 	// Other operators:
 	// LL
-	double complex *lvec = (double complex *) malloc(Ntrunc*sizeof(double complex)); // Vector for Laplacian coefs
-	for (i=0;i<Ntrunc;i++) lvec[i] = (double complex) (-nvec[i] * (nvec[i] + 1));
-	if (Ntrunc == 1 && lvec[0] == 0.0) lvec[0] = DBL_EPSILON; // Compensate for singular (s=0) case, otherwise Lapl inverse matrices will be singular
-	CSRMatrix LL = createCSRMatrix(Ntrunc, Ntrunc, Ntrunc, diagIndices, diagIndices, lvec); // Diagonal
+	double complex *lvec = (double complex *) malloc(N*sizeof(double complex)); // Vector for Laplacian coefs
+	for (i=0;i<N;i++) lvec[i] = (double complex) (-nvec[i] * (nvec[i] + 1));
+	if (N == 1 && lvec[0] == 0.0) lvec[0] = DBL_EPSILON; // Compensate for singular (s=0) case, otherwise Lapl inverse matrices will be singular
+	CSRMatrix LL = createCSRMatrix(N, N, N, diagIndices, diagIndices, lvec); // Diagonal
 
 	// LC
 	// LC = spdiags(   tilOm*(-nvec.*(nvec+2).*(nvec-s+1)./(2*nvec+1))   ,-1,N,N)...
 	//    + spdiags(   tilOm*(-(nvec-1).*(nvec+1).*(nvec+s)./(2*nvec+1)) ,+1,N,N) ;
-	double complex *LCvalues = (double complex *) malloc((2*Ntrunc-2)*sizeof(double complex));
+	double complex *LCvalues = (double complex *) malloc((2*N-2)*sizeof(double complex));
 	LCvalues[0] = tilOm*(double complex)(-(nvec[0]-1) * (nvec[0]+1) * nvec[0]+s  ) / (double complex)(2*nvec[0] + 1); // First value of upper diagonal
-	for (i=1;i<2*Ntrunc-2;i=i+2) {
-		LCvalues[i]   = tilOm*(double complex)(- nvec[i]    * (nvec[i]+2) * nvec[i]-s+1) / (double complex)(2*nvec[i] + 1); // Lower diagonal
-		LCvalues[i+1] = tilOm*(double complex)(-(nvec[i]-1) * (nvec[i]+1) * nvec[i]+s  ) / (double complex)(2*nvec[i] + 1); // Upper diagonal
+	int k = 0;
+	for (i=1;i<2*N-2;i=i+2) {
+		k = (int)ceil((double)i/2.0) - 1;
+		LCvalues[i]   = tilOm*(double complex)(- nvec[k]    * (nvec[k]+2) * nvec[k]-s+1) / (double complex)(2*nvec[k] + 1); // Lower diagonal
+		LCvalues[i+1] = tilOm*(double complex)(-(nvec[k]-1) * (nvec[k]+1) * nvec[k]+s  ) / (double complex)(2*nvec[k] + 1); // Upper diagonal
 	}
-	int *triDiagRowIndices = (int *)malloc ((2*Ntrunc-2)*sizeof(int));
-	int *triDiagColIndices = (int *)malloc ((2*Ntrunc-2)*sizeof(int));
+	printf("%g + i*%g\n", creal(LCvalues[1]), cimag(LCvalues[1]));
+	int *triDiagRowIndices = (int *)malloc ((2*N-2)*sizeof(int));
+	int *triDiagColIndices = (int *)malloc ((2*N-2)*sizeof(int));
 	triDiagRowIndices[0] = 0; // First element of upper diagonal
 	triDiagColIndices[0] = 1; // First element of upper diagonal
-	int k = 0;
-	for (i=1;i<2*Ntrunc-2;i=i+2) {
+	for (i=1;i<2*N-2;i=i+2) {
 		k = (int)ceil((double)i/2.0);
 		triDiagRowIndices[i] = k;
 		triDiagRowIndices[i+1] = k;
 		triDiagColIndices[i] = k-1;   // Lower diagonal
 		triDiagColIndices[i+1] = k+1; // Upper diagonal
 	}
-	CSRMatrix LC = createCSRMatrix(Ntrunc, Ntrunc, 2*Ntrunc-2, triDiagRowIndices, triDiagColIndices, LCvalues); // Tridiagnoal, central diagonal is 0
+	CSRMatrix LC = createCSRMatrix(N, N, 2*N-2, triDiagRowIndices, triDiagColIndices, LCvalues); // Tridiagnoal, central diagonal is 0
 	free(LCvalues);
 
 	// LD
-	double complex *LDvalues = (double complex *) malloc(Ntrunc*sizeof(double complex));
-	for (i=0;i<Ntrunc;i++) LDvalues[i] = (tilom + I*sum_dissdvecs[i])*lvec[i] - s*tilOm + 1.0/tilom*lvec[i] / LVvalues[i] * lvec[i];
-	CSRMatrix LD = createCSRMatrix(Ntrunc, Ntrunc, Ntrunc, diagIndices, diagIndices, LDvalues); // Diagonal
+	double complex *LDvalues = (double complex *) malloc(N*sizeof(double complex));
+	for (i=0;i<N;i++) LDvalues[i] = (tilom + I*sum_dissdvecs[i])*lvec[i] - s*tilOm + 1.0/tilom*lvec[i] / LVvalues[i] * lvec[i];
+	CSRMatrix LD = createCSRMatrix(N, N, N, diagIndices, diagIndices, LDvalues); // Diagonal
 	free(LDvalues);
 	free(LVvalues);
 
 	// LVi
-	double complex *LVivalues = (double complex *) malloc(Ntrunc*sizeof(double complex));
-	for (i=0;i<Ntrunc;i++) {
+	double complex *LVivalues = (double complex *) malloc(N*sizeof(double complex));
+	for (i=0;i<N;i++) {
 		if (size_tilnusqns > 1) LVivalues[i] = 1.0/tilnusqns[i];
 		else LVivalues[i] = 1.0/tilnusqns[0];
 	}
-	CSRMatrix LVi = createCSRMatrix(Ntrunc, Ntrunc, Ntrunc, diagIndices, diagIndices, LVivalues); // Diagonal
+	CSRMatrix LVi = createCSRMatrix(N, N, N, diagIndices, diagIndices, LVivalues); // Diagonal
 	free(LVivalues);
 
 	// LLi
-	double complex *LLivalues = (double complex *) malloc(Ntrunc*sizeof(double complex));
-	for (i=0;i<Ntrunc;i++) LVivalues[i] = 1.0/lvec[i];
-	CSRMatrix LLi = createCSRMatrix(Ntrunc, Ntrunc, Ntrunc, diagIndices, diagIndices, LLivalues); // Diagonal
+	double complex *LLivalues = (double complex *) malloc(N*sizeof(double complex));
+	for (i=0;i<N;i++) LVivalues[i] = 1.0/lvec[i];
+	CSRMatrix LLi = createCSRMatrix(N, N, N, diagIndices, diagIndices, LLivalues); // Diagonal
 	free(LLivalues);
 
 	// LBi
-	double complex *LBivalues = (double complex *) malloc(Ntrunc*sizeof(double complex));
-	for (i=0;i<Ntrunc;i++) LBivalues[i] = 1.0/((tilom + I*sum_dissrvecs[i])*lvec[i] - s*tilOm);
-	CSRMatrix LBi = createCSRMatrix(Ntrunc, Ntrunc, Ntrunc, diagIndices, diagIndices, LBivalues); // Diagonal
+	double complex *LBivalues = (double complex *) malloc(N*sizeof(double complex));
+	for (i=0;i<N;i++) LBivalues[i] = 1.0/((tilom + I*sum_dissrvecs[i])*lvec[i] - s*tilOm);
+	CSRMatrix LBi = createCSRMatrix(N, N, N, diagIndices, diagIndices, LBivalues); // Diagonal
 	free(LBivalues);
 
 	free(dissdvecs);
@@ -371,9 +373,10 @@ int tropf(int Ntrunc, double complex tilOm, double complex tilom, int s, double 
 	// Also need to build, in addition to the above operators:
 //	LA        =  build_LA(nvec,tilOm, s,tilom, Lalphad, LL);
 	// LA  = spdiags(   (tilom+1i*diag(Lalphad,0)) .* diag(LL) - s*tilOm  , 0,N,N) ;
-	double complex *LAvalues = (double complex *) malloc(Ntrunc*sizeof(double complex));
-	for (i=0;i<Ntrunc;i++) LAvalues[i] = (tilom + I*sum_dissdvecs[i])*lvec[i] - s*tilOm;
-	CSRMatrix LA = createCSRMatrix(Ntrunc, Ntrunc, Ntrunc, diagIndices, diagIndices, LAvalues); // Diagonal
+	double complex *LAvalues = (double complex *) malloc(N*sizeof(double complex));
+	for (i=0;i<N;i++) LAvalues[i] = (tilom + I*sum_dissdvecs[i])*lvec[i] - s*tilOm;
+	CSRMatrix LA = createCSRMatrix(N, N, N, diagIndices, diagIndices, LAvalues); // Diagonal
+	free(LAvalues);
 
 //	LB        =  build_LB(nvec,tilOm, s,tilom, Lalphar, LL);
 
@@ -436,7 +439,6 @@ int tropf(int Ntrunc, double complex tilOm, double complex tilom, int s, double 
 	freeCSRMatrix(&LVjunk2);
 	freeCSRMatrix(&LVjunk3);
 	freeCSRMatrix(&LVjunk4);
-	freeCSRMatrix(&LA);
 
 //	LVjunk_sym = LVjunk(1:2:end,1:2:end); % matrix for symmetric
 	CSRMatrix LVjunk_sym = csrSubsample(&LVjunk, 0, 0);
@@ -447,21 +449,21 @@ int tropf(int Ntrunc, double complex tilOm, double complex tilom, int s, double 
 //	[V,D]  = eig(full(LVjunk_sym));
 	double complex ** diagLVjunk_sym = csrToDense2D(&LVjunk_sym);
 
-//	for (i=0;i<Ntrunc/2;i++) {
-//		for (j=0;j<Ntrunc/2;j++) {
+//	for (i=0;i<N/2;i++) {
+//		for (j=0;j<N/2;j++) {
 //			if (cimag(diagLVjunk_sym[i][j]) < DBL_EPSILON) diagLVjunk_sym[i][j] = (double complex) creal(diagLVjunk_sym[i][j]);
 //			printf("%g +\t%g*i \t\t", creal(diagLVjunk_sym[i][j]), cimag(diagLVjunk_sym[i][j]));
 //		}
 //		printf("\n");
 //	}
 
-	int ntest = Ntrunc/2;
+	int ntest = N/2;
 	static double R_diagLVjunk_sym[60][60];
 	static double u[60];
 	static double v[60];
 
-	for (i=0;i<Ntrunc/2;i++) {
-		for (j=0;j<Ntrunc/2;j++) {
+	for (i=0;i<N/2;i++) {
+		for (j=0;j<N/2;j++) {
 			R_diagLVjunk_sym[i][j] = creal(diagLVjunk_sym[i][j]);
 		}
 	}
@@ -471,14 +473,12 @@ int tropf(int Ntrunc, double complex tilOm, double complex tilom, int s, double 
 //			printf("%.2e ", R_diagLVjunk_sym[i][j]);
 //		printf("\n");
 //	}
-	printf("\n");
 	n_eigen(R_diagLVjunk_sym[0], ntest, u, v);
-	qsort((double*) u, Ntrunc/2, sizeof(double), comp);
-	for (i = 0; i < Ntrunc/2; i++) {
+	qsort((double*) u, N/2, sizeof(double), comp);
+//	for (i = 0; i < N/2; i++) {
 //		printf("%.2e + j*%.2e\n", u[i], v[i]);
-		printf("%.2e\n", u[i]);
-	}
-	printf("\n");
+//	}
+//	printf("\n");
 
 	   // Clean up
 //	   freeEigenvalues(&eig2);
@@ -486,10 +486,10 @@ int tropf(int Ntrunc, double complex tilOm, double complex tilom, int s, double 
 //	tilcesqvals  = diag(D); % squared eigen-wavespeeds
 //	[junk,ii_descend] = sort(abs(tilcesqvals),'descend');
 
-//	for (i=0;i<Ntrunc/2;i++) eig.values[i] = cabs(eig.values[i]);
-//	qsort(eig.values, Ntrunc/2, sizeof(eig.values[0]), comp);
+//	for (i=0;i<N/2;i++) eig.values[i] = cabs(eig.values[i]);
+//	qsort(eig.values, N/2, sizeof(eig.values[0]), comp);
 //
-//	for(i=0;i<Ntrunc/2;i++) printf("%d \t %g\n", i, creal(eig.values[i]));
+//	for(i=0;i<N/2;i++) printf("%d \t %g\n", i, creal(eig.values[i]));
 
 //	tilcesqvals_sym_tilmfD    = tilcesqvals(ii_descend,:);
 //	[V,D]  = eig(full(LVjunk_asy));
@@ -500,10 +500,18 @@ int tropf(int Ntrunc, double complex tilOm, double complex tilom, int s, double 
 	freeCSRMatrix(&LVjunk);
 	freeCSRMatrix(&LVjunk_sym);
 	freeCSRMatrix(&LVjunk_asy);
-	for(i=0;i<Ntrunc/2;i++) free(diagLVjunk_sym[i]);
+	for(i=0;i<N/2;i++) free(diagLVjunk_sym[i]);
 	free(diagLVjunk_sym);
 //	freeEigenvalues(&eig);
 	printf("Marc\n");
+//	for (i=0;i<N;i++) printf("%g + i*%g\n", creal(nvec[i]), cimag(nvec[i]));
+//	printf("%g + i*%g\n", creal(tilnusqns[0]), cimag(tilnusqns[0]));
+	printCSRMatrix(LD);
+	printCSRMatrixDense(&LD);
+	printCSRMatrix(LC);
+	printCSRMatrixDense(&LC);
+
+	freeCSRMatrix(&LA);
 	exit(0);
 //	%% Eigenvalues in LtilmfR formulation:
 //	LVjunk =  tilom*LLi* (LC*LBi -LA*inv(LC)) * LC*LLi;
@@ -533,27 +541,27 @@ int tropf(int Ntrunc, double complex tilOm, double complex tilom, int s, double 
 //	dlmwrite('asyN120',junk,'delimiter','\t','precision','%10.7e')
 
 	// Build QtilmfD: QtilmfD = (1/tilom)*LVi*(Kns) + LLi*dns + LLi*LC*LBi*ens
-	double complex * QtilmfD = (double complex *) malloc(Ntrunc*sizeof(double complex));
+	double complex * QtilmfD = (double complex *) malloc(N*sizeof(double complex));
 	csrMatrixVectorMultiply(LVi, Kns, &QtilmfD);
-	for (i=0;i<Ntrunc;i++) QtilmfD[i] = 1.0/tilom*QtilmfD[i];
-	double complex * QtilmfD2 = (double complex *) malloc(Ntrunc*sizeof(double complex));
+	for (i=0;i<N;i++) QtilmfD[i] = 1.0/tilom*QtilmfD[i];
+	double complex * QtilmfD2 = (double complex *) malloc(N*sizeof(double complex));
 	csrMatrixVectorMultiply(LLi, dns, &QtilmfD2);
-	vectorAdd(QtilmfD, QtilmfD2, &QtilmfD, 1, Ntrunc);
-	double complex * QtilmfD3a = (double complex *) malloc(Ntrunc*sizeof(double complex));
+	vectorAdd(QtilmfD, QtilmfD2, &QtilmfD, 1, N);
+	double complex * QtilmfD3a = (double complex *) malloc(N*sizeof(double complex));
 	csrMatrixVectorMultiply(LBi, ens, &QtilmfD3a);
-	double complex * QtilmfD3b = (double complex *) malloc(Ntrunc*sizeof(double complex));
+	double complex * QtilmfD3b = (double complex *) malloc(N*sizeof(double complex));
 	csrMatrixVectorMultiply(LC, QtilmfD3a, &QtilmfD3b);
-	double complex * QtilmfD3 = (double complex *) malloc(Ntrunc*sizeof(double complex));
+	double complex * QtilmfD3 = (double complex *) malloc(N*sizeof(double complex));
 	csrMatrixVectorMultiply(LLi, QtilmfD3b, &QtilmfD3);
-	vectorAdd(QtilmfD, QtilmfD3, &QtilmfD, 1, Ntrunc);
+	vectorAdd(QtilmfD, QtilmfD3, &QtilmfD, 1, N);
 
 	free(QtilmfD2);
 	free(QtilmfD3);
 	free(QtilmfD3a);
 	free(QtilmfD3b);
 
-	double complex * LHS = (double complex *) malloc(Ntrunc*sizeof(double complex));
-	vectorAdd(Gns, QtilmfD, &LHS, 1, Ntrunc);
+	double complex * LHS = (double complex *) malloc(N*sizeof(double complex));
+	vectorAdd(Gns, QtilmfD, &LHS, 1, N);
 
 	// Solve for Dns: LtilmfD * Dns = Gns + QtilmfD
 	int maxIter = 1000;
@@ -564,24 +572,24 @@ int tropf(int Ntrunc, double complex tilOm, double complex tilom, int s, double 
 	free(LHS);
 
 	// Get Rns from Dns: Rns = -LBi * (LC*Dns + ens)
-	double complex * Rns1 = (double complex *) malloc(Ntrunc*sizeof(double complex));
+	double complex * Rns1 = (double complex *) malloc(N*sizeof(double complex));
 	csrMatrixVectorMultiply(LC, *Dns, &Rns1);
-	vectorAdd(Rns1, ens, &Rns1, 1, Ntrunc);
+	vectorAdd(Rns1, ens, &Rns1, 1, N);
 	csrMatrixVectorMultiply(LBi, Rns1, &(*Rns));
-	for (i=0;i<Ntrunc;i++) (*Rns)[i] = -(*Rns)[i];
+	for (i=0;i<N;i++) (*Rns)[i] = -(*Rns)[i];
 
 	free(Rns1);
 
     // Get pns from Dns: pns = (1/tilom) * LVi * (LL*Dns - Kns)
-	double complex * pns1 = (double complex *) malloc(Ntrunc*sizeof(double complex));
+	double complex * pns1 = (double complex *) malloc(N*sizeof(double complex));
 	csrMatrixVectorMultiply(LL, *Dns, &pns1);
-	double complex * pns2 = (double complex *) malloc(Ntrunc*sizeof(double complex));
-	vectorCopy(Kns, &pns2, Ntrunc);
-	for (i=0;i<Ntrunc;i++) pns2[i] = -pns2[i];
-	double complex * pns3 = (double complex *) malloc(Ntrunc*sizeof(double complex));
-	vectorAdd(pns1, pns2, &pns3, 1, Ntrunc);
+	double complex * pns2 = (double complex *) malloc(N*sizeof(double complex));
+	vectorCopy(Kns, &pns2, N);
+	for (i=0;i<N;i++) pns2[i] = -pns2[i];
+	double complex * pns3 = (double complex *) malloc(N*sizeof(double complex));
+	vectorAdd(pns1, pns2, &pns3, 1, N);
 	csrMatrixVectorMultiply(LVi, pns3, &(*pns));
-	for (i=0;i<Ntrunc;i++) (*pns)[i] = 1.0/tilom*(*pns)[i];
+	for (i=0;i<N;i++) (*pns)[i] = 1.0/tilom*(*pns)[i];
 
 	free(pns1);
 	free(pns2);
@@ -599,72 +607,72 @@ int tropf(int Ntrunc, double complex tilOm, double complex tilom, int s, double 
 	// ------------------------------------
 
 	// Work rate density
-	double complex * calWns1 = (double complex *) malloc(Ntrunc*sizeof(double complex));
-	for (i=0;i<Ntrunc;i++) calWns1[i] = -I*Gns[i];
-	double complex * calWns2 = (double complex *) malloc(Ntrunc*sizeof(double complex));
-	for (i=0;i<Ntrunc;i++) calWns2[i] = -I*tilom*(-I*(*pns)[i]);
-	double complex * calWns3 = (double complex *) malloc(Ntrunc*sizeof(double complex));
+	double complex * calWns1 = (double complex *) malloc(N*sizeof(double complex));
+	for (i=0;i<N;i++) calWns1[i] = -I*Gns[i];
+	double complex * calWns2 = (double complex *) malloc(N*sizeof(double complex));
+	for (i=0;i<N;i++) calWns2[i] = -I*tilom*(-I*(*pns)[i]);
+	double complex * calWns3 = (double complex *) malloc(N*sizeof(double complex));
 	csrMatrixVectorMultiply(LV, calWns2, &calWns3);
 
-	*calWns = globeTimeAvg(calWns1, calWns3, s, nvec, Ntrunc);
+	*calWns = globeTimeAvg(calWns1, calWns3, s, nvec, N);
 
 	free(calWns2);
 	free(calWns3);
-	for (i=0;i<Ntrunc;i++) calWns1[i] = -I*(*pns)[i] - (-I*Gns[i]);
+	for (i=0;i<N;i++) calWns1[i] = -I*(*pns)[i] - (-I*Gns[i]);
 
-	*calWns = *calWns + globeTimeAvg(calWns1, Kns, s, nvec, Ntrunc);
+	*calWns = *calWns + globeTimeAvg(calWns1, Kns, s, nvec, N);
 	free(calWns1);
 
 	// Dissipation rate density
 	//calDns  = (-1/2) * globeTimeAverage( (Dns)                 , (LL*Lalphad*Dns)       , s ) ...
-	double complex * calDns1 = (double complex *) malloc(Ntrunc*sizeof(double complex));
+	double complex * calDns1 = (double complex *) malloc(N*sizeof(double complex));
 	csrMatrixVectorMultiply(Lalphad, *Dns, &calDns1);
-	double complex * calDns2 = (double complex *) malloc(Ntrunc*sizeof(double complex));
+	double complex * calDns2 = (double complex *) malloc(N*sizeof(double complex));
 	csrMatrixVectorMultiply(LL, calDns1, &calDns2);
 
-	*calDns = -0.5*globeTimeAvg(*Dns, calDns2, s, nvec, Ntrunc);
+	*calDns = -0.5*globeTimeAvg(*Dns, calDns2, s, nvec, N);
 
 	free(calDns2);
 
 	//        + (-1/2) * globeTimeAverage( (Lalphad*Dns)         , (LL*Dns)               , s ) ...
-	double complex * calDns3 = (double complex *) malloc(Ntrunc*sizeof(double complex));
+	double complex * calDns3 = (double complex *) malloc(N*sizeof(double complex));
 	csrMatrixVectorMultiply(LL, *Dns, &calDns3);
 
-	*calDns = *calDns - 0.5*globeTimeAvg(calDns1, calDns3, s, nvec, Ntrunc);
+	*calDns = *calDns - 0.5*globeTimeAvg(calDns1, calDns3, s, nvec, N);
 
 	free(calDns1);
 
 	//        + (-1/2) * globeTimeAverage( (-1i*Rns)             , (LL*Lalphar*(-1i*Rns)) , s ) ...
-	double complex * calDns4 = (double complex *) malloc(Ntrunc*sizeof(double complex));
-	for (i=0;i<Ntrunc;i++) calDns4[i] = -I*(*Rns)[i];
-	double complex * calDns5 = (double complex *) malloc(Ntrunc*sizeof(double complex));
+	double complex * calDns4 = (double complex *) malloc(N*sizeof(double complex));
+	for (i=0;i<N;i++) calDns4[i] = -I*(*Rns)[i];
+	double complex * calDns5 = (double complex *) malloc(N*sizeof(double complex));
 	csrMatrixVectorMultiply(Lalphar, calDns4, &calDns5);
-	double complex * calDns6 = (double complex *) malloc(Ntrunc*sizeof(double complex));
+	double complex * calDns6 = (double complex *) malloc(N*sizeof(double complex));
 	csrMatrixVectorMultiply(LL, calDns5, &calDns6);
 
-	*calDns = *calDns - 0.5*globeTimeAvg(calDns4, calDns6, s, nvec, Ntrunc);
+	*calDns = *calDns - 0.5*globeTimeAvg(calDns4, calDns6, s, nvec, N);
 
 	free(calDns6);
 
 	//        + (-1/2) * globeTimeAverage( (Lalphar*(-1i*Rns))   , (LL*(-1i*Rns))         , s ) ...
-	double complex * calDns7 = (double complex *) malloc(Ntrunc*sizeof(double complex));
+	double complex * calDns7 = (double complex *) malloc(N*sizeof(double complex));
 	csrMatrixVectorMultiply(LL, calDns4, &calDns7);
 
-	*calDns = *calDns - 0.5*globeTimeAvg(calDns5, calDns7, s, nvec, Ntrunc);
+	*calDns = *calDns - 0.5*globeTimeAvg(calDns5, calDns7, s, nvec, N);
 
 	free(calDns5);
 
 	//        + (  1 ) * globeTimeAverage( (tilom*(-1i*pns))     , (imag(LV)*(-1i*pns))   , s )   ;
-	double complex * calDns8 = (double complex *) malloc(Ntrunc*sizeof(double complex));
-	for (i=0;i<Ntrunc;i++) calDns8[i] = -I*(*pns)[i];
+	double complex * calDns8 = (double complex *) malloc(N*sizeof(double complex));
+	for (i=0;i<N;i++) calDns8[i] = -I*(*pns)[i];
 	CSRMatrix imagLV = csrCopyMatrix(&LV);
 	for(i=0;i<imagLV.nnz;i++) imagLV.values[i] = cimag(imagLV.values[i]);
-	double complex * calDns9 = (double complex *) malloc(Ntrunc*sizeof(double complex));
+	double complex * calDns9 = (double complex *) malloc(N*sizeof(double complex));
 	csrMatrixVectorMultiply(imagLV, calDns8, &calDns9);
-	double complex * calDns10 = (double complex *) malloc(Ntrunc*sizeof(double complex));
-	for (i=0;i<Ntrunc;i++) calDns10[i] = tilom*calDns8[i];
+	double complex * calDns10 = (double complex *) malloc(N*sizeof(double complex));
+	for (i=0;i<N;i++) calDns10[i] = tilom*calDns8[i];
 
-	*calDns = *calDns + globeTimeAvg(calDns10, calDns9, s, nvec, Ntrunc);
+	*calDns = *calDns + globeTimeAvg(calDns10, calDns9, s, nvec, N);
 
 	free(calDns9);
 	free(calDns10);
@@ -673,8 +681,8 @@ int tropf(int Ntrunc, double complex tilOm, double complex tilom, int s, double 
 	// Kinetic energy density
 	//calEKns = (-1/2) * globeTimeAverage( (Dns)     , (LL*Dns)       , s ) ...
 	//        + (-1/2) * globeTimeAverage( (-1i*Rns) , (LL*(-1i*Rns)) , s )   ;
-	*calEKns = -0.5*globeTimeAvg(*Dns, calDns3, s, nvec, Ntrunc)
-	           -0.5*globeTimeAvg(calDns4, calDns7, s, nvec, Ntrunc);
+	*calEKns = -0.5*globeTimeAvg(*Dns, calDns3, s, nvec, N)
+	           -0.5*globeTimeAvg(calDns4, calDns7, s, nvec, N);
 
 	free(calDns3);
 	free(calDns4);
@@ -684,10 +692,10 @@ int tropf(int Ntrunc, double complex tilOm, double complex tilom, int s, double 
 	//calEPns = (1/2) * globeTimeAverage( (-1i*pns) , real(LV)*(-1i*pns) , s ) ;
 	CSRMatrix realLV = csrCopyMatrix(&LV);
 	for(i=0;i<imagLV.nnz;i++) realLV.values[i] = creal(realLV.values[i]);
-	double complex * calEPns1 = (double complex *) malloc(Ntrunc*sizeof(double complex));
+	double complex * calEPns1 = (double complex *) malloc(N*sizeof(double complex));
 	csrMatrixVectorMultiply(realLV, calDns8, &calEPns1);
 
-	*calEPns = 0.5*globeTimeAvg(calDns8, calEPns1, s, nvec, Ntrunc);
+	*calEPns = 0.5*globeTimeAvg(calDns8, calEPns1, s, nvec, N);
 
 	free(calDns8);
 	free(calEPns1);
@@ -736,25 +744,25 @@ int tropf(int Ntrunc, double complex tilOm, double complex tilom, int s, double 
  * Output:
  * ST_globeTimeAverage
  */
-double globeTimeAvg(double complex * Ans, double complex * Bns, int s, int *nvec, int Ntrunc) {
+double globeTimeAvg(double complex * Ans, double complex * Bns, int s, int *nvec, int N) {
 
 	int i = 0;
 	double ST_globeTimeAvg = 0.0;
 
-	double complex * CAns = (double complex *) malloc(Ntrunc*sizeof(double complex));
-	for (i=0;i<Ntrunc;i++) CAns[i] = conj(Ans[i]);
+	double complex * CAns = (double complex *) malloc(N*sizeof(double complex));
+	for (i=0;i<N;i++) CAns[i] = conj(Ans[i]);
 
-	double complex * CBns = (double complex *) malloc(Ntrunc*sizeof(double complex));
-	for (i=0;i<Ntrunc;i++) CBns[i] = conj(Bns[i]);
+	double complex * CBns = (double complex *) malloc(N*sizeof(double complex));
+	for (i=0;i<N;i++) CBns[i] = conj(Bns[i]);
 
-	double complex * RatioFac = (double complex *) malloc(Ntrunc*sizeof(double complex));
-	for (i=0;i<Ntrunc;i++) RatioFac[i] = ratiofactorials1(nvec[i],s);
+	double complex * RatioFac = (double complex *) malloc(N*sizeof(double complex));
+	for (i=0;i<N;i++) RatioFac[i] = ratiofactorials1(nvec[i],s);
 
-	double complex * div2nvecpl1 = (double complex *) malloc(Ntrunc*sizeof(double complex));
-	for (i=0;i<Ntrunc;i++) div2nvecpl1[i] = 1.0 / (2.0*nvec[i] + 1.0);
+	double complex * div2nvecpl1 = (double complex *) malloc(N*sizeof(double complex));
+	for (i=0;i<N;i++) div2nvecpl1[i] = 1.0 / (2.0*nvec[i] + 1.0);
 
 	// ST_globeTimeAverage = ( (Ans).*conj(Bns) + conj(Ans).*(Bns) ) .*  (1./(2*nvec+1)).*ratiofactorials1(nvec,s)
-	ST_globeTimeAvg = (dotProduct(Ans, CBns, Ntrunc) + dotProduct(CAns, Bns, Ntrunc)) * dotProduct(div2nvecpl1, RatioFac, Ntrunc);
+	ST_globeTimeAvg = (dotProduct(Ans, CBns, N) + dotProduct(CAns, Bns, N)) * dotProduct(div2nvecpl1, RatioFac, N);
 
 	free(CAns);
 	free(CBns);
@@ -1146,53 +1154,53 @@ CSRMatrix csrMatrixMultiply(const CSRMatrix *A, const CSRMatrix *B) {
     return C;
 }
 
-/**
- * Performs sparse matrix transposition C = A^T
- *
- * @param A Input CSR matrix
- * @return Transposed matrix in CSR format
- */
-CSRMatrix csrMatrixTranspose(const CSRMatrix *A) {
-    CSRMatrix C;
-    C.rows = A->cols;
-    C.cols = A->rows;
-    C.nnz = A->nnz;
-
-    // Allocate memory for transposed matrix
-    C.values = (double complex *)malloc(C.nnz * sizeof(double complex));
-    C.colIndices = (int *)malloc(C.nnz * sizeof(int));
-    C.rowPointers = (int *)malloc((C.rows + 1) * sizeof(int));
-
-    // Count non-zeros in each row of the transposed matrix (columns of A)
-    int *rowCount = (int *)calloc(C.rows, sizeof(int));
-    for (int i = 0; i < A->nnz; i++) {
-        rowCount[A->colIndices[i]]++;
-    }
-
-    // Set up row pointers for the transposed matrix
-    C.rowPointers[0] = 0;
-    for (int i = 0; i < C.rows; i++) {
-        C.rowPointers[i+1] = C.rowPointers[i] + rowCount[i];
-    }
-
-    // Reset counters for use in placing elements
-    memset(rowCount, 0, C.rows * sizeof(int));
-
-    // Fill in the transposed matrix
-    for (int i = 0; i < A->rows; i++) {
-        for (int j = A->rowPointers[i]; j < A->rowPointers[i+1]; j++) {
-            int col = A->colIndices[j];
-            int pos = C.rowPointers[col] + rowCount[col];
-
-            C.values[pos] = A->values[j];
-            C.colIndices[pos] = i;  // Column in C is row in A
-            rowCount[col]++;
-        }
-    }
-
-    free(rowCount);
-    return C;
-}
+///**
+// * Performs sparse matrix transposition C = A^T
+// *
+// * @param A Input CSR matrix
+// * @return Transposed matrix in CSR format
+// */
+//CSRMatrix csrMatrixTranspose(const CSRMatrix *A) {
+//    CSRMatrix C;
+//    C.rows = A->cols;
+//    C.cols = A->rows;
+//    C.nnz = A->nnz;
+//
+//    // Allocate memory for transposed matrix
+//    C.values = (double complex *)malloc(C.nnz * sizeof(double complex));
+//    C.colIndices = (int *)malloc(C.nnz * sizeof(int));
+//    C.rowPointers = (int *)malloc((C.rows + 1) * sizeof(int));
+//
+//    // Count non-zeros in each row of the transposed matrix (columns of A)
+//    int *rowCount = (int *)calloc(C.rows, sizeof(int));
+//    for (int i = 0; i < A->nnz; i++) {
+//        rowCount[A->colIndices[i]]++;
+//    }
+//
+//    // Set up row pointers for the transposed matrix
+//    C.rowPointers[0] = 0;
+//    for (int i = 0; i < C.rows; i++) {
+//        C.rowPointers[i+1] = C.rowPointers[i] + rowCount[i];
+//    }
+//
+//    // Reset counters for use in placing elements
+//    memset(rowCount, 0, C.rows * sizeof(int));
+//
+//    // Fill in the transposed matrix
+//    for (int i = 0; i < A->rows; i++) {
+//        for (int j = A->rowPointers[i]; j < A->rowPointers[i+1]; j++) {
+//            int col = A->colIndices[j];
+//            int pos = C.rowPointers[col] + rowCount[col];
+//
+//            C.values[pos] = A->values[j];
+//            C.colIndices[pos] = i;  // Column in C is row in A
+//            rowCount[col]++;
+//        }
+//    }
+//
+//    free(rowCount);
+//    return C;
+//}
 
 /**
  * Calculate the dot product of two vectors
@@ -1533,288 +1541,288 @@ double complex ** csrToDense2D(const CSRMatrix *csr) {
     return dense;
 }
 
-/**
- * Compute the Frobenius norm of a matrix
- */
-double matrixNorm(double complex **A, int n) {
-    double sum = 0.0;
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            sum += A[i][j] * A[i][j];
-        }
-    }
-    return sqrt(sum);
-}
-
-/**
- * Check if a matrix is close enough to upper triangular
- */
-bool isUpperTriangular(double complex **A, int n, double tol) {
-    for (int i = 1; i < n; i++) {
-        for (int j = 0; j < i; j++) {
-            if (cabs(A[i][j]) > tol) {
-                return false;
-            }
-        }
-    }
-    return true;
-}
-
-/**
- * Allocate a 2D matrix
- */
-double complex ** allocateMatrix(int rows, int cols) {
-
-    double complex **matrix = (double complex **)malloc(rows * sizeof(double complex*));
-    if (!matrix) return NULL;
-
-    for (int i = 0; i < rows; i++) {
-        matrix[i] = (double complex*)calloc(cols, sizeof(double complex));
-        if (!matrix[i]) {
-            // Clean up on allocation failure
-            for (int j = 0; j < i; j++) {
-                free(matrix[j]);
-            }
-            free(matrix);
-            return NULL;
-        }
-    }
-    return matrix;
-}
-
-/**
- * Free a 2D matrix
- */
-void freeMatrix(double complex **matrix, int rows) {
-    if (!matrix) return;
-    for (int i = 0; i < rows; i++) {
-        free(matrix[i]);
-    }
-    free(matrix);
-}
-
-/**
- * Copy a matrix
- */
-void copyDenseMatrix(double complex **dest, double complex **src, int n) {
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            dest[i][j] = src[i][j];
-        }
-    }
-}
-
-/**
- * Convert a matrix to upper Hessenberg form
- * (zero elements below the first subdiagonal)
- */
-void hessenbergReduction(double **A, int n) {
-    for (int k = 0; k < n - 2; k++) {
-        // Find the largest element below the diagonal in current column
-        double max_val = fabs(A[k+1][k]);
-        int max_row = k + 1;
-
-        for (int i = k + 2; i < n; i++) {
-            if (fabs(A[i][k]) > max_val) {
-                max_val = fabs(A[i][k]);
-                max_row = i;
-            }
-        }
-
-        // Skip if the column is already in the desired form
-        if (max_val < 1e-10) continue;
-
-        // Swap rows and columns if needed
-        if (max_row != k + 1) {
-            // Swap rows k+1 and max_row
-            for (int j = 0; j < n; j++) {
-                double temp = A[k+1][j];
-                A[k+1][j] = A[max_row][j];
-                A[max_row][j] = temp;
-            }
-
-            // Swap columns k+1 and max_row
-            for (int i = 0; i < n; i++) {
-                double temp = A[i][k+1];
-                A[i][k+1] = A[i][max_row];
-                A[i][max_row] = temp;
-            }
-        }
-
-        // Eliminate entries below the subdiagonal
-        for (int i = k + 2; i < n; i++) {
-            if (fabs(A[i][k]) < 1e-10) continue;
-
-            double factor = A[i][k] / A[k+1][k];
-            A[i][k] = 0.0;  // Set to exact zero
-
-            for (int j = k + 1; j < n; j++) {
-                A[i][j] -= factor * A[k+1][j];
-            }
-
-            for (int j = 0; j < n; j++) {
-                A[j][k+1] += factor * A[j][i];
-            }
-        }
-    }
-}
-
-/**
- * Perform a single QR iteration using implicit shift
- */
-void qrIteration(double **A, int n) {
-    // Apply a single implicit shift
-    double s = A[n-1][n-1];  // Shift value
-
-    // Create identity matrix minus shift
-    double **I_minus_sA = allocateMatrix(n, n);
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {
-            I_minus_sA[i][j] = -s * A[i][j];
-        }
-        I_minus_sA[i][i] += 1.0;  // Add identity
-    }
-
-    // Perform QR factorization implicitly using Householder reflections
-    for (int k = 0; k < n - 1; k++) {
-        // Generate Householder vector for this column
-        double norm = 0.0;
-        for (int i = k; i < n; i++) {
-            norm += I_minus_sA[i][k] * I_minus_sA[i][k];
-        }
-        norm = sqrt(norm);
-
-        if (norm > 1e-10) {
-            // Calculate Householder vector
-            double *v = (double*)malloc(n * sizeof(double));
-            for (int i = 0; i < k; i++) {
-                v[i] = 0.0;
-            }
-            for (int i = k; i < n; i++) {
-                v[i] = I_minus_sA[i][k];
-            }
-
-            if (v[k] >= 0) {
-                v[k] += norm;
-            } else {
-                v[k] -= norm;
-            }
-
-            // Normalize the vector
-            double v_norm = 0.0;
-            for (int i = k; i < n; i++) {
-                v_norm += v[i] * v[i];
-            }
-            v_norm = sqrt(v_norm);
-
-            if (v_norm > 1e-10) {
-                for (int i = k; i < n; i++) {
-                    v[i] /= v_norm;
-                }
-
-                // Apply Householder reflection to the matrix
-                for (int j = k; j < n; j++) {
-                    double dot_product = 0.0;
-                    for (int i = k; i < n; i++) {
-                        dot_product += v[i] * I_minus_sA[i][j];
-                    }
-                    for (int i = k; i < n; i++) {
-                        I_minus_sA[i][j] -= 2.0 * v[i] * dot_product;
-                    }
-                }
-
-                for (int i = 0; i < n; i++) {
-                    double dot_product = 0.0;
-                    for (int j = k; j < n; j++) {
-                        dot_product += I_minus_sA[i][j] * v[j];
-                    }
-                    for (int j = k; j < n; j++) {
-                        I_minus_sA[i][j] -= 2.0 * dot_product * v[j];
-                    }
-                }
-            }
-
-            free(v);
-        }
-    }
-
-    // Update A = QR + sI
-    copyDenseMatrix(A, I_minus_sA, n);
-    for (int i = 0; i < n; i++) {
-        A[i][i] += s;
-    }
-
-    freeMatrix(I_minus_sA, n);
-}
-
-/**
- * Check if a matrix is in triangular form with a given tolerance
- */
-bool isTriangularEnough(double **A, int n, double tol) {
-    for (int i = 1; i < n; i++) {
-        for (int j = 0; j < i; j++) {
-            if (fabs(A[i][j]) > tol) {
-                return false;
-            }
-        }
-    }
-    return true;
-}
-
-/**
- * Simple function to compute eigenvalues of a matrix
- * Returns eigenvalues as a vector (caller must free)
- *
- * @param A Input matrix (n x n)
- * @param n Size of the matrix
- * @return Array of eigenvalues (length n)
- */
-double* computeEigenvalues(double **A, int n) {
-    // Allocate array for eigenvalues
-    double *eigenvalues = (double*)malloc(n * sizeof(double));
-    if (!eigenvalues) return NULL;
-
-    // Create a working copy of A
-    double **H = allocateMatrix(n, n);
-    if (!H) {
-        free(eigenvalues);
-        return NULL;
-    }
-
-    copyDenseMatrix(H, A, n);
-
-    // Step 1: Reduce to Hessenberg form
-    hessenbergReduction(H, n);
-
-    // Step 2: Apply QR iterations until convergence
-    int maxIter = 100 * n;
-    double tol = 1e-8;
-
-    for (int iter = 0; iter < maxIter; iter++) {
-        qrIteration(H, n);
-
-        // Check if matrix is sufficiently triangular
-        if (isTriangularEnough(H, n, tol)) {
-            break;
-        }
-    }
-
-    // Extract eigenvalues from the diagonal of the result
-    for (int i = 0; i < n; i++) {
-        eigenvalues[i] = H[i][i];
-    }
-
-    // Clean up
-    freeMatrix(H, n);
-    return eigenvalues;
-}
-
-/**
- * Helper function to find minimum of two integers
- */
-int min(int a, int b) {
-    return (a < b) ? a : b;
-}
+///**
+// * Compute the Frobenius norm of a matrix
+// */
+//double matrixNorm(double complex **A, int n) {
+//    double sum = 0.0;
+//    for (int i = 0; i < n; i++) {
+//        for (int j = 0; j < n; j++) {
+//            sum += A[i][j] * A[i][j];
+//        }
+//    }
+//    return sqrt(sum);
+//}
+//
+///**
+// * Check if a matrix is close enough to upper triangular
+// */
+//bool isUpperTriangular(double complex **A, int n, double tol) {
+//    for (int i = 1; i < n; i++) {
+//        for (int j = 0; j < i; j++) {
+//            if (cabs(A[i][j]) > tol) {
+//                return false;
+//            }
+//        }
+//    }
+//    return true;
+//}
+//
+///**
+// * Allocate a 2D matrix
+// */
+//double complex ** allocateMatrix(int rows, int cols) {
+//
+//    double complex **matrix = (double complex **)malloc(rows * sizeof(double complex*));
+//    if (!matrix) return NULL;
+//
+//    for (int i = 0; i < rows; i++) {
+//        matrix[i] = (double complex*)calloc(cols, sizeof(double complex));
+//        if (!matrix[i]) {
+//            // Clean up on allocation failure
+//            for (int j = 0; j < i; j++) {
+//                free(matrix[j]);
+//            }
+//            free(matrix);
+//            return NULL;
+//        }
+//    }
+//    return matrix;
+//}
+//
+///**
+// * Free a 2D matrix
+// */
+//void freeMatrix(double complex **matrix, int rows) {
+//    if (!matrix) return;
+//    for (int i = 0; i < rows; i++) {
+//        free(matrix[i]);
+//    }
+//    free(matrix);
+//}
+//
+///**
+// * Copy a matrix
+// */
+//void copyDenseMatrix(double complex **dest, double complex **src, int n) {
+//    for (int i = 0; i < n; i++) {
+//        for (int j = 0; j < n; j++) {
+//            dest[i][j] = src[i][j];
+//        }
+//    }
+//}
+//
+///**
+// * Convert a matrix to upper Hessenberg form
+// * (zero elements below the first subdiagonal)
+// */
+//void hessenbergReduction(double **A, int n) {
+//    for (int k = 0; k < n - 2; k++) {
+//        // Find the largest element below the diagonal in current column
+//        double max_val = fabs(A[k+1][k]);
+//        int max_row = k + 1;
+//
+//        for (int i = k + 2; i < n; i++) {
+//            if (fabs(A[i][k]) > max_val) {
+//                max_val = fabs(A[i][k]);
+//                max_row = i;
+//            }
+//        }
+//
+//        // Skip if the column is already in the desired form
+//        if (max_val < 1e-10) continue;
+//
+//        // Swap rows and columns if needed
+//        if (max_row != k + 1) {
+//            // Swap rows k+1 and max_row
+//            for (int j = 0; j < n; j++) {
+//                double temp = A[k+1][j];
+//                A[k+1][j] = A[max_row][j];
+//                A[max_row][j] = temp;
+//            }
+//
+//            // Swap columns k+1 and max_row
+//            for (int i = 0; i < n; i++) {
+//                double temp = A[i][k+1];
+//                A[i][k+1] = A[i][max_row];
+//                A[i][max_row] = temp;
+//            }
+//        }
+//
+//        // Eliminate entries below the subdiagonal
+//        for (int i = k + 2; i < n; i++) {
+//            if (fabs(A[i][k]) < 1e-10) continue;
+//
+//            double factor = A[i][k] / A[k+1][k];
+//            A[i][k] = 0.0;  // Set to exact zero
+//
+//            for (int j = k + 1; j < n; j++) {
+//                A[i][j] -= factor * A[k+1][j];
+//            }
+//
+//            for (int j = 0; j < n; j++) {
+//                A[j][k+1] += factor * A[j][i];
+//            }
+//        }
+//    }
+//}
+//
+///**
+// * Perform a single QR iteration using implicit shift
+// */
+//void qrIteration(double **A, int n) {
+//    // Apply a single implicit shift
+//    double s = A[n-1][n-1];  // Shift value
+//
+//    // Create identity matrix minus shift
+//    double **I_minus_sA = allocateMatrix(n, n);
+//    for (int i = 0; i < n; i++) {
+//        for (int j = 0; j < n; j++) {
+//            I_minus_sA[i][j] = -s * A[i][j];
+//        }
+//        I_minus_sA[i][i] += 1.0;  // Add identity
+//    }
+//
+//    // Perform QR factorization implicitly using Householder reflections
+//    for (int k = 0; k < n - 1; k++) {
+//        // Generate Householder vector for this column
+//        double norm = 0.0;
+//        for (int i = k; i < n; i++) {
+//            norm += I_minus_sA[i][k] * I_minus_sA[i][k];
+//        }
+//        norm = sqrt(norm);
+//
+//        if (norm > 1e-10) {
+//            // Calculate Householder vector
+//            double *v = (double*)malloc(n * sizeof(double));
+//            for (int i = 0; i < k; i++) {
+//                v[i] = 0.0;
+//            }
+//            for (int i = k; i < n; i++) {
+//                v[i] = I_minus_sA[i][k];
+//            }
+//
+//            if (v[k] >= 0) {
+//                v[k] += norm;
+//            } else {
+//                v[k] -= norm;
+//            }
+//
+//            // Normalize the vector
+//            double v_norm = 0.0;
+//            for (int i = k; i < n; i++) {
+//                v_norm += v[i] * v[i];
+//            }
+//            v_norm = sqrt(v_norm);
+//
+//            if (v_norm > 1e-10) {
+//                for (int i = k; i < n; i++) {
+//                    v[i] /= v_norm;
+//                }
+//
+//                // Apply Householder reflection to the matrix
+//                for (int j = k; j < n; j++) {
+//                    double dot_product = 0.0;
+//                    for (int i = k; i < n; i++) {
+//                        dot_product += v[i] * I_minus_sA[i][j];
+//                    }
+//                    for (int i = k; i < n; i++) {
+//                        I_minus_sA[i][j] -= 2.0 * v[i] * dot_product;
+//                    }
+//                }
+//
+//                for (int i = 0; i < n; i++) {
+//                    double dot_product = 0.0;
+//                    for (int j = k; j < n; j++) {
+//                        dot_product += I_minus_sA[i][j] * v[j];
+//                    }
+//                    for (int j = k; j < n; j++) {
+//                        I_minus_sA[i][j] -= 2.0 * dot_product * v[j];
+//                    }
+//                }
+//            }
+//
+//            free(v);
+//        }
+//    }
+//
+//    // Update A = QR + sI
+//    copyDenseMatrix(A, I_minus_sA, n);
+//    for (int i = 0; i < n; i++) {
+//        A[i][i] += s;
+//    }
+//
+//    freeMatrix(I_minus_sA, n);
+//}
+//
+///**
+// * Check if a matrix is in triangular form with a given tolerance
+// */
+//bool isTriangularEnough(double **A, int n, double tol) {
+//    for (int i = 1; i < n; i++) {
+//        for (int j = 0; j < i; j++) {
+//            if (fabs(A[i][j]) > tol) {
+//                return false;
+//            }
+//        }
+//    }
+//    return true;
+//}
+//
+///**
+// * Simple function to compute eigenvalues of a matrix
+// * Returns eigenvalues as a vector (caller must free)
+// *
+// * @param A Input matrix (n x n)
+// * @param n Size of the matrix
+// * @return Array of eigenvalues (length n)
+// */
+//double* computeEigenvalues(double **A, int n) {
+//    // Allocate array for eigenvalues
+//    double *eigenvalues = (double*)malloc(n * sizeof(double));
+//    if (!eigenvalues) return NULL;
+//
+//    // Create a working copy of A
+//    double **H = allocateMatrix(n, n);
+//    if (!H) {
+//        free(eigenvalues);
+//        return NULL;
+//    }
+//
+//    copyDenseMatrix(H, A, n);
+//
+//    // Step 1: Reduce to Hessenberg form
+//    hessenbergReduction(H, n);
+//
+//    // Step 2: Apply QR iterations until convergence
+//    int maxIter = 100 * n;
+//    double tol = 1e-8;
+//
+//    for (int iter = 0; iter < maxIter; iter++) {
+//        qrIteration(H, n);
+//
+//        // Check if matrix is sufficiently triangular
+//        if (isTriangularEnough(H, n, tol)) {
+//            break;
+//        }
+//    }
+//
+//    // Extract eigenvalues from the diagonal of the result
+//    for (int i = 0; i < n; i++) {
+//        eigenvalues[i] = H[i][i];
+//    }
+//
+//    // Clean up
+//    freeMatrix(H, n);
+//    return eigenvalues;
+//}
+//
+///**
+// * Helper function to find minimum of two integers
+// */
+//int min(int a, int b) {
+//    return (a < b) ? a : b;
+//}
 
 // Comparator to sort in descending order
 int comp(const void *a, const void *b) {

@@ -24,7 +24,7 @@ ICY DWARF v24.x INPUT FILE - Uranian system
 | Love number k2; zonal gravity harmonics J2, J4| 0.104 3510.99e-6 -33.6e-6 # GavZhar79, Helled+ 2010  |
 | Resonant tidal locking with inertial waves?   | 1 # ignored if Eccentricity Model = 2                |
 | Spin period (h)                               | 17.24                                                |
-| Number of moons                               | 5                                                    |
+| Number of moons                               | 1                                                    |
 | Ring mass (kg) (0 if no rings)                | 4e16  # 2*(epsilon+alpha+beta) (Wikipedia)           |
 | Ring inner edge (km)                          | 41837 # 6 ring (Jacobson 14)                         |
 | Ring outer edge (km)                          | 51149 # epsilon ring (Jacobson 14)                   |
@@ -57,9 +57,9 @@ ICY DWARF v24.x INPUT FILE - Uranian system
 | Hydrated rock density (g cm-3)                | 2.9                                                  |
 | Chondrite type? CI=0 CO=1                     | 0                                                    |
 | Tidal rheology? Maxw=2 Burg=3 Andr=4 SunCoop=5| 4                                                    |
-| Eccentricity Model? e2=0 e10-CPL=1 e10-CTL=2  | 2                                                    |
+| Eccentricity Model? e2=0 e10-CPL=1 e10-CTL=2  | 0                                                    |
 | Tidal heating x...?                           | 1                                                    |
-| Lookup tbl for orbit evol? #par #rows Dtime(y)| 1 10 10000 5000                                      |
+| Lookup tbl for orbit evol? #par #rows Dtime(y)| 0 10 10000 5000                                      |
 |-----------------------------------------------|------------------------------------------------------|
 | Subroutines ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 |-----------------------------------------------|------------------------------------------------------|

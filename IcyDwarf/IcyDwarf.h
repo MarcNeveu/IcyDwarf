@@ -208,6 +208,8 @@ typedef struct {
     double kappa;  // Thermal conductivity in W m-1 K-1
     double xhydr;  // Degree of hydration
     double pore;   // Porosity
+    double crack;  // (double)Integer indicating whether the grid zone is fractured, and by which process
+    double Wtide;  // Tidal heating rate in W
 } thermalout;
 
 #include <stdio.h>
@@ -840,11 +842,11 @@ thermalout **read_thermal_output (int os, thermalout **thoutput, int NR, int NT,
 	else {
 		for (t=0;t<NT;t++) {
 			for (r=0;r<NR;r++) {
-				int scan = fscanf(fid, "%lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg", &thoutput[r][t].radius,
+				int scan = fscanf(fid, "%lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg %lg", &thoutput[r][t].radius,
 							&thoutput[r][t].tempk, &thoutput[r][t].mrock, &thoutput[r][t].mh2os,
 							&thoutput[r][t].madhs, &thoutput[r][t].mh2ol, &thoutput[r][t].mnh3l,
 							&thoutput[r][t].nu, &thoutput[r][t].famor, &thoutput[r][t].kappa,
-							&thoutput[r][t].xhydr, &thoutput[r][t].pore);
+							&thoutput[r][t].xhydr, &thoutput[r][t].pore, &thoutput[r][t].crack, &thoutput[r][t].Wtide);
 				if (scan != 12) {                                                         // If scanning error
 					printf("Error scanning thermal output file at t = %d\n",t);
 					break;
