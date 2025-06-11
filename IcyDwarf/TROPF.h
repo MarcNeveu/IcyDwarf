@@ -116,7 +116,7 @@ int TROPF() {
 	// Variable names reflect typeset variables in TROPF manual: "til" = tilde; "cal" = calligraphic font; and "n", "s" = sub and superscript degree and order.
 
 	// Method parameters:
-	int N = 120;        // Number of terms in spherical-harmonic expansion, default 500
+	int N = 6;        // Number of terms in spherical-harmonic expansion, default 500
 	int s = 2;          // Order/rank of spherical harmonic terms (longitudinal wavenumber of the forcing), a non-negative scalar. Set to 2 for validation case
 	int Ntrunc = N + s - 1;
 
@@ -125,7 +125,7 @@ int TROPF() {
 	                    // Allows a necessarily different choice for the non-rotating case.
 
 	// Nondimensional forcing parameters:
-	double complex tilom = 0.0 + 0.0*I; // Forcing frequency. Real scalar, + for prograde propagation, - for retrograde propagation.
+	double complex tilom = 0.5 + 0.0*I; // Forcing frequency. Real scalar, + for prograde propagation, - for retrograde propagation.
 
 	double complex * Gns = (double complex *) malloc(N*sizeof(double complex)); // Spherical-harmonic coefficients for prescribed tidal potential
 	double complex * Kns = (double complex *) malloc(N*sizeof(double complex)); // SH coefs for source/sink term in vertical structure
@@ -196,6 +196,28 @@ int TROPF() {
 //	tilnusqns[0] =  (1.0 + I*tilalpp/tilom)/tilcesq;
 //
 //	// Rest of script in tropf()
+
+	// ----------------
+	// Validation script
+	// scr_val_eigs.m
+	// ----------------
+
+	double PnFsF_amp = 3.0; // Amplitude of associated Legendre function of degree nF, order sF
+	tilom = 0.5 + 0.0*I; // Frequency of forcing potential
+	int nF = 2;
+	int sF = 2;
+
+	Gns[nF-sF] = -I*0.5/PnFsF_amp; // tilmfG normalized to have unit amplitude
+	double tilcesq = 0.63; // This choice winds up being just a reference value
+
+	for (i=0;i<size_tilal;i++) { // Inviscid following IL1993 assumptions
+		tilalpd[i] = 1.0 + 0.0*I; // should be rand()
+		tilalpr[i] = 1.0 + 0.0*I;
+	}
+	double complex tilalpp = 0.0 + 0.0*I;
+
+	// Prescribe squared slowness coeff vector:
+	tilnusqns[0] =  (1.0 + I*tilalpp/tilom)/tilcesq;
 
     // ----------------
     // Call tropf()
@@ -488,7 +510,7 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 ////	printCSRMatrixDense(&LC);
 //
 //	freeCSRMatrix(&LA);
-//	
+//
 ////	%% Eigenvalues in LtilmfR formulation:
 ////	LVjunk =  tilom*LLi* (LC*LBi -LA*inv(LC)) * LC*LLi;
 ////	LVjunk_sym = LVjunk(1:2:end,1:2:end); % matrix for symmetric
@@ -548,6 +570,8 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 	double tolerance = 1.0e-3;
 
 	biconjugateGradientStabilizedSolve(LtilmfD, LHS, &(*Dns), maxIter, tolerance);
+	for(i=0;i<N;i++) printf("%g + i*%g\n", creal((*Dns)[i]), cimag((*Dns)[i]));
+	exit(0);
 
 	free(LHS);
 

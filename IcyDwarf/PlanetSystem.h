@@ -594,7 +594,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 		else prim_sign[im] = 1.0;         // Assuming primary spins faster than secondary orbits, otherwise prim_sign should be -1 even if prograde
 
 		k2[im] = 0.001; // Non-zero init to avoid orbital evolution routine crashing
-		Qtide[im] = 0.0;
+		Qtide[im] = 1.0e10; // High init to avoid orbital evolution routine crashing
 		MOI[im] = 0.0;
 		spin[im] = norb[im]; // Spin rates set to orbital rates (synchronous rotation) TODO make input parameter?
 
@@ -728,7 +728,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 	}
 
     //-------------------------------------------------------------------
-    //                        Initialize tidal Q
+    //                Initialize tidal Q for the primary
     //-------------------------------------------------------------------
 
     tzero_min = tzero[0];
