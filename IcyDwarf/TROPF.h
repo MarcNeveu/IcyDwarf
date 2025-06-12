@@ -43,9 +43,9 @@ int TROPF();
 
 int tropf(int N, double complex tilOm, double complex tilom, int s, double complex *Gns, double complex *Kns, double complex *dns, double complex *ens, int size_tilal,
 		  double complex *tilalpd, double complex *tilalpr, int size_tilnusqns, double complex *tilnusqns, double complex **Dns, double complex **Rns, double complex **pns,
-		  double *calWns, double *calDns, double *calEKns, double *calEPns, double complex *knFsF);
+		  double **calWns, double **calDns, double **calEKns, double **calEPns, double complex *knFsF);
 
-double globeTimeAvg(double complex * Ans, double complex * Bns, int s, int *nvec, int N);
+int globeTimeAvg(double ** ST_globeTimeAvg, double complex * Ans, double complex * Bns, int s, int *nvec, int N);
 
 double ratiofactorials1(int n, int s);
 
@@ -116,7 +116,7 @@ int TROPF() {
 	// Variable names reflect typeset variables in TROPF manual: "til" = tilde; "cal" = calligraphic font; and "n", "s" = sub and superscript degree and order.
 
 	// Method parameters:
-	int N = 6;        // Number of terms in spherical-harmonic expansion, default 500
+	int N = 500;        // Number of terms in spherical-harmonic expansion, default 500
 	int s = 2;          // Order/rank of spherical harmonic terms (longitudinal wavenumber of the forcing), a non-negative scalar. Set to 2 for validation case
 	int Ntrunc = N + s - 1;
 
@@ -166,10 +166,17 @@ int TROPF() {
 		pns[i] = 0.0 + 0.0*I;
 	}
 
-    double calWns = 0.0; // Avg (over globe, time) work rate performed by tidal forces on the fluid at each degree, sum vector for total
-    double calDns = 0.0; // Avg (over globe, time) dissipation rate at each degree, sum vector for total
-    double calEKns = 0.0; // Avg (over globe, time) kinetic energy densities at each degree, sum vector for total
-    double calEPns = 0.0; // Avg (over globe, time) potential energy densities at each degree, sum vector for total
+    double * calWns = (double *) malloc(N*sizeof(double)); // Avg (over globe, time) work rate performed by tidal forces on the fluid at each degree, sum vector for total
+    double * calDns = (double *) malloc(N*sizeof(double)); // Avg (over globe, time) dissipation rate at each degree, sum vector for total
+    double * calEKns = (double *) malloc(N*sizeof(double)); // Avg (over globe, time) kinetic energy densities at each degree, sum vector for total
+    double * calEPns = (double *) malloc(N*sizeof(double)); // Avg (over globe, time) potential energy densities at each degree, sum vector for total
+
+	for (i=0;i<N;i++) {
+		calWns[i] = 0.0 + 0.0*I;
+		calDns[i] = 0.0 + 0.0*I;
+		calEKns[i] = 0.0 + 0.0*I;
+		calEPns[i] = 0.0 + 0.0*I;
+	}
 
 	double complex knFsF = 0.0 + 0.0*I; // Admittance = ratio of nondimensional pressure response to nondimensional tidal potential = Love number at degree (nF) and order (sF) of forcing
 
@@ -199,7 +206,7 @@ int TROPF() {
 
 	// ----------------
 	// Validation script
-	// scr_val_eigs.m
+	// scr_val_compareSHMethods
 	// ----------------
 
 	double PnFsF_amp = 3.0; // Amplitude of associated Legendre function of degree nF, order sF
@@ -224,19 +231,35 @@ int TROPF() {
     // ----------------
     tropf(N, tilOm, tilom, s, Gns, Kns, dns, ens, size_tilal, tilalpd, tilalpr, size_tilnusqns, tilnusqns, &Dns, &Rns, &pns,
     		&calWns, &calDns, &calEKns, &calEPns, &knFsF);
+    		
+    printf("\n calWns:\n");
+    for (i=0;i<N;i++) printf("%g\n", calWns[i]);
+    printf("\n calDns:\n");
+    for (i=0;i<N;i++) printf("%g\n", calDns[i]);
+    printf("\n calEKns:\n");
+    for (i=0;i<N;i++) printf("%g\n", calEKns[i]);
+    printf("\n calEPns:\n");
+    for (i=0;i<N;i++) printf("%g\n", calEPns[i]);
+    exit(0);
 
     // Free mallocs
     free(Gns);
     free(Kns);
     free(dns);
     free(ens);
-    free(Dns);
+
+	free(tilalpd);
+	free(tilalpr);
+	free(tilnusqns);
+	
+	free(Dns);
     free(Rns);
     free(pns);
-
-	free (tilalpd);
-	free (tilalpr);
-	free (tilnusqns);
+    
+    free(calWns);
+    free(calDns);
+    free(calEKns);
+    free(calEPns);
 
 	return 0;
 }
@@ -262,7 +285,7 @@ int TROPF() {
 
 int tropf(int N, double complex tilOm, double complex tilom, int s, double complex *Gns, double complex *Kns, double complex *dns, double complex *ens, int size_tilal,
 		  double complex *tilalpd, double complex *tilalpr, int size_tilnusqns, double complex *tilnusqns, double complex **Dns, double complex **Rns, double complex **pns,
-		  double *calWns, double *calDns, double *calEKns, double *calEPns, double complex *knFsF) {
+		  double **calWns, double **calDns, double **calEKns, double **calEPns, double complex *knFsF) {
 
 	int i = 0;
 	int j = 0;
@@ -405,10 +428,6 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 
 //	LDi       =  build_LDi(nvec,tilOm, s,tilom, Lalphad,LV, LL);
 
-//	// ----------------
-//	// Validation script
-//	// scr_val_eigs.m
-//	// ----------------
 //
 //	// Also need to build, in addition to LfilmfD:
 ////	Ltilp     = build_Ltilp(tilom, LV, LLi,LA,LC,LBi);
@@ -566,11 +585,13 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 	vectorAdd(Gns, QtilmfD, &LHS, 1, N);
 
 	// Solve for Dns: LtilmfD * Dns = Gns + QtilmfD
-	int maxIter = 1000;
-	double tolerance = 1.0e-3;
+	int maxIter = 1e7; // Prelim tests suggest at least 50k are needed
+	double tolerance = 1.0e-9; // Prelim tests suggest at least 1e-9 is needed
 
 	biconjugateGradientStabilizedSolve(LtilmfD, LHS, &(*Dns), maxIter, tolerance);
-	for(i=0;i<N;i++) printf("%g + i*%g\n", creal((*Dns)[i]), cimag((*Dns)[i]));
+	for (i=0;i<N;i++) {
+		if (i < 20) printf("%g + i*%g\n", creal((*Dns)[i]), cimag((*Dns)[i]));
+	}
 	exit(0);
 
 	free(LHS);
@@ -617,15 +638,18 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 	for (i=0;i<N;i++) calWns2[i] = -I*tilom*(-I*(*pns)[i]);
 	double complex * calWns3 = (double complex *) malloc(N*sizeof(double complex));
 	csrMatrixVectorMultiply(LV, calWns2, &calWns3);
+	double * calWns_temp = (double *) malloc(N*sizeof(double));
 
-	*calWns = globeTimeAvg(calWns1, calWns3, s, nvec, N);
-
-	free(calWns2);
+	globeTimeAvg(&calWns_temp, calWns1, calWns3, s, nvec, N);
+	
 	free(calWns3);
 	for (i=0;i<N;i++) calWns1[i] = -I*(*pns)[i] - (-I*Gns[i]);
 
-	*calWns = *calWns + globeTimeAvg(calWns1, Kns, s, nvec, N);
+	globeTimeAvg(&(*calWns), calWns1, Kns, s, nvec, N);
+	for (i=0;i<N;i++) (*calWns)[i] = calWns_temp[i] + (*calWns)[i];
 	free(calWns1);
+	free(calWns2);
+	free(calWns_temp);
 
 	// Dissipation rate density
 	//calDns  = (-1/2) * globeTimeAverage( (Dns)                 , (LL*Lalphad*Dns)       , s ) ...
@@ -633,16 +657,18 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 	csrMatrixVectorMultiply(Lalphad, *Dns, &calDns1);
 	double complex * calDns2 = (double complex *) malloc(N*sizeof(double complex));
 	csrMatrixVectorMultiply(LL, calDns1, &calDns2);
+	double * calDns_tot1 = (double *) malloc(N*sizeof(double));
 
-	*calDns = -0.5*globeTimeAvg(*Dns, calDns2, s, nvec, N);
-
+	globeTimeAvg(&calDns_tot1, *Dns, calDns2, s, nvec, N);
+	
 	free(calDns2);
 
 	//        + (-1/2) * globeTimeAverage( (Lalphad*Dns)         , (LL*Dns)               , s ) ...
 	double complex * calDns3 = (double complex *) malloc(N*sizeof(double complex));
 	csrMatrixVectorMultiply(LL, *Dns, &calDns3);
+	double * calDns_tot2 = (double *) malloc(N*sizeof(double));
 
-	*calDns = *calDns - 0.5*globeTimeAvg(calDns1, calDns3, s, nvec, N);
+	globeTimeAvg(&calDns_tot2, calDns1, calDns3, s, nvec, N);
 
 	free(calDns1);
 
@@ -653,16 +679,18 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 	csrMatrixVectorMultiply(Lalphar, calDns4, &calDns5);
 	double complex * calDns6 = (double complex *) malloc(N*sizeof(double complex));
 	csrMatrixVectorMultiply(LL, calDns5, &calDns6);
+	double * calDns_tot3 = (double *) malloc(N*sizeof(double));
 
-	*calDns = *calDns - 0.5*globeTimeAvg(calDns4, calDns6, s, nvec, N);
+	globeTimeAvg(&calDns_tot3, calDns4, calDns6, s, nvec, N);
 
 	free(calDns6);
 
 	//        + (-1/2) * globeTimeAverage( (Lalphar*(-1i*Rns))   , (LL*(-1i*Rns))         , s ) ...
 	double complex * calDns7 = (double complex *) malloc(N*sizeof(double complex));
 	csrMatrixVectorMultiply(LL, calDns4, &calDns7);
+	double * calDns_tot4 = (double *) malloc(N*sizeof(double));
 
-	*calDns = *calDns - 0.5*globeTimeAvg(calDns5, calDns7, s, nvec, N);
+	globeTimeAvg(&calDns_tot4, calDns5, calDns7, s, nvec, N);
 
 	free(calDns5);
 
@@ -675,22 +703,37 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 	csrMatrixVectorMultiply(imagLV, calDns8, &calDns9);
 	double complex * calDns10 = (double complex *) malloc(N*sizeof(double complex));
 	for (i=0;i<N;i++) calDns10[i] = tilom*calDns8[i];
+	double * calDns_tot5 = (double *) malloc(N*sizeof(double));
 
-	*calDns = *calDns + globeTimeAvg(calDns10, calDns9, s, nvec, N);
+	globeTimeAvg(&calDns_tot5, calDns10, calDns9, s, nvec, N);
+	
+	for (i=0;i<N;i++) (*calDns)[i] = -0.5*(calDns_tot1[i] + calDns_tot2[i] + calDns_tot3[i] + calDns_tot4[i]) + calDns_tot5[i];
 
 	free(calDns9);
 	free(calDns10);
 	freeCSRMatrix(&imagLV);
+	
+	free(calDns_tot1);
+	free(calDns_tot2);
+	free(calDns_tot3);
+	free(calDns_tot4);
+	free(calDns_tot5);
 
 	// Kinetic energy density
 	//calEKns = (-1/2) * globeTimeAverage( (Dns)     , (LL*Dns)       , s ) ...
 	//        + (-1/2) * globeTimeAverage( (-1i*Rns) , (LL*(-1i*Rns)) , s )   ;
-	*calEKns = -0.5*globeTimeAvg(*Dns, calDns3, s, nvec, N)
-	           -0.5*globeTimeAvg(calDns4, calDns7, s, nvec, N);
+	globeTimeAvg(&(*calEKns), *Dns, calDns3, s, nvec, N);
+	
+	double * calEKns_temp = (double *) malloc(N*sizeof(double));
+	globeTimeAvg(&calEKns_temp, calDns4, calDns7, s, nvec, N);
+	
+	for (i=0;i<N;i++) (*calEKns)[i] = -0.5*((*calEKns)[i] + calEKns_temp[i]);
 
 	free(calDns3);
 	free(calDns4);
 	free(calDns7);
+	
+	free(calEKns_temp);
 
 	// Potential energy density
 	//calEPns = (1/2) * globeTimeAverage( (-1i*pns) , real(LV)*(-1i*pns) , s ) ;
@@ -699,7 +742,8 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 	double complex * calEPns1 = (double complex *) malloc(N*sizeof(double complex));
 	csrMatrixVectorMultiply(realLV, calDns8, &calEPns1);
 
-	*calEPns = 0.5*globeTimeAvg(calDns8, calEPns1, s, nvec, N);
+	globeTimeAvg(&(*calEPns), calDns8, calEPns1, s, nvec, N);
+	for (i=0;i<N;i++) (*calEKns)[i] = 0.5*(*calEPns)[i];
 
 	free(calDns8);
 	free(calEPns1);
@@ -746,12 +790,12 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
  * Bns:  SH coefs for real field T
  *
  * Output:
- * ST_globeTimeAverage
+ * ST_globeTimeAverage, a vector
  */
-double globeTimeAvg(double complex * Ans, double complex * Bns, int s, int *nvec, int N) {
+int globeTimeAvg(double ** ST_globeTimeAvg, double complex * Ans, double complex * Bns, int s, int *nvec, int N) {
 
 	int i = 0;
-	double ST_globeTimeAvg = 0.0;
+//	double ST_globeTimeAvg = 0.0;
 
 	double complex * CAns = (double complex *) malloc(N*sizeof(double complex));
 	for (i=0;i<N;i++) CAns[i] = conj(Ans[i]);
@@ -759,21 +803,21 @@ double globeTimeAvg(double complex * Ans, double complex * Bns, int s, int *nvec
 	double complex * CBns = (double complex *) malloc(N*sizeof(double complex));
 	for (i=0;i<N;i++) CBns[i] = conj(Bns[i]);
 
-	double complex * RatioFac = (double complex *) malloc(N*sizeof(double complex));
-	for (i=0;i<N;i++) RatioFac[i] = ratiofactorials1(nvec[i],s);
+//	double complex * RatioFac = (double complex *) malloc(N*sizeof(double complex));
+//	for (i=0;i<N;i++) RatioFac[i] = ratiofactorials1(nvec[i],s);
 
-	double complex * div2nvecpl1 = (double complex *) malloc(N*sizeof(double complex));
-	for (i=0;i<N;i++) div2nvecpl1[i] = 1.0 / (2.0*nvec[i] + 1.0);
+//	double complex * div2nvecpl1 = (double complex *) malloc(N*sizeof(double complex));
+//	for (i=0;i<N;i++) div2nvecpl1[i] = 1.0 / (2.0*nvec[i] + 1.0);
 
 	// ST_globeTimeAverage = ( (Ans).*conj(Bns) + conj(Ans).*(Bns) ) .*  (1./(2*nvec+1)).*ratiofactorials1(nvec,s)
-	ST_globeTimeAvg = (dotProduct(Ans, CBns, N) + dotProduct(CAns, Bns, N)) * dotProduct(div2nvecpl1, RatioFac, N);
+	for (i=0;i<N;i++) (*ST_globeTimeAvg)[i] = (Ans[i]*CBns[i] + CAns[i]*Bns[i]) / (2.0*(double)nvec[i] + 1.0) * ratiofactorials1((double)nvec[i],s);
 
 	free(CAns);
 	free(CBns);
-	free(RatioFac);
-	free(div2nvecpl1);
+//	free(RatioFac);
+//	free(div2nvecpl1);
 
-	return ST_globeTimeAvg;
+	return 0;
 }
 
 /*
@@ -1375,6 +1419,7 @@ int biconjugateGradientStabilizedSolve(CSRMatrix A, const double complex *b, dou
 
         rho_prev = rho;
     }
+    printf("final iteration: %d, maxIter was %d, r_norm=%g, r_norm/initial_r_norm = %g, tolerance = %g\n", iter, maxIter, r_norm, r_norm / initial_r_norm, tolerance);
 
     // Free workspace
     free(r);
