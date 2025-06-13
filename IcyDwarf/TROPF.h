@@ -172,10 +172,10 @@ int TROPF() {
     double * calEPns = (double *) malloc(N*sizeof(double)); // Avg (over globe, time) potential energy densities at each degree, sum vector for total
 
 	for (i=0;i<N;i++) {
-		calWns[i] = 0.0 + 0.0*I;
-		calDns[i] = 0.0 + 0.0*I;
-		calEKns[i] = 0.0 + 0.0*I;
-		calEPns[i] = 0.0 + 0.0*I;
+		calWns[i] = 0.0;
+		calDns[i] = 0.0;
+		calEKns[i] = 0.0;
+		calEPns[i] = 0.0;
 	}
 
 	double complex knFsF = 0.0 + 0.0*I; // Admittance = ratio of nondimensional pressure response to nondimensional tidal potential = Love number at degree (nF) and order (sF) of forcing
@@ -404,6 +404,8 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 	CSRMatrix LBi = createCSRMatrix(N, N, N, diagIndices, diagIndices, LBivalues); // Diagonal
 	free(LBivalues);
 
+    for (i=0;i<N;i++) free (dissdvecs[i]);
+    for (i=0;i<N;i++) free (dissrvecs[i]);
 	free(dissdvecs);
 	free(dissrvecs);
 	free(sum_dissdvecs);
@@ -586,13 +588,17 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 
 	// Solve for Dns: LtilmfD * Dns = Gns + QtilmfD
 	int maxIter = 1e7; // Prelim tests suggest at least 50k are needed
-	double tolerance = 1.0e-9; // Prelim tests suggest at least 1e-9 is needed
+	double tolerance = DBL_EPSILON; // 1.0e-9; // Prelim tests suggest at least 1e-9 is needed
 
 	biconjugateGradientStabilizedSolve(LtilmfD, LHS, &(*Dns), maxIter, tolerance);
-	for (i=0;i<N;i++) {
-		if (i < 20) printf("%g + i*%g\n", creal((*Dns)[i]), cimag((*Dns)[i]));
-	}
-	exit(0);
+	
+	// Validation, N=6
+//	(*Dns)[0] = -0.003837352298678519 + 0.02394732077177505*I;
+//	(*Dns)[1] = 0.0 + 0.0*I;
+//	(*Dns)[2] = -1.622182245783286e-05 - 1.664957296860818e-05*I;
+//	(*Dns)[3] = 0.0 + 0.0*I;
+//	(*Dns)[4] = 3.025544416402598e-08 - 7.126938493804358e-09*I;
+//	(*Dns)[5] = 0.0 + 0.0*I;
 
 	free(LHS);
 
@@ -698,6 +704,7 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 	double complex * calDns8 = (double complex *) malloc(N*sizeof(double complex));
 	for (i=0;i<N;i++) calDns8[i] = -I*(*pns)[i];
 	CSRMatrix imagLV = csrCopyMatrix(&LV);
+	printf("Marc\n");
 	for(i=0;i<imagLV.nnz;i++) imagLV.values[i] = cimag(imagLV.values[i]);
 	double complex * calDns9 = (double complex *) malloc(N*sizeof(double complex));
 	csrMatrixVectorMultiply(imagLV, calDns8, &calDns9);
@@ -706,7 +713,7 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 	double * calDns_tot5 = (double *) malloc(N*sizeof(double));
 
 	globeTimeAvg(&calDns_tot5, calDns10, calDns9, s, nvec, N);
-	
+
 	for (i=0;i<N;i++) (*calDns)[i] = -0.5*(calDns_tot1[i] + calDns_tot2[i] + calDns_tot3[i] + calDns_tot4[i]) + calDns_tot5[i];
 
 	free(calDns9);
@@ -723,7 +730,7 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 	//calEKns = (-1/2) * globeTimeAverage( (Dns)     , (LL*Dns)       , s ) ...
 	//        + (-1/2) * globeTimeAverage( (-1i*Rns) , (LL*(-1i*Rns)) , s )   ;
 	globeTimeAvg(&(*calEKns), *Dns, calDns3, s, nvec, N);
-	
+
 	double * calEKns_temp = (double *) malloc(N*sizeof(double));
 	globeTimeAvg(&calEKns_temp, calDns4, calDns7, s, nvec, N);
 	
@@ -743,7 +750,7 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 	csrMatrixVectorMultiply(realLV, calDns8, &calEPns1);
 
 	globeTimeAvg(&(*calEPns), calDns8, calEPns1, s, nvec, N);
-	for (i=0;i<N;i++) (*calEKns)[i] = 0.5*(*calEPns)[i];
+	for (i=0;i<N;i++) (*calEPns)[i] = 0.5*(*calEPns)[i];
 
 	free(calDns8);
 	free(calEPns1);
@@ -828,12 +835,12 @@ int globeTimeAvg(double ** ST_globeTimeAvg, double complex * Ans, double complex
  */
 double ratiofactorials1(int n, int s) {
 
-	double ratio = 1;
+	double ratio = 1.0;
 	int i = 0;
 	int junk = 0;
 	int fac = 0;
 
-	for (i=1;i<=2*s-1;i++) {
+	for (i=0;i<=2*s-1;i++) {
 		junk = s - i;
 		fac = n + junk;
 		ratio = ratio*fac;
@@ -1300,11 +1307,18 @@ int vectorCopy(const double complex *src, double complex **dest, int n) {
  * Calculate vector norm: ||x||_2
  *
  * @param x Input vector
+ * @param cx Complex conjugate of x
  * @param n Vector length
  * @return L2-norm of the vector
  */
 double vectorNorm(const double complex *x, int n) {
-    return sqrt(dotProduct(x, x, n));
+	
+	int i = 0;
+	double complex * cx = (double complex *)malloc (n * sizeof(double complex));
+	
+	for (i=0;i<n;i++) cx[i] = creal(x[i]) - I*cimag(x[i]);
+	
+    return sqrt(dotProduct(x, cx, n));
 }
 
 /**
@@ -1420,7 +1434,7 @@ int biconjugateGradientStabilizedSolve(CSRMatrix A, const double complex *b, dou
         rho_prev = rho;
     }
     printf("final iteration: %d, maxIter was %d, r_norm=%g, r_norm/initial_r_norm = %g, tolerance = %g\n", iter, maxIter, r_norm, r_norm / initial_r_norm, tolerance);
-
+	
     // Free workspace
     free(r);
     free(r_hat);
