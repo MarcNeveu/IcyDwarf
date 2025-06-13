@@ -161,7 +161,7 @@ int crack(double T, double T_old, double Pressure, double *Crack,
 		// T' is the temperature at zero stress from thermal mismatch
 
 		if (dTdt == 0.0) dTdt = 1.0e-6/dtime; // To ensure continuity of T', otherwise T'=0
-		Tprime = Q/R_G/log(12.0*Omega*D0_deltab*E_Young/
+		Tprime = Qgbs/R_G/log(12.0*Omega*D0_deltab*E_Young/
 						(sqrt(3.0)*n_fit*k_B*L_size*L_size*L_size*fabs(dTdt)));
 
 		// Calculate the stress intensity K_I in each layer over time,

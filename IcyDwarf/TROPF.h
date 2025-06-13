@@ -22,6 +22,7 @@
 
 #include "IcyDwarf.h"
 #include <float.h>
+#include <lapacke.h>
 
 // CSR sparse matrix structure
 typedef struct {
@@ -74,6 +75,16 @@ int vectorCopy(const double complex *src, double complex **dest, int n);
 double vectorNorm(const double complex *x, int n);
 
 int biconjugateGradientStabilizedSolve(CSRMatrix A, const double complex *b, double complex **x, int maxIter, double tolerance);
+
+int gmresSolve(CSRMatrix A, const double complex *b, double complex **x, int maxIter, int restart, double tolerance);
+
+int convertCSRToBand(const CSRMatrix *A, int kl, int ku, lapack_complex_double *AB, int ldab);
+
+int solvePentadiagonalSystem(const CSRMatrix *A, const double complex *b, double complex **x);
+
+int factorAndSolvePentadiagonal(const CSRMatrix *A, const double complex *b, 
+                               double complex **x, 
+                               lapack_complex_double **AB_out, lapack_int **ipiv_out);
 
 CSRMatrix csrCopyMatrix(const CSRMatrix *src);
 
@@ -240,7 +251,6 @@ int TROPF() {
     for (i=0;i<N;i++) printf("%g\n", calEKns[i]);
     printf("\n calEPns:\n");
     for (i=0;i<N;i++) printf("%g\n", calEPns[i]);
-    exit(0);
 
     // Free mallocs
     free(Gns);
@@ -261,6 +271,7 @@ int TROPF() {
     free(calEKns);
     free(calEPns);
 
+exit(0);
 	return 0;
 }
 
@@ -394,7 +405,7 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 
 	// LLi
 	double complex *LLivalues = (double complex *) malloc(N*sizeof(double complex));
-	for (i=0;i<N;i++) LVivalues[i] = 1.0/lvec[i];
+	for (i=0;i<N;i++) LLivalues[i] = 1.0/lvec[i];
 	CSRMatrix LLi = createCSRMatrix(N, N, N, diagIndices, diagIndices, LLivalues); // Diagonal
 	free(LLivalues);
 
@@ -408,21 +419,19 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
     for (i=0;i<N;i++) free (dissrvecs[i]);
 	free(dissdvecs);
 	free(dissrvecs);
-	free(sum_dissdvecs);
-	free(sum_dissrvecs);
 
 	// ----------------
 	// Validation script
 	// scr_val_eigs.m
 	// ----------------
 
-	// Also need to build, in addition to the above operators:
-//	LA        =  build_LA(nvec,tilOm, s,tilom, Lalphad, LL);
-	// LA  = spdiags(   (tilom+1i*diag(Lalphad,0)) .* diag(LL) - s*tilOm  , 0,N,N) ;
-	double complex *LAvalues = (double complex *) malloc(N*sizeof(double complex));
-	for (i=0;i<N;i++) LAvalues[i] = (tilom + I*sum_dissdvecs[i])*lvec[i] - s*tilOm;
-	CSRMatrix LA = createCSRMatrix(N, N, N, diagIndices, diagIndices, LAvalues); // Diagonal
-	free(LAvalues);
+//	// Also need to build, in addition to the above operators:
+////	LA        =  build_LA(nvec,tilOm, s,tilom, Lalphad, LL);
+////	 LA  = spdiags(   (tilom+1i*diag(Lalphad,0)) .* diag(LL) - s*tilOm  , 0,N,N) ;
+//	double complex *LAvalues = (double complex *) malloc(N*sizeof(double complex));
+//	for (i=0;i<N;i++) LAvalues[i] = (tilom + I*sum_dissdvecs[i])*lvec[i] - s*tilOm;
+//	CSRMatrix LA = createCSRMatrix(N, N, N, diagIndices, diagIndices, LAvalues); // Diagonal
+//	free(LAvalues);
 
 //	LB        =  build_LB(nvec,tilOm, s,tilom, Lalphar, LL);
 
@@ -547,6 +556,9 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 //
 //	exit(0);
 
+	free(sum_dissdvecs);
+	free(sum_dissrvecs);
+
 	// ------------------------------------
 	// Solve (one of alternate methods)
 	// ------------------------------------
@@ -587,10 +599,15 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 	vectorAdd(Gns, QtilmfD, &LHS, 1, N);
 
 	// Solve for Dns: LtilmfD * Dns = Gns + QtilmfD
-	int maxIter = 1e7; // Prelim tests suggest at least 50k are needed
+	int maxIter = 1e4; // Prelim tests suggest at least 50k are needed
 	double tolerance = DBL_EPSILON; // 1.0e-9; // Prelim tests suggest at least 1e-9 is needed
 
-	biconjugateGradientStabilizedSolve(LtilmfD, LHS, &(*Dns), maxIter, tolerance);
+//	biconjugateGradientStabilizedSolve(LtilmfD, LHS, &(*Dns), maxIter, tolerance);
+//	int restart = 1;
+//	gmresSolve(LtilmfD, LHS, &(*Dns), maxIter, restart, tolerance);
+	solvePentadiagonalSystem(&LtilmfD, LHS, &(*Dns));
+	
+//	for (i=0;i<N;i++) printf("%g + %g*i\n", creal((*Dns)[i]), cimag((*Dns)[i]));
 	
 	// Validation, N=6
 //	(*Dns)[0] = -0.003837352298678519 + 0.02394732077177505*I;
@@ -745,7 +762,7 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 	// Potential energy density
 	//calEPns = (1/2) * globeTimeAverage( (-1i*pns) , real(LV)*(-1i*pns) , s ) ;
 	CSRMatrix realLV = csrCopyMatrix(&LV);
-	for(i=0;i<imagLV.nnz;i++) realLV.values[i] = creal(realLV.values[i]);
+	for(i=0;i<realLV.nnz;i++) realLV.values[i] = creal(realLV.values[i]);
 	double complex * calEPns1 = (double complex *) malloc(N*sizeof(double complex));
 	csrMatrixVectorMultiply(realLV, calDns8, &calEPns1);
 
@@ -1314,11 +1331,16 @@ int vectorCopy(const double complex *src, double complex **dest, int n) {
 double vectorNorm(const double complex *x, int n) {
 	
 	int i = 0;
+	double norm = 0.0;
 	double complex * cx = (double complex *)malloc (n * sizeof(double complex));
 	
 	for (i=0;i<n;i++) cx[i] = creal(x[i]) - I*cimag(x[i]);
 	
-    return sqrt(dotProduct(x, cx, n));
+    norm = sqrt(dotProduct(x, cx, n));
+    
+    free(cx);
+    
+    return norm;
 }
 
 /**
@@ -1380,8 +1402,25 @@ int biconjugateGradientStabilizedSolve(CSRMatrix A, const double complex *b, dou
         double complex rho = dotProduct(r_hat, r, n);
 
         if (cabs(rho) < DBL_EPSILON || fabs(omega) < DBL_EPSILON) {
-            // Method breaks down
-            break;
+            // Instead of breaking down, try a recovery strategy
+		    if (cabs(rho) < DBL_EPSILON) {
+		        // Perturb r_hat slightly
+		        for (int i = 0; i < n; i++) {
+		            r_hat[i] += 1e-14 * (1.0 + I) * (1.0 + cabs(r_hat[i]));
+		        }
+		        rho = dotProduct(r_hat, r, n);
+		    }
+		    
+		    if (fabs(omega) < DBL_EPSILON) {
+		        // Use a default value instead
+		        omega = 1e-14;
+		    }
+		    
+		    // If still unstable after recovery attempts
+		    if (cabs(rho) < DBL_EPSILON || fabs(omega) < DBL_EPSILON) {
+//				printf("rho=%g+%g*i, omega=%g, eps=%g, breaking\n", creal(rho), cimag(rho), omega, DBL_EPSILON);
+		        break; // Now we really need to give up
+		    }
         }
 
         // Update p
@@ -1433,7 +1472,7 @@ int biconjugateGradientStabilizedSolve(CSRMatrix A, const double complex *b, dou
 
         rho_prev = rho;
     }
-    printf("final iteration: %d, maxIter was %d, r_norm=%g, r_norm/initial_r_norm = %g, tolerance = %g\n", iter, maxIter, r_norm, r_norm / initial_r_norm, tolerance);
+//    printf("final iteration: %d, maxIter was %d, r_norm=%g, r_norm/initial_r_norm = %g, tolerance = %g\n", iter, maxIter, r_norm, r_norm / initial_r_norm, tolerance);
 	
     // Free workspace
     free(r);
@@ -1444,6 +1483,411 @@ int biconjugateGradientStabilizedSolve(CSRMatrix A, const double complex *b, dou
     free(t);
 
     return iter + 1;
+}
+
+/**
+ * Solve a linear system Ax = b using the GMRES method with restart
+ *
+ * @param A Coefficient matrix in CSR format
+ * @param b Right-hand side vector
+ * @param x Initial guess and output solution vector
+ * @param maxIter Maximum number of iterations
+ * @param restart Restart parameter (typically 20-50)
+ * @param tolerance Convergence tolerance
+ * @return Number of iterations performed
+ */
+int gmresSolve(CSRMatrix A, const double complex *b, double complex **x, 
+              int maxIter, int restart, double tolerance) {
+    int n = A.rows;
+    
+    // Allocate Arnoldi vectors (V) and Hessenberg matrix (H)
+    double complex **V = (double complex **)malloc((restart+1) * sizeof(double complex *));
+    for (int i = 0; i <= restart; i++) {
+        V[i] = (double complex *)malloc(n * sizeof(double complex));
+    }
+    
+    double complex **H = (double complex **)malloc((restart+1) * sizeof(double complex *));
+    for (int i = 0; i <= restart; i++) {
+        H[i] = (double complex *)calloc(restart, sizeof(double complex));
+    }
+    
+    // Other allocations (rotation factors, etc.)
+    double complex *c = (double complex *)malloc(restart * sizeof(double complex));
+    double complex *s = (double complex *)malloc(restart * sizeof(double complex));
+    double complex *y = (double complex *)malloc((restart+1) * sizeof(double complex));
+    double complex *g = (double complex *)malloc((restart+1) * sizeof(double complex));
+    
+    // Initial residual
+    double complex *r = (double complex *)malloc(n * sizeof(double complex));
+    csrMatrixVectorMultiply(A, *x, &r);
+    for (int i = 0; i < n; i++) {
+        r[i] = b[i] - r[i];
+    }
+    
+    double beta = vectorNorm(r, n);  // This is correctly a real double
+    double initial_residual = beta;   // Also a real double
+    
+    if (beta < tolerance) {
+        // Already converged
+        for (int i = 0; i <= restart; i++) {
+            free(V[i]);
+            free(H[i]);
+        }
+        free(V);
+        free(H);
+        free(c);
+        free(s);
+        free(y);
+        free(g);
+        free(r);
+        return 0;
+    }
+    
+    printf("Initial residual: %g\n", beta);
+    
+    // Main iteration loop
+    int iter = 0;
+    int outer_iter = 0;
+    
+    while (iter < maxIter && beta > tolerance * initial_residual) {
+        // Initialize the first Arnoldi vector
+        for (int i = 0; i < n; i++) {
+            V[0][i] = r[i] / beta;
+        }
+        
+        // Initialize rhs of the least squares problem
+        for (int i = 0; i <= restart; i++) {
+            g[i] = 0.0;
+        }
+        g[0] = beta;  // Store beta in the complex g vector, but beta itself is real
+        
+        // Arnoldi process
+        int k;
+        for (k = 0; k < restart && iter < maxIter; k++, iter++) {
+            // Generate new Arnoldi vector
+            csrMatrixVectorMultiply(A, V[k], &V[k+1]);
+            
+            // Modified Gram-Schmidt orthogonalization
+            for (int j = 0; j <= k; j++) {
+                H[j][k] = dotProduct(V[j], V[k+1], n);
+                for (int i = 0; i < n; i++) {
+                    V[k+1][i] -= H[j][k] * V[j][i];
+                }
+            }
+            
+            // The norm of the vector is a real value
+            double h_k1_k = vectorNorm(V[k+1], n);
+            H[k+1][k] = h_k1_k;  // Store in complex matrix, but it's a real value
+            
+            // Normalize the new vector
+            if (h_k1_k > DBL_EPSILON) {
+                for (int i = 0; i < n; i++) {
+                    V[k+1][i] /= h_k1_k;
+                }
+            } else {
+                // Handle breakdown due to lucky convergence
+                for (int i = 0; i < n; i++) {
+                    V[k+1][i] = 0.0;
+                }
+            }
+            
+            // Apply previous Givens rotations to H
+            for (int i = 0; i < k; i++) {
+                double complex temp = c[i] * H[i][k] + s[i] * H[i+1][k];
+                H[i+1][k] = -conj(s[i]) * H[i][k] + c[i] * H[i+1][k];
+                H[i][k] = temp;
+            }
+            
+            // Compute new Givens rotation
+            double complex beta_rot = csqrt(H[k][k] * conj(H[k][k]) + H[k+1][k] * conj(H[k+1][k]));
+            if (cabs(beta_rot) > DBL_EPSILON) {
+                c[k] = H[k][k] / beta_rot;
+                s[k] = H[k+1][k] / beta_rot;
+            } else {
+                c[k] = 1.0;
+                s[k] = 0.0;
+            }
+            
+            // Apply new rotation to H and g
+            H[k][k] = c[k] * H[k][k] + s[k] * H[k+1][k];
+            H[k+1][k] = 0.0;
+            
+            // Apply the rotation to g
+            double complex temp_g = c[k] * g[k];
+            g[k+1] = -conj(s[k]) * g[k];
+            g[k] = temp_g;
+            
+            // Check convergence - this is the norm of the residual, a real value
+            beta = cabs(g[k+1]);
+            
+            if (iter % 10 == 0 || beta < tolerance * initial_residual) {
+                printf("Iteration %d, residual = %g\n", iter, beta);
+            }
+            
+            if (beta < tolerance * initial_residual) {
+                k++;
+                break;
+            }
+        }
+        
+        // Solve the triangular system H(1:k,1:k) * y = g(1:k)
+        for (int i = k-1; i >= 0; i--) {
+            y[i] = g[i];
+            for (int j = i+1; j < k; j++) {
+                y[i] -= H[i][j] * y[j];
+            }
+            y[i] /= H[i][i];
+        }
+        
+        // Update the solution x = x + V(1:n,1:k) * y
+        for (int j = 0; j < k; j++) {
+            for (int i = 0; i < n; i++) {
+                (*x)[i] += V[j][i] * y[j];
+            }
+        }
+        
+        // Compute the residual for the next restart
+        csrMatrixVectorMultiply(A, *x, &r);
+        for (int i = 0; i < n; i++) {
+            r[i] = b[i] - r[i];
+        }
+        beta = vectorNorm(r, n);  // Again, this is a real value
+        
+        outer_iter++;
+        printf("Restart %d, residual = %g\n", outer_iter, beta);
+        
+        if (beta < tolerance * initial_residual) {
+            break;
+        }
+    }
+    
+    printf("Final residual: %g after %d iterations (%d restarts)\n", 
+           beta, iter, outer_iter);
+    
+    // Free memory
+    for (int i = 0; i <= restart; i++) {
+        free(V[i]);
+        free(H[i]);
+    }
+    free(V);
+    free(H);
+    free(c);
+    free(s);
+    free(y);
+    free(g);
+    free(r);
+    
+    return iter;
+}
+
+/**
+ * Convert a CSR matrix to LAPACK's band storage format for a pentadiagonal matrix
+ * 
+ * @param A The CSR matrix to convert
+ * @param kl Number of subdiagonals (2 for pentadiagonal)
+ * @param ku Number of superdiagonals (2 for pentadiagonal)
+ * @param AB Output band matrix in LAPACK format (preallocated)
+ * @param ldab Leading dimension of AB (2*kl + ku + 1)
+ */
+int convertCSRToBand(const CSRMatrix *A, int kl, int ku, lapack_complex_double *AB, int ldab) {
+    int n = A->rows;
+    
+    // Initialize AB to zeros
+    for (int i = 0; i < ldab * n; i++) {
+        AB[i] = 0.0 + 0.0*I;
+    }
+    
+    // Process each row of the CSR matrix
+    for (int i = 0; i < n; i++) {
+        // For each non-zero element in row i
+        for (int j_idx = A->rowPointers[i]; j_idx < A->rowPointers[i+1]; j_idx++) {
+            int j = A->colIndices[j_idx];
+            double complex val = A->values[j_idx];
+            
+            // Check if the element is within the band
+            if (j >= i - kl && j <= i + ku) {
+                // Map (i,j) to the band storage
+                // In band storage: AB(kl+ku+1+i-j, j) = A(i,j)
+                int band_row = kl + ku + i - j;
+                int band_idx = j * ldab + band_row;
+                
+                // Store the value in the band format
+                AB[band_idx] = val;
+            }
+        }
+    }
+    return 0;
+}
+
+/**
+ * Solve a complex linear system Ax = b using LAPACK's band solver
+ * 
+ * @param A The coefficient matrix in CSR format
+ * @param b The right-hand side vector
+ * @param x Pointer to the solution vector (will be allocated or overwritten)
+ * @return 0 if successful, error code otherwise
+ */
+int solvePentadiagonalSystem(const CSRMatrix *A, const double complex *b, double complex **x) {
+    int n = A->rows;
+    int kl = 2;  // Number of subdiagonals for pentadiagonal matrix
+    int ku = 2;  // Number of superdiagonals for pentadiagonal matrix
+    int ldab = 2*kl + ku + 1;  // Leading dimension of AB
+    int nrhs = 1;  // Number of right-hand sides
+    int info;
+    
+    // Allocate memory for band matrix
+    lapack_complex_double *AB = (lapack_complex_double*)malloc(ldab * n * sizeof(lapack_complex_double));
+    if (!AB) {
+        fprintf(stderr, "Memory allocation failed for AB\n");
+        return -1;
+    }
+    
+    // Convert CSR to band storage
+    convertCSRToBand(A, kl, ku, AB, ldab);
+    
+    // Allocate or reuse x
+    if (*x == NULL) {
+        *x = (double complex*)malloc(n * sizeof(double complex));
+        if (*x == NULL) {
+            free(AB);
+            fprintf(stderr, "Memory allocation failed for x\n");
+            return -2;
+        }
+    }
+    
+    // Copy b to working array B (LAPACKE may overwrite it)
+    lapack_complex_double *B = (lapack_complex_double*)malloc(n * sizeof(lapack_complex_double));
+    if (!B) {
+        free(AB);
+        if (*x == NULL) free(*x);
+        fprintf(stderr, "Memory allocation failed for B\n");
+        return -3;
+    }
+    
+    for (int i = 0; i < n; i++) {
+        B[i] = b[i];
+    }
+    
+    // Allocate pivot indices
+    lapack_int *ipiv = (lapack_int*)malloc(n * sizeof(lapack_int));
+    if (!ipiv) {
+        free(AB);
+        free(B);
+        if (*x == NULL) free(*x);
+        fprintf(stderr, "Memory allocation failed for ipiv\n");
+        return -4;
+    }
+    
+    // Call LAPACK band solver
+    info = LAPACKE_zgbsv(LAPACK_COL_MAJOR, n, kl, ku, nrhs, AB, ldab, ipiv, B, n);
+    
+    if (info != 0) {
+        fprintf(stderr, "LAPACKE_zgbsv failed with error %d\n", info);
+        free(AB);
+        free(B);
+        free(ipiv);
+        return info;
+    }
+    
+    // Copy solution from B to x
+    for (int i = 0; i < n; i++) {
+        (*x)[i] = B[i];
+    }
+    
+    // Free memory
+    free(AB);
+    free(B);
+    free(ipiv);
+    
+    return 0;
+}
+
+/**
+ * Alternative version that uses factorization and solve separately
+ * Useful when solving multiple systems with the same matrix
+ */
+int factorAndSolvePentadiagonal(const CSRMatrix *A, const double complex *b, 
+                               double complex **x, 
+                               lapack_complex_double **AB_out, lapack_int **ipiv_out) {
+    int n = A->rows;
+    int kl = 2;  // For pentadiagonal
+    int ku = 2;  // For pentadiagonal
+    int ldab = 2*kl + ku + 1;
+    int nrhs = 1;
+    int info;
+    
+    // Check if we need to allocate new storage
+    int new_allocation = (*AB_out == NULL || *ipiv_out == NULL);
+    
+    // Allocate or reuse band storage
+    if (*AB_out == NULL) {
+        *AB_out = (lapack_complex_double*)malloc(ldab * n * sizeof(lapack_complex_double));
+        if (!*AB_out) {
+            fprintf(stderr, "Memory allocation failed for AB\n");
+            return -1;
+        }
+    }
+    
+    // Allocate or reuse pivot indices
+    if (*ipiv_out == NULL) {
+        *ipiv_out = (lapack_int*)malloc(n * sizeof(lapack_int));
+        if (!*ipiv_out) {
+            if (new_allocation) free(*AB_out);
+            *AB_out = NULL;
+            fprintf(stderr, "Memory allocation failed for ipiv\n");
+            return -2;
+        }
+    }
+    
+    // Only convert and factor the matrix if this is a new allocation
+    // (assumes the matrix is unchanged if reusing storage)
+    if (new_allocation) {
+        // Convert CSR to band storage
+        convertCSRToBand(A, kl, ku, *AB_out, ldab);
+        
+        // Factor the matrix
+        info = LAPACKE_zgbtrf(LAPACK_COL_MAJOR, n, n, kl, ku, *AB_out, ldab, *ipiv_out);
+        if (info != 0) {
+            fprintf(stderr, "LAPACKE_zgbtrf failed with error %d\n", info);
+            free(*AB_out);
+            free(*ipiv_out);
+            *AB_out = NULL;
+            *ipiv_out = NULL;
+            return info;
+        }
+    }
+    
+    // Allocate or reuse x
+    if (*x == NULL) {
+        *x = (double complex*)malloc(n * sizeof(double complex));
+        if (*x == NULL) {
+            if (new_allocation) {
+                free(*AB_out);
+                free(*ipiv_out);
+                *AB_out = NULL;
+                *ipiv_out = NULL;
+            }
+            fprintf(stderr, "Memory allocation failed for x\n");
+            return -3;
+        }
+    }
+    
+    // Copy b to x (LAPACKE will overwrite it with the solution)
+    for (int i = 0; i < n; i++) {
+        (*x)[i] = b[i];
+    }
+    
+    // Solve using the factored matrix
+    info = LAPACKE_zgbtrs(LAPACK_COL_MAJOR, 'N', n, kl, ku, nrhs, 
+                         *AB_out, ldab, *ipiv_out, (lapack_complex_double*)*x, n);
+    
+    if (info != 0) {
+        fprintf(stderr, "LAPACKE_zgbtrs failed with error %d\n", info);
+        // Don't free the factorization, just return error
+        return info;
+    }
+    
+    return 0;
 }
 
 /**

@@ -134,7 +134,7 @@
 #define K_IC_oliv 1.5e6                                    // Critical stress intensity for olivine in Pa m^0.5 (DeMartin et al. 2004; Balme et al. 2004)
 #define K_IC_serp 0.4e6                                    // Critical stress intensity for serpentinite in Pa m^0.5 (Tromans and Meech 2002; Funatsu et al. 2004; Backers 2005; Wang et al. 2007)
 #define Delta_alpha 3.1e-6                                 // Thermal expansion anisotropy in K-1 in eq (3) (default 3.1e-6)
-#define Q 3.75e5                                           // Activation enthalpy for grain boundary sliding? (J/mol) (default 3.75e5)
+#define Qgbs 3.75e5                                        // Activation enthalpy for grain boundary sliding? (J/mol) (default 3.75e5)
 #define Omega 1.23e-29                                     // Atomic volume (m^3) (default 1.23e-29)
 #define D0_deltab 0.2377                                   // Grain boundary diffusion coefficient (1.5 m^2/s) x width
                                                               // (10^-0.8 m). Units: m^3/s (default 0.2377)
