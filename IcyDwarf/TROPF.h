@@ -43,9 +43,9 @@ typedef struct {
 
 int TROPF();
 
-int tropf(int N, double complex tilOm, double complex tilom, int s, double complex *Gns, double complex *Kns, double complex *dns, double complex *ens, int size_tilal,
+int tropf(int N, double complex tilOm, double complex tilom, int s, int Gns_nnz, double complex *Gns, double complex *Kns, double complex *dns, double complex *ens, int size_tilal,
 		  double complex *tilalpd, double complex *tilalpr, int size_tilnusqns, double complex *tilnusqns, double complex **Dns, double complex **Rns, double complex **pns,
-		  double **calWns, double **calDns, double **calEKns, double **calEPns, double complex *knFsF, int solveMethod, int sw_selfGrav, double rho_ratio);
+		  double **calWns, double **calDns, double **calEKns, double **calEPns, double complex ** PhiRns, int solveMethod, int sw_selfGrav, double rho_ratio);
 
 int globeTimeAvg(double ** ST_globeTimeAvg, double complex * Ans, double complex * Bns, int s, int *nvec, int N);
 
@@ -117,7 +117,8 @@ int n_eigen_symm(double *_a, int n, double *eval);
 
 int TROPF() {
 
-	int i = 0;
+	int i = 0; // Counters
+	int j = 0;
 	int solveMethod = 1; // 0: solve for Dns; 1: solve for pns
 
 	// ----------------
@@ -191,8 +192,6 @@ int TROPF() {
 		calEPns[i] = 0.0;
 	}
 
-	double complex knFsF = 0.0 + 0.0*I; // Admittance = ratio of nondimensional pressure response to nondimensional tidal potential = Love number at degree (nF) and order (sF) of forcing
-
 	// Self-Gravity Parameters:
 	double rho_ratio = 0.5; // Ratio of fluid density to bulk density of body
 	int sw_selfGrav = 1;    // Toggle (0 or 1) to include self gravity (1)
@@ -233,13 +232,13 @@ int TROPF() {
 
 	double PnFsF_amp = 3.0; // Amplitude of associated Legendre function of degree nF, order sF
 	tilom = 0.5 + 0.0*I; // Frequency of forcing potential
-	int nF = 2;
-	int sF = 2;
+	int nF_init = 2; // Degree at which Gns is nonzero
+	int sF = s; // Order of Gns
 
-	Gns[nF-sF] = -I*0.5/PnFsF_amp; // tilmfG normalized to have unit amplitude
-//	Kns[nF-sF] = -I*0.5/PnFsF_amp;
-//	dns[nF-sF] = -I*0.5/PnFsF_amp;
-//	ens[nF-sF] = -I*0.5/PnFsF_amp;
+	Gns[nF_init-sF] = -I*0.5/PnFsF_amp; // tilmfG normalized to have unit amplitude
+//	Kns[nF_init-sF] = -I*0.5/PnFsF_amp;
+//	dns[nF_init-sF] = -I*0.5/PnFsF_amp;
+//	ens[nF_init-sF] = -I*0.5/PnFsF_amp;
 	double tilcesq = 0.63; // This choice winds up being just a reference value
 
 	for (i=0;i<size_tilal;i++) { // Inviscid following IL1993 assumptions
@@ -250,12 +249,41 @@ int TROPF() {
 
 	// Prescribe squared slowness coeff vector:
 	tilnusqns[0] =  (1.0 + I*tilalpp/tilom)/tilcesq;
-
+	
+	// ----------------
+    // Love numbers at nonzero tidal potential terms
+    // ----------------
+	
+	int Gns_nnz = 0; // Number of nonzero elements in Gns
+	for (i=0;i<N;i++) {
+		if (creal(Gns[i]) != 0.0 || cimag(Gns[i]) != 0.0) Gns_nnz++;
+	}
+	int * nF = (int *) malloc (Gns_nnz*sizeof(int)); // Degree(s) of non-zero Gns
+	j = 0;
+	for (i=0;i<Gns_nnz;i++) {
+		if (creal(Gns[i]) != 0.0 || cimag(Gns[i]) != 0.0) {
+			nF[j] = i + sF; //nF = find(Gns) + sF - 1; // Offset by 1 relative to MatLab
+			j++;
+		}
+	}
+	
+	// Admittance = ratio of nondimensional pressure response to nondimensional tidal potential = Love number at degree (nF) and order (sF) of forcing
+	double complex * knFsF = (double complex *) malloc (Gns_nnz*sizeof(double complex));
+	double complex * GnFsF = (double complex *) malloc (Gns_nnz*sizeof(double complex));
+	double complex * PhiRns = (double complex *) malloc (Gns_nnz*sizeof(double complex));
+	double complex * kLovenF = (double complex *) malloc (Gns_nnz*sizeof(double complex));
+	for (i=0;i<Gns_nnz;i++) {
+		knFsF[i] = 0.0 + 0.0*I;
+		GnFsF[i] = Gns[nF[i]-sF]; // Normalization for PhiRns
+		PhiRns[i] = 0.0 + 0.0*I;
+	}
+	
     // ----------------
     // Call tropf()
     // ----------------
-    tropf(N, tilOm, tilom, s, Gns, Kns, dns, ens, size_tilal, tilalpd, tilalpr, size_tilnusqns, tilnusqns, &Dns, &Rns, &pns,
-    		&calWns, &calDns, &calEKns, &calEPns, &knFsF, solveMethod, sw_selfGrav, rho_ratio);
+    
+    tropf(N, tilOm, tilom, s, Gns_nnz, Gns, Kns, dns, ens, size_tilal, tilalpd, tilalpr, size_tilnusqns, tilnusqns, &Dns, &Rns, &pns,
+    		&calWns, &calDns, &calEKns, &calEPns, &PhiRns, solveMethod, sw_selfGrav, rho_ratio);
     		
     printf("\n calWns:\n");
     for (i=0;i<N;i++) printf("%g\n", calWns[i]);
@@ -265,6 +293,23 @@ int TROPF() {
     for (i=0;i<N;i++) printf("%g\n", calEKns[i]);
     printf("\n calEPns:\n");
     for (i=0;i<N;i++) printf("%g\n", calEPns[i]);
+    
+    // Love number = pressure/potential admittance at degree(s) nF (knFsF = 1 indicates an equilibrium tide response)
+	// knFsF = pns((nF-sF)+1)/Gns((nF-sF)+1); % Love number at degree(s) nF
+	printf("\n KnFsF:\n");
+	for (i=0;i<Gns_nnz;i++) {
+		knFsF[i] = pns[nF[i]-sF] / Gns[nF[i]-sF];
+		printf("%d %g %g\n", nF[i], creal(knFsF[i]), cimag(knFsF[i]));
+	}
+	
+	for (i=0;i<Gns_nnz;i++) PhiRns[nF[i]-sF] = PhiRns[nF[i]-sF] / GnFsF[i]; // Normalization to forcing potential
+	
+	// Love number at the degree(s)/order of Gns forcing:
+	printf("\n kLovenF:\n");
+	for (i=0;i<Gns_nnz;i++) {
+		kLovenF[i] = PhiRns[nF[i]-sF]; // Response potential/forcing potential Love number at degree(s) nF
+		printf("%d %g %g\n", nF[i], creal(kLovenF[i]), cimag(kLovenF[i]));
+	}
 
     // Free mallocs
     free(Gns);
@@ -284,6 +329,11 @@ int TROPF() {
     free(calDns);
     free(calEKns);
     free(calEPns);
+    
+    free(knFsF);
+    free(GnFsF);
+    free(PhiRns);
+    free(kLovenF);
 
 exit(0);
 	return 0;
@@ -299,9 +349,9 @@ exit(0);
  *
  *--------------------------------------------------------------------*/
 
-int tropf(int N, double complex tilOm, double complex tilom, int s, double complex *Gns, double complex *Kns, double complex *dns, double complex *ens, int size_tilal,
+int tropf(int N, double complex tilOm, double complex tilom, int s, int Gns_nnz, double complex *Gns, double complex *Kns, double complex *dns, double complex *ens, int size_tilal,
 		  double complex *tilalpd, double complex *tilalpr, int size_tilnusqns, double complex *tilnusqns, double complex **Dns, double complex **Rns, double complex **pns,
-		  double **calWns, double **calDns, double **calEKns, double **calEPns, double complex *knFsF, int solveMethod, int sw_selfGrav, double rho_ratio) {
+		  double **calWns, double **calDns, double **calEKns, double **calEPns, double complex ** PhiRns, int solveMethod, int sw_selfGrav, double rho_ratio) {
 
 	int i = 0;
 	int j = 0;
@@ -649,7 +699,7 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 	else {
 		
 		// ------------------------------------
-		// Solve (method 2/2), only methods that allows for self-gravity
+		// Solve (method 2/2), only method that allows for self-gravity
 		// ------------------------------------
 	
 		//	// Alternatively, solve for pns, then calculate Dns and Rns from the pns solution. That's the one we want, it allows calculating the work. We're not worried about calculating the velocities.
@@ -857,10 +907,8 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 	}
 	for (i=0;i<N;i++) (*calEPns)[i] = 0.5*(*calEPns)[i];
 
-	// Love number at the degree(s)/order of Gns forcing
-	//sF     = s;                             % order of Gns
-	//nF     = find(Gns) + sF - 1;            % degree(s) of non-zero Gns
-	//knFsF  = pns((nF-sF)+1)/Gns((nF-sF)+1); % Love number at degree(s) nF
+	// Gravitational potential of tidal response (normalized wrt forcing potential):
+	for (i=0;i<Gns_nnz;i++) (*PhiRns)[i] = -3.0/(2.0*nvec[i] + 1.0)*rho_ratio * (*pns)[i]; // Will normalize to GnFsF in main TROPF() routine
 
 	free(nvec);
 
