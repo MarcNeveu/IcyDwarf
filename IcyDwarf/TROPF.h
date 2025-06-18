@@ -45,7 +45,7 @@ int TROPF();
 
 int tropf(int N, double complex tilOm, double complex tilom, int s, double complex *Gns, double complex *Kns, double complex *dns, double complex *ens, int size_tilal,
 		  double complex *tilalpd, double complex *tilalpr, int size_tilnusqns, double complex *tilnusqns, double complex **Dns, double complex **Rns, double complex **pns,
-		  double **calWns, double **calDns, double **calEKns, double **calEPns, double complex *knFsF, int solveMethod);
+		  double **calWns, double **calDns, double **calEKns, double **calEPns, double complex *knFsF, int solveMethod, int sw_selfGrav, double rho_ratio);
 
 int globeTimeAvg(double ** ST_globeTimeAvg, double complex * Ans, double complex * Bns, int s, int *nvec, int N);
 
@@ -193,6 +193,15 @@ int TROPF() {
 
 	double complex knFsF = 0.0 + 0.0*I; // Admittance = ratio of nondimensional pressure response to nondimensional tidal potential = Love number at degree (nF) and order (sF) of forcing
 
+	// Self-Gravity Parameters:
+	double rho_ratio = 0.5; // Ratio of fluid density to bulk density of body
+	int sw_selfGrav = 1;    // Toggle (0 or 1) to include self gravity (1)
+	// TODO, add variables below for calculation by tropf_v3
+	// % PhiRns    : Gravitational potential of tidal response (normalized wrt unit-amplitude forcing potential GnFsF (usually assigned to represent grav. pot. - Phi_F ):
+	// % kLovenF   : Love number at degree of prescribed forcing (i.e. the component of PhiRns at degree of forcing.)
+	
+	if (sw_selfGrav && !solveMethod) printf("Warning: solving method for Dns does not account for self-gravity, set solveMethod to 1 instead\n");
+
 //	// ----------------
 //	// Validation script
 //	// scr_val_eigs.m
@@ -228,9 +237,9 @@ int TROPF() {
 	int sF = 2;
 
 	Gns[nF-sF] = -I*0.5/PnFsF_amp; // tilmfG normalized to have unit amplitude
-//	Kns[nF-sF] = -I*0.5/PnFsF_amp; // tilmfG normalized to have unit amplitude
-//	dns[nF-sF] = -I*0.5/PnFsF_amp; // tilmfG normalized to have unit amplitude
-//	ens[nF-sF] = -I*0.5/PnFsF_amp; // tilmfG normalized to have unit amplitude
+//	Kns[nF-sF] = -I*0.5/PnFsF_amp;
+//	dns[nF-sF] = -I*0.5/PnFsF_amp;
+//	ens[nF-sF] = -I*0.5/PnFsF_amp;
 	double tilcesq = 0.63; // This choice winds up being just a reference value
 
 	for (i=0;i<size_tilal;i++) { // Inviscid following IL1993 assumptions
@@ -246,7 +255,7 @@ int TROPF() {
     // Call tropf()
     // ----------------
     tropf(N, tilOm, tilom, s, Gns, Kns, dns, ens, size_tilal, tilalpd, tilalpr, size_tilnusqns, tilnusqns, &Dns, &Rns, &pns,
-    		&calWns, &calDns, &calEKns, &calEPns, &knFsF, solveMethod);
+    		&calWns, &calDns, &calEKns, &calEPns, &knFsF, solveMethod, sw_selfGrav, rho_ratio);
     		
     printf("\n calWns:\n");
     for (i=0;i<N;i++) printf("%g\n", calWns[i]);
@@ -288,20 +297,11 @@ exit(0);
  * (spherical-harmonic coefficients) as well as time/globe averages of
  * several products.
  *
- * Convenient and fast macro, but for increased speed, where not all
- * solution variables are needed, run response*() functions directly.
- * E.g., to calculate just power, only need Dns (or pns) with
- * response_Dns() or response_pns(). But most computational time is
- * spent building sparse matrix operators (L*) so this macro can
- * save time (if multiple variables are needed) because the operators
- * don't have to be rebuilt (as they would if Dns, Rns, pns... are
- * calculated sequentially using the response*() functions).
- *
  *--------------------------------------------------------------------*/
 
 int tropf(int N, double complex tilOm, double complex tilom, int s, double complex *Gns, double complex *Kns, double complex *dns, double complex *ens, int size_tilal,
 		  double complex *tilalpd, double complex *tilalpr, int size_tilnusqns, double complex *tilnusqns, double complex **Dns, double complex **Rns, double complex **pns,
-		  double **calWns, double **calDns, double **calEKns, double **calEPns, double complex *knFsF, int solveMethod) {
+		  double **calWns, double **calDns, double **calEKns, double **calEPns, double complex *knFsF, int solveMethod, int sw_selfGrav, double rho_ratio) {
 
 	int i = 0;
 	int j = 0;
@@ -349,7 +349,6 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 	for (i=0;i<N;i++) diagIndices[i] = i;
 
 	CSRMatrix Lalphad = createCSRMatrix(N, N, N, diagIndices, diagIndices, sum_dissdvecs); // Diagonal
-//	for (i=0;i<N;i++) printf("%d \t %g + %g*i\n", Lalphad.colIndices[i], creal(Lalphad.values[i]), cimag(Lalphad.values[i]));
 	CSRMatrix Lalphar = createCSRMatrix(N, N, N, diagIndices, diagIndices, sum_dissrvecs); // Diagonal
 
 	// LV
@@ -565,6 +564,18 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 //
 //	exit(0);
 
+	// speye(), used in solveMethod 2 (for pns) and to calculate calDns and calEPns with self-gravity
+	double complex * eyeValues = (double complex *) malloc(N*sizeof(double complex));
+	for (i=0;i<N;i++) eyeValues[i] = 1.0 + 0.0*I;
+	CSRMatrix eye = createCSRMatrix(N, N, N, diagIndices, diagIndices, eyeValues); // Diagonal
+	
+	// Self-gravity term, inverse of LN: (this is the operator such that LN*PhiR = p), used in solveMethod 2 and to calculate calDns and calEPns with self-gravity
+		
+	// iLN = spdiags(-3./(2*nvec+1).*rho_ratio, 0, N, N);
+	double complex *iLNvalues = (double complex *) malloc(N*sizeof(double complex));
+	for (i=0;i<N;i++) iLNvalues[i] = -3.0/(2.0*nvec[i] + 1.0)*rho_ratio;
+	CSRMatrix iLN = createCSRMatrix(N, N, N, diagIndices, diagIndices, iLNvalues); // Diagonal
+
 	// ------------------------------------
 	// Solve (method 1/2)
 	// ------------------------------------
@@ -598,23 +609,14 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 		vectorAdd(Gns, QtilmfD, &LHS, 1, N);
 	
 		// Solve for Dns: LtilmfD * Dns = Gns + QtilmfD
-	//	int maxIter = 1e4; // Prelim tests suggest at least 50k are needed
-	//	double tolerance = DBL_EPSILON; // 1.0e-9; // Prelim tests suggest at least 1e-9 is needed
-	
-	//	biconjugateGradientStabilizedSolve(LtilmfD, LHS, &(*Dns), maxIter, tolerance);
-	//	int restart = 1;
-	//	gmresSolve(LtilmfD, LHS, &(*Dns), maxIter, restart, tolerance);
 		solvePentadiagonalSystem(&LtilmfD, LHS, &(*Dns));
 		
-	//	for (i=0;i<N;i++) printf("%g + %g*i\n", creal((*Dns)[i]), cimag((*Dns)[i]));
-		
-		// Validation, N=6
-	//	(*Dns)[0] = -0.003837352298678519 + 0.02394732077177505*I;
-	//	(*Dns)[1] = 0.0 + 0.0*I;
-	//	(*Dns)[2] = -1.622182245783286e-05 - 1.664957296860818e-05*I;
-	//	(*Dns)[3] = 0.0 + 0.0*I;
-	//	(*Dns)[4] = 3.025544416402598e-08 - 7.126938493804358e-09*I;
-	//	(*Dns)[5] = 0.0 + 0.0*I;
+		// Older solvers, gmres may not work
+		//	int maxIter = 1e4; // Prelim tests suggest at least 50k are needed
+		//	double tolerance = DBL_EPSILON; // 1.0e-9; // Prelim tests suggest at least 1e-9 is needed
+		//	biconjugateGradientStabilizedSolve(LtilmfD, LHS, &(*Dns), maxIter, tolerance);
+		//	int restart = 1;
+		//	gmresSolve(LtilmfD, LHS, &(*Dns), maxIter, restart, tolerance);
 	
 	    // Get pns from Dns: pns = (1/tilom) * LVi * (LL*Dns - Kns)
 		double complex * pns1 = (double complex *) malloc(N*sizeof(double complex));
@@ -647,11 +649,11 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 	else {
 		
 		// ------------------------------------
-		// Solve (method 2/2)
+		// Solve (method 2/2), only methods that allows for self-gravity
 		// ------------------------------------
 	
-	//	// Alternatively, solve for pns, then calculate Dns and Rns from the pns solution. That's the one we want, it allows calculating the work. We're not worried about calculating the velocities.
-	//	% Ltilp     = build_Ltilp(tilom, LV, LLi,LA,LC,LBi)  ;
+		//	// Alternatively, solve for pns, then calculate Dns and Rns from the pns solution. That's the one we want, it allows calculating the work. We're not worried about calculating the velocities.
+		//	% Ltilp     = build_Ltilp(tilom, LV, LLi,LA,LC,LBi)  ;
 		// Ltilp  =  LLi * ( LA - LC * LBi * LC ) * tilom * LLi * LV  + speye(N,N);
 		CSRMatrix Ltilp1 = csrMatrixMultiply(&LLi, &LV);
 		for (i=0;i<Ltilp1.nnz;i++) Ltilp1.values[i] = tilom * Ltilp1.values[i];
@@ -661,14 +663,10 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 		CSRMatrix Ltilp4 = csrMatrixAdd(LA, Ltilp3);
 		CSRMatrix Ltilp5 = csrMatrixMultiply(&Ltilp4, &Ltilp1);
 		CSRMatrix Ltilp6 = csrMatrixMultiply(&LLi, &Ltilp5); // Pentadiagonal
-		// speye()
-		double complex * eyeValues = (double complex *) malloc(N*sizeof(double complex));
-		for (i=0;i<N;i++) eyeValues[i] = 1.0 + 0.0*I;
-		CSRMatrix eye = createCSRMatrix(N, N, N, diagIndices, diagIndices, eyeValues); // Diagonal
 		 
 		CSRMatrix Ltilp = csrMatrixAdd(Ltilp6, eye);
 		
-	//	% Qtilp     = build_Qtilp(Kns,dns,ens,LLi,LA,LBi,LC) ;
+		//	% Qtilp     = build_Qtilp(Kns,dns,ens,LLi,LA,LBi,LC) ;
 		// Qtilp =  - LLi*(LA - LC*LBi*LC)*LLi*(Kns) + LLi*dns + LLi*LC*LBi*ens ;
 		double complex * Qtilp1 = (double complex *) malloc(N*sizeof(double complex));
 		csrMatrixVectorMultiply(LBi, ens, &Qtilp1);
@@ -697,10 +695,18 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 		double complex * LHSp = (double complex *) malloc(N*sizeof(double complex));
 		vectorAdd(Gns, Qtilp, &LHSp, 1, N);
 		
-	//	% pns       = Ltilp \ (Gns + Qtilp)  
-		solvePentadiagonalSystem(&Ltilp, LHSp, &(*pns));
+		if (sw_selfGrav) {
+			// pns = (Ltilp + iLN) \ (Gns + Qtilp); % pns calculated with self gravity included
+			CSRMatrix Ltilp_iLN = csrMatrixAdd(Ltilp, iLN);
+			solvePentadiagonalSystem(&Ltilp_iLN, LHSp, &(*pns));
+			freeCSRMatrix(&Ltilp_iLN);
+		}
+		else {
+			//	% pns       = Ltilp \ (Gns + Qtilp)  
+			solvePentadiagonalSystem(&Ltilp, LHSp, &(*pns));
+		}
 	
-	//	% Dns       = DnsFrompns(pns,Kns,tilom,  LLi,LV);
+		//	% Dns       = DnsFrompns(pns,Kns,tilom,  LLi,LV);
 		// Get Dns from pns: Dns = tilom*LLi*LV*(pns) + LLi*(Kns); 
 		double complex * Dns1 = (double complex *) malloc(N*sizeof(double complex));
 		csrMatrixVectorMultiply(LV, *pns, &Dns1);
@@ -715,9 +721,6 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 		freeCSRMatrix(&Ltilp4);
 		freeCSRMatrix(&Ltilp5);
 		freeCSRMatrix(&Ltilp6);
-		freeCSRMatrix(&eye);
-		
-		free(eyeValues);
 		
 		free(Qtilp1);
 		free(Qtilp2);
@@ -812,9 +815,19 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 	double complex * calDns10 = (double complex *) malloc(N*sizeof(double complex));
 	for (i=0;i<N;i++) calDns10[i] = tilom*calDns8[i];
 	double * calDns_tot5 = (double *) malloc(N*sizeof(double));
-
-	globeTimeAvg(&calDns_tot5, calDns10, calDns9, s, nvec, N);
-
+	
+	 // If self-gravity, the above last term for calDns is instead + (  1 ) * globeTimeAverage( (speye(N) + iLN)*(tilom*(-1i*pns))     , (imag(LV)*(-1i*pns))   , s )   ;	 	
+	CSRMatrix calDnsMat = csrMatrixAdd(eye, iLN);
+	double complex * calDns11 = (double complex *) malloc(N*sizeof(double complex));
+	
+	if (!sw_selfGrav || !solveMethod) { 
+		globeTimeAvg(&calDns_tot5, calDns10, calDns9, s, nvec, N);
+	}
+	else { // If self-gravity, further multiply calDns_tot5 by (speye(N) + iLN)
+		csrMatrixVectorMultiply(calDnsMat, calDns10, &calDns11);
+	 	globeTimeAvg(&calDns_tot5, calDns11, calDns9, s, nvec, N);
+	}
+	
 	for (i=0;i<N;i++) (*calDns)[i] = -0.5*(calDns_tot1[i] + calDns_tot2[i] + calDns_tot3[i] + calDns_tot4[i]) + calDns_tot5[i];
 
 	// Kinetic energy density
@@ -833,8 +846,15 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 	for(i=0;i<realLV.nnz;i++) realLV.values[i] = creal(realLV.values[i]);
 	double complex * calEPns1 = (double complex *) malloc(N*sizeof(double complex));
 	csrMatrixVectorMultiply(realLV, calDns8, &calEPns1);
+	double complex * calEPns2 = (double complex *) malloc(N*sizeof(double complex));
 
-	globeTimeAvg(&(*calEPns), calDns8, calEPns1, s, nvec, N);
+	if (!sw_selfGrav) {
+		globeTimeAvg(&(*calEPns), calDns8, calEPns1, s, nvec, N);
+	}
+	else { // Further multiply first argument of globeTimeAverage by (speye(N) + iLN)
+		csrMatrixVectorMultiply(calDnsMat, calDns8, &calEPns2);
+		globeTimeAvg(&(*calEPns), calEPns2, calEPns1, s, nvec, N);
+	}
 	for (i=0;i<N;i++) (*calEPns)[i] = 0.5*(*calEPns)[i];
 
 	// Love number at the degree(s)/order of Gns forcing
@@ -876,6 +896,8 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 	free(calDns8);
 	free(calDns9);
 	free(calDns10);
+	free(calDns11);
+	freeCSRMatrix(&calDnsMat);
 	
 	free(calDns_tot1);
 	free(calDns_tot2);
@@ -886,8 +908,16 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 	free(calEKns_temp);
 	
 	free(calEPns1);
+	free(calEPns2);
+	
 	freeCSRMatrix(&realLV);
 	freeCSRMatrix(&imagLV);
+	
+	freeCSRMatrix(&iLN);
+	freeCSRMatrix(&eye);
+		
+	free(eyeValues);
+	free(iLNvalues);
 
 	return 0;
 }
