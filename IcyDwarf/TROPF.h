@@ -45,7 +45,7 @@ int TROPF();
 
 int tropf(int N, double complex tilOm, double complex tilom, int s, double complex *Gns, double complex *Kns, double complex *dns, double complex *ens, int size_tilal,
 		  double complex *tilalpd, double complex *tilalpr, int size_tilnusqns, double complex *tilnusqns, double complex **Dns, double complex **Rns, double complex **pns,
-		  double **calWns, double **calDns, double **calEKns, double **calEPns, double complex *knFsF);
+		  double **calWns, double **calDns, double **calEKns, double **calEPns, double complex *knFsF, int solveMethod);
 
 int globeTimeAvg(double ** ST_globeTimeAvg, double complex * Ans, double complex * Bns, int s, int *nvec, int N);
 
@@ -118,6 +118,7 @@ int n_eigen_symm(double *_a, int n, double *eval);
 int TROPF() {
 
 	int i = 0;
+	int solveMethod = 1; // 0: solve for Dns; 1: solve for pns
 
 	// ----------------
 	// Initializations
@@ -227,6 +228,9 @@ int TROPF() {
 	int sF = 2;
 
 	Gns[nF-sF] = -I*0.5/PnFsF_amp; // tilmfG normalized to have unit amplitude
+//	Kns[nF-sF] = -I*0.5/PnFsF_amp; // tilmfG normalized to have unit amplitude
+//	dns[nF-sF] = -I*0.5/PnFsF_amp; // tilmfG normalized to have unit amplitude
+//	ens[nF-sF] = -I*0.5/PnFsF_amp; // tilmfG normalized to have unit amplitude
 	double tilcesq = 0.63; // This choice winds up being just a reference value
 
 	for (i=0;i<size_tilal;i++) { // Inviscid following IL1993 assumptions
@@ -242,7 +246,7 @@ int TROPF() {
     // Call tropf()
     // ----------------
     tropf(N, tilOm, tilom, s, Gns, Kns, dns, ens, size_tilal, tilalpd, tilalpr, size_tilnusqns, tilnusqns, &Dns, &Rns, &pns,
-    		&calWns, &calDns, &calEKns, &calEPns, &knFsF);
+    		&calWns, &calDns, &calEKns, &calEPns, &knFsF, solveMethod);
     		
     printf("\n calWns:\n");
     for (i=0;i<N;i++) printf("%g\n", calWns[i]);
@@ -297,7 +301,7 @@ exit(0);
 
 int tropf(int N, double complex tilOm, double complex tilom, int s, double complex *Gns, double complex *Kns, double complex *dns, double complex *ens, int size_tilal,
 		  double complex *tilalpd, double complex *tilalpr, int size_tilnusqns, double complex *tilnusqns, double complex **Dns, double complex **Rns, double complex **pns,
-		  double **calWns, double **calDns, double **calEKns, double **calEPns, double complex *knFsF) {
+		  double **calWns, double **calDns, double **calEKns, double **calEPns, double complex *knFsF, int solveMethod) {
 
 	int i = 0;
 	int j = 0;
@@ -363,6 +367,12 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 	if (N == 1 && lvec[0] == 0.0) lvec[0] = DBL_EPSILON; // Compensate for singular (s=0) case, otherwise Lapl inverse matrices will be singular
 	CSRMatrix LL = createCSRMatrix(N, N, N, diagIndices, diagIndices, lvec); // Diagonal
 
+	// LA
+	// LA  = spdiags(   (tilom+1i*diag(Lalphad,0)) .* diag(LL) - s*tilOm  , 0,N,N) ;
+	double complex *LAvalues = (double complex *) malloc(N*sizeof(double complex));
+	for (i=0;i<N;i++) LAvalues[i] = (tilom + I*sum_dissdvecs[i])*lvec[i] - s*tilOm;
+	CSRMatrix LA = createCSRMatrix(N, N, N, diagIndices, diagIndices, LAvalues); // Diagonal
+
 	// LC
 	// LC = spdiags(   tilOm*(-nvec.*(nvec+2).*(nvec-s+1)./(2*nvec+1))   ,-1,N,N)...
 	//    + spdiags(   tilOm*(-(nvec-1).*(nvec+1).*(nvec+s)./(2*nvec+1)) ,+1,N,N) ;
@@ -409,6 +419,23 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 	double complex *LBivalues = (double complex *) malloc(N*sizeof(double complex));
 	for (i=0;i<N;i++) LBivalues[i] = 1.0/((tilom + I*sum_dissrvecs[i])*lvec[i] - s*tilOm);
 	CSRMatrix LBi = createCSRMatrix(N, N, N, diagIndices, diagIndices, LBivalues); // Diagonal
+	
+	free(lvec);
+	
+	for (i=0;i<N;i++) free (dissdvecs[i]);
+    for (i=0;i<N;i++) free (dissrvecs[i]);
+	free(dissdvecs);
+	free(dissrvecs);
+	free(sum_dissdvecs);
+	free(sum_dissrvecs);
+	
+	free(LAvalues);
+	free(LCvalues);
+	free(LDvalues);
+	free(LVvalues);
+	free(LVivalues);
+	free(LLivalues);
+	free(LBivalues);
 
 	// ----------------
 	// Validation script
@@ -416,13 +443,6 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 	// ----------------
 
 //	// Also need to build, in addition to the above operators:
-////	LA        =  build_LA(nvec,tilOm, s,tilom, Lalphad, LL);
-////	 LA  = spdiags(   (tilom+1i*diag(Lalphad,0)) .* diag(LL) - s*tilOm  , 0,N,N) ;
-//	double complex *LAvalues = (double complex *) malloc(N*sizeof(double complex));
-//	for (i=0;i<N;i++) LAvalues[i] = (tilom + I*sum_dissdvecs[i])*lvec[i] - s*tilOm;
-//	CSRMatrix LA = createCSRMatrix(N, N, N, diagIndices, diagIndices, LAvalues); // Diagonal
-//	free(LAvalues);
-
 //	LB        =  build_LB(nvec,tilOm, s,tilom, Lalphar, LL);
 
 //	LAi       =  build_LAi(nvec,tilOm, s,tilom, Lalphad, LL);
@@ -529,7 +549,6 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 ////	printCSRMatrix(LC);
 ////	printCSRMatrixDense(&LC);
 //
-//	freeCSRMatrix(&LA);
 //
 ////	%% Eigenvalues in LtilmfR formulation:
 ////	LVjunk =  tilom*LLi* (LC*LBi -LA*inv(LC)) * LC*LLi;
@@ -547,78 +566,186 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 //	exit(0);
 
 	// ------------------------------------
-	// Solve (one of alternate methods)
+	// Solve (method 1/2)
 	// ------------------------------------
-
-	// Solve for Dns, then calculate Rns and pns from the Dns solution:
-    // Build LtilmfD composite operator: LtilmfD = LLi * (LD - LC*LBi*LC)
-	CSRMatrix LtilmfD1 = csrMatrixMultiply(&LBi, &LC);
-	CSRMatrix LtilmfD2 = csrMatrixMultiply(&LC, &LtilmfD1);
-	for (i=0;i<LtilmfD2.nnz;i++) LtilmfD2.values[i] = -LtilmfD2.values[i];
-	CSRMatrix LtilmfD3 = csrMatrixAdd(LD, LtilmfD2);
-	CSRMatrix LtilmfD = csrMatrixMultiply(&LLi, &LtilmfD3); // Pentadiagonal
-
-	// Build QtilmfD: QtilmfD = (1/tilom)*LVi*(Kns) + LLi*dns + LLi*LC*LBi*ens
-	double complex * QtilmfD = (double complex *) malloc(N*sizeof(double complex));
-	csrMatrixVectorMultiply(LVi, Kns, &QtilmfD);
-	for (i=0;i<N;i++) QtilmfD[i] = 1.0/tilom*QtilmfD[i];
-	double complex * QtilmfD2 = (double complex *) malloc(N*sizeof(double complex));
-	csrMatrixVectorMultiply(LLi, dns, &QtilmfD2);
-	vectorAdd(QtilmfD, QtilmfD2, &QtilmfD, 1, N);
-	double complex * QtilmfD3a = (double complex *) malloc(N*sizeof(double complex));
-	csrMatrixVectorMultiply(LBi, ens, &QtilmfD3a);
-	double complex * QtilmfD3b = (double complex *) malloc(N*sizeof(double complex));
-	csrMatrixVectorMultiply(LC, QtilmfD3a, &QtilmfD3b);
-	double complex * QtilmfD3 = (double complex *) malloc(N*sizeof(double complex));
-	csrMatrixVectorMultiply(LLi, QtilmfD3b, &QtilmfD3);
-	vectorAdd(QtilmfD, QtilmfD3, &QtilmfD, 1, N);
-
-	double complex * LHS = (double complex *) malloc(N*sizeof(double complex));
-	vectorAdd(Gns, QtilmfD, &LHS, 1, N);
-
-	// Solve for Dns: LtilmfD * Dns = Gns + QtilmfD
-//	int maxIter = 1e4; // Prelim tests suggest at least 50k are needed
-//	double tolerance = DBL_EPSILON; // 1.0e-9; // Prelim tests suggest at least 1e-9 is needed
-
-//	biconjugateGradientStabilizedSolve(LtilmfD, LHS, &(*Dns), maxIter, tolerance);
-//	int restart = 1;
-//	gmresSolve(LtilmfD, LHS, &(*Dns), maxIter, restart, tolerance);
-	solvePentadiagonalSystem(&LtilmfD, LHS, &(*Dns));
 	
-//	for (i=0;i<N;i++) printf("%g + %g*i\n", creal((*Dns)[i]), cimag((*Dns)[i]));
-	
-	// Validation, N=6
-//	(*Dns)[0] = -0.003837352298678519 + 0.02394732077177505*I;
-//	(*Dns)[1] = 0.0 + 0.0*I;
-//	(*Dns)[2] = -1.622182245783286e-05 - 1.664957296860818e-05*I;
-//	(*Dns)[3] = 0.0 + 0.0*I;
-//	(*Dns)[4] = 3.025544416402598e-08 - 7.126938493804358e-09*I;
-//	(*Dns)[5] = 0.0 + 0.0*I;
+	if (!solveMethod) {
 
+		// Solve for Dns, then calculate Rns and pns from the Dns solution:
+	    // Build LtilmfD composite operator: LtilmfD = LLi * (LD - LC*LBi*LC)
+		CSRMatrix LtilmfD1 = csrMatrixMultiply(&LBi, &LC);
+		CSRMatrix LtilmfD2 = csrMatrixMultiply(&LC, &LtilmfD1);
+		for (i=0;i<LtilmfD2.nnz;i++) LtilmfD2.values[i] = -LtilmfD2.values[i];
+		CSRMatrix LtilmfD3 = csrMatrixAdd(LD, LtilmfD2);
+		CSRMatrix LtilmfD = csrMatrixMultiply(&LLi, &LtilmfD3); // Pentadiagonal
+	
+		// Build QtilmfD: QtilmfD = (1/tilom)*LVi*(Kns) + LLi*dns + LLi*LC*LBi*ens
+		double complex * QtilmfD = (double complex *) malloc(N*sizeof(double complex));
+		csrMatrixVectorMultiply(LVi, Kns, &QtilmfD);
+		for (i=0;i<N;i++) QtilmfD[i] = 1.0/tilom*QtilmfD[i];
+		double complex * QtilmfD2 = (double complex *) malloc(N*sizeof(double complex));
+		csrMatrixVectorMultiply(LLi, dns, &QtilmfD2);
+		vectorAdd(QtilmfD, QtilmfD2, &QtilmfD, 1, N);
+		double complex * QtilmfD3a = (double complex *) malloc(N*sizeof(double complex));
+		csrMatrixVectorMultiply(LBi, ens, &QtilmfD3a);
+		double complex * QtilmfD3b = (double complex *) malloc(N*sizeof(double complex));
+		csrMatrixVectorMultiply(LC, QtilmfD3a, &QtilmfD3b);
+		double complex * QtilmfD3 = (double complex *) malloc(N*sizeof(double complex));
+		csrMatrixVectorMultiply(LLi, QtilmfD3b, &QtilmfD3);
+		vectorAdd(QtilmfD, QtilmfD3, &QtilmfD, 1, N);
+	
+		double complex * LHS = (double complex *) malloc(N*sizeof(double complex));
+		vectorAdd(Gns, QtilmfD, &LHS, 1, N);
+	
+		// Solve for Dns: LtilmfD * Dns = Gns + QtilmfD
+	//	int maxIter = 1e4; // Prelim tests suggest at least 50k are needed
+	//	double tolerance = DBL_EPSILON; // 1.0e-9; // Prelim tests suggest at least 1e-9 is needed
+	
+	//	biconjugateGradientStabilizedSolve(LtilmfD, LHS, &(*Dns), maxIter, tolerance);
+	//	int restart = 1;
+	//	gmresSolve(LtilmfD, LHS, &(*Dns), maxIter, restart, tolerance);
+		solvePentadiagonalSystem(&LtilmfD, LHS, &(*Dns));
+		
+	//	for (i=0;i<N;i++) printf("%g + %g*i\n", creal((*Dns)[i]), cimag((*Dns)[i]));
+		
+		// Validation, N=6
+	//	(*Dns)[0] = -0.003837352298678519 + 0.02394732077177505*I;
+	//	(*Dns)[1] = 0.0 + 0.0*I;
+	//	(*Dns)[2] = -1.622182245783286e-05 - 1.664957296860818e-05*I;
+	//	(*Dns)[3] = 0.0 + 0.0*I;
+	//	(*Dns)[4] = 3.025544416402598e-08 - 7.126938493804358e-09*I;
+	//	(*Dns)[5] = 0.0 + 0.0*I;
+	
+	    // Get pns from Dns: pns = (1/tilom) * LVi * (LL*Dns - Kns)
+		double complex * pns1 = (double complex *) malloc(N*sizeof(double complex));
+		csrMatrixVectorMultiply(LL, *Dns, &pns1);
+		double complex * pns2 = (double complex *) malloc(N*sizeof(double complex));
+		vectorCopy(Kns, &pns2, N);
+		for (i=0;i<N;i++) pns2[i] = -pns2[i];
+		double complex * pns3 = (double complex *) malloc(N*sizeof(double complex));
+		vectorAdd(pns1, pns2, &pns3, 1, N);
+		csrMatrixVectorMultiply(LVi, pns3, &(*pns));
+		for (i=0;i<N;i++) (*pns)[i] = 1.0/tilom*(*pns)[i];
+		
+		freeCSRMatrix(&LtilmfD1);
+		freeCSRMatrix(&LtilmfD2);
+		freeCSRMatrix(&LtilmfD3);
+
+		free(QtilmfD2);
+		free(QtilmfD3);
+		free(QtilmfD3a);
+		free(QtilmfD3b);
+		
+		free(pns1);
+		free(pns2);
+		free(pns3);
+		
+		freeCSRMatrix(&LtilmfD);
+		free(QtilmfD);
+		free(LHS);
+	}
+	else {
+		
+		// ------------------------------------
+		// Solve (method 2/2)
+		// ------------------------------------
+	
+	//	// Alternatively, solve for pns, then calculate Dns and Rns from the pns solution. That's the one we want, it allows calculating the work. We're not worried about calculating the velocities.
+	//	% Ltilp     = build_Ltilp(tilom, LV, LLi,LA,LC,LBi)  ;
+		// Ltilp  =  LLi * ( LA - LC * LBi * LC ) * tilom * LLi * LV  + speye(N,N);
+		CSRMatrix Ltilp1 = csrMatrixMultiply(&LLi, &LV);
+		for (i=0;i<Ltilp1.nnz;i++) Ltilp1.values[i] = tilom * Ltilp1.values[i];
+		CSRMatrix Ltilp2 = csrMatrixMultiply(&LBi, &LC);
+		CSRMatrix Ltilp3 = csrMatrixMultiply(&LC, &Ltilp2);
+		for (i=0;i<Ltilp3.nnz;i++) Ltilp3.values[i] = -Ltilp3.values[i];
+		CSRMatrix Ltilp4 = csrMatrixAdd(LA, Ltilp3);
+		CSRMatrix Ltilp5 = csrMatrixMultiply(&Ltilp4, &Ltilp1);
+		CSRMatrix Ltilp6 = csrMatrixMultiply(&LLi, &Ltilp5); // Pentadiagonal
+		// speye()
+		double complex * eyeValues = (double complex *) malloc(N*sizeof(double complex));
+		for (i=0;i<N;i++) eyeValues[i] = 1.0 + 0.0*I;
+		CSRMatrix eye = createCSRMatrix(N, N, N, diagIndices, diagIndices, eyeValues); // Diagonal
+		 
+		CSRMatrix Ltilp = csrMatrixAdd(Ltilp6, eye);
+		
+	//	% Qtilp     = build_Qtilp(Kns,dns,ens,LLi,LA,LBi,LC) ;
+		// Qtilp =  - LLi*(LA - LC*LBi*LC)*LLi*(Kns) + LLi*dns + LLi*LC*LBi*ens ;
+		double complex * Qtilp1 = (double complex *) malloc(N*sizeof(double complex));
+		csrMatrixVectorMultiply(LBi, ens, &Qtilp1);
+		double complex * Qtilp2 = (double complex *) malloc(N*sizeof(double complex));
+		csrMatrixVectorMultiply(LC, Qtilp1, &Qtilp2);
+		double complex * Qtilp3 = (double complex *) malloc(N*sizeof(double complex));
+		csrMatrixVectorMultiply(LLi, Qtilp2, &Qtilp3);
+		
+		double complex * Qtilp4 = (double complex *) malloc(N*sizeof(double complex));
+		csrMatrixVectorMultiply(LLi, dns, &Qtilp4);
+		
+		double complex * Qtilp5 = (double complex *) malloc(N*sizeof(double complex));
+		csrMatrixVectorMultiply(LLi, Kns, &Qtilp5);
+		double complex * Qtilp6 = (double complex *) malloc(N*sizeof(double complex));
+		csrMatrixVectorMultiply(Ltilp4, Qtilp5, &Qtilp6);
+		double complex * Qtilp7 = (double complex *) malloc(N*sizeof(double complex));
+		csrMatrixVectorMultiply(LLi, Qtilp6, &Qtilp7);
+		for (i=0;i<N;i++) Qtilp7[i] = -Qtilp7[i];
+		
+		double complex * Qtilp8 = (double complex *) malloc(N*sizeof(double complex));
+		vectorAdd(Qtilp7, Qtilp4, &Qtilp8, 1, N);
+		double complex * Qtilp = (double complex *) malloc(N*sizeof(double complex));
+		vectorAdd(Qtilp8, Qtilp3, &Qtilp, 1, N);
+		
+		// Right-hand side
+		double complex * LHSp = (double complex *) malloc(N*sizeof(double complex));
+		vectorAdd(Gns, Qtilp, &LHSp, 1, N);
+		
+	//	% pns       = Ltilp \ (Gns + Qtilp)  
+		solvePentadiagonalSystem(&Ltilp, LHSp, &(*pns));
+	
+	//	% Dns       = DnsFrompns(pns,Kns,tilom,  LLi,LV);
+		// Get Dns from pns: Dns = tilom*LLi*LV*(pns) + LLi*(Kns); 
+		double complex * Dns1 = (double complex *) malloc(N*sizeof(double complex));
+		csrMatrixVectorMultiply(LV, *pns, &Dns1);
+		double complex * Dns2 = (double complex *) malloc(N*sizeof(double complex));
+		csrMatrixVectorMultiply(LLi, Dns1, &Dns2);
+		for (i=0;i<N;i++) Dns2[i] = tilom*Dns2[i];
+		vectorAdd(Dns2, Qtilp5, &(*Dns), 1, N);
+		
+		freeCSRMatrix(&Ltilp1);
+		freeCSRMatrix(&Ltilp2);
+		freeCSRMatrix(&Ltilp3);
+		freeCSRMatrix(&Ltilp4);
+		freeCSRMatrix(&Ltilp5);
+		freeCSRMatrix(&Ltilp6);
+		freeCSRMatrix(&eye);
+		
+		free(eyeValues);
+		
+		free(Qtilp1);
+		free(Qtilp2);
+		free(Qtilp3);
+		free(Qtilp4);
+		free(Qtilp5);
+		free(Qtilp6);
+		free(Qtilp7);
+		free(Qtilp8);
+	
+		free(Dns1);
+		free(Dns2);
+		
+		freeCSRMatrix(&Ltilp);
+		free(Qtilp);
+		free(LHSp);
+	}
+	
+	// ------------------------------------
+	// This is needed for both solving methods
+	// ------------------------------------
+	
 	// Get Rns from Dns: Rns = -LBi * (LC*Dns + ens)
 	double complex * Rns1 = (double complex *) malloc(N*sizeof(double complex));
 	csrMatrixVectorMultiply(LC, *Dns, &Rns1);
 	vectorAdd(Rns1, ens, &Rns1, 1, N);
 	csrMatrixVectorMultiply(LBi, Rns1, &(*Rns));
 	for (i=0;i<N;i++) (*Rns)[i] = -(*Rns)[i];
-
-    // Get pns from Dns: pns = (1/tilom) * LVi * (LL*Dns - Kns)
-	double complex * pns1 = (double complex *) malloc(N*sizeof(double complex));
-	csrMatrixVectorMultiply(LL, *Dns, &pns1);
-	double complex * pns2 = (double complex *) malloc(N*sizeof(double complex));
-	vectorCopy(Kns, &pns2, N);
-	for (i=0;i<N;i++) pns2[i] = -pns2[i];
-	double complex * pns3 = (double complex *) malloc(N*sizeof(double complex));
-	vectorAdd(pns1, pns2, &pns3, 1, N);
-	csrMatrixVectorMultiply(LVi, pns3, &(*pns));
-	for (i=0;i<N;i++) (*pns)[i] = 1.0/tilom*(*pns)[i];
-
-//	// Alternatively, solve for pns, then calculate Dns and Rns from the pns solution. That's the one we want, it allows calculating the work. We're not worried about calculating the velocities.
-//	% Ltilp     = build_Ltilp(tilom, LV, LLi,LA,LC,LBi)  ;
-//	% Qtilp     = build_Qtilp(Kns,dns,ens,LLi,LA,LBi,LC) ;
-//	% pns       = Ltilp \ (Gns + Qtilp)                  ;
-//	% Dns       = DnsFrompns(pns,Kns,tilom,  LLi,LV);
-//	% Rns       = RnsFrompns(pns, tilom,Kns,ens, LLi,LV,LBi,LC);
 
 	// ------------------------------------
 	// Calculate some globe/time-averaged quantities
@@ -716,26 +843,12 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 	//knFsF  = pns((nF-sF)+1)/Gns((nF-sF)+1); % Love number at degree(s) nF
 
 	free(nvec);
-	free(lvec);
-	
-	for (i=0;i<N;i++) free (dissdvecs[i]);
-    for (i=0;i<N;i++) free (dissrvecs[i]);
-	free(dissdvecs);
-	free(dissrvecs);
-	free(sum_dissdvecs);
-	free(sum_dissrvecs);
-	
-	free(LCvalues);
-	free(LDvalues);
-	free(LVvalues);
-	free(LVivalues);
-	free(LLivalues);
-	free(LBivalues);
 
 	freeCSRMatrix(&Lalphad);
 	freeCSRMatrix(&Lalphar);
 	freeCSRMatrix(&LV);
 	freeCSRMatrix(&LL);
+	freeCSRMatrix(&LA);
 	freeCSRMatrix(&LC);
 	freeCSRMatrix(&LD);
 	freeCSRMatrix(&LVi);
@@ -745,25 +858,8 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, double compl
 	free(diagIndices);
 	free(triDiagRowIndices);
 	free(triDiagColIndices);
-
-	freeCSRMatrix(&LtilmfD1);
-	freeCSRMatrix(&LtilmfD2);
-	freeCSRMatrix(&LtilmfD3);
-
-	free(QtilmfD2);
-	free(QtilmfD3);
-	free(QtilmfD3a);
-	free(QtilmfD3b);
-
-	freeCSRMatrix(&LtilmfD);
-	free(QtilmfD);
-	free(LHS);
 	
 	free(Rns1);
-	
-	free(pns1);
-	free(pns2);
-	free(pns3);
 	
 	free(calWns1);
 	free(calWns2);
