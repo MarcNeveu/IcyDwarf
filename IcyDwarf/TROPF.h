@@ -463,7 +463,7 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, int Gns_nnz,
 	// LL
 	double complex *lvec = (double complex *) malloc(N*sizeof(double complex)); // Vector for Laplacian coefs
 	for (i=0;i<N;i++) lvec[i] = (double complex) (-nvec[i] * (nvec[i] + 1));
-	if (N == 1 && lvec[0] == 0.0) lvec[0] = DBL_EPSILON; // Compensate for singular (s=0) case, otherwise Lapl inverse matrices will be singular
+	if (lvec[0] == 0.0) lvec[0] = DBL_EPSILON; // Compensate for singular (s=0) case, otherwise Lapl inverse matrices will be singular
 	CSRMatrix LL = createCSRMatrix(N, N, N, diagIndices, diagIndices, lvec); // Diagonal
 
 	// LA
