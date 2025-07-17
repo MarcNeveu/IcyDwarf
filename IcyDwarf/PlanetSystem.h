@@ -1247,7 +1247,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 							&circ[im], &Crack[im], &Crack_size[im], &fracOpen[im], &P_pore[im], &P_hydr[im], &Act[im], &fracKleached[im],
 							crack_input, crack_species, aTP, integral, alpha, beta, silica, chrysotile, magnesite,
 							&ircrack[im], &ircore[im], &irice[im], &irdiff[im], forced_hydcirc, &Nu[im],
-							tidalmodel, eccentricitymodel, tidetimes, im, moonspawn[im], Mprim, eorb[im], obl[im], norb[im], &Wtide_tot[im], hy[im], chondr,
+							tidalmodel, eccentricitymodel, tidetimes, im, moonspawn[im], Mprim, aorb[im], eorb[im], obl[im], norb[im], &Wtide_tot[im], hy[im], chondr,
 							&Heat_radio[im], &Heat_grav[im], &Heat_serp[im], &Heat_dehydr[im], &Heat_tide[im],
 							&Stress[im], &TideHeatRate[im], &k2[im]);
 //					++nloops;

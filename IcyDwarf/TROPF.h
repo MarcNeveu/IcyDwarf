@@ -41,11 +41,11 @@ typedef struct {
     int count;              // Number of eigenvalues
 } Eigenvalues;
 
-int TROPF();
+int TROPF(double tilcesq, double tilT, int diss_type, double complex tilom, int nF, int s, double PnFsF_amp, double *P_fluidtide, double complex *knFsF, double complex *kLovenF);
 
 int tropf(int N, double complex tilOm, double complex tilom, int s, int Gns_nnz, double complex *Gns, double complex *Kns, double complex *dns, double complex *ens, int size_tilal,
 		  double complex *tilalpd, double complex *tilalpr, int size_tilnusqns, double complex *tilnusqns, double complex **Dns, double complex **Rns, double complex **pns,
-		  double **calWns, double **calDns, double **calEKns, double **calEPns, double complex ** PhiRns, int solveMethod, int sw_selfGrav, double rho_ratio);
+		  double **calWns, double **calDns, double **calEKns, double **calEPns, double complex **PhiRns, int solveMethod, int sw_selfGrav, double rho_ratio);
 
 int globeTimeAvg(double ** ST_globeTimeAvg, double complex * Ans, double complex * Bns, int s, int *nvec, int N);
 
@@ -115,7 +115,7 @@ static void tred2(double **a, int n, double *d, double *e);
 static void tqli(double *d, double *e, int n, double **z);
 int n_eigen_symm(double *_a, int n, double *eval);
 
-int TROPF() {
+int TROPF(double tilcesq, double tilT, int diss_type, double complex tilom, int nF, int s, double PnFsF_amp, double *P_fluidtide, double complex *knFsF, double complex *kLovenF) {
 
 	int i = 0; // Counters
 	int j = 0;
@@ -131,15 +131,15 @@ int TROPF() {
 
 	// Method parameters:
 	int N = 500;        // Number of terms in spherical-harmonic expansion, default 500
-	int s = 2;          // Order/rank of spherical harmonic terms (longitudinal wavenumber of the forcing), a non-negative scalar. Set to 2 for validation case
-	int Ntrunc = N + s - 1;
+//	int s = 2;          // Order/rank of spherical harmonic terms (longitudinal wavenumber of the forcing), a non-negative scalar. Set to 2 for validation case
+//	int Ntrunc = N + s - 1;
 
 	double complex tilOm = 1.0 + 0.0*I; // Nondimensionalized fluid rotation rate, default 1
 	                    // (i.e., nondimensionalization factor Ωs for temporal frequencies is equal to rotation rate Ω).
 	                    // Allows a necessarily different choice for the non-rotating case.
 
 	// Nondimensional forcing parameters:
-	double complex tilom = 0.5 + 0.0*I; // Forcing frequency. Real scalar, + for prograde propagation, - for retrograde propagation.
+//	double complex tilom = 0.5 + 0.0*I; // Forcing frequency. Real scalar, + for prograde propagation, - for retrograde propagation.
 
 	double complex * Gns = (double complex *) malloc(N*sizeof(double complex)); // Spherical-harmonic coefficients for prescribed tidal potential
 	double complex * Kns = (double complex *) malloc(N*sizeof(double complex)); // SH coefs for source/sink term in vertical structure
@@ -159,7 +159,8 @@ int TROPF() {
                                                                    // leads to vertical motion that may be damped by ice shell. If vector, subsequent components are coefficients for harmonic eddy viscosity.
 	double complex *tilalpr = (double complex *) malloc(size_tilal*sizeof(double complex)); // If scalar, attenuation (’Rayleigh’ drag) coefficient for the horizontally rotational component of the flow.
                                                                    // If vector, subsequent components are coefficients for harmonic eddy viscosity.
-
+	double complex tilalpp = 0.0 + 0.0*I; // Dissipation linked to potential energy (vertical component of the flow)
+	
     for (i=0;i<size_tilal;i++) {
     	tilalpd[i] = 0.0 + 0.0*I;
     	tilalpr[i] = 0.0 + 0.0*I;
@@ -225,91 +226,140 @@ int TROPF() {
 //
 //	// Rest of script in tropf()
 
-	// ----------------
-	// Validation script
-	// scr_val_compareSHMethods
-	// ----------------
-
-	double PnFsF_amp = 3.0; // Amplitude of associated Legendre function of degree nF, order sF
-	tilom = 0.5 + 0.0*I; // Frequency of forcing potential
-	int nF_init = 2; // Degree at which Gns is nonzero
-	int sF = s; // Order of Gns
-
-	Gns[nF_init-sF] = -I*0.5/PnFsF_amp; // tilmfG normalized to have unit amplitude
+//	 //----------------
+//	 // Validation script
+//	 // scr_val_compareSHMethods
+//	 //----------------
+//
+//	double PnFsF_amp = 3.0; // Amplitude of associated Legendre function of degree nF, order sF
+//	tilom = 0.5 + 0.0*I; // Frequency of forcing potential
+//	int nF_init = 2; // Degree at which Gns is nonzero
+//	int sF = s; // Order of Gns
+//
+//	Gns[nF_init-sF] = -I*0.5/PnFsF_amp; // tilmfG normalized to have unit amplitude
 //	Kns[nF_init-sF] = -I*0.5/PnFsF_amp;
 //	dns[nF_init-sF] = -I*0.5/PnFsF_amp;
 //	ens[nF_init-sF] = -I*0.5/PnFsF_amp;
-	double tilcesq = 0.63; // This choice winds up being just a reference value
+//	double tilcesq = 0.63; // This choice winds up being just a reference value
+//
+//	for (i=0;i<size_tilal;i++) { // Inviscid following IL1993 assumptions
+//		tilalpd[i] = 1.0 + 0.0*I; // should be rand()
+//		tilalpr[i] = 1.0 + 0.0*I;
+//	}
+//
+//	// Prescribe squared slowness coeff vector:
+//	tilnusqns[0] =  (1.0 + I*tilalpp/tilom)/tilcesq;
+	
+//	// ----------------
+//  // From TROPF_v3: Love numbers at nonzero tidal potential terms. Commenting out for integration with IcyDwarf because we're calling TROPF() only 1 degree/order/propagation direction at a time so nF is a scalar, not an array
+//  // ----------------
 
-	for (i=0;i<size_tilal;i++) { // Inviscid following IL1993 assumptions
-		tilalpd[i] = 1.0 + 0.0*I; // should be rand()
-		tilalpr[i] = 1.0 + 0.0*I;
+    double complex * PhiRns = (double complex *) malloc (N*sizeof(double complex)); // Gravitational potential of the tidal response
+    
+    for (i=0;i<N;i++) PhiRns[i] = 0.0 + 0.0*I;
+
+//	int Gns_nnz = 0; // Number of nonzero elements in Gns
+//	for (i=0;i<N;i++) {
+//		if (creal(Gns[i]) != 0.0 || cimag(Gns[i]) != 0.0) Gns_nnz++;
+//	}
+//	int * nF = (int *) malloc (Gns_nnz*sizeof(int)); // Degree(s) of non-zero Gns
+//	j = 0;
+//	for (i=0;i<Gns_nnz;i++) {
+//		if (creal(Gns[i]) != 0.0 || cimag(Gns[i]) != 0.0) {
+//			nF[j] = i + sF; //nF = find(Gns) + sF - 1; // Offset by 1 relative to MatLab
+//			j++;
+//		}
+//	}
+//	
+//	// Admittance = ratio of nondimensional pressure response to nondimensional tidal potential = Love number at degree (nF) and order (sF) of forcing
+//	double complex * knFsF = (double complex *) malloc (Gns_nnz*sizeof(double complex));
+//	double complex * GnFsF = (double complex *) malloc (Gns_nnz*sizeof(double complex));
+//	double complex * kLovenF = (double complex *) malloc (Gns_nnz*sizeof(double complex));
+//	for (i=0;i<Gns_nnz;i++) {
+//		knFsF[i] = 0.0 + 0.0*I;
+//		GnFsF[i] = Gns[nF[i]-sF]; // Normalization for PhiRns
+//      kLovenF[i] = 0.0 + 0.0*I;
+//	}
+	
+	// ----------------
+    // Process inputs from thermal()
+    // ----------------
+    
+    // Dissipation terms
+    tilalpp = 0.0 + 0.0*I;
+    for (i=0;i<size_tilal;i++) {
+		tilalpd[0] = 0.0 + 0.0*I;
+		tilalpr[0] = 0.0 + 0.0*I;
 	}
-	double complex tilalpp = 0.0 + 0.0*I;
+	
+    if (diss_type == 0 || diss_type == 2) { // Rayleigh drag, kinetic energy dissipation
+		tilalpd[0] = 1.0/tilT + 0.0*I;
+		tilalpr[0] = 1.0/tilT + 0.0*I;
+	}
+	if (diss_type == 1 || diss_type == 2) { // Barotropic waves, potential energy dissipation
+		tilalpp = 1.0/tilT + 0.0*I;
+	}
+	if (diss_type < 0 || diss_type > 2) printf("IcyDwarf / TROPF: Ensure diss_type is between 0 and 2\n");
 
 	// Prescribe squared slowness coeff vector:
 	tilnusqns[0] =  (1.0 + I*tilalpp/tilom)/tilcesq;
 	
-	// ----------------
-    // Love numbers at nonzero tidal potential terms
-    // ----------------
-	
-	int Gns_nnz = 0; // Number of nonzero elements in Gns
-	for (i=0;i<N;i++) {
-		if (creal(Gns[i]) != 0.0 || cimag(Gns[i]) != 0.0) Gns_nnz++;
-	}
-	int * nF = (int *) malloc (Gns_nnz*sizeof(int)); // Degree(s) of non-zero Gns
-	j = 0;
-	for (i=0;i<Gns_nnz;i++) {
-		if (creal(Gns[i]) != 0.0 || cimag(Gns[i]) != 0.0) {
-			nF[j] = i + sF; //nF = find(Gns) + sF - 1; // Offset by 1 relative to MatLab
-			j++;
-		}
-	}
-	
-	// Admittance = ratio of nondimensional pressure response to nondimensional tidal potential = Love number at degree (nF) and order (sF) of forcing
-	double complex * knFsF = (double complex *) malloc (Gns_nnz*sizeof(double complex));
-	double complex * GnFsF = (double complex *) malloc (Gns_nnz*sizeof(double complex));
-	double complex * PhiRns = (double complex *) malloc (Gns_nnz*sizeof(double complex));
-	double complex * kLovenF = (double complex *) malloc (Gns_nnz*sizeof(double complex));
-	for (i=0;i<Gns_nnz;i++) {
-		knFsF[i] = 0.0 + 0.0*I;
-		GnFsF[i] = Gns[nF[i]-sF]; // Normalization for PhiRns
-		PhiRns[i] = 0.0 + 0.0*I;
-	}
+	// Degree and order of forcing, associated gravitational potential
+	Gns[nF-s] = I*0.5/PnFsF_amp;
 	
     // ----------------
     // Call tropf()
     // ----------------
     
-    tropf(N, tilOm, tilom, s, Gns_nnz, Gns, Kns, dns, ens, size_tilal, tilalpd, tilalpr, size_tilnusqns, tilnusqns, &Dns, &Rns, &pns,
+    // For TROPF v3, Gns_nnz is an arbitrary integer
+//    tropf(N, tilOm, tilom, s, Gns_nnz, Gns, Kns, dns, ens, size_tilal, tilalpd, tilalpr, size_tilnusqns, tilnusqns, &Dns, &Rns, &pns,
+//    		&calWns, &calDns, &calEKns, &calEPns, &PhiRns, solveMethod, sw_selfGrav, rho_ratio);
+    		
+    // For IcyDwarf coupling, Gns_nnz = 1 (single nF)
+    tropf(N, tilOm, tilom, s, 1, Gns, Kns, dns, ens, size_tilal, tilalpd, tilalpr, size_tilnusqns, tilnusqns, &Dns, &Rns, &pns,
     		&calWns, &calDns, &calEKns, &calEPns, &PhiRns, solveMethod, sw_selfGrav, rho_ratio);
     		
-    printf("\n calWns:\n");
-    for (i=0;i<N;i++) printf("%g\n", calWns[i]);
-    printf("\n calDns:\n");
-    for (i=0;i<N;i++) printf("%g\n", calDns[i]);
-    printf("\n calEKns:\n");
-    for (i=0;i<N;i++) printf("%g\n", calEKns[i]);
-    printf("\n calEPns:\n");
-    for (i=0;i<N;i++) printf("%g\n", calEPns[i]);
+//    printf("\n calWns:\n");
+//    for (i=0;i<N;i++) printf("%g\n", calWns[i]);
+//    printf("\n calDns:\n");
+//    for (i=0;i<N;i++) printf("%g\n", calDns[i]);
+//    printf("\n calEKns:\n");
+//    for (i=0;i<N;i++) printf("%g\n", calEKns[i]);
+//    printf("\n calEPns:\n");
+//    for (i=0;i<N;i++) printf("%g\n", calEPns[i]);
     
+    // For TROPF v3
     // Love number = pressure/potential admittance at degree(s) nF (knFsF = 1 indicates an equilibrium tide response)
 	// knFsF = pns((nF-sF)+1)/Gns((nF-sF)+1); % Love number at degree(s) nF
-	printf("\n KnFsF:\n");
-	for (i=0;i<Gns_nnz;i++) {
-		knFsF[i] = pns[nF[i]-sF] / Gns[nF[i]-sF];
-		printf("%d %g %g\n", nF[i], creal(knFsF[i]), cimag(knFsF[i]));
-	}
+//	printf("\n KnFsF:\n");
+//	for (i=0;i<Gns_nnz;i++) {
+//		knFsF[i] = pns[nF[i]-sF] / Gns[nF[i]-sF];
+////		printf("%d %g %g\n", nF[i], creal(knFsF[i]), cimag(knFsF[i]));
+//	}
+
+    // For IcyDwarf coupling (single nF)
+	*knFsF = pns[nF-s] / Gns[nF-s];
 	
-	for (i=0;i<Gns_nnz;i++) PhiRns[nF[i]-sF] = PhiRns[nF[i]-sF] / GnFsF[i]; // Normalization to forcing potential
+	// For TROPF v3
+//	for (i=0;i<Gns_nnz;i++) PhiRns[nF[i]-sF] = PhiRns[nF[i]-sF] / GnFsF[i]; // Normalization to forcing potential. TODO The dimensions here don't work out if Gns_nnz > 1
 	
+	// For IcyDwarf
+	for (i=0;i<N;i++) PhiRns[i] = PhiRns[i] / Gns[nF-s]; // Normalization to forcing potential
+	
+	// For TROPF v3
 	// Love number at the degree(s)/order of Gns forcing:
-	printf("\n kLovenF:\n");
-	for (i=0;i<Gns_nnz;i++) {
-		kLovenF[i] = PhiRns[nF[i]-sF]; // Response potential/forcing potential Love number at degree(s) nF
-		printf("%d %g %g\n", nF[i], creal(kLovenF[i]), cimag(kLovenF[i]));
-	}
+//	printf("\n kLovenF:\n");
+//	for (i=0;i<Gns_nnz;i++) {
+//		kLovenF[i] = PhiRns[nF[i]-sF]; // Response potential/forcing potential Love number at degree(s) nF
+//		printf("%d %g %g\n", nF[i], creal(kLovenF[i]), cimag(kLovenF[i]));
+//	}
+	
+	// For IcyDwarf
+	*kLovenF = PhiRns[nF-s];
+	
+	// Calculate total power, = sum over all degrees for W or D or 2*alphad/r*KE + 2*alphap*PE
+	*P_fluidtide = 0.0;
+	for (i=0;i<N;i++) *P_fluidtide = *P_fluidtide + calWns[i];
 
     // Free mallocs
     free(Gns);
@@ -330,12 +380,12 @@ int TROPF() {
     free(calEKns);
     free(calEPns);
     
-    free(knFsF);
-    free(GnFsF);
     free(PhiRns);
-    free(kLovenF);
+    
+//    free(knFsF);
+//    free(GnFsF);
+//    free(kLovenF);
 
-exit(0);
 	return 0;
 }
 
@@ -351,7 +401,7 @@ exit(0);
 
 int tropf(int N, double complex tilOm, double complex tilom, int s, int Gns_nnz, double complex *Gns, double complex *Kns, double complex *dns, double complex *ens, int size_tilal,
 		  double complex *tilalpd, double complex *tilalpr, int size_tilnusqns, double complex *tilnusqns, double complex **Dns, double complex **Rns, double complex **pns,
-		  double **calWns, double **calDns, double **calEKns, double **calEPns, double complex ** PhiRns, int solveMethod, int sw_selfGrav, double rho_ratio) {
+		  double **calWns, double **calDns, double **calEKns, double **calEPns, double complex **PhiRns, int solveMethod, int sw_selfGrav, double rho_ratio) {
 
 	int i = 0;
 	int j = 0;
@@ -419,7 +469,7 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, int Gns_nnz,
 	// LA
 	// LA  = spdiags(   (tilom+1i*diag(Lalphad,0)) .* diag(LL) - s*tilOm  , 0,N,N) ;
 	double complex *LAvalues = (double complex *) malloc(N*sizeof(double complex));
-	for (i=0;i<N;i++) LAvalues[i] = (tilom + I*sum_dissdvecs[i])*lvec[i] - s*tilOm;
+	for (i=0;i<N;i++) LAvalues[i] = (tilom + I*sum_dissdvecs[i])*lvec[i] - (double)s*tilOm;
 	CSRMatrix LA = createCSRMatrix(N, N, N, diagIndices, diagIndices, LAvalues); // Diagonal
 
 	// LC
@@ -873,7 +923,7 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, int Gns_nnz,
 	if (!sw_selfGrav || !solveMethod) { 
 		globeTimeAvg(&calDns_tot5, calDns10, calDns9, s, nvec, N);
 	}
-	else { // If self-gravity, further multiply calDns_tot5 by (speye(N) + iLN)
+	else { // If self-gravity, further multiply calDns_tot5 by (speye(N) + 1)
 		csrMatrixVectorMultiply(calDnsMat, calDns10, &calDns11);
 	 	globeTimeAvg(&calDns_tot5, calDns11, calDns9, s, nvec, N);
 	}
@@ -881,7 +931,7 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, int Gns_nnz,
 	for (i=0;i<N;i++) (*calDns)[i] = -0.5*(calDns_tot1[i] + calDns_tot2[i] + calDns_tot3[i] + calDns_tot4[i]) + calDns_tot5[i];
 
 	// Kinetic energy density
-	//calEKns = (-1/2) * globeTimeAverage( (Dns)     , (LL*Dns)       , s ) ...
+	//calEKns = (-s/2) * globeTimeAverage( (Dns)     , (LL*Dns)       , s ) ...
 	//        + (-1/2) * globeTimeAverage( (-1i*Rns) , (LL*(-1i*Rns)) , s )   ;
 	globeTimeAvg(&(*calEKns), *Dns, calDns3, s, nvec, N);
 
@@ -908,7 +958,7 @@ int tropf(int N, double complex tilOm, double complex tilom, int s, int Gns_nnz,
 	for (i=0;i<N;i++) (*calEPns)[i] = 0.5*(*calEPns)[i];
 
 	// Gravitational potential of tidal response (normalized wrt forcing potential):
-	for (i=0;i<Gns_nnz;i++) (*PhiRns)[i] = -3.0/(2.0*nvec[i] + 1.0)*rho_ratio * (*pns)[i]; // Will normalize to GnFsF in main TROPF() routine
+	for (i=0;i<N;i++) (*PhiRns)[i] = -3.0/(2.0*nvec[i] + 1.0)*rho_ratio * (*pns)[i]; // Will normalize to GnFsF in main TROPF() routine
 
 	free(nvec);
 
