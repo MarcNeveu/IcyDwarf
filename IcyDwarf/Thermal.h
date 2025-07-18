@@ -50,8 +50,8 @@ int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[10
 		double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite, int *ircrack, int *ircore, int *irice,
 		int *irdiff, int forced_hydcirc, double **Nu, int tidalmodel, int eccentricitymodel, double tidetimes, int im, int moonspawn, double Mprim,
 		double aorb, double eorb, double obl,
-		double norb, double *Wtide_tot, int hy, int chondr, double *Heat_radio, double *Heat_grav, double *Heat_serp, double *Heat_dehydr,
-		double *Heat_tide, double *Heat_fluidtide, double ***Stress, double **TideHeatRate, double *k2, double *cesq, double *tilT, double *W_fluidtide_tot);
+		double norb, double *Wtide_tot, double *W_fluidtide_tot, int hy, int chondr, double *Heat_radio, double *Heat_grav, double *Heat_serp, double *Heat_dehydr,
+		double *Heat_tide, double *Heat_fluidtide, double ***Stress, double **TideHeatRate, double *k2, double *cesq, double *tilT);
 
 int state (int os, char path[1024], int itime, int im, int ir, double E, double *frock, double *fh2os, double *fadhs, double *fh2ol,
 		double *fnh3l, double Xsalt, double *T);
@@ -118,8 +118,8 @@ int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[10
 		double **alpha, double **beta, double **silica, double **chrysotile, double **magnesite, int *ircrack, int *ircore, int *irice,
 		int *irdiff, int forced_hydcirc, double **Nu, int tidalmodel, int eccentricitymodel, double tidetimes, int im, int moonspawn, double Mprim,
 		double aorb, double eorb, double obl,
-		double norb, double *Wtide_tot, int hy, int chondr, double *Heat_radio, double *Heat_grav, double *Heat_serp, double *Heat_dehydr,
-		double *Heat_tide, double *Heat_fluidtide, double ***Stress, double **TideHeatRate, double *k2, double *cesq, double *tilT, double *W_fluidtide_tot) {
+		double norb, double *Wtide_tot, double *W_fluidtide_tot, int hy, int chondr, double *Heat_radio, double *Heat_grav, double *Heat_serp, double *Heat_dehydr,
+		double *Heat_tide, double *Heat_fluidtide, double ***Stress, double **TideHeatRate, double *k2, double *cesq, double *tilT) {
 
 	int ir = 0;                          // Grid counter
 	int jr = 0;                          // Secondary grid counter
