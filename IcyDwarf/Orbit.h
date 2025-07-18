@@ -28,7 +28,7 @@ int Orbit (int os, int argc, char *argv[], char path[1024], int im,
 		double **aorb, double **eorb, double *iorb, double *obl, double *norb, double *lambda, double *omega,
 		double **h_old, double **k_old, double **a__old,
 		double **Cs_ee_old, double **Cs_eep_old, double **Cr_e_old, double **Cr_ep_old, double **Cr_ee_old, double **Cr_eep_old, double **Cr_epep_old,
-		double **Wtide_tot, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim, int reslock, double *t_tide, int eccentricitymodel,
+		double **Wtide_tot, double **W_fluidtide_tot, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim, int reslock, double *t_tide, int eccentricitymodel,
 		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity, double elapsed, double realtime, double *prim_sign, double *k2, double *Qtide,
 		double nprim, double Ip, double *spin, double MOI, int CTL);
 
@@ -61,7 +61,7 @@ int Orbit (int os, int argc, char *argv[], char path[1024], int im,
 		double **aorb, double **eorb, double *iorb, double *obl, double *norb, double *lambda, double *omega,
 		double **h_old, double **k_old, double **a__old,
 		double **Cs_ee_old, double **Cs_eep_old, double **Cr_e_old, double **Cr_ep_old, double **Cr_ee_old, double **Cr_eep_old, double **Cr_epep_old,
-		double **Wtide_tot, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim, int reslock, double *t_tide, int eccentricitymodel,
+		double **Wtide_tot, double **W_fluidtide_tot, double Mprim, double Rprim, double J2prim, double J4prim, double k2prim, double Qprim, int reslock, double *t_tide, int eccentricitymodel,
 		double aring_out, double aring_in, double alpha_Lind,  double ringSurfaceDensity, double elapsed, double realtime, double *prim_sign, double *k2, double *Qtide,
 		double nprim, double Ip, double *spin, double MOI, int CTL) {
 
@@ -224,10 +224,10 @@ int Orbit (int os, int argc, char *argv[], char path[1024], int im,
 
 					m[0] = m_p[im];
 					r[0] = rad[im][NR];
-					W[0] = (*Wtide_tot)[im];
+					W[0] = (*Wtide_tot)[im] + (*W_fluidtide_tot)[im];
 					m[1] = m_p[i];
 					r[1] = rad[i][NR];
-					W[1] = (*Wtide_tot)[i];
+					W[1] = (*Wtide_tot)[i] + (*W_fluidtide_tot)[i];
 
 					psgn[0] = prim_sign[im];
 					psgn[1] = prim_sign[i];
@@ -245,10 +245,10 @@ int Orbit (int os, int argc, char *argv[], char path[1024], int im,
 
 					m[0] = m_p[i];
 					r[0] = rad[i][NR];
-					W[0] = (*Wtide_tot)[i];
+					W[0] = (*Wtide_tot)[i] + (*W_fluidtide_tot)[i];
 					m[1] = m_p[im];
 					r[1] = rad[im][NR];
-					W[1] = (*Wtide_tot)[im];
+					W[1] = (*Wtide_tot)[im] + (*W_fluidtide_tot)[im];
 
 					psgn[0] = prim_sign[i];
 					psgn[1] = prim_sign[im];
@@ -286,10 +286,10 @@ int Orbit (int os, int argc, char *argv[], char path[1024], int im,
 
 					m[0] = m_p[im];
 					r[0] = rad[im][NR];
-					W[0] = (*Wtide_tot)[im];
+					W[0] = (*Wtide_tot)[im] + (*W_fluidtide_tot)[im];
 					m[1] = m_p[i];
 					r[1] = rad[i][NR];
-					W[1] = (*Wtide_tot)[i];
+					W[1] = (*Wtide_tot)[i] + (*W_fluidtide_tot)[i];
 
 					psgn[0] = prim_sign[im];
 					psgn[1] = prim_sign[i];
@@ -309,10 +309,10 @@ int Orbit (int os, int argc, char *argv[], char path[1024], int im,
 
 					m[0] = m_p[i];
 					r[0] = rad[i][NR];
-					W[0] = (*Wtide_tot)[i];
+					W[0] = (*Wtide_tot)[i] + (*W_fluidtide_tot)[i];
 					m[1] = m_p[im];
 					r[1] = rad[im][NR];
-					W[1] = (*Wtide_tot)[im];
+					W[1] = (*Wtide_tot)[im] + (*W_fluidtide_tot)[im];
 
 					psgn[0] = prim_sign[i];
 					psgn[1] = prim_sign[im];
@@ -604,9 +604,9 @@ int Orbit (int os, int argc, char *argv[], char path[1024], int im,
 	//	    		                     - sqrt(1.0-e2) d/dM(m_p[im]<Uh>+Mprim<Us>));
 
 			// Dissipation inside moon, decreases its eccentricity (equation 4.170 of Murray & Dermott 1999) TODO Equation below assumes constant phase lag, incorporate results from tidalPy instead
-			d_eorb_moon = - (*Wtide_tot)[im]*(*aorb)[im] / (Gcgs*Mprim*m_p[im]*(*eorb)[im]);
+			d_eorb_moon = - ((*Wtide_tot)[im] + (*W_fluidtide_tot)[im]) * (*aorb)[im] / (Gcgs*Mprim*m_p[im]*(*eorb)[im]);
 			// and shrinks its orbit
-			d_aorb_moon = - 2.0*(*Wtide_tot)[im]*(*aorb)[im]*(*aorb)[im] / (Gcgs*Mprim*m_p[im]);
+			d_aorb_moon = - 2.0 * ((*Wtide_tot)[im] + (*W_fluidtide_tot)[im]) * (*aorb)[im]*(*aorb)[im] / (Gcgs*Mprim*m_p[im]);
 
 			// Dissipation inside primary, typically increases moon's eccentricity but depends on mode.
 			d_eorb_pl = 57.0/8.0*k2prim*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*(*eorb)[im]; // Equation below assumes constant phase lag. Effect of any resonant locking unknown.
@@ -670,6 +670,7 @@ int Orbit (int os, int argc, char *argv[], char path[1024], int im,
 			d_eorb_moon = -(*eorb)[im]/dtime;
 			(*Wtide_tot)[im] = (- d_eorb_moon + 171.0/16.0*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*(*eorb)[im])
 					     * Gcgs*Mprim*m_p[im]*(*eorb)[im] / (*aorb)[im];
+			(*W_fluidtide_tot)[im] = 0.0; // Arbitrarily allocate all the delta e to solid Wtide_tot for this timestep, shouldn't matter
 			(*eorb)[im] = 0.0;
 		}
 
@@ -748,7 +749,7 @@ int rescheck(int nmoons, int im, double *norb, double *dnorb_dt, double *aorb, d
 				outer = im;
 			}
 			for (j=ijmax;j>=1;j--) { // Go decreasing, from the weakest to the strongest resonances, because resonance[im][i] gets overprinted
-				for (l=2;l>=1;l--) { // Borderies & Goldreich (1984) derivation of PCapture valid for j:j+k resonances up to k=2, MMR_AvgHam handles arbitrary k
+				for (l=1;l>=1;l--) { // Borderies & Goldreich (1984) derivation of PCapture valid for j:j+k resonances up to k=2, MMR_AvgHam handles k=1 only
 
 					// MMR if mean motions are commensurate by <1%
 					if (resAcctFor[inner][outer]) commensurability = pow(a__old[inner]/a__old[outer],-1.5) * (double)j/(double)(j+l);

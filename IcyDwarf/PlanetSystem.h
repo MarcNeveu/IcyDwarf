@@ -134,7 +134,6 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 	double spin[nmoons];                 // Moon spin rate (s-1)
 	double cesq[nmoons];                 // Square of gravity wave speed excited by tidal potential (no dim)
 	double tilT[nmoons];                 // Fluid tide dissipation timescale (no dim)
-	double W_fluidtide_tot[nmoons];     // Fluid tide dissipation timescale (no dim)
 
 	double Crack_depth_WR[nmoons][3];	 // Crack_depth_WR[3] (multiple units), output
 	double Heat[nmoons][nheat];          // Heat[6] (erg), output
@@ -202,6 +201,9 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 
 	double *Wtide_tot = (double*) malloc((nmoons)*sizeof(double));  // Total tidal heating rate in each moon, summed in all layers (erg s-1)
 	if (Wtide_tot == NULL) printf("PlanetSystem: Not enough memory to create Wtide_tot[nmoons]\n");
+	
+	double *W_fluidtide_tot = (double*) malloc((nmoons)*sizeof(double));  // Total fluid tidal heating rate in each moon, summed in all ocean layers (erg s-1)
+	if (W_fluidtide_tot == NULL) printf("PlanetSystem: Not enough memory to create W_fluidtide_tot[nmoons]\n");
 
 	int **circ = (int**) malloc(nmoons*sizeof(int*));               // 0=no hydrothermal circulation, 1=hydrothermal circulation
 	if (circ == NULL) printf("PlanetSystem: Not enough memory to create circ[nmoons]\n");
@@ -591,6 +593,8 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 		Cr_epep_old[im] = 0.0;
 
 		Wtide_tot[im] = 0.0;
+		W_fluidtide_tot[im] = 0.0;
+		
 		outputpath[im][0] = '\0';
 
 		TsurfMig[im] = 0.0;
@@ -605,7 +609,6 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 		
 		cesq[im] = 0.0;
 		tilT[im] = 0.0;
-		W_fluidtide_tot[im] = 0.0;
 
 		for (ir=0;ir<nmoons;ir++) {
 			PCapture[im][ir] = 0.0;
@@ -1239,7 +1242,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 					// Change 'resonance' to 'resAcctFor' to screen only for the likely dominant resonance between two moons
 					Orbit (os, argc, argv, path, im, dtime, speedup, itime, nmoons, m_p, r, NR, resonance, &aorb, &eorb, &(iorb[im]), &(obl[im]), norb,
 							lambda, omega, &h_old, &k_old, &a__old, &Cs_ee_old, &Cs_eep_old, &Cr_e_old, &Cr_ep_old, &Cr_ee_old, &Cr_eep_old, &Cr_epep_old,
-							&Wtide_tot, Mprim, Rprim, J2prim, J4prim, k2prim, Qprim, reslock, t_tide, eccentricitymodel,
+							&Wtide_tot, &W_fluidtide_tot, Mprim, Rprim, J2prim, J4prim, k2prim, Qprim, reslock, t_tide, eccentricitymodel,
 							aring_out, aring_in, alpha_Lind, ringSurfaceDensity, realtime-tzero_min, realtime, prim_sign, k2, Qtide, nprim, Ip, &(spin[im]), MOI[im], CTL);
 				}
 //				++nloops;
@@ -1560,6 +1563,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 	free (resAcctFor_old);
 	free (PCapture);
 	free (Wtide_tot);
+	free (W_fluidtide_tot);
 	free (h_old);
 	free (k_old);
 	free (a__old);

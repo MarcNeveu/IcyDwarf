@@ -160,8 +160,7 @@ int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[10
 	double tilTscale = 1.0;              // Offset in tilT in log space, to probe interesting feedbacks in fluid tidal dissipation (e.g., "picket fence" area at tilT > 10 vs. broad peak area near tilT~1). TODO make user input?
 	double complex tilom = 0.5 + 0.0*I;  // Non-dimensional tidal excitation frequency = omega_tide / (2*omega_tide) for a spin-synchronous moon, negative for retrograde (westward) propagation
 	
-	double * W_fluidtide = (double *) malloc(5*sizeof(double)); // Power dissipated by fluid tides (erg s-1 m-3), 5 tidal terms for a spin-synchronous moon: G20, G22W, G22E (for eccentricity tides), G21W and G21E (for obliquity tides)
-	for (i=0;i<5;i++) W_fluidtide[i] = 0.0;
+	double * W_fluidtide = (double *) malloc(5*sizeof(double)); // Power dissipated by fluid tides (no dim), 5 tidal terms for a spin-synchronous moon: G20, G22W, G22E (for eccentricity tides), G21W and G21E (for obliquity tides)
 	
 	double sumW_fluidtide = 0.0;          // Power dissipated by fluid tides, sum over all 5 terms (erg s-1 m-3)
 	
@@ -205,6 +204,7 @@ int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[10
     	RRflux[ir] = 0.0;
     	r_old[ir] = 0.0;
     }
+    for (i=0;i<5;i++) W_fluidtide[i] = 0.0;
 
 	//-------------------------------------------------------------------
 	//                              Setup
