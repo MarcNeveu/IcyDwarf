@@ -65,7 +65,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 	int ntherm = 14;                     // Number of quantities output in Thermal.txt
 	int norbit = 12;                      // Number of quantities output in Orbit.txt
 	int ncrkstrs = 12;                   // Number of quantities output in Crack_stresses.txt
-	int nheat = 6;                       // Number of quantities output in Heats.txt
+	int nheat = 10;                       // Number of quantities output in Heats.txt
 	int nREBOUND = 7;                    // Number of quantities output in REBOUND.txt
 
 	// Variables common to all moons
@@ -116,6 +116,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 	double Heat_serp[nmoons];
 	double Heat_dehydr[nmoons];
 	double Heat_tide[nmoons];
+	double Heat_fluidtide[nmoons];
 	double frockpm[nmoons];              // Fraction of rock in the icy world by mass
 	double frockpv[nmoons];              // Fraction of rock in the icy world by volume
 	double dr_grid[nmoons];              // Physical thickness of a shell (cm)
@@ -131,6 +132,9 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 	double Qtide[nmoons];                // Tidal quality factor
 	double MOI[nmoons];                  // Coefficient of moment of inertia
 	double spin[nmoons];                 // Moon spin rate (s-1)
+	double cesq[nmoons];                 // Square of gravity wave speed excited by tidal potential (no dim)
+	double tilT[nmoons];                 // Fluid tide dissipation timescale (no dim)
+	double W_fluidtide_tot[nmoons];     // Fluid tide dissipation timescale (no dim)
 
 	double Crack_depth_WR[nmoons][3];	 // Crack_depth_WR[3] (multiple units), output
 	double Heat[nmoons][nheat];          // Heat[6] (erg), output
@@ -554,6 +558,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 		Heat_serp[im] = 0.0;
 		Heat_dehydr[im] = 0.0;
 		Heat_tide[im] = 0.0;
+		Heat_fluidtide[im] = 0.0;
 		frockpm[im] = 0.0;
 		frockpv[im] = 0.0;
 		dr_grid[im] = r_p[im]/((double) NR);
@@ -597,6 +602,10 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 		Qtide[im] = 1.0e10; // High init to avoid orbital evolution routine crashing
 		MOI[im] = 0.0;
 		spin[im] = norb[im]; // Spin rates set to orbital rates (synchronous rotation) TODO make input parameter?
+		
+		cesq[im] = 0.0;
+		tilT[im] = 0.0;
+		W_fluidtide_tot[im] = 0.0;
 
 		for (ir=0;ir<nmoons;ir++) {
 			PCapture[im][ir] = 0.0;
@@ -925,6 +934,10 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 			Heat[im][3] = Heat_serp[im];
 			Heat[im][4] = Heat_dehydr[im];
 			Heat[im][5] = Heat_tide[im];
+			Heat[im][6] = Heat_fluidtide[im]*dtime;
+			Heat[im][7] = cesq[im];
+			Heat[im][8] = tilT[im];
+			Heat[im][9] = W_fluidtide_tot[im];
 			strcat(filename, outputpath[im]); strcat(filename, "Heats.txt");
 			append_output(os, nheat, Heat[im], path, filename); filename[0] = '\0';
 
@@ -1248,8 +1261,8 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 							crack_input, crack_species, aTP, integral, alpha, beta, silica, chrysotile, magnesite,
 							&ircrack[im], &ircore[im], &irice[im], &irdiff[im], forced_hydcirc, &Nu[im],
 							tidalmodel, eccentricitymodel, tidetimes, im, moonspawn[im], Mprim, aorb[im], eorb[im], obl[im], norb[im], &Wtide_tot[im], hy[im], chondr,
-							&Heat_radio[im], &Heat_grav[im], &Heat_serp[im], &Heat_dehydr[im], &Heat_tide[im],
-							&Stress[im], &TideHeatRate[im], &k2[im]);
+							&Heat_radio[im], &Heat_grav[im], &Heat_serp[im], &Heat_dehydr[im], &Heat_tide[im], &Heat_fluidtide[im],
+							&Stress[im], &TideHeatRate[im], &k2[im], &cesq[im], &tilT[im], &W_fluidtide_tot[im]);
 //					++nloops;
 				}
 			}
@@ -1396,6 +1409,10 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 				Heat[im][3] = Heat_serp[im]*dtime;
 				Heat[im][4] = Heat_dehydr[im]*dtime;
 				Heat[im][5] = Heat_tide[im]*dtime;
+				Heat[im][6] = Heat_fluidtide[im]*dtime;
+				Heat[im][7] = cesq[im];
+				Heat[im][8] = tilT[im];
+				Heat[im][9] = W_fluidtide_tot[im];
 				strcat(filename, outputpath[im]); strcat(filename, "Heats.txt");
 				append_output(os, nheat, Heat[im], path, filename); filename[0] = '\0';
 

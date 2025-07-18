@@ -51,7 +51,7 @@ int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[10
 		int *irdiff, int forced_hydcirc, double **Nu, int tidalmodel, int eccentricitymodel, double tidetimes, int im, int moonspawn, double Mprim,
 		double aorb, double eorb, double obl,
 		double norb, double *Wtide_tot, int hy, int chondr, double *Heat_radio, double *Heat_grav, double *Heat_serp, double *Heat_dehydr,
-		double *Heat_tide, double ***Stress, double **TideHeatRate, double *k2);
+		double *Heat_tide, double *Heat_fluidtide, double ***Stress, double **TideHeatRate, double *k2, double *cesq, double *tilT, double *W_fluidtide_tot);
 
 int state (int os, char path[1024], int itime, int im, int ir, double E, double *frock, double *fh2os, double *fadhs, double *fh2ol,
 		double *fnh3l, double Xsalt, double *T);
@@ -119,7 +119,7 @@ int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[10
 		int *irdiff, int forced_hydcirc, double **Nu, int tidalmodel, int eccentricitymodel, double tidetimes, int im, int moonspawn, double Mprim,
 		double aorb, double eorb, double obl,
 		double norb, double *Wtide_tot, int hy, int chondr, double *Heat_radio, double *Heat_grav, double *Heat_serp, double *Heat_dehydr,
-		double *Heat_tide, double ***Stress, double **TideHeatRate, double *k2) {
+		double *Heat_tide, double *Heat_fluidtide, double ***Stress, double **TideHeatRate, double *k2, double *cesq, double *tilT, double *W_fluidtide_tot) {
 
 	int ir = 0;                          // Grid counter
 	int jr = 0;                          // Secondary grid counter
@@ -130,8 +130,12 @@ int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[10
 	int irice_cv = 0;                    // Outermost slush layer, for convection purposes
 	int iriceold = 0;                    // Old outermost slush layer
 	int irdiffold = 0;                   // Old outermost differentiated layer
+	int ir_ocean = 0;                    // Grid zone at top of ocean
+	int ocean_mid = 0;                   // Grid zone at midpoint ocean thickness
 
 	int structure_changed = 0;           // Switch to call separate()
+	
+	int diss_type = 2;                   // Switch for fluid tidal dissipation type: 0 = kinetic drag only (tilalpd/r), 1 = potential energy dissipation of barotropic waves (tilalpp), 2 = both
 
 	double Phiold = 0.0;                 // Old gravitational potential energy (erg)
 	double ravg = 0.0;                   // Average radius of a layer (cm)
@@ -149,6 +153,20 @@ int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[10
 	double fineVolFrac = 0.0;            // Volume fraction of fines (no dim)
 	double creep_rate = 0.0;             // Strain rate in s-1 for ice, rock, or a mixture. Stress is hydrostatic pressure/(1-porosity)
 	double omega_tide = 0.0;             // Tidal frequency (s-1)
+	
+	double h_ocean = 0.0;                // Ocean thickness (cm)
+	double g_ocean = 0.0;                // Gravitational acceleration at ocean layer midpoint (cm s-2)
+	double r_ocean = 0.0;                // Radius of mid-depth in the ocean (cm)
+	double tilTscale = 1.0;              // Offset in tilT in log space, to probe interesting feedbacks in fluid tidal dissipation (e.g., "picket fence" area at tilT > 10 vs. broad peak area near tilT~1). TODO make user input?
+	double complex tilom = 0.5 + 0.0*I;  // Non-dimensional tidal excitation frequency = omega_tide / (2*omega_tide) for a spin-synchronous moon, negative for retrograde (westward) propagation
+	
+	double * W_fluidtide = (double *) malloc(5*sizeof(double)); // Power dissipated by fluid tides (erg s-1 m-3), 5 tidal terms for a spin-synchronous moon: G20, G22W, G22E (for eccentricity tides), G21W and G21E (for obliquity tides)
+	for (i=0;i<5;i++) W_fluidtide[i] = 0.0;
+	
+	double sumW_fluidtide = 0.0;          // Power dissipated by fluid tides, sum over all 5 terms (erg s-1 m-3)
+	
+	double complex knFsF = 0.0 + 0.0*I;   // Gravitational Love number without self-gravity (no dim)
+	double complex kLovenF = 0.0 + 0.0*I; // Gravitational Love number with self-gravity (no dim)
 
 	int *dont_dehydrate = (int*) malloc(NR*sizeof(int));     // Don't dehydrate a layer that just got hydrated
 	if (dont_dehydrate == NULL) printf("Thermal: Not enough memory to create dont_dehydrate[NR]\n");
@@ -461,60 +479,45 @@ int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[10
 	// Tidal heating (dynamic fluid tide)
 	
 	// Find grid zone of top of the ocean (if any)
-	int ir_ocean = (*ircore);
+	ir_ocean = (*ircore);
 	for (ir=0;ir<NR;ir++) {
 		if ((*Mh2ol)[ir] > 0.0 && (*Mrock)[ir] <= 0.0) ir_ocean = ir;
 	}
 	
-	double h_ocean = 0.0; // Ocean thickness (cm)
-	double g_ocean = 0.0; // Gravitational acceleration at ocean layer midpoint (cm s-2)
-	int ocean_mid = (ir_ocean + (*ircore))/2; // If there is an ocean, there is essentially no porosity from the center to the base of the ice, so we can assume that the midpoint in radii is also the midpoint in grid zone number
-	double r_ocean = (*r)[ocean_mid]; // Radius of mid-depth in the ocean (cm)
-	double cesq = 0.0; // Square of gravity wave speed excited by tidal potential (no dim)
-	double tilT = 0.0; // Fluid tide dissipation timescale (no dim)
-	double tilTscale = 1.0; // Offset in tilT in log space, to probe interesting feedbacks in fluid tidal dissipation (e.g., "picket fence" area at tilT > 10 vs. broad peak area near tilT~1). TODO make user input?
-	int diss_type = 1; // Switch for fluid tidal dissipation type: 0 = kinetic drag only (tilalpd/r), 1 = potential energy dissipation of barotropic waves (tilalpp), 2 = both
-	double complex tilom = 0.0 + 0.0*I; // Non-dimensional tidal excitation frequency = omega_tide / (2*omega_tide), negative for retrograde (westward) propagation
-	
-	double * W_fluidtide = (double *) malloc(5*sizeof(double)); // Power dissipated by fluid tides (erg s-1 m-3), 5 tidal terms for a spin-synchronous moon: G20, G22W, G22E (for eccentricity tides), G21W and G21E (for obliquity tides)
-	for (i=0;i<5;i++) W_fluidtide[i] = 0.0;
-	
-	double sumW_fluidtide = 0.0; // Power dissipated by fluid tides, sum over all 5 terms (erg s-1 m-3)
-	double Vocean = 0.0; // Ocean volume (cm3)
-	
-	double complex knFsF = 0.0 + 0.0*I;   // Gravitational Love number without self-gravity (no dim)
-	double complex kLovenF = 0.0 + 0.0*I; // Gravitational Love number with self-gravity (no dim)
-	
-	// For validation, TODO remove
+	// For validation: force ocean, comment out
 //	ir_ocean = *ircore+1;
 	
 	if (itime > 0 && Mprim && (eorb > 0.0 || obl > 0.0) && !moonspawn && ir_ocean > *ircore) {
 		
+		ocean_mid = (int) floor((double) (ir_ocean + (*ircore)))/2.0; // If there is an ocean, there is essentially no porosity from the center to the base of the ice, so we can assume that the midpoint in radii is also the midpoint in grid zone number
+		r_ocean = (*r)[ocean_mid];            // Radius of mid-depth in the ocean (cm)
+		if (r_ocean <= 0.0) r_ocean = DBL_EPSILON;
+		
 		// Get cesq, wave speed squared
 		h_ocean = (*r)[ir_ocean] - (*r)[(*ircore)]; // Get ocean thickness h
 		g_ocean = Gcgs * M[ocean_mid] / r_ocean;    // Get avg. gravitational acc in the ocean (midpoint of the ocean layer).
-		cesq = g_ocean * h_ocean;                   // Multiply to get dimensional ce^2 in cm2 s-2
-		cesq = cesq / (2.0 * omega_tide * r_ocean) / (2.0 * omega_tide * r_ocean); // Remove dimension: divide by 2*spin_Omega*(midpoint radius = r)
+		(*cesq) = g_ocean * h_ocean;                   // Multiply to get dimensional ce^2 in cm2 s-2
+		(*cesq) = (*cesq) / (2.0 * omega_tide * r_ocean) / (2.0 * omega_tide * r_ocean); // Remove dimension: divide by 2*spin_Omega*(midpoint radius = r)
 
 		// Get dissipation timescale (~T, ~αp and/or ~αd/r):
-		tilT = tilTscale * (*r)[NR] / ((*r)[NR] - (*r)[ir_ocean]); // Parameterizing ~T based on ice thickness 
+		(*tilT) = tilTscale * (*r)[NR] / ((*r)[NR] - (*r)[ir_ocean]); // Parameterizing ~T based on ice thickness 
 
-		// Validation to Tyler (2020) TODO remove
+//		// Validation to Tyler (2020)
 //		g_ocean = 0.113*100; // cm s-2
 //		h_ocean = 38*km2cm; // cm
-//		Mprim = 5.6834e23/gram; // g
-////		omega_tide = 5.31e-5; // rad s-1
-////		aorb = 237948*1000;
-////		eorb = 0.0047;
-////		obl = 4.5e-4*PI_greek/180.0; // Radians
-////		r_ocean = 215*1000;
 //		r_ocean = 215*km2cm;
-////		(*r)[NR] = 252.1*km2cm;
+//		Mprim = 5.6834e23/gram; // g, tiny Saturn of Tyler (2020)
+//		omega_tide = 5.31e-5; // rad s-1
+//		aorb = 237948*1000;
+//		eorb = 0.0047;
+//		obl = 4.5e-4*PI_greek/180.0; // Radians
+//		(*r)[NR] = 252.1*km2cm;
 //		
 //		cesq = g_ocean * h_ocean;                   // Multiply to get dimensional ce^2 in cm2 s-2
 //		cesq = cesq / (2.0 * omega_tide * r_ocean) / (2.0 * omega_tide * r_ocean); // Remove dimension: divide by 2*spin_Omega*(midpoint radius = r)
 //		tilT = (*r)[NR] / (28*km2cm); // no dim
-//
+
+//	// Loop over cesq and tilT to make a plot of the full solution domain a la Tyler papers
 //	double cpow = 0.0;
 //	double Tpow = 0.0;
 //	int j = 0;
@@ -527,32 +530,34 @@ int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[10
 //			tilT = pow(10.0, Tpow);
 
 		if (eorb > DBL_EPSILON) { // TODO Shouldn't there be a dependence on the value of eccentricity?
-			TROPF(cesq, tilT, diss_type, 0.5 + 0.0*I, 2, 0, 0.5, &(W_fluidtide[0]), &knFsF, &kLovenF);  // G20 term, Legendre polynomial P20 = 0.5 (or -0.5?), see https://en.wikipedia.org/wiki/Associated_Legendre_polynomials
-			TROPF(cesq, tilT, diss_type, -0.5 + 0.0*I, 2, 2, 3.0, &(W_fluidtide[1]), &knFsF, &kLovenF); // G22W term, Legendre polynomial P22 = 3
-			TROPF(cesq, tilT, diss_type, 0.5 + 0.0*I, 2, 2, 3.0, &(W_fluidtide[2]), &knFsF, &kLovenF);  // G22E term, Legendre polynomial P22 = 3
+			TROPF(*cesq, *tilT, diss_type,  tilom, 2, 0, 0.5, &(W_fluidtide[0]), &knFsF, &kLovenF); // G20 term, Legendre polynomial P20 = 0.5 (TODO or -0.5?), see https://en.wikipedia.org/wiki/Associated_Legendre_polynomials
+			TROPF(*cesq, *tilT, diss_type, -tilom, 2, 2, 3.0, &(W_fluidtide[1]), &knFsF, &kLovenF); // G22W term (retrograde), Legendre polynomial P22 = 3
+			TROPF(*cesq, *tilT, diss_type,  tilom, 2, 2, 3.0, &(W_fluidtide[2]), &knFsF, &kLovenF); // G22E term (prograde), Legendre polynomial P22 = 3
 		}
 		if (obl > DBL_EPSILON) {
-			TROPF(cesq, tilT, diss_type, -0.5 + 0.0*I, 2, 1, 1.5, &(W_fluidtide[3]), &knFsF, &kLovenF); // G21W term, Legendre polynomial P21 = 1.5
-			TROPF(cesq, tilT, diss_type, 0.5 + 0.0*I, 2, 1, 1.5, &(W_fluidtide[4]), &knFsF, &kLovenF);  // G21E term, Legendre polynomial P21 = 1.5
+			TROPF(*cesq, *tilT, diss_type, -tilom, 2, 1, 1.5, &(W_fluidtide[3]), &knFsF, &kLovenF); // G21W term (retrograde), Legendre polynomial P21 = 1.5
+			TROPF(*cesq, *tilT, diss_type,  tilom, 2, 1, 1.5, &(W_fluidtide[4]), &knFsF, &kLovenF); // G21E term (prograde), Legendre polynomial P21 = 1.5
 		}
 
-		sumW_fluidtide = 1.5*eorb*W_fluidtide[0]*1.5 + 1.0/8.0*eorb*W_fluidtide[1]*3.0 + 7.0/8.0*W_fluidtide[2]*3.0 + 0.5*obl*W_fluidtide[3]*1.5 + 0.5*obl*W_fluidtide[4]*1.5; // Based on eq. (2.1.23) of TROPF manual, valid of synchronous rotation
-		sumW_fluidtide = sumW_fluidtide * rhoH2olth * pow(Gcgs*Mprim/aorb/r_ocean, 2.0) / (2.0*omega_tide); // TODO Print out tidal power in PlanetSystem(). aorb should be in cm and Mprim in g.
+		sumW_fluidtide = + (-1.5    *eorb*0.5) * (-1.5    *eorb*0.5) * W_fluidtide[0] // P20 = -0.5 instead?
+		                 + (-1.0/8.0*eorb*3.0) * (-1.0/8.0*eorb*3.0) * W_fluidtide[1] 
+		                 + ( 7.0/8.0*eorb*3.0) * ( 7.0/8.0*eorb*3.0) * W_fluidtide[2] // TODO sin(obl)?
+		                 + ( 0.5    *obl *1.5) * ( 0.5    *obl *1.5) * W_fluidtide[3] 
+		                 + ( 0.5    *obl *1.5) * ( 0.5    *obl *1.5) * W_fluidtide[4]; // Based on eq. (2.1.23) of TROPF manual, valid of synchronous rotation
+		sumW_fluidtide = sumW_fluidtide * rhoH2olth * pow(Gcgs*Mprim/aorb/r_ocean * (*r)[NR]/aorb * r_ocean/(*r)[NR], 2.0) / (2.0*omega_tide); // Re-dimensionalize in cgs
 
-////		sumW_fluidtide = sumW_fluidtide * rhoH2ol * pow(G*Mprim/aorb/r_ocean, 2.0) / (2.0*omega_tide);
-////
-////		printf("%g    ", sumW_fluidtide);
 //		printf("%g    ", sumW_fluidtide/1.0e7*1e6);
-////		printf("%g    ", tilT);
 //		}
 //		printf("\n");
 //	}
-////		printf("tilcesq = %g, tilT = %g, sumW_fluidtide = %g W m-3\n", cesq, tilT, sumW_fluidtide/1.0e7);
-//		exit(0);
 
 		// TODO Return the Love numbers for output
 
-		for (ir=(*ircore);ir<ir_ocean;ir++) Qth[ir] = Qth[ir] + sumW_fluidtide * dVol[ir];
+		for (ir=(*ircore);ir<ir_ocean;ir++) {
+			Qth[ir] = Qth[ir] + sumW_fluidtide * dVol[ir];
+			(*W_fluidtide_tot) = (*W_fluidtide_tot) + sumW_fluidtide * dVol[ir];
+		}
+		(*Heat_fluidtide) = (*Heat_fluidtide) + (*W_fluidtide_tot);
 	}
 
 	//-------------------------------------------------------------------
@@ -761,7 +766,7 @@ int state (int os, char path[1024], int itime, int im, int ir, double E, double 
 
 	// Bisect to find the temperature from the energy
 	Tlo = 20.0;
-	Thi = 20000.0;
+	Thi = 5000.0;
 	Tmd = (Tlo+Thi)/2.0;
 
 	for (iter=0;iter<30;iter++) {
