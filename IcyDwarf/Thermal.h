@@ -506,28 +506,28 @@ int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[10
 //		g_ocean = 0.113*100; // cm s-2
 //		h_ocean = 38*km2cm; // cm
 //		r_ocean = 215*km2cm;
-//		Mprim = 5.6834e23/gram; // g, tiny Saturn of Tyler (2020)
+//		Mprim = 5.6834e26/gram; // g, tiny Saturn of Tyler (2020)
 //		omega_tide = 5.31e-5; // rad s-1
-//		aorb = 237948*1000;
+//		aorb = 237948*km2cm;
 //		eorb = 0.0047;
 //		obl = 4.5e-4*PI_greek/180.0; // Radians
 //		(*r)[NR] = 252.1*km2cm;
 //		
-//		cesq = g_ocean * h_ocean;                   // Multiply to get dimensional ce^2 in cm2 s-2
-//		cesq = cesq / (2.0 * omega_tide * r_ocean) / (2.0 * omega_tide * r_ocean); // Remove dimension: divide by 2*spin_Omega*(midpoint radius = r)
-//		tilT = (*r)[NR] / (28*km2cm); // no dim
-
+//		(*cesq) = g_ocean * h_ocean;                   // Multiply to get dimensional ce^2 in cm2 s-2
+//		(*cesq) = (*cesq) / (2.0 * omega_tide * r_ocean) / (2.0 * omega_tide * r_ocean); // Remove dimension: divide by 2*spin_Omega*(midpoint radius = r)
+//		(*tilT) = (*r)[NR] / (28*km2cm); // no dim
+//
 //	// Loop over cesq and tilT to make a plot of the full solution domain a la Tyler papers
 //	double cpow = 0.0;
 //	double Tpow = 0.0;
 //	int j = 0;
 //	for (i=0;i<101;i++) {
 //		cpow = 0.08*(double)i - 4;
-//		cesq = pow(10.0, cpow);
+//		(*cesq) = pow(10.0, cpow);
 //		
 //		for (j=0;j<101;j++) {
 //			Tpow = 0.1*(double)j - 4;
-//			tilT = pow(10.0, Tpow);
+//			(*tilT) = pow(10.0, Tpow);
 
 		if (eorb > DBL_EPSILON) { // TODO Shouldn't there be a dependence on the value of eccentricity?
 			TROPF(*cesq, *tilT, diss_type,  tilom, 2, 0, 0.5, &(W_fluidtide[0]), &knFsF, &kLovenF); // G20 term, Legendre polynomial P20 = 0.5 (TODO or -0.5?), see https://en.wikipedia.org/wiki/Associated_Legendre_polynomials
@@ -544,7 +544,9 @@ int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[10
 		                 + ( 7.0/8.0*eorb*3.0) * ( 7.0/8.0*eorb*3.0) * W_fluidtide[2] // TODO sin(obl)?
 		                 + ( 0.5    *obl *1.5) * ( 0.5    *obl *1.5) * W_fluidtide[3] 
 		                 + ( 0.5    *obl *1.5) * ( 0.5    *obl *1.5) * W_fluidtide[4]; // Based on eq. (2.1.23) of TROPF manual, valid of synchronous rotation
-		sumW_fluidtide = sumW_fluidtide * rhoH2olth * pow(Gcgs*Mprim/aorb/r_ocean * (*r)[NR]/aorb * r_ocean/(*r)[NR], 2.0) / (2.0*omega_tide); // Re-dimensionalize in cgs
+		sumW_fluidtide = sumW_fluidtide * rhoH2olth 
+		               * pow(Gcgs*Mprim/aorb/r_ocean * (*r)[NR]/aorb * (*r)[NR]/aorb * r_ocean/(*r)[NR] * r_ocean/(*r)[NR], 2.0) 
+		               / (2.0*omega_tide); // Re-dimensionalize in cgs
 
 //		printf("%g    ", sumW_fluidtide/1.0e7*1e6);
 //		}
