@@ -1147,11 +1147,11 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 //					resAcctFor[i][im] = 0.0; // Uncomment for no resonant evolution
 
 					//For N-body coupling in IcyMoons
-					if (i != im && resAcctFor[im][i] > 0.0) {
-						printf("Resonance found at time %g Gyr: moons %d and %d have mean motion ratio %g.\n"
-								"Interrupting IcyDwarf in order to evolve moon system dynamics with N-body code.\n\n", realtime/Gyr2sec, im, i, norb[im]/norb[i]);
-						exit(0);
-					}
+//					if (i != im && resAcctFor[im][i] > 0.0) {
+//						printf("Resonance found at time %g Gyr: moons %d and %d have mean motion ratio %g.\n"
+//								"Interrupting IcyDwarf in order to evolve moon system dynamics with N-body code.\n\n", realtime/Gyr2sec, im, i, norb[im]/norb[i]);
+//						exit(0);
+//					}
 				}
 			}
 
