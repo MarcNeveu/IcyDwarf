@@ -495,7 +495,7 @@ int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[10
 		
 		// Get cesq, wave speed squared
 		h_ocean = (*r)[ir_ocean] - (*r)[(*ircore)]; // Get ocean thickness h
-		g_ocean = Gcgs * M[ocean_mid] / r_ocean;    // Get avg. gravitational acc in the ocean (midpoint of the ocean layer).
+		g_ocean = Gcgs * M[ocean_mid] / r_ocean / r_ocean;    // Get avg. gravitational acc in the ocean (midpoint of the ocean layer).
 		(*cesq) = g_ocean * h_ocean;                   // Multiply to get dimensional ce^2 in cm2 s-2
 		(*cesq) = (*cesq) / (2.0 * omega_tide * r_ocean) / (2.0 * omega_tide * r_ocean); // Remove dimension: divide by 2*spin_Omega*(midpoint radius = r)
 

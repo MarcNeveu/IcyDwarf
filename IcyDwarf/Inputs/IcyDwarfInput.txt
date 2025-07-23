@@ -24,7 +24,7 @@ ICY DWARF v25.x INPUT FILE - Saturn system
 | Love number k2; zonal gravity harmonics J2, J4| 0.382 16290.573e-6 -935.314e-6                       |
 | Resonant tidal locking with inertial waves?   | 1 # ignored if Eccentricity Model = 2                |
 | Spin period (h)                               | 10.546   (Helled et al. 2015)                        |
-| Number of moons                               | 5                                                    |
+| Number of moons                               | 2                                                    |
 | Ring mass (kg) (0 if no rings)                | 1.54e19                                              |
 | Ring inner edge (km)                          | 92000                                                |
 | Ring outer edge (km)                          | 140000                                               |
@@ -44,7 +44,7 @@ ICY DWARF v25.x INPUT FILE - Saturn system
 | Initial porosity volume fraction              | 0.2      | 0.2      | 0.2      | 0.2      | 0.2      |
 | Fraction of rock in fines                     | 0        | 0        | 0        | 0        | 0        |
 | Core ice/liquid water volume fraction         | 0.25     | 0.25     | 0.25     | 0.25     | 0.25     |
-| Start differentiated?                         | 0        | 0        | 0        | 0        | 0        |
+| Start differentiated?                         | 1        | 1        | 1        | 1        | 1        |
 | Initial orbital semi-major axis (km)          | 160000   | 160000   | 160000   | 160000   | 160000   |
 | Initial orbital eccentricity                  | 0.02     | 0.02     | 0.02     | 0.02     | 0.02     |
 | Initial orbital inclination (º)               | 0        | 0        | 0        | 0        | 0        |
