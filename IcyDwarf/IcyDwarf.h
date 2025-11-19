@@ -194,6 +194,7 @@
 //-------------------------------------------------------------------
 
 #define ijmax 5                     					   // Max order to look for resonances
+#define MIN_ECC 1.0e-4                                     // Minimum eccentricity, default 1.0e-7
 
 typedef struct {
     double radius; // Radius in km

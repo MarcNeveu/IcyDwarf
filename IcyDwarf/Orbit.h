@@ -671,7 +671,7 @@ int Orbit (int os, int argc, char *argv[], char path[1024], int im,
 			(*Wtide_tot)[im] = (- d_eorb_moon + 171.0/16.0*sqrt(Gcgs/Mprim)*pow(Rprim,5)*m_p[im]/Qprim*pow((*aorb)[im],-6.5)*(*eorb)[im])
 					     * Gcgs*Mprim*m_p[im]*(*eorb)[im] / (*aorb)[im];
 			(*W_fluidtide_tot)[im] = 0.0; // Arbitrarily allocate all the delta e to solid Wtide_tot for this timestep, shouldn't matter
-			(*eorb)[im] = 0.0;
+			(*eorb)[im] = MIN_ECC;
 		}
 
 		if (-dtime*(d_aorb_moon+d_aorb_pl+d_aorb_ring) < (*aorb)[im]) (*aorb)[im] = (*aorb)[im] + dtime*(d_aorb_moon+d_aorb_pl+d_aorb_ring);

@@ -477,6 +477,9 @@ int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[10
 	}
 
 	// Tidal heating (dynamic fluid tide)
+	(*cesq) = 0.0;
+	(*tilT) = 0.0;
+	(*W_fluidtide_tot) = 0.0;
 	
 	// Find grid zone of top of the ocean (if any)
 	ir_ocean = (*ircore);

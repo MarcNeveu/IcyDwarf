@@ -937,7 +937,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 			Heat[im][3] = Heat_serp[im];
 			Heat[im][4] = Heat_dehydr[im];
 			Heat[im][5] = Heat_tide[im];
-			Heat[im][6] = Heat_fluidtide[im]*dtime;
+			Heat[im][6] = Heat_fluidtide[im]*dtime; // TODO dtime has not yet been converted to s. No consequence here, but that dtime conversion should happen in IcyDwarf.c instead of below
 			Heat[im][7] = cesq[im];
 			Heat[im][8] = tilT[im];
 			Heat[im][9] = W_fluidtide_tot[im];
@@ -1132,7 +1132,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 			// Set minimum ecc to order 1e-7 so that eorb*eorb > 1.1e-16, the machine epsilon for double precision
 			// Otherwise, MMR_AvgHam() goes singular when dividing by 1-sqrt(1-eorb*eorb)
 			for (im=0;im<nmoons;im++) {
-				if (eorb[im] < 1.0e-7) eorb[im] = 1.0e-7;
+				if (eorb[im] < MIN_ECC) eorb[im] = MIN_ECC; // Default 1.0e-7
 			}
 			// Check for orbital resonances
 			for (im=0;im<nmoons;im++) {
@@ -1144,7 +1144,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 			for (im=0;im<nmoons;im++) {
 				for (i=0;i<nmoons;i++) {
 					if (i != im && resAcctFor[im][i] == 0.0) resAcctFor[i][im] = 0.0;
-//					resAcctFor[i][im] = 0.0; // Uncomment for no resonant evolution
+					resAcctFor[i][im] = 0.0; // Uncomment for no resonant evolution
 
 					//For N-body coupling in IcyMoons
 //					if (i != im && resAcctFor[im][i] > 0.0) {
@@ -1160,6 +1160,10 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 	//			aorb[2] = aorb[2] + 300.0*km2cm;
 	//			if (a__old[2] > 0) a__old[2] = a__old[2] + 300.0*km2cm;
 	//		}
+	
+			// TODO remove! Hold up on resonance lock kick-in
+			// if (realtime < 1.0*Gyr2sec) reslock = 0;
+			// else reslock = 1;
 		}
 
 
@@ -1240,7 +1244,7 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 
 					// TODO switch r_p to outerrad[nmoons] = r[im][NR]? Could matter if very porous
 					// Change 'resonance' to 'resAcctFor' to screen only for the likely dominant resonance between two moons
-					Orbit (os, argc, argv, path, im, dtime, speedup, itime, nmoons, m_p, r, NR, resonance, &aorb, &eorb, &(iorb[im]), &(obl[im]), norb,
+					Orbit (os, argc, argv, path, im, dtime, speedup, itime, nmoons, m_p, r, NR, resAcctFor, &aorb, &eorb, &(iorb[im]), &(obl[im]), norb,
 							lambda, omega, &h_old, &k_old, &a__old, &Cs_ee_old, &Cs_eep_old, &Cr_e_old, &Cr_ep_old, &Cr_ee_old, &Cr_eep_old, &Cr_epep_old,
 							&Wtide_tot, &W_fluidtide_tot, Mprim, Rprim, J2prim, J4prim, k2prim, Qprim, reslock, t_tide, eccentricitymodel,
 							aring_out, aring_in, alpha_Lind, ringSurfaceDensity, realtime-tzero_min, realtime, prim_sign, k2, Qtide, nprim, Ip, &(spin[im]), MOI[im], CTL);
@@ -1248,6 +1252,11 @@ int PlanetSystem(int os, int argc, char *argv[], char path[1024], int warnings, 
 //				++nloops;
 			}
 //			printf("itime = %d, Thread %d performed %d iterations of the orbit loop over moons.\n", itime, thread_id, nloops); nloops = 0;
+
+			// TODO remove Reset min eccentricity
+			for (im=0;im<nmoons;im++) {
+				if (eorb[im] < MIN_ECC) eorb[im] = MIN_ECC; // Default 1.0e-7
+			}
 
 #pragma omp for
 			for (im=0;im<nmoons;im++) {
@@ -1920,14 +1929,14 @@ int tail(FILE *f, int n, int l, double ***output) {
     	fgets(line, line_length, f); // Go 1 line down, from n+1 from the bottom to just n from the bottom
     	for (j=0;j<l;j++) {
     		scan = fscanf(f, "%lg", &(*output)[i][j]);
-    		if (scan != 1) printf("tail(): Error scanning Icy Dwarf output file at entry i = %d\n",i);
+    		if (scan != 1) printf("tail(): Error scanning IcyDwarf output file at entry i = %d\n",i);
     		fgets(line, 1, f);
     	}
     	i++;
         while (fgets(line, line_length, f)) {
         	for (j=0;j<l;j++) {
         		scan = fscanf(f, "%lg", &(*output)[i][j]);
-        		if (scan != 1 && i<n) printf("tail(): Error scanning Icy Dwarf output file at entry i = %d\n",i);
+        		if (scan != 1 && i<n) printf("tail(): Error scanning IcyDwarf output file at entry i = %d\n",i);
         		fgets(line, 1, f);
         	}
         	i++;

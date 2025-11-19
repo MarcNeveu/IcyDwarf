@@ -1,4 +1,4 @@
-ICY DWARF v25.x INPUT FILE - Saturn system
+ICY DWARF v24.x INPUT FILE - Uranian system
 
 1 for Yes, 0 for No
 --------------------------------------------------------------------------------------------------------
@@ -12,54 +12,54 @@ ICY DWARF v25.x INPUT FILE - Saturn system
 | Number of grid zones                          | 200                                                  |
 | Thermal simulation time step (yr)             | 100                                                  |
 | Moon-moon interaction speedup factor          | 1000                                                 |
-| Total time of thermal simulation (Myr)        | 4600                                                 |
+| Total time of thermal simulation (Myr)        | 4500                                                 |
 | Output every (Myr)                            | 10                                                   |
 |-----------------------------------------------|------------------------------------------------------|
-| Saturn parameters      |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+| Uranus parameters      |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 |-----------------------------------------------|------------------------------------------------------|
-| Mass (kg) (0 if world is not a moon)          | 5.6834e26                                            |
-| Radius (km)                                   | 60330                                                |
-| Coef of moment of inertia (.4 if homogeneous) | 0.210                                                |
+| Mass (kg) (0 if world is not a moon)          | 8.68e25                                              |
+| Radius (km)                                   | 25362                                                |
+| Coef of moment of inertia (.4 if homogeneous) | 0.225                                                |
 | Tidal Q (initial,today,{0:lin 1:exp 2:1-exp}) | 15000 15000 0                                        |
-| Love number k2; zonal gravity harmonics J2, J4| 0.382 16290.573e-6 -935.314e-6                       |
+| Love number k2; zonal gravity harmonics J2, J4| 0.104 3510.99e-6 -33.6e-6 # GavZhar79, Helled+ 2010  |
 | Resonant tidal locking with inertial waves?   | 1 # ignored if Eccentricity Model = 2                |
-| Spin period (h)                               | 10.546   (Helled et al. 2015)                        |
+| Spin period (h)                               | 17.24                                                |
 | Number of moons                               | 5                                                    |
-| Ring mass (kg) (0 if no rings)                | 1.54e19                                              |
-| Ring inner edge (km)                          | 92000                                                |
-| Ring outer edge (km)                          | 140000                                               |
+| Ring mass (kg) (0 if no rings)                | 4e16  # 2*(epsilon+alpha+beta) (Wikipedia)           |
+| Ring inner edge (km)                          | 41837 # 6 ring (Jacobson 14)                         |
+| Ring outer edge (km)                          | 51149 # epsilon ring (Jacobson 14)                   |
 |-----------------------------------------------|------------------------------------------------------|
-| Icy world parameters |||||||||||||||||||||||||| Mimas    | Enceladus| Tethys   | Dione    | Rhea     |
+| Icy world parameters |||||||||||||||||||||||||| Miranda  | Ariel    | Umbriel  | Titania  | Oberon   |
 |-----------------------------------------------|----------|----------|----------|----------|----------|
-| Radius assuming zero porosity (km)            | 186.5    | 252.0    | 507.7    | 556.5    | 762.2    |
-| Density assuming zero porosity (g cm-3)       | 1.378    | 1.611    | 1.127    | 1.517    | 1.267    |
-| Surface temperature (K)                       | 76       | 68       | 68       | 70       | 72       |
+| Radius assuming zero porosity (km)            | 235.8    | 578.9    | 584.7    | 788.9    | 761.4    | # Thomas88
+| Density assuming zero porosity (g cm-3)       | 1.200    | 1.665    | 1.400    | 1.715    | 1.630    | # Jacobson14
+| Surface temperature (K)                       | 55       | 53       | 60       | 57       | 58       | # Karkoschka01
 | Initial temperature (K)                       | 100      | 100      | 100      | 100      | 100      |
-| Time of formation (Myr)                       | 3305     | 1918     | 1201     | 699      | 337      |
-| Formed from ring?                             | 1        | 1        | 1        | 1        | 1        |
-| Ammonia w.r.t. water                          | 0.01     | 0.01     | 0.01     | 0.01     | 0.01     |
+| Time of formation (Myr)                       | 10       | 10       | 10       | 10       | 10       |
+| Formed from ring?                             | 0        | 0        | 0        | 0        | 0        |
+| Ammonia w.r.t. water                          | 0        | 0        | 0        | 0        | 0        |
 | Briny liquid? y=1, n=0                        | 0        | 0        | 0        | 0        | 0        |
 | Initial degree of hydration                   | 1        | 1        | 1        | 1        | 1        |
 | Hydrate/dehydrate?                            | 1        | 1        | 1        | 1        | 1        |
-| Initial porosity volume fraction              | 0.2      | 0.2      | 0.2      | 0.2      | 0.2      |
+| Initial porosity volume fraction              | 0.5      | 0.5      | 0.5      | 0.5      | 0.5      |
 | Fraction of rock in fines                     | 0        | 0        | 0        | 0        | 0        |
-| Core ice/liquid water volume fraction         | 0.25     | 0.25     | 0.25     | 0.25     | 0.25     |
+| Core ice/liquid water volume fraction         | 0        | 0        | 0        | 0        | 0        |
 | Start differentiated?                         | 0        | 0        | 0        | 0        | 0        |
-| Initial orbital semi-major axis (km)          | 160000   | 160000   | 160000   | 160000   | 160000   |
+| Initial orbital semi-major axis (km)          | 105950   | 136643   | 205947   | 336911   | 486688   |
 | Initial orbital eccentricity                  | 0.02     | 0.02     | 0.02     | 0.02     | 0.02     |
-| Initial orbital inclination (º)               | 0        | 0        | 0        | 0        | 0        |
-| Initial obliquity (º)                         | 0        | 0        | 0        | 0        | 0        |
+| Initial orbital inclination (º)               | 0.147136 | 0.008308 | 0.029393 | 1.019177 | 0.520246 |
+| Initial obliquity (º)                         | 0.148625 | 0.009855 | 0.030882 | 0.152980 | 0.186784 |
 | Allow orbit to change?                        | 1        | 1        | 1        | 1        | 1        |
 | Retrograde orbit?                             | 0        | 0        | 0        | 0        | 0        |
-| Resonant tidal locking timescale (Gyr)        | 10       | 10       | 10       | 10       | 10       |
+| Resonant tidal locking timescale (Gyr)        | 137.6    | 83.7     | 109.4    | 108.3    | 154.3    |
 |-----------------------------------------------|------------------------------------------------------|
 | Dry rock density (g cm-3)                     | 3.8                                                  |
 | Hydrated rock density (g cm-3)                | 2.9                                                  |
 | Chondrite type? CI=0 CO=1                     | 0                                                    |
-| Tidal rheology? Maxw=2 Burg=3 Andr=4 SunCoop=5| 5                                                    |
-| Eccentricity Model? e2=0 e10-CPL=1 e10-CTL=2  | 0                                                    |
+| Tidal rheology? Maxw=2 Burg=3 Andr=4 SunCoop=5| 4                                                    |
+| Eccentricity Model? e2=0 e10-CPL=1 e10-CTL=2  | 2                                                    |
 | Tidal heating x...?                           | 1                                                    |
-| Lookup tbl for orbit evol? #par #rows Dtime(y)| 0 10 10000 5000                                      |
+| Lookup tbl for orbit evol? #par #rows Dtime(y)| 1 10 10000 5000                                      |
 |-----------------------------------------------|------------------------------------------------------|
 | Subroutines ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 |-----------------------------------------------|------------------------------------------------------|
