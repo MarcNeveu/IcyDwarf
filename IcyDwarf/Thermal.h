@@ -679,10 +679,10 @@ int Thermal (int os, int argc, char *argv[], char path[1024], char outputpath[10
 	}
 
 	// Update irice
-	(*irice) = (*ircore);
-	for (ir=(*ircore);ir<NR;ir++) {
-		if ((*Mh2ol)[ir] > 0.0) (*irice) = ir;
-	}
+//	(*irice) = (*ircore);
+//	for (ir=(*ircore);ir<NR;ir++) {
+//		if ((*Mh2ol)[ir] > 0.0) (*irice) = ir;
+//	}
 
 	// Update energies
 	for (ir=0;ir<NR-1;ir++) {
