@@ -184,7 +184,7 @@ int main(int argc, char *argv[]){
 
 	printf("\n");
 	printf("-------------------------------------------------------------------\n");
-	printf("IcyDwarf v25.7\n"                                                    );
+	printf("IcyDwarf v26.1\n"                                                    );
 	printf("Copyright (C) 2013-2025 Marc Neveu (marc.f.neveu@nasa.gov)\n\n"       );
 	printf("This program is free software: you can redistribute it and/or\n"      );
 	printf("modify it under the terms of the GNU General Public License as\n"     );
