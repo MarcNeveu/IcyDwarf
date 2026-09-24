@@ -34,17 +34,18 @@ IcyDwarf is a comprehensive thermal-orbital-chemical evolution model for icy wor
 
 **Thermal Evolution:**
 - Multi-layer thermal modeling with conductive and convective heat transfer
-- Radiogenic, tidal, and accretional heating sources
-- Phase transitions (ice polymorphs, melting, freezing)
+- Radiogenic, tidal, accretional, and geochemical heat sources
+- Ice phase transitions (melting, freezing in ammonia-H2O system)
 - Porosity evolution and compaction
 - Core cracking and fragmentation
+- Tidal heating models including multiple viscoelastic rheologies
 
 **Orbital Dynamics:**
-- Tidal dissipation with multiple forcing modes
+- Coupled to thermal evolution
+- Tidal dissipation with equilibrium (in solids) and dynamic (in fluid layers) forcing
 - Orbital evolution including eccentricity and semi-major axis changes
-- Multi-moon system interactions
-- Integration with N-body dynamics (via REBOUNDx coupling)
-- Tidal heating models including viscoelastic and Andrade rheology
+- Multi-moon system interactions for specific resonances
+- Integration with N-body dynamics (via [REBOUNDx](https://reboundx.readthedocs.io/en/latest/index.html) coupling)
 
 **Geochemistry:**
 - Water-rock interaction modeling across vast parameter spaces
@@ -54,18 +55,16 @@ IcyDwarf is a comprehensive thermal-orbital-chemical evolution model for icy wor
 - Gas exsolution and volatile transport
 
 **Cryovolcanism:**
-- Exsolution-driven ascent through ice shells
-- Bubble nucleation and growth
+- Exsolution-driven ascent through ice shells or ice-rock crusts
 - Conduit dynamics
-- Eruption conditions and surface expression
+- Compositional expression
 
-**Special Features:**
+**Additional Features:**
 - Recovery from interrupted simulations
-- Parameter space exploration capabilities
-- Flexible output formats for analysis and visualization
-- Modular architecture allowing selective use of different physical models
+- User-selected use of different physical or geochemical models
+- Density profile computations for compressible solid rocky and/or icy bodies with up to 3 layers
 
-The code is designed for studying ocean worlds such as Europa, Enceladus, Titan, and other icy satellites, as well as Kuiper Belt objects like Pluto and trans-Neptunian objects. It can model individual bodies or systems of multiple moons with gravitational and tidal interactions.
+The code is designed for studying mid-size ocean worlds such as Enceladus, Triton, and other icy satellites, as well as dwarf planets like Ceres and Pluto. It can model individual bodies or systems of multiple moons with gravitational and tidal interactions. The applicability of the thermal-orbital evolution code is limited to bodies big enough to be approximated by a 1D spherical geometry, yet small enough to preclude high-pressure ice phases, which are not considered. (They are considered in stand-alone compression calculations with no time evolution.)
 
 ---
 
@@ -1189,4 +1188,4 @@ Planned enhancements include:
 
 ---
 
-*This manual was generated with the Claude 4.5 Sonnet AI tool. It is a living document and will be updated as IcyDwarf continues to evolve. For the latest version, please refer to the GitHub repository.*
+*This manual was generated with help from the Claude 4.5 Sonnet AI tool. It is a living document and will be updated as IcyDwarf continues to evolve. For the latest version, please refer to the GitHub repository.*
