@@ -1,8 +1,6 @@
-_[Model: Claude 4.5 Sonnet | Persona: AI Assistant]_
-
 # IcyDwarf User Manual
 
-**Version:** 1.0  
+**Version:** 26.9  
 **Last Updated:** September 23, 2026  
 **Repository:** https://github.com/MarcNeveu/IcyDwarf
 
@@ -1191,4 +1189,4 @@ Planned enhancements include:
 
 ---
 
-*This manual is a living document and will be updated as IcyDwarf continues to evolve. For the latest version, please refer to the GitHub repository.*
+*This manual was generated with the Claude 4.5 Sonnet AI tool. It is a living document and will be updated as IcyDwarf continues to evolve. For the latest version, please refer to the GitHub repository.*
