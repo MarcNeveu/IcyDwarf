@@ -28,30 +28,30 @@
 
 ## 1. Overview
 
-IcyDwarf is a comprehensive thermal-orbital-chemical evolution model for icy worlds in the outer Solar System and beyond. The code simulates the coupled evolution of planetary interiors, orbital dynamics, and geochemical processes over billion-year timescales.
+IcyDwarf is a thermal-orbital-chemical evolution model for icy worlds in the outer Solar System and beyond. The software simulates the coupled evolution of planetary interiors, orbital dynamics, and geochemical processes over billion-year timescales.
 
 ### Key Capabilities
 
 **Thermal Evolution:**
-- Multi-layer thermal modeling with conductive and convective heat transfer
+- Multi-layer 1D thermal modeling with conductive and parameterized convective heat transfer
 - Radiogenic, tidal, accretional, and geochemical heat sources
-- Ice phase transitions (melting, freezing in ammonia-H2O system)
+- Ice phase transitions in ammonia-H2O system
 - Porosity evolution and compaction
-- Core cracking and fragmentation
-- Tidal heating models including multiple viscoelastic rheologies
+- Core cracking
+- Tidal heating with several viscoelastic rheologies
 
 **Orbital Dynamics:**
 - Coupled to thermal evolution
-- Tidal dissipation with equilibrium (in solids) and dynamic (in fluid layers) forcing
+- Tidal dissipation with equilibrium (in solids) and dynamic (in fluid layers) responses
 - Orbital evolution including eccentricity and semi-major axis changes
-- Multi-moon system interactions for specific resonances
-- Integration with N-body dynamics (via [REBOUNDx](https://reboundx.readthedocs.io/en/latest/index.html) coupling)
+- Multi-moon system interactions for a limited subset of resonances
+- In development: Integration with N-body dynamics (via [REBOUNDx](https://reboundx.readthedocs.io/en/latest/index.html) coupling)
 
 **Geochemistry:**
-- Water-rock interaction modeling across vast parameter spaces
-- pH, redox (Eh), temperature, and pressure dependencies
-- Mineral dissolution and precipitation
+- Water-rock interaction modeling across vast parameter spaces using [PHREEQC](https://www.usgs.gov/software/phreeqc-version-3)
+- Temperature, pressure, and water:rock ratio dependencies
 - Aqueous speciation
+- Mineral dissolution and precipitation
 - Gas exsolution and volatile transport
 
 **Cryovolcanism:**
@@ -60,190 +60,295 @@ IcyDwarf is a comprehensive thermal-orbital-chemical evolution model for icy wor
 - Compositional expression
 
 **Additional Features:**
-- Recovery from interrupted simulations
+- Recovery from interrupted thermal-orbital evolution simulations
 - User-selected use of different physical or geochemical models
-- Density profile computations for compressible solid rocky and/or icy bodies with up to 3 layers
+- Density profile computations for compressible solid bodies, albeit with no time evolution
 
-The code is designed for studying mid-size ocean worlds such as Enceladus, Triton, and other icy satellites, as well as dwarf planets like Ceres and Pluto. It can model individual bodies or systems of multiple moons with gravitational and tidal interactions. The applicability of the thermal-orbital evolution code is limited to bodies big enough to be approximated by a 1D spherical geometry, yet small enough to preclude high-pressure ice phases, which are not considered. (They are considered in stand-alone compression calculations with no time evolution.)
+The thermal evolution code is designed for studying icy bodies ranging in size from icy planetesimals to Triton, including icy moons such as Enceladus or Ariel and dwarf planets like Ceres and Pluto. It can model individual bodies or systems of multiple moons with gravitational and tidal interactions. The applicability of the thermal-orbital evolution code is limited to bodies big enough to be reasonably approximated by a 1D spherical geometry, yet small enough to preclude high-pressure ice phases, which are not considered except in stand-alone compression calculations with no time evolution.
 
 ---
 
 ## 2. Quick Start Guide (macOS)
 
-### 2.1 Installation Instructions
+### 2.1 Installing and Running IcyDwarf
 
-**Prerequisites:**
-- macOS 10.12 or later
-- Xcode Command Line Tools
-- GCC compiler (recommended: GCC 9.0 or later)
-- Git
+See the [README](https://github.com/MarcNeveu/IcyDwarf/tree/master#installation) file. Unfortunately, as listed in that file, several dependencies are required to run IcyDwarf, especially for geochemical calculations but also for parallel computing (convenient for moon systems) and fluid tidal dissipation calculations.
 
-**Step 1: Install Xcode Command Line Tools**
+The IcyDwarf directory comprises several folders:
 
-```bash
-xcode-select --install
-```
+`Data` has a few lookup tables as .txt files for core cracking calculations, plus a planetary materials ("planmat") database for compression calculations.
+`Debug` is not used, but notionally includes an executable for debugging.
+`Inputs` includes IcyDwarfInput.txt, the input file read by IcyDwarf, plus any number of tweaked copies for various icy worlds or moon systems saved under different names. These can be renamed to IcyDwarfInput.txt to be run.
+`Outputs` includes the output files (see [2.3 Output Files Description](#23-output-files-description)), which are overwritten by new simulations. The folder itself must exist when starting IcyDwarf, but it is OK for it to be empty.
+`PHREEQC-3.1.2` is only used for parameter exploration calculations using PHREEQC, not for thermal-orbital evolution simulations. This folder includes a .dat thermodynamic database file, a .txt file describing the default list of geochemical outputs, and a subfolder `io` with inputs (`PHREEQCinput` and `Sol`, no extension) and outputs.
+`Release` contains the IcyDwarf executable. It is from this folder that IcyDwarf must be launched from the Terminal using the command `./IcyDwarf` or, to continue using the same Terminal prompt while a simulation is running, `./IcyDwarf &`.
 
-**Step 2: Install GCC (via Homebrew)**
+When a simulation is running, I find it helpful to check on it using the bash Terminal command `ps uo etime`. Several IcyDwarf simulations can be run concurrently from different copies of the `IcyDwarf` folder. `ps uo etime` will list them along with elapsed wall clock and CPU time, the five-digit PID if a simulation needs to be ended using `kill [five-digit PID]`, and the % CPU used (greater than 100% indicates parallel computing is working, with use generally at N*100% for a system of N moons).
 
-If you don't have Homebrew installed:
+Another way to check on the progress of simulations is by looking at how many lines have been written to the output files; by default, every 10 Myr for interior evolution files (e.g., `Output/xHeats.txt`) and every 1 Myr for orbital evolution files (`Output/Orbit.txt`).
 
-```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-```
-
-Then install GCC:
-
-```bash
-brew install gcc
-```
-
-**Step 3: Clone the Repository**
-
-```bash
-git clone https://github.com/MarcNeveu/IcyDwarf.git
-cd IcyDwarf
-```
-
-**Step 4: Compile the Code**
-
-```bash
-make
-```
-
-This will create the executable `IcyDwarf` in the current directory.
-
-**Step 5: Verify Installation**
-
-```bash
-./IcyDwarf
-```
-
-If the code runs and prompts for an input file, the installation was successful.
+A typical simulation of a world or (in parallel) moon system with 100 grid zones for 4.5 billion years takes hours to days on a laptop. Computation is faster if heat transfer is slower, e.g., if there is no subsurface ocean. Tidal calculations take the longest, especially for fluid tides, so simulations with dwarf planets are faster than for moons. Simulations of moon systems with parallel computing take about twice as long as for single objects because they are held back by the slowest calculation across all the moons at each time step.
 
 ---
 
 ### 2.2 Input File Description
 
-IcyDwarf uses a structured input file to define simulation parameters. The input file is organized into sections, each controlling different aspects of the model.
+IcyDwarf uses the Input/IcyDwarfInput.txt file to define simulation parameters. The input file is organized into sections, each controlling different aspects of the model.
 
 **Input File Format:**
 
-The input file uses a keyword-value format with comments denoted by `#` or `//`. Below is a comprehensive description of each input parameter:
+The input file uses a keyword-value format that also allows comments. The file is read by line number and character position in a line, so it is important not to change the formatting when editing values. Below is an input file, dissected with a description of each input parameter:
 
-#### General Parameters
+`ICY DWARF v25.x INPUT FILE - Saturn system`
 
-| Parameter | Type | Description | Units | Default |
-|-----------|------|-------------|-------|---------|
-| `TITLE` | string | Simulation title/description | - | - |
-| `PATH_OUTPUT` | string | Output directory path | - | `./` |
-| `RECOVER` | int | Recover from previous run (0=no, 1=yes) | - | 0 |
-
-#### Body Parameters
-
-| Parameter | Type | Description | Units | Default |
-|-----------|------|-------------|-------|---------|
-| `MASS` | double | Total body mass | kg | - |
-| `RADIUS` | double | Body radius | m | - |
-| `CORE_RADIUS` | double | Core radius | m | - |
-| `POROSITY_INITIAL` | double | Initial porosity (0-1) | - | 0.0 |
-| `TEMP_SURFACE` | double | Surface temperature | K | - |
-| `TEMP_CORE` | double | Initial core temperature | K | - |
-
-#### Thermal Model Parameters
-
-| Parameter | Type | Description | Units | Default |
-|-----------|------|-------------|-------|---------|
-| `NR` | int | Number of radial shells | - | 100 |
-| `TIMESTEP` | double | Integration timestep | years | 1000 |
-| `TOTAL_TIME` | double | Total simulation time | years | 4.5e9 |
-| `HEAT_RADIOGENIC` | int | Include radiogenic heating (0=no, 1=yes) | - | 1 |
-| `HEAT_TIDAL` | int | Include tidal heating (0=no, 1=yes) | - | 0 |
-| `CONVECTION` | int | Enable convection (0=no, 1=yes) | - | 1 |
-
-#### Orbital Parameters
-
-| Parameter | Type | Description | Units | Default |
-|-----------|------|-------------|-------|---------|
-| `SEMI_MAJOR_AXIS` | double | Orbital semi-major axis | m | - |
-| `ECCENTRICITY` | double | Orbital eccentricity | - | 0.0 |
-| `OBLIQUITY` | double | Axial obliquity | degrees | 0.0 |
-| `ORBITAL_PERIOD` | double | Orbital period | days | - |
-| `PRIMARY_MASS` | double | Mass of primary body | kg | - |
-
-#### Tidal Parameters
-
-| Parameter | Type | Description | Units | Default |
-|-----------|------|-------------|-------|---------|
-| `TIDAL_MODEL` | int | Tidal model (0=none, 1=Maxwell, 2=Andrade) | - | 0 |
-| `VISCOSITY` | double | Reference viscosity | Pa·s | 1e14 |
-| `TIDAL_Q` | double | Tidal quality factor | - | 100 |
-| `LOVE_NUMBER_K2` | double | Tidal Love number k₂ | - | 0.3 |
-
-#### Geochemistry Parameters
-
-| Parameter | Type | Description | Units | Default |
-|-----------|------|-------------|-------|---------|
-| `GEOCHEMISTRY` | int | Enable geochemistry (0=no, 1=yes) | - | 0 |
-| `PH_INITIAL` | double | Initial pH | - | 7.0 |
-| `WATER_ROCK_RATIO` | double | Water to rock mass ratio | - | 1.0 |
-| `ROCK_COMPOSITION` | string | Rock composition type | - | `chondrite` |
-
-#### Cryovolcanism Parameters
-
-| Parameter | Type | Description | Units | Default |
-|-----------|------|-------------|-------|---------|
-| `CRYOVOLCANISM` | int | Enable cryovolcanism model (0=no, 1=yes) | - | 0 |
-| `ICE_SHELL_THICKNESS` | double | Ice shell thickness | m | - |
-| `EXSOLUTION_PRESSURE` | double | Exsolution onset pressure | Pa | - |
-
-#### Output Control
-
-| Parameter | Type | Description | Units | Default |
-|-----------|------|-------------|-------|---------|
-| `OUTPUT_INTERVAL` | double | Time between outputs | years | 1e6 |
-| `OUTPUT_THERMAL` | int | Output thermal profiles (0=no, 1=yes) | - | 1 |
-| `OUTPUT_ORBITAL` | int | Output orbital evolution (0=no, 1=yes) | - | 1 |
-| `OUTPUT_GEOCHEMISTRY` | int | Output geochemical data (0=no, 1=yes) | - | 0 |
-
-**Example Input File:**
+This title line can be edited at will.
 
 ```
-# IcyDwarf Input File - Europa Simulation
-TITLE Europa_Baseline
-PATH_OUTPUT ./output/europa/
-
-# Body Parameters
-MASS 4.8e22
-RADIUS 1.5608e6
-CORE_RADIUS 3.9e5
-POROSITY_INITIAL 0.1
-TEMP_SURFACE 110
-TEMP_CORE 273
-
-# Thermal Model
-NR 200
-TIMESTEP 1000
-TOTAL_TIME 4.5e9
-HEAT_RADIOGENIC 1
-HEAT_TIDAL 1
-CONVECTION 1
-
-# Orbital Parameters
-SEMI_MAJOR_AXIS 6.709e8
-ECCENTRICITY 0.009
-PRIMARY_MASS 1.898e27
-
-# Tidal Model
-TIDAL_MODEL 2
-VISCOSITY 1e14
-LOVE_NUMBER_K2 0.3
-
-# Output
-OUTPUT_INTERVAL 1e6
-OUTPUT_THERMAL 1
-OUTPUT_ORBITAL 1
+1 for Yes, 0 for No
+--------------------------------------------------------------------------------------------------------
+| Housekeeping ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+|-----------------------------------------------|------------------------------------------------------|
+| Warnings?                                     | 0                                                    |
+| Recover?                                      | 0                                                    |
 ```
+
+The `Warnings` boolean flag was used in the early days of IcyDwarf, ca. 2013, I believe for core cracking calculations if pressure and/or temperature were out of the bounds of lookup tables. I suggest setting it to 0 to avoid annoying printouts to terminal that can also considerably slow down a simulation.
+
+The `Recover` boolean flag is useful to restart a thermal-orbital evolution simulation interrupted for any reason. IcyDwarf will read the last row of `Outputs/xOrbit.txt` and NR (number of grid zones) rows of `Outputs/xThermal.txt` and pick up from there. It's also a very useful trick to (re)start a moon or moon system with manually modified last (set of) lines in the output files. For example, to approximate a heat pulse from an impact or fast tidal despinning, temperatures in `xThermal.txt` can be edited. Same for orbital parameters, e.g., to check the effect of an eccentricity jump. Finally, I have used `Recover` to start a world with a nonuniform temperature profile, simply by generating a fake first-timestep `xThermal.txt` output in a spreadsheet with the desired temperatures and all other parameters (masses, etc.) set to the desired values.
+
+```
+|-----------------------------------------------|------------------------------------------------------|
+| Grid |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+|-----------------------------------------------|------------------------------------------------------|
+| Number of grid zones                          | 200                                                  |
+```
+
+The size of the 1D grid (`NR` in the `C` code) mapping ice mass, rock mass, and temperature profiles from an icy body's center to its surface. The grid can't be too coarse or there won't be numerical convergence (i.e., outputs will change as a function of the number of grid zones, but they shouldn't). It can't be too fine for simulations to proceed reasonably fast, keeping in mind that a N x increase in grid zones must be accompanied with a N^2 x decrease in time step to conserve numerical stability (Courant condition: time step proportional to `NR`$^2/\kappa$, with $\kappa$ the thermal diffusivity in m<sup>^2</sup> s<sup>^-1</sup>). So, simulations with a grid twice as fine will take 8 times as long (twice as many grid zone calculations, four times as often). In practice, 200 to 300 grid zones work well, providing km-scale resolution (e.g., thin ocean layers) inside icy worlds. 
+
+`| Thermal simulation time step (yr)             | 100                                                  |`
+
+The time step (`dtime` in the `C` code) of a thermal-orbital evolution simulation, not to be confused with the time gap between outputs printed to file. The time step must not be so large as to break the Courant condition (see above). A time step of 100 years achieves numerical convergence for a body resolved with 200 grid zones and with an ocean. It could be set to higher values if the body stays frozen with a lower thermal diffusivity. The thermal diffusivity $\kappa$ is equal to the ratio of thermal conductivity $k$ to the product of material density, $\rho$, and heat capacity per unit mass, $C_p$:
+
+  $$ \kappa = k / \rho C_p $$
+
+To keep computation ties reasonable, $k$ is forced not to exceed 400 W m<sup>^-1</sup> K<sup>^-1</sup> in ocean grid zones. This ceiling is much higher than typical material thermal conductivities of a few but is necessary to approximate faster heat transfer in a convective ocean.
+
+`| Moon-moon interaction speedup factor          | 1000                                                 |`
+
+This input is used solely in simulations of moon systems for which orbital evolution during moon-moon resonances is computed using an averaged Hamiltonian solved using a modified midpoint method. This method is impractically slow if used at the time step needed for numerical convergence, so the speedup factor enhances tidal effects from the primary by a factor N and accordingly requires computations for a N times lesser time span. 
+
+`| Total time of thermal simulation (Myr)        | 4600                                                 |`
+
+This is the total duration of a thermal-orbital evolution simulation. Our Solar System is approximately 4570 Myr years old, so I most commonly set the value in that vicinity.
+
+`| Output every (Myr)                            | 10                                                   |`
+
+The time between outputs printed to file. Orbital outputs in `Outputs/xOrbit.txt` are printed 10 times as often. Printing outputs every 10 Myr provides good granularity for a 4.5 Gyr simulation (450 time points), but for rapid events or shorter simulations (e.g., early protoplanet evolution), or debugging, it may make sense to decrease it.
+
+```
+|-----------------------------------------------|------------------------------------------------------|
+| Host planet parameters |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+|-----------------------------------------------|------------------------------------------------------|
+| Mass (kg) (0 if world is not a moon)          | 5.6834e26                                            |
+| Radius (km)                                   | 60330                                                |
+| Coef of moment of inertia (.4 if homogeneous) | 0.210                                                |
+```
+
+The inputs in this "Host planet parameters" section are used only for moon system simulations, for which the mass and radius of the central planet (e.g., Saturn or Uranus) drives the magnitude of tidal dissipation and associated orbital changes. The coefficient of moment of inertia is used only in the constant-time-lag (CTL) tidal model of [Lu et al. (2023)](https://doi.org/10.3847/1538-4357/acc06d) implemented in REBOUNDx, so this input is not read if that model is not used. The values shown here are appropriate for Saturn.
+
+`| Tidal Q (initial,today,{0:lin 1:exp 2:1-exp}) | 15000 15000 0                                        |`
+
+The tidal quality factor Q of the central planet plays a role in how fast the orbit of the moons change due to tidal interactions. The first value is that at the beginning of the simulation; the second is the final value at the simulation's end time; the third is an integer setting how Q varies between over time between these two values. Use of this approach assumes that tidal dissipation in the central planet occurs primarily via solid tides in a constant-phase-lag (CPL) model.
+
+`| Love number k2; zonal gravity harmonics J2, J4| 0.382 16290.573e-6 -935.314e-6                       |`
+
+The first quantity ($k_2$) is used in computing secular orbital evolution of moons in the fixed- or variable-Q (constant-phase-lag, CPL) tidal models. The other two are used in calculating resonant orbital evolution of pairs of moons with the averaged Hamiltonian approach. If resonances are neglected, they are not used. The values shown here are those for Saturn.
+
+`| Resonant tidal locking with inertial waves?   | 1 # ignored if Eccentricity Model = 2                |`
+
+Boolean flag to switch the orbital evolution due to tidal dissipation inside the central planet from solid tidal effects (CPL model) to resonance locking with fluid tides (https://doi.org/10.1093/mnras/stw609; [Lainey et al. 2020](https://doi.org/10.1038/s41550-020-1120-5)). The flag is overridden if the tidal model is switched to CTL (model of [Lu et al. (2023)](https://doi.org/10.3847/1538-4357/acc06d)).
+
+`| Spin period (h)                               | 10.546   (Helled et al. 2015)                        |`
+
+Used to determine whether tidal dissipation in the central planet expands (planet spins faster than moons orbit) or otherwise contract the orbits of its moons. The quantitative value is also used in the averaged Hamiltonian approach. Saturn's spin period is shown here. Note the possibility to comment without the use of `#`.
+
+`| Number of moons                               | 1                                                    |`
+
+Number of objects simulated concurrently. Must be 1 at a minimum, even for a dwarf planet. An alternative to running simultaneously several instances of IcyDwarf is to run one instance with N objects that need not respond to tidal effects from a central planet (e.g., by setting the central planet mass to 0), bearing in mind that unlike with multiple instances, the simulation will constantly be held up by the slowest-evolving object at each time step, and that a crashing calculation in one will likely crash them all.
+
+```
+| Ring mass (kg) (0 if no rings)                | 1.54e19                                              |
+| Ring inner edge (km)                          | 92000                                                |
+| Ring outer edge (km)                          | 140000                                               |
+```
+
+Mass and size of the central planet's rings, whose surface density, calculated from these values, affects the orbital evolution of moons in the vicinity of the ring with semi-major axis $a < R_{outer}*2^{2/3}$ ([Charnoz et al., 2011](https://doi.org/10.1016/j.icarus.2011.09.017)), expanding their orbits very quickly out to that radius. For the Saturn values above, this affects moons with $a$ < 222236 km, e.g., Mimas. 
+
+``` 
+`|-----------------------------------------------|------------------------------------------------------|`
+`| Icy world parameters |||||||||||||||||||||||||| Rhea     |`
+`|-----------------------------------------------|----------|----------|----------|----------|----------|`
+`| Radius assuming zero porosity (km)            | 762.2    |`
+`| Density assuming zero porosity (g cm-3)       | 1.267    |`
+```
+
+This next set of inputs defines the icy world(s) whose thermal±orbital evolution is computed. There should be as many columns as worlds, spaced by 11 characters. The radius and density set the body's mass, as well as how that mass is partitioned between water (liquid and ice both have an assumed density of 1000 kg m<sup>-3</sup>) and rock, whose density is manually set below. 
+
+`| Surface temperature (K)                       | 72       |`
+
+The surface boundary condition. The outermost grid zone is held at that constant temperature and at the rock-ice composition set by the radius and density defined above.
+
+`| Initial temperature (K)                       | 270      |`
+
+Uniform initial temperature. Here, 270 K implies a body that is about to melt; more commonly, the initial temperature is set to a colder value of 50 to 200 K set by the conditions of accretion. Non-uniform initial temperature profiles, which are more realistic, can be set using the "Recover" feature as described above.
+
+`| Time of formation (Myr)                       | 4000     |`
+
+The time of formation since condensation of calcium-aluminum inclusions at the birth (time zero) of the Solar System. For systems of moons, different moons can form at different times; the thermal-orbital simulation begins with the earliest-forming moon. This time sets the amount of radiogenic heating a world undergoes, which is a function of the rock content (and its state of hydration, see below) in each grid zone. Commonly the time of formation is set to somewhere between 2 Myr and 100 Myr; 4000 Myr here is for a very recent moon, e.g., forming from the debris of a previous moon smashed up by a disruptive impact.
+
+`| Formed from ring?                             | 0        |`
+
+Boolean flag to indicate whether a moon forms from material from the central planet's rings, as in the scenario suggested by [Charnoz et al. (2011)](https://doi.org/10.1016/j.icarus.2011.09.017). The ring mass is decreased by the mass of the forming moon at the time of that moon's formation.
+
+`| Ammonia w.r.t. water                          | 0.01     |`
+
+Mass fraction of ammonia in ice. If nonzero, the melt fraction of ice (H2O and ammonia dihydrate) as liquid H2O with mixed NH3 is calculated in a simplified H2O-NH3 phase diagram, with a first melt (eutectic) temperature of 176 K. In liquid, H2O and NH3 are assumed to be well mixed, with the same proportions across all liquid grid zones. When such a liquid mixture refreezes, the solid fraction is usually only water ice concentrating NH3 in the remaining liquid until the eutectic composition and temperature are reached, at which point the remainder freezes as water ice and ammonia dihydrate solid.
+
+`| Briny liquid? y=1, n=0                        | 0        |`
+
+Rough substitution of the effect of ammonia antifreeze, described above, with a fictitious species that has a eutectic temperature of 250 K with water. This is meant to approximate the behavior of a NaCl-H2O brine. If set to 1, the mass fraction of ammonia above becomes effectively a mass fraction of this brine.
+
+`| Initial degree of hydration                   | 1        |`
+
+This is a decimal value, `X_hydr` in the code, that varies from 0 for a dry rock (e.g., olivine) to 1 for a hydrated rock (e.g., serpentine). Thermophysical properties of the rock like density, thermal conductivity, and heat capacity are varied linearly between those of dry and hydrated rock end-members according to the value of `X_hydr`. 
+
+`| Hydrate/dehydrate?                            | 1        |`
+
+Boolean flag that lets the state of hydration of rock change. If the flag is set to 1, rock dehydrates to a value that decreases linearly from 1 to 0 as its temperature increases from 700 K to 850 K. Water is removed accordingly and move up to an ocean layer between the rock and ice. Conversely, when the temperature decreases between these values, if there is an ocean and if the core is fractured up to the seafloor, the degree of hydration can increase back from 0 at 850 K to 1 at 700 K. There is an energy consumption associated with dehydration, and conversely, energy production from the enthalpy of the hydration reaction; both are output in `Outputs/xHeats.txt`. Radionuclide content remains constant (at a given time relative to radionuclide half-lives) by mass of dry rock, i.e., does not vary even if `X_hydr` does.
+
+`| Initial porosity volume fraction              | 0.7      |`
+
+This is a bulk porosity, uniform across the interior. Once thermal evolution starts it can compact according to the material viscosity (non-Newtonian rheologies for ice, dry rock, and hydrated rock, with geometric averaging between ice and rock), following [Neumann et al. (2014)](https://doi.org/10.1016/j.epsl.2014.03.033).
+
+`| Fraction of rock in fines                     | 0        |`
+
+This decimal value (`X_fines` in the code), between 0 and 1, allows some of the rock to stay suspended within the ice rather than settle into a core. When it is 0, ice and rock separate instantaneously in all grid zones whose value exceeds a certain temperature. This ice-rock separation (differentiation) by density generally happens from the inside out, given that separation begins in the region of first ice melt (273 K or 176 K if ice contains ammonia), generally at the center of the icy world. Once the body is differentiated out to half its radius, ice-rock separation is assumed to also be able to proceed by Rayleigh-Taylor instabilities, assumed to develop at 140 K (Rubin et al. 2013). If `X_fines` is nonzero, this fraction of the rock remains suspended in a muddy ice.
+
+`| Core ice/liquid water volume fraction         | 0        |`
+
+This decimal value between 0 and 1 is the fraction of water retained in a porous core. A value around 0.25 can account for the low-density core of Enceladus, depending on the density of the rocky matrix. When nonzero, this helps hydrothermal circulation develop in the core, cooling it convectively, with an effective thermal conductivity up to 100 W m<sup>^-1</sup> K<sup>^-1</sup>.
+
+`| Start differentiated?                         | 0        |`
+
+Boolean flag which, if set to 1, starts out a body already differentiated, rather than computing where and when ice and rock separate (see "Fraction of rock in fines" above). This can be used, for example, for moons forming out of rings, for which [Charnoz et al. (2011)](https://doi.org/10.1016/j.icarus.2011.09.017) predict rocky particles will coalesce first and then accrete ice as rock is less susceptible to tidal disruption.
+
+```
+| Initial orbital semi-major axis (km)          | 482525   |
+| Initial orbital eccentricity                  | 0.001    |
+| Initial orbital inclination (º)               | 7        |
+| Initial obliquity (º)                         | 5        | #Cassini state for incl 3.5 deg is 0.2º
+```
+
+Initial orbit of the moon. These quantities are not read if the central planet mass is set to 0 (e.g., for a dwarf planet). Only the first two are taken into account if a CPL tidal-orbital evolution model is used (see below). All 4 inputs are used in the CTL model of [Lu et al. (2023)](https://doi.org/10.3847/1538-4357/acc06d). Note an example of the ability to add comments to inputs using `#`.
+
+`| Allow orbit to change?                        | 1        |`
+
+Boolean flag that maintains a constant orbit if set to 0.
+
+`| Retrograde orbit?                             | 0        |`
+
+Boolean flag that marks the orbit as retrograde if set to 1, e.g., for Triton. This affects the sign of secular orbital evolution equations.
+
+`| Resonant tidal locking timescale (Gyr)        | 10       |`
+
+Moon-specific timescale of orbital expansion, only used if "Resonant tidal locking with inertial waves?" above is set to 1.
+
+```
+|-----------------------------------------------|------------------------------------------------------|
+| Dry rock density (g cm-3)                     | 3.8                                                  |
+| Hydrated rock density (g cm-3)                | 2.9                                                  |
+```
+
+Densities of dry and hydrated rock, used to partition mass between ice and rock at the beginning of a simulation, based on each icy world's mass and radius.
+
+`| Chondrite type? CI=0 CO=1 CV=2                | 0                                                    |`
+
+Choice of radionuclide abundances between CI-like chondritic rock (canonical abundances), CO-like (lowest radiogenic heating), or CV-like (highest heating). 
+
+`| Tidal rheology? Maxw=2 Burg=3 Andr=4 SunCoop=5| 5                                                    |`
+
+Viscoelastic model used in tidal calculations. For descriptions and comparisons, see [Renaud & Henning (2018)](https://doi.org/10.3847/1538-4357/aab784).
+
+`| Eccentricity Model? e2=0 e10-CPL=1 e10-CTL=2  | 0                                                    |`
+
+Choice of order of eccentricity term to which tidal equations are expanded. Terms of order > 2 become necessary as the eccentricity approaches 1; they also lead to consideration of additional forcing frequencies rather than solely the orbital period. e10 models, which include terms out to order 10 (valid for eccentricity values up to 0.6), were added by Joe Renaud. Full expansions are available in [Renaud et al. (2021)](https://doi.org/10.3847/PSJ/abc0f3) and the software [TidalPy](https://github.com/jrenaud90/TidalPy).
+
+`| Tidal heating x...?                           | 1                                                    |`
+
+Arbitrary multiplicative factor to scale the heating rate associated with tidal dissipation.
+
+`| Lookup tbl for orbit evol? #par #rows Dtime(y)| 0 10 10000 5000                                      |`
+
+These inputs are only used to read a N-body orbital evolution output from REBOUNDx when running coupling simulations with IcyDwarf. They are read from the file `Inputs/REBOUNDin.txt` generated by REBOUNDx. The four values are (1) boolean flag to read this file, here set to 0 (don't read file); (2) number of parameters, here set to 10 (5 for each of two moons in orbital resonance); (3) number of rows in the file, here 10000 (every 5000 years for 50 Myr); (4) time span between two output rows.
+
+```
+|-----------------------------------------------|------------------------------------------------------|
+| Subroutines ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+|-----------------------------------------------|------------------------------------------------------|
+| Run thermal code?                             | 1                                                    |
+```
+
+This section of the input file determines which pieces of IcyDwarf are run. Think of it is IcyDwarf asking "Hello! For what purpose are you running me today?" Usually, it's only one thing at a time, so only one of these values is set to 1, and the others are set to 0. This boolean flag decides whether the main thermal-orbital evolution code is run.
+
+```
+| Generate core crack aTP table?                | 0                                                    |
+| Generate water alpha beta table?              | 0                                                    |
+| Generate crack species log K with CHNOSZ?     | 0                                                    |
+```
+
+These decide whether the lookup tables underpinning cracking calculations are regenerated. Usually this is not needed since these tables are supplied in the `Data` folder, but one might decide to re-generate them for, e.g., a broader range of parameter space.
+
+```
+| Run geochemistry code? (min max step)         | 0                                                    |
+|   Temperature                                 | 0 300 50                                             |
+|   Pressure                                    | 200 1400 200                                         |
+|   pe = FMQ + ...                              | -6 6 1                                               |
+|   Water:rock mass ratio                       | 0.1 10 10                                            |
+```
+
+The first value is a boolean flag for running PHREEQC geochemical calculations (e.g., aqueous speciation, mineral-solution equilibria) across the parameter space set by the values below. For each parameter, a `for` loop runs between the first and second values, with a step set by the third value. Among these parameters, redox potential (set by the electron potential $pe$) is normally an outcome of mineral equilibria, but it is allowed to be set here for initial solution speciation, e.g., to decide if carbon is mostly present as methane of CO<sub>2</sub>/(bi)carbonate.
+
+`| Run compression code?                         | 0                                                    |`
+
+Boolean flag that decides whether to run the compression code, a `C` implementation of the routine described by [Lorenzo et al. (2014)](https://www.hou.usra.edu/meetings/lpsc2014/pdf/1636.pdf). This can generate files that can be reused as the starting point of thermal-orbital evolution simulations through use of the "Recover" function described above.
+
+`| Run cryovolcanism code?                       | 0                                                    |`
+
+Boolean flag that decides whether to run a code that computes, assuming a hardcoded initial aqueous fluid composition with specified abundances for 10 volatile compounds, how much exsolution takes places as the fluid ascends through an icy shell or crust. The density decrease associated with exsolution stresses the ice, which is allowed to fracture if the stress is too high according to linear elastic fracture mechanics theory. The code provides depth profiles of ascending fluid composition and determines whether the erupted mixture can reach the surface. An application is shown in [Neveu et al. (2015)](https://doi.org/10.1016/j.icarus.2014.03.043).
+
+`|   After how many Myr?                         | 2500                                                 |`
+
+The cryovolcanism code is run on an IcyDwarf `xThermal.txt` output, that is, the version of the output ca. 2015, which had less columns at the time. By comparing commits from around that time to the current version of this file, one can find which columns to remove in order to run the cryovolcanism code without having to modify it.
+
+`|   Minimum temperature to run CHNOSZ (K)       | 273                                                  |`
+
+In the cryovolcanism code, exsolution is computed with the aid of the `R` software package [CHNOSZ](https://chnosz.net). `CHNOSZ` normally doesn't allow for calculations below the pure water freezing temperature of 273 K, but it can be carefully extended to slightly lower temperatures allowed by the presence of antifreeze compounds. It is up to the user to check consistency between `CHNOSZ` calculation results and any experimental data obtained below 273 K.
+
+```
+|-----------------------------------------------|------------------------------------------------------|
+| Core crack options |||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+|-----------------------------------------------|------------------------------------------------------|
+| Include thermal expansion/contrac mismatch?   | 1                                                    |
+| Include pore water expansion?                 | 1                                                    |
+| Include hydration/dehydration vol changes?    | 0                                                    |
+| Include dissolution/precipitation...?         | 0                                                    |
+|   ... of silica?                              | 1                                                    |
+|   ... of serpentine?                          | 1                                                    |
+|   ... of carbonate (magnesite)?               | 1                                                    |
+|-------------------------------------------------------------------------------------------------------
+```
+
+This last block of boolean flags sets which cracking processes to consider in the development or healing of core fractures. In fractured core grid zones in contact with the seafloor, hydrothermal circulation can develop, transferring heat through the core convectively rather than conductively. Convection is much more efficient, with effective thermal conductivities up to 100 W m<sup>^-1</sup> K<sup>^-1</sup>. Here hydration/dehydration and dissolution/precipitation are set to 0 because these are two processes that can rapidly close cracks as hydrated rock swells or precipitate coats the inside of cracks. If the dissolution/precipitation flag is 0, none of the last three flags are used; these decide which minerals are allowed to precipitate. The cracking model is described in [Neveu et al. (2015)](https://doi.org/10.1002/2014JE004714). Irrespective of these options, core fractures can heal by ductile flow, the same way that porosity compacts in rock.
 
 ---
 
@@ -398,98 +503,7 @@ Each benchmark will include:
 
 ### 2.5 Compilation Commands
 
-IcyDwarf uses a Makefile for compilation. Below are the standard and advanced compilation options.
-
-#### Standard Compilation
-
-```bash
-make
-```
-
-This compiles with default optimization flags.
-
-#### Clean Build
-
-```bash
-make clean
-make
-```
-
-Removes all object files and executables before recompiling.
-
-#### Compilation with Debugging Symbols
-
-```bash
-make debug
-```
-
-Compiles with `-g` flag for debugging with gdb or lldb.
-
-#### Optimized Compilation
-
-```bash
-make optimize
-```
-
-Compiles with `-O3` optimization for maximum performance.
-
-#### Compiler Selection
-
-To use a specific compiler:
-
-```bash
-make CC=gcc-12
-```
-
-or
-
-```bash
-make CC=clang
-```
-
-#### Custom Compilation Flags
-
-Edit the `Makefile` to modify compilation flags. Key variables:
-
-```makefile
-CC = gcc                          # Compiler
-CFLAGS = -O2 -Wall -std=c99      # Compilation flags
-LDFLAGS = -lm                     # Linker flags
-```
-
-#### Parallel Compilation
-
-```bash
-make -j4
-```
-
-Uses 4 parallel jobs to speed up compilation.
-
-#### Platform-Specific Notes
-
-**macOS with Apple Silicon (M1/M2):**
-```bash
-make CC=gcc-12 CFLAGS="-O2 -Wall -std=c99 -arch arm64"
-```
-
-**macOS with Intel:**
-```bash
-make CC=gcc-12 CFLAGS="-O2 -Wall -std=c99 -arch x86_64"
-```
-
-#### Troubleshooting Compilation
-
-**Issue: "gcc: command not found"**
-- Install GCC via Homebrew: `brew install gcc`
-- Use full compiler name: `make CC=gcc-12`
-
-**Issue: Math library errors**
-- Ensure `-lm` is in LDFLAGS
-- Add explicitly: `make LDFLAGS="-lm"`
-
-**Issue: Header file not found**
-- Check that all `.h` files are in the same directory
-- Verify repository is completely cloned
+See the [README](https://github.com/MarcNeveu/IcyDwarf/tree/master#modifying-the-source-code) file.
 
 ---
 
