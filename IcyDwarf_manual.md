@@ -1,12 +1,10 @@
 # IcyDwarf User Manual
 
-**Version:** 26.9  
-**Last Updated:** September 23, 2026  
-**Repository:** https://github.com/MarcNeveu/IcyDwarf
-
 ---
 
 ## Table of Contents
+
+To display the list of contents while browsing on GitHub, click the ≡ symbol at the top right of this .md file window.
 
 1. [Overview](#1-overview)
 2. [Quick Start Guide (macOS)](#2-quick-start-guide-macos)
@@ -66,22 +64,93 @@ IcyDwarf is a thermal-orbital-chemical evolution model for icy worlds in the out
 
 The thermal evolution code is designed for studying icy bodies ranging in size from icy planetesimals to Triton, including icy moons such as Enceladus or Ariel and dwarf planets like Ceres and Pluto. It can model individual bodies or systems of multiple moons with gravitational and tidal interactions. The applicability of the thermal-orbital evolution code is limited to bodies big enough to be reasonably approximated by a 1D spherical geometry, yet small enough to preclude high-pressure ice phases, which are not considered except in stand-alone compression calculations with no time evolution.
 
+*IcyDwarfPlot* creates interactive displays of outputs from the following *IcyDwarf* functionalities:
+- Thermal Evolution
+- Core cracking
+- Equilibrium fluid and rock compositions.
+
+However, *IcyDwarfPlot* has not recently been maintained to keep up with updates in MacOS. Updates are likely needed to get it back to working. There is currently no display of cryovolcanism outputs from *IcyDwarf*. *IcyDwarf* does not need *IcyDwarfPlot* to run.
+
 ---
 
 ## 2. Quick Start Guide (macOS)
 
-### 2.1 Installing and Running IcyDwarf
+### 2.1 Installing and Running *IcyDwarf*
 
-See the [README](https://github.com/MarcNeveu/IcyDwarf/tree/master#installation) file. Unfortunately, as listed in that file, several dependencies are required to run IcyDwarf, especially for geochemical calculations but also for parallel computing (convenient for moon systems) and fluid tidal dissipation calculations.
-
-The IcyDwarf directory comprises several folders:
+Clone or download *IcyDwarf* from this repository. The *IcyDwarf* directory comprises several folders:
 
 `Data` has a few lookup tables as .txt files for core cracking calculations, plus a planetary materials ("planmat") database for compression calculations.
 `Debug` is not used, but notionally includes an executable for debugging.
 `Inputs` includes IcyDwarfInput.txt, the input file read by IcyDwarf, plus any number of tweaked copies for various icy worlds or moon systems saved under different names. These can be renamed to IcyDwarfInput.txt to be run.
 `Outputs` includes the output files (see [2.3 Output Files Description](#23-output-files-description)), which are overwritten by new simulations. The folder itself must exist when starting IcyDwarf, but it is OK for it to be empty.
 `PHREEQC-3.1.2` is only used for parameter exploration calculations using PHREEQC, not for thermal-orbital evolution simulations. This folder includes a .dat thermodynamic database file, a .txt file describing the default list of geochemical outputs, and a subfolder `io` with inputs (`PHREEQCinput` and `Sol`, no extension) and outputs.
-`Release` contains the IcyDwarf executable. It is from this folder that IcyDwarf must be launched from the Terminal using the command `./IcyDwarf` or, to continue using the same Terminal prompt while a simulation is running, `./IcyDwarf &`.
+`Release` contains the IcyDwarf executable. 
+
+Several dependencies are required to run IcyDwarf, especially for geochemical calculations but also for parallel computing (convenient for moon systems) and fluid tidal dissipation calculations.
+
+The installation steps outlined below are valid for Mac OS 10.9+. *IcyDwarf* and *IcyDwarfPlot* could also run on Windows and Linux, but compilation instructions are not set up and external I/O handling needs to be modified in the source code. 
+
+#### Install *R*
+*R* is needed only for *IcyDwarf*, to run the geochemistry package *CHNOSZ*.
+Go to http://www.r-project.org and follow instructions.
+
+#### Install *CHNOSZ*
+*CHNOSZ* is needed only for *IcyDwarf*. Open *R* using either the installed application icon or in a terminal by typing
+
+	R
+	
+In *R*, type the command
+
+	install.packages("CHNOSZ")
+
+#### Install *Rcpp* and *RInside*
+*Rcpp* and *RInside* are libraries that allow *R* applications to be embedded in C or C++ codes. From a Terminal window, open *R* and install the *Rcpp* and *RInside* packages:
+
+	install.packages("Rcpp")
+	install.packages("RInside")
+
+#### Install *IPHREEQC*
+The *IPHREEQC* library, not to be confused with the PHREEQC software itself, is a module that allows the *PHREEQC* application to be embedded in C or C++ codes. Go to http://wwwbrr.cr.usgs.gov/projects/GWC_coupled/phreeqc to download *IPHREEQC* (for Linux), unzip it, and follow the default installation instructions (you need admin credentials on your machine):
+
+	./configure
+	make
+	make install
+
+In v3.8.6, the *./configure* script omits copying a header file *PHRQ_exports.h* to the include folder. You can manually remedy this by copying, from the unzipped folder, *src/phreeqcpp/common/PHRQ_exports.h* to the */usr/local/include/* folder.
+
+#### Install parallel processing capabilities
+
+In Mac OS 10.8+, the default compiler *clang* has replaced the compiler *gcc*. By default, *clang* does not include parallel processing capabilities, slowing down execution of the *PlanetSystem* (moon system evolution) and *WaterRock_ParamExploration* (aqueous geochemical equilibrium computation across a wide parameter space) routines of *IcyDwarf* by a factor of ~5-8. Two options exist to remedy this:
+
+### Option 1: Install HPC's *gcc*
+This option does not appear to work for Mac Intel machines with recent MacOS software (e.g., *XCode* 15+), because the compiler either works for Intel chips (*gcc* version 11 or older) or recent Mac *Xcode* command line tools (*gcc* version 12 or more recent). It worked for *Xcode* 14 and older on Intel machines. It should work for recent Macs with current *Xcode* and M1-M3 chips, but this has not been tested. Go to http://hpc.sourceforge.net and follow the instructions there to download and install *gcc*.
+Once installed, you might need to break the symbolic link between the command *gcc* and *clang* by typing:
+
+    alias gcc=/usr/local/bin/gcc
+
+### Option 2: Install OpenMP on macOS with Xcode tools
+This option should work for *XCode* 10.2+ by providing *Clang* with the needed parallel processing libraries (*OpenMP*). It works for a Mac Intel machine with *XCode* 15. Go to https://mac.r-project.org/openmp and follow the instructions there to download and install *OpenMP* libraries.
+
+#### Install *SDL2* (*IcyDwarfPlot* only, not needed to run *IcyDwarf*)
+*SDL2* is a graphic library. Go to http://www.libsdl.org/projects. Download and install *SDL2*, *SDL2_image*, and *SDL2_ttf*. *SDL2_mixer* is not needed as the code doesn't play music for you yet.
+
+#### Install *IcyDwarf*
+Go to https://github.com/MarcNeveu/IcyDwarf. Click the green *Clone or download* button to the right of the page, then either:
+- *Download ZIP* on the bottom right. Unzip IcyDwarf-master.zip. Rename the unzipped folder *IcyDwarf-master* to *IcyDwarf*.
+Move the renamed *IcyDwarf* folder to any folder you would like, we will call it *Path_to_GitFolder* here.
+- if you are familiar with GitHub, you can clone the directory with your favorite tool (I use Git within the Eclipse developing environment).
+
+All source files should be in: 
+- */Path_to_GitFolder/IcyDwarf/IcyDwarf* and subfolders
+- */Path_to_GitFolder/IcyDwarf/IcyDwarfPlot* and subfolders.
+
+#### Running IcyDwarf
+
+The executable files are:
+- */Path_to_GitFolder/IcyDwarf/IcyDwarf/Release/IcyDwarf* (no extension)
+- */Path_to_GitFolder/IcyDwarf/IcyDwarfPlot/Release/IcyDwarfPlot* (no extension)
+
+IcyDwarf can be launched from the Terminal using the command `./IcyDwarf` or, to continue using the same Terminal prompt while a simulation is running, `./IcyDwarf &`.
 
 When a simulation is running, I find it helpful to check on it using the bash Terminal command `ps uo etime`. Several IcyDwarf simulations can be run concurrently from different copies of the `IcyDwarf` folder. `ps uo etime` will list them along with elapsed wall clock and CPU time, the five-digit PID if a simulation needs to be ended using `kill [five-digit PID]`, and the % CPU used (greater than 100% indicates parallel computing is working, with use generally at N*100% for a system of N moons).
 
@@ -123,7 +192,7 @@ The `Recover` boolean flag is useful to restart a thermal-orbital evolution simu
 | Number of grid zones                          | 200                                                  |
 ```
 
-The size of the 1D grid (`NR` in the `C` code) mapping ice mass, rock mass, and temperature profiles from an icy body's center to its surface. The grid can't be too coarse or there won't be numerical convergence (i.e., outputs will change as a function of the number of grid zones, but they shouldn't). It can't be too fine for simulations to proceed reasonably fast, keeping in mind that a N x increase in grid zones must be accompanied with a N^2 x decrease in time step to conserve numerical stability (Courant condition: time step proportional to `NR`$^2/\kappa$, with $\kappa$ the thermal diffusivity in m<sup>^2</sup> s<sup>^-1</sup>). So, simulations with a grid twice as fine will take 8 times as long (twice as many grid zone calculations, four times as often). In practice, 200 to 300 grid zones work well, providing km-scale resolution (e.g., thin ocean layers) inside icy worlds. 
+The size of the 1D grid (`NR` in the `C` code) mapping ice mass, rock mass, and temperature profiles from an icy body's center to its surface. The grid can't be too coarse or there won't be numerical convergence (i.e., outputs will change as a function of the number of grid zones, but they shouldn't). It can't be too fine for simulations to proceed reasonably fast, keeping in mind that a N x increase in grid zones must be accompanied with a N^2 x decrease in time step to conserve numerical stability (Courant condition: time step proportional to `NR`$^2/\kappa$, with $\kappa$ the thermal diffusivity in m<sup>2</sup> s<sup>-1</sup>). So, simulations with a grid twice as fine will take 8 times as long (twice as many grid zone calculations, four times as often). In practice, 200 to 300 grid zones work well, providing km-scale resolution (e.g., thin ocean layers) inside icy worlds. 
 
 `| Thermal simulation time step (yr)             | 100                                                  |`
 
@@ -131,7 +200,7 @@ The time step (`dtime` in the `C` code) of a thermal-orbital evolution simulatio
 
   $$ \kappa = k / \rho C_p $$
 
-To keep computation ties reasonable, $k$ is forced not to exceed 400 W m<sup>^-1</sup> K<sup>^-1</sup> in ocean grid zones. This ceiling is much higher than typical material thermal conductivities of a few but is necessary to approximate faster heat transfer in a convective ocean.
+To keep computation ties reasonable, $k$ is forced not to exceed 400 W m<sup>-1</sup> K<sup>-1</sup> in ocean grid zones. This ceiling is much higher than typical material thermal conductivities of a few but is necessary to approximate faster heat transfer in a convective ocean.
 
 `| Moon-moon interaction speedup factor          | 1000                                                 |`
 
@@ -166,7 +235,7 @@ The first quantity ($k_2$) is used in computing secular orbital evolution of moo
 
 `| Resonant tidal locking with inertial waves?   | 1 # ignored if Eccentricity Model = 2                |`
 
-Boolean flag to switch the orbital evolution due to tidal dissipation inside the central planet from solid tidal effects (CPL model) to resonance locking with fluid tides (https://doi.org/10.1093/mnras/stw609; [Lainey et al. 2020](https://doi.org/10.1038/s41550-020-1120-5)). The flag is overridden if the tidal model is switched to CTL (model of [Lu et al. (2023)](https://doi.org/10.3847/1538-4357/acc06d)).
+Boolean flag to switch the orbital evolution due to tidal dissipation inside the central planet from solid tidal effects (CPL model) to resonance locking with fluid tides ([Fuller et al. 2016](https://doi.org/10.1093/mnras/stw609); [Lainey et al. 2020](https://doi.org/10.1038/s41550-020-1120-5)). The flag is overridden if the tidal model is switched to CTL (model of [Lu et al. (2023)](https://doi.org/10.3847/1538-4357/acc06d)).
 
 `| Spin period (h)                               | 10.546   (Helled et al. 2015)                        |`
 
@@ -185,11 +254,11 @@ Number of objects simulated concurrently. Must be 1 at a minimum, even for a dwa
 Mass and size of the central planet's rings, whose surface density, calculated from these values, affects the orbital evolution of moons in the vicinity of the ring with semi-major axis $a < R_{outer}*2^{2/3}$ ([Charnoz et al., 2011](https://doi.org/10.1016/j.icarus.2011.09.017)), expanding their orbits very quickly out to that radius. For the Saturn values above, this affects moons with $a$ < 222236 km, e.g., Mimas. 
 
 ``` 
-`|-----------------------------------------------|------------------------------------------------------|`
-`| Icy world parameters |||||||||||||||||||||||||| Rhea     |`
-`|-----------------------------------------------|----------|----------|----------|----------|----------|`
-`| Radius assuming zero porosity (km)            | 762.2    |`
-`| Density assuming zero porosity (g cm-3)       | 1.267    |`
+|-----------------------------------------------|------------------------------------------------------|
+| Icy world parameters |||||||||||||||||||||||||| Rhea     |
+|-----------------------------------------------|----------|----------|----------|----------|----------|
+| Radius assuming zero porosity (km)            | 762.2    |
+| Density assuming zero porosity (g cm-3)       | 1.267    |
 ```
 
 This next set of inputs defines the icy world(s) whose thermal±orbital evolution is computed. There should be as many columns as worlds, spaced by 11 characters. The radius and density set the body's mass, as well as how that mass is partitioned between water (liquid and ice both have an assumed density of 1000 kg m<sup>-3</sup>) and rock, whose density is manually set below. 
@@ -216,7 +285,7 @@ Mass fraction of ammonia in ice. If nonzero, the melt fraction of ice (H2O and a
 
 `| Briny liquid? y=1, n=0                        | 0        |`
 
-Rough substitution of the effect of ammonia antifreeze, described above, with a fictitious species that has a eutectic temperature of 250 K with water. This is meant to approximate the behavior of a NaCl-H2O brine. If set to 1, the mass fraction of ammonia above becomes effectively a mass fraction of this brine.
+Rough substitution of the effect of ammonia antifreeze, described above, with a fictitious species that has a eutectic temperature of 250 K with water. This is meant to approximate the behavior of a NaCl-H<sub>2</sub>O brine. If set to 1, the mass fraction of ammonia above becomes effectively a mass fraction of this brine.
 
 `| Initial degree of hydration                   | 1        |`
 
@@ -232,11 +301,11 @@ This is a bulk porosity, uniform across the interior. Once thermal evolution sta
 
 `| Fraction of rock in fines                     | 0        |`
 
-This decimal value (`X_fines` in the code), between 0 and 1, allows some of the rock to stay suspended within the ice rather than settle into a core. When it is 0, ice and rock separate instantaneously in all grid zones whose value exceeds a certain temperature. This ice-rock separation (differentiation) by density generally happens from the inside out, given that separation begins in the region of first ice melt (273 K or 176 K if ice contains ammonia), generally at the center of the icy world. Once the body is differentiated out to half its radius, ice-rock separation is assumed to also be able to proceed by Rayleigh-Taylor instabilities, assumed to develop at 140 K (Rubin et al. 2013). If `X_fines` is nonzero, this fraction of the rock remains suspended in a muddy ice.
+This decimal value (`X_fines` in the code), between 0 and 1, allows some of the rock to stay suspended within the ice rather than settle into a core. When it is 0, ice and rock separate instantaneously in all grid zones whose value exceeds a certain temperature. This ice-rock separation (differentiation) by density generally happens from the inside out, given that separation begins in the region of first ice melt (273 K or 176 K if ice contains ammonia), generally at the center of the icy world. Once the body is differentiated out to half its radius, ice-rock separation is assumed to also be able to proceed by Rayleigh-Taylor instabilities, assumed to develop at 140 K ([Rubin et al. 2014](https://doi.org/10.1016/j.icarus.2014.03.047)). If `X_fines` is nonzero, this fraction of the rock remains suspended in a muddy ice.
 
 `| Core ice/liquid water volume fraction         | 0        |`
 
-This decimal value between 0 and 1 is the fraction of water retained in a porous core. A value around 0.25 can account for the low-density core of Enceladus, depending on the density of the rocky matrix. When nonzero, this helps hydrothermal circulation develop in the core, cooling it convectively, with an effective thermal conductivity up to 100 W m<sup>^-1</sup> K<sup>^-1</sup>.
+This decimal value between 0 and 1 is the fraction of water retained in a porous core. A value around 0.25 can account for the low-density core of Enceladus, depending on the density of the rocky matrix. When nonzero, this helps hydrothermal circulation develop in the core, cooling it convectively, with an effective thermal conductivity up to 100 W m<sup>-1</sup> K<sup>-1</sup>.
 
 `| Start differentiated?                         | 0        |`
 
@@ -348,134 +417,92 @@ In the cryovolcanism code, exsolution is computed with the aid of the `R` softwa
 |-------------------------------------------------------------------------------------------------------
 ```
 
-This last block of boolean flags sets which cracking processes to consider in the development or healing of core fractures. In fractured core grid zones in contact with the seafloor, hydrothermal circulation can develop, transferring heat through the core convectively rather than conductively. Convection is much more efficient, with effective thermal conductivities up to 100 W m<sup>^-1</sup> K<sup>^-1</sup>. Here hydration/dehydration and dissolution/precipitation are set to 0 because these are two processes that can rapidly close cracks as hydrated rock swells or precipitate coats the inside of cracks. If the dissolution/precipitation flag is 0, none of the last three flags are used; these decide which minerals are allowed to precipitate. The cracking model is described in [Neveu et al. (2015)](https://doi.org/10.1002/2014JE004714). Irrespective of these options, core fractures can heal by ductile flow, the same way that porosity compacts in rock.
+This last block of boolean flags sets which cracking processes to consider in the development or healing of core fractures. In fractured core grid zones in contact with the seafloor, hydrothermal circulation can develop, transferring heat through the core convectively rather than conductively. Convection is much more efficient, with effective thermal conductivities up to 100 W m<sup>-1</sup> K<sup>-1</sup>. Here hydration/dehydration and dissolution/precipitation are set to 0 because these are two processes that can rapidly close cracks as hydrated rock swells or precipitate coats the inside of cracks. If the dissolution/precipitation flag is 0, none of the last three flags are used; these decide which minerals are allowed to precipitate. The cracking model is described in [Neveu et al. (2015)](https://doi.org/10.1002/2014JE004714). Irrespective of these options, core fractures can heal by ductile flow, the same way that porosity compacts in rock.
 
 ---
 
 ### 2.3 Output Files Description
 
-IcyDwarf generates multiple output files containing different aspects of the simulation results. The output file structure and content are defined primarily in `PlanetSystem.h`.
+IcyDwarf generates multiple output files, all in the `Outputs` folder, containing different aspects of the simulation results. For thermal-orbital outputs, the output file structure and content are defined in `PlanetSystem.h`.
+### Thermal (± orbital) evolution code
 
-#### Primary Output Files
+For each file name, the initial character *x* is *0* for the first/only object and incremented by 1 for each additional object. Thermal and crack output files can be read and displayed by *IcyDwarfPlot*.
 
-**1. `Thermal_*.txt` - Thermal Evolution Profiles**
+- *xCrack_stresses.txt*: Internal stresses accounted for by the core cracking subroutine ([Neveu et al. 2015](https://doi.org/10.1002/2014JE004714)). There are *n_zones* rows (one per grid zone from the center to the surface) printed at each time interval. Columns list, respectively:
+	* grid zone radius (in km)
+	* pressure (in MPa)
+	* brittle strength (in MPa)
+	* critical stress intensity (in MPa m^0.5)
+	* stress intensity from thermal expansion mismatch at grain boundaries (in MPa m^0.5)
+	* pore fluid pressure (in MPa)
+	* net pressure (stress) resulting from rock hydration (in MPa)
+	* old crack size prior to hydration/dehydration (in m)
+	* old crack size prior to mineral dissolution/precipitation (in m)
+	* current crack size (in m)
+	* fraction of the crack that hasn't healed (i.e. 1 minus the integrated strain rate over time since cracking)
+	* integer indicating whether the grid zone is fractured, and by which process ([Neveu et al. 2015](https://doi.org/10.1002/2014JE004714)): 0 = no cracks; 1 = cracks from thermal contraction; 2 = cracks from thermal expansion; 3 = cracks from hydration; 4 = cracks from dehydration; 5 = cracks from pore water dilation; 6 = mineral dissolution widening; 7 = mineral precipitation shrinking; -1 = mineral precipitation clogging; -2: clogging from hydration swelling.
+Outputs are zero outside of the core.
+- *xCrack_depth_WR.txt*: The bulk water:rock mass ratio in the fractured zone. This file has three columns:
+	* time (in Gyr)
+	* depth below seafloor of the fractured zone (in km)
+	* water:rock ratio by mass in cracked zone.
+Outputs are zero if the core is not cracked or if there is no liquid.
+- *xHeats.txt*: Cumulative heats (in erg) produced or consumed by endogenic and exogenic processes. The six columns describe: 
+	* time (in Gyr)
+	* radiogenic heat
+	* gravitational heat
+	* heat of rock hydration
+	* heat consumed in rock dehydration
+	* heat from tidal dissipation.
+- *xOrbit.txt* (only for simulations with a nonzero host planet mass and in which the moon's orbit is allowed to change): Orbital parameters. Columns list:
+	* time (in Gyr)
+	* semi-major axis (in km)
+	* osculating semi-major axis in km (0 if no resonance)
+	* eccentricity
+	* product of eccentricity and cosine of resonant angle
+	* product of eccentricity and sine of resonant angle
+	* resonant angle (in degrees)
+	* total tidal dissipation (in W)
+	* equivalent *k2*/*Q* for the moon ([Segatz et al. 1988](https://doi.org/10.1016/0019-1035(88)90001-2)).
+- *xThermal.txt*: There are *n_zones* rows for each grid zone, repeated *total time/timestep* times, i.e. for each time interval. Columns list, respectively, in each grid zone: 
+	* grid zone radius (in km), 
+	* grid zone temperature (in K)
+	* mass of rock (in g)
+	* mass of water ice (in g)
+	* mass of ammonia dihydrate (in g)
+	* mass of liquid water (in g)
+	* mass of liquid ammonia (in g)
+	* Nusselt number (if >1, convection)
+	* fraction of amorphous ice (always zero, a legacy of [Desch et al. 2009](https://doi.org/10.1016/j.icarus.2009.03.009))
+	* thermal conductivity (in W m^-1 K^-1)
+	* degree of hydration (0: fully dry; 1: fully hydrated)
+	* porosity
+	* integer indicating whether the grid zone is fractured, and by which process (duplicate of the last column in *xCrack_stresses.txt* above)
+	* tidal heating rate (in W).
 
-Contains radial temperature, pressure, and material property profiles at specified time intervals.
+In addition, each simulation with a nonzero host planet mass produces following files. Each of the last three files is read in *N_moon* x *N_moon* matrices, where *N_moon* is the number of moons. Matrices are symmetric since they describe interactions between pairs of moons. Element (*x*, *y*) represents interactions between the *x*th and *y*th worlds as specified in *IcyDwarfInput*. The first matrix is output at the first time step. Subsequent matrices are output following a time stamp that corresponds to the time at which pairs of moons get in and out of resonance.
 
-**File Structure:**
-```
-# Time: [time in years]
-# Columns: Radius(m) | Temperature(K) | Pressure(Pa) | Density(kg/m³) | Porosity | Phase
-[data rows]
-```
+- *Primary.txt*: Over time in Gyr (first column), the *Q* of the primary (second column) and the mass of any ring in kg (third column).
+- *Resonances.txt (for moon system)*: Values are integers *j* if the mean motions of the corresponding moons are commensurate in *j+1:j* ratios with *j≤5*, and if the migration of the moons is convergent (*j dn_inner moon/dt ≤ (j+1) dn_outer moon/dt* since *dn/dt < 0* for expanding orbits). Values are 0 otherwise. If a moon is in resonance with only one other moon, the code computes moon-moon interactions (value in *ResAcctFor* below = *j*), otherwise interactions may be ignored (value in *ResAcctFor* = 0).
+- *ResAcctFor.txt*: Stands for "Resonances Accounted For". A nonzero value in *Resonance* above is accounted for if a moon is in resonance with only one other moon. Otherwise, the code cannot compute the orbital evolution resulting from the interactions between more than two moons. In that case, the resonance accounted for is that between the pair of moons for which *j* is smallest (resonance for which the most moon-moon conjunctions occur per orbit). For equal values of *j* (e.g. for a 4:2:1 resonance, *j* would be 1 between the inner and middle moon, and also 1 between the middle and outer moon), the newer resonance is ignored. For moons with nonzero values, orbital evolution is computed by an averaged Hamiltonian subroutine ([Meyer & Wisdom 2008](https://doi.org/10.1016/j.icarus.2007.09.008)). Otherwise, orbital evolution is computed solely due to effects from moon-primary and moon-ring interactions, ignoring moon-moon interactions.
+- *PCapture.txt*: This output is not taken into account in computations, but provides an indicative probability of capture into resonance based on the equations of [Borderies & Goldreich (1984)](https://doi.org/10.1007/BF01231120). Whether or not capture occurs in a simulation depends on the outcome of orbital evolution computed with the averaged Hamiltonian routine. This matrix is not made symmetric, so usually the value of a coefficient in a position symmetric to that of a nonzero value is 0. In that case, only the nonzero value is meaningful.
 
-**Columns:**
-- `Radius`: Radial distance from center (m)
-- `Temperature`: Temperature at this radius (K)
-- `Pressure`: Pressure at this radius (Pa)
-- `Density`: Bulk density including porosity (kg/m³)
-- `Porosity`: Volume fraction of pore space (0-1)
-- `Phase`: Material phase identifier (0=rock, 1=ice I, 2=ice III, 3=ice V, 4=ice VI, 5=liquid water)
+### Cryolava code
 
-**2. `Orbital_*.txt` - Orbital Evolution**
+The cryolava routine outputs three files: 
+- *Cryolava_molalities.txt* (10 columns, *n_ice_or_crust_grid_zones* rows) shows the cryolava content in H2, CH4, CH3OH, CO, CO2, NH3, N2, H2S, SO2, Ar in mol per kg of liquid water
+- *Cryolava_partialP.txt*, with the same layout as the molalities file, shows the partial pressure of each of these 10 species
+- *Cryolava_xvap.txt* has the same amount of rows, but only 6 columns which show the depth under the surface (km), total gas pressure (bar), volumic vapor fraction x_vap (a dimensionless indicator of exsolution),  fluid cryolava density (kg m-3), stress intensity *K_I* at the crack tip (Pa m^0.5), a boolean (0: no crack propagation; 1: crack propagation).
 
-Tracks orbital parameters over time.
+### Compression code
 
-**File Structure:**
-```
-# Columns: Time(yr) | Semi-major_axis(m) | Eccentricity | Obliquity(deg) | Tidal_heating(W)
-[data rows]
-```
+The compression routine outputs one file, *Compression.txt*, which provides pressures and densities as a function of radius, both accounting for self-compression (output) and not accounting for it (output of the thermal code). The file structure, format, and units are explained in the file itself.
 
-**Columns:**
-- `Time`: Simulation time (years)
-- `Semi-major_axis`: Orbital semi-major axis (m)
-- `Eccentricity`: Orbital eccentricity (dimensionless)
-- `Obliquity`: Axial obliquity (degrees)
-- `Tidal_heating`: Total tidal heating rate (W)
+### WaterRock_ParamExplor code
 
-**3. `Geochemistry_*.txt` - Geochemical Evolution**
+This routine outputs a file, *ParamExploration.txt*, that looks much like the *PHREEQC* selected output specified in the *IcyDwarf/PHREEQC-3.1.2/io* folder, with a few added columns at the beginning (starting *T* in celsius, *P* in bar, *pH*, *pe*, log *fO2* at FMQ(*T*,*P*) buffer, *pe*-FMQ). The file is formatted for easy import into a spreadsheet, with each line describing a different simulation. Lines filled with zeros are *PHREEQC* simulations that did not converge.
 
-Contains aqueous chemistry results when geochemistry module is enabled.
-
-**File Structure:**
-```
-# Time: [time in years]
-# Columns: Species | Molality(mol/kg) | Activity | Log_activity
-[data rows]
-```
-
-**Columns:**
-- `Species`: Chemical species name
-- `Molality`: Concentration in mol/kg H₂O
-- `Activity`: Thermodynamic activity
-- `Log_activity`: Log₁₀ of activity
-
-**4. `Summary.txt` - Simulation Summary**
-
-High-level summary of key results and milestones.
-
-**File Structure:**
-```
-Simulation: [TITLE]
-Start time: [timestamp]
-End time: [timestamp]
-
-Key Results:
-- Ocean formation time: [time] years
-- Maximum ocean thickness: [thickness] m
-- Core cracking time: [time] years
-- Final surface heat flux: [flux] W/m²
-[additional metrics]
-```
-
-**5. `Cryovolcanism_*.txt` - Cryovolcanic Events**
-
-Records cryovolcanic eruption events and conduit properties (when cryovolcanism module is enabled).
-
-**File Structure:**
-```
-# Columns: Time(yr) | Depth(m) | Pressure(Pa) | Gas_fraction | Velocity(m/s) | Eruption(0/1)
-[data rows]
-```
-
-**6. `REBOUNDx_output.txt` - N-body Integration Data**
-
-Output for coupling with REBOUNDx N-body simulations (when enabled).
-
-**File Structure:**
-```
-# Columns: Time(yr) | Body_ID | x(m) | y(m) | z(m) | vx(m/s) | vy(m/s) | vz(m/s) | Tidal_Q
-[data rows]
-```
-
-#### Output File Naming Convention
-
-Output files follow the pattern: `[Type]_[Timestamp].txt` where:
-- `Type`: File type (Thermal, Orbital, Geochemistry, etc.)
-- `Timestamp`: Simulation time in years (e.g., `1.00e+06` for 1 million years)
-
-#### Reading Output Files
-
-Output files are ASCII text format and can be read with:
-- Standard text editors
-- Python (numpy.loadtxt, pandas.read_csv)
-- MATLAB (readtable, dlmread)
-- Excel or other spreadsheet software
-
-**Python Example:**
-```python
-import numpy as np
-import pandas as pd
-
-# Read thermal profile
-data = np.loadtxt('Thermal_1.00e+06.txt', skiprows=2)
-radius = data[:, 0]
-temperature = data[:, 1]
-
-# Or using pandas
-df = pd.read_csv('Orbital_evolution.txt', delim_whitespace=True, comment='#')
-```
+The *PHREEQC* input file, *IcyDwarf/PHREEQC-3.1.2/io/inputIcyDwarf*, can be modified, but be aware that *IcyDwarfPlot* will plot results accurately only if the SELECTED_OUTPUT block is left unchanged.
 
 ---
 
@@ -483,14 +510,9 @@ df = pd.read_csv('Orbital_evolution.txt', delim_whitespace=True, comment='#')
 
 **[PLACEHOLDER]**
 
-This section will contain validated benchmark cases that users can run to verify their installation and understand expected outputs. Benchmark cases will include:
+This section will contain validated benchmark cases that users can run to verify their installation and understand expected outputs.
 
-1. **Europa Baseline**: Standard Europa thermal-orbital evolution
-2. **Enceladus Tidal Heating**: High-eccentricity tidal heating scenario
-3. **Titan Geochemistry**: Long-term water-rock interaction
-4. **Pluto Compression**: Core differentiation and compression
-
-Each benchmark will include:
+Each benchmark to include:
 - Input file
 - Expected runtime
 - Reference output files
@@ -503,7 +525,32 @@ Each benchmark will include:
 
 ### 2.5 Compilation Commands
 
-See the [README](https://github.com/MarcNeveu/IcyDwarf/tree/master#modifying-the-source-code) file.
+My compiling instructions look like this:
+
+For IcyDwarf (M3 Mac with Mac OS 14 Sonoma):
+
+	gcc -I/usr/local/include -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include -I/Library/Frameworks/R.framework/Versions/Current/Resources/include -I/Library/Frameworks/R.framework/Versions/Current/Resources/library/RInside/include -O3 -g -Wall -c -fmessage-length=0 -o IcyDwarf.o ../IcyDwarf.c -fopenmp
+	gcc -L/usr/lib -L/usr/local/lib -L/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/lib /usr/local/lib/libiphreeqc-3.8.6.dylib /usr/local/lib/libiphreeqc.dylib /usr/local/lib/libiphreeqc.a -o IcyDwarf IcyDwarf.o -lR -lomp
+
+For IcyDwarf (*clang gcc* with *XCode* 15 on Mac OS 14.6 Sonoma):
+
+	gcc -I/usr/local/include -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include -I/Library/Frameworks/R.framework/Versions/Current/Resources/include -I/Library/Frameworks/R.framework/Versions/Current/Resources/library/RInside/include -O3 -g -Wall -c -fmessage-length=0 -arch x86_64 -o IcyDwarf.o ../IcyDwarf.c -fopenmp
+	gcc -L/usr/lib -L/usr/local/lib -L/Library/Frameworks/R.framework/Versions/4.1/Resources/lib -o IcyDwarf IcyDwarf.o -lR -ld_classic -lomp
+(remove the '-ld_classic' flag for compilation on Apple M1-M3 machine).
+
+For IcyDwarf (*gcc 11.2.0* on Mac OS 13.6 Ventura):
+ 
+    gcc -I/usr/local/include -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include -I/Library/Frameworks/R.framework/Versions/Current/Resources/include -I/Library/Frameworks/R.framework/Versions/Current/Resources/library/RInside/include -O3 -g -Wall -c -fmessage-length=0 -arch x86_64 -fopenmp -o IcyDwarf.o ../IcyDwarf.c
+    gcc -L/usr/lib -L/usr/local/lib -L/Library/Frameworks/R.framework/Versions/4.1/Resources/lib -o IcyDwarf IcyDwarf.o /usr/local/lib/libiphreeqc-3.7.3.dylib /usr/local/lib/libiphreeqc.dylib /usr/local/lib/libiphreeqc.a -lgomp -lR -ld64
+
+For IcyDwarfPlot (*gcc 6.2* on Mac OS 10.12 Sierra):
+
+    gcc -I/usr/include -I/Library/Frameworks/SDL2.framework/Versions/A/Headers -I/Library/Frameworks/SDL2_image.framework/Versions/A/Headers -I/Library/Frameworks/SDL2_ttf.framework/Versions/A/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/GLUT.framework/Versions/A/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/OpenGL.framework/Versions/A/Headers -O3 -Wall -c -fmessage-length=0 -o IcyDwarfPlot.o ../IcyDwarfPlot.c 
+    gcc -F/Library/Frameworks -arch x86_64 -framework openGL -framework Cocoa -framework GLUT -framework SDL2 -framework SDL2_image -framework SDL2_ttf -o IcyDwarfPlot IcyDwarfPlot.o 
+
+You might need to specify the full path to gcc (e.g. */usr/local/bin/gcc*) rather than simply the *gcc* alias.
+
+Your *include* directories might be more simply found at *-I/usr/include*.
 
 ---
 
@@ -522,29 +569,6 @@ An emerging Rust implementation of IcyDwarf is currently under development by Av
 - Potential performance improvements
 - Better error handling
 
-**Installation (Rust Version):**
-
-1. Install Rust toolchain:
-```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-```
-
-2. Clone the Rust repository:
-```bash
-git clone https://github.com/racecraftr/icy_dwarf_rs.git
-cd icy_dwarf_rs
-```
-
-3. Build and run:
-```bash
-cargo build --release
-cargo run --release
-```
-
-**Note:** The Rust version is currently undergoing testing and validation against the C version. Users requiring production-ready simulations should use the main C implementation until the Rust version is officially released.
-
-For questions or to contribute to the Rust port, please contact Avi Gupta through the GitHub repository.
-
 ---
 
 ## 3. Code Architecture and Physical Models
@@ -555,16 +579,20 @@ IcyDwarf is organized into modular source files, each handling specific physical
 
 | File | Primary Functions | Physical Models |
 |------|------------------|-----------------|
-| `IcyDwarf.c` | Main program, initialization, time integration | - |
-| `PlanetSystem.h` | System-level data structures, I/O | - |
-| `Thermal.c` | Heat transfer, temperature evolution | Conduction, convection, phase changes |
-| `Compression.c` | Density, pressure calculations | Equation of state, compaction |
-| `Tidal.c` | Tidal heating, orbital evolution | Viscoelastic dissipation, orbital mechanics |
-| `Crack.c` | Core cracking mechanics | Fracture mechanics, stress analysis |
-| `Geochemistry.c` | Water-rock interaction | Aqueous speciation, mineral equilibria |
-| `Cryovolcanism.c` | Volcanic ascent dynamics | Multiphase flow, exsolution |
-| `IceRock.c` | Material properties | Ice polymorphs, rock properties |
-| `Orbit.c` | Orbital dynamics | N-body integration, tidal torques |
+| `IcyDwarf.c` | Main program, initialization | - |
+| `IcyDwarf.h` | Generic functions | Values of physical constants, generic I/O functions | - |
+| `PlanetSystem.h` | Planetary system setup, main time loop, output file structures | - |
+| `Orbit.h` | Orbital dynamics | Secular and resonant orbital evolution |
+| `Thermal.h` | Temperature evolution | Heat sources, conduction, convection, phase changes |
+| `TROPF.h` | `C` version of [TROPF](https://github.com/RobertHTyler/TROPF) by Rob Tyler | Fluid tidal dissipation |
+| `Crack.h` | Core cracking mechanics | Fracture mechanics, stress analysis |
+| `CHNOSZ_commands.h` | `R` and `CHNOSZ` integration for geochemical calculations | - |
+| `Compression.h` | Density, pressure calculations | Equations of state |
+| `Cryolava.h` | Volcanic ascent dynamics | Two-phase fluid composition, exsolution |
+| `WaterRock_ParamExplor.h` | Water-rock interaction with PHREEQC | Aqueous speciation, mineral equilibria |
+| `WaterRock.h` | Not in use, for integration of PHREEQC in thermal evolution | - |
+
+All files but the last four underpin the thermal-orbital evolution code. `Compression.h`, `Cryolava.h`, and `WaterRock_ParamExplor.h` are used, respectively, for the compression, cryovolcanism, and geochemical pieces of IcyDwarf and are each run independently (see [2.2 Input File Description](#22-input-file-description)).
 
 ---
 
@@ -572,17 +600,20 @@ IcyDwarf is organized into modular source files, each handling specific physical
 
 The thermal-orbital evolution module simulates the coupled thermal and dynamical evolution of icy bodies over geological timescales.
 
-#### Source Files
-- `Thermal.c` - Core thermal evolution routines
-- `Tidal.c` - Tidal heating and dissipation
-- `Orbit.c` - Orbital dynamics
-- `IceRock.c` - Material properties and phase transitions
+#### `PlanetSystem.h` Source File
 
-#### Key Routines
+This file contains code and functions for planetary system setup, the main time loop calling the `orbit()` and `thermal()` routines, output file structures, and recovery of interrupted simulations.
 
-**`Thermal.c`:**
+#### `Thermal.h` Source File
 
-**`thermal_evolution()`**
+This file contains code for temperature evolution in the main `thermal()` function, plus functions to compute:
+- radiogenic and tidal heat sources
+- heat transfer by conduction or parameterized convection
+- ice-rock differentiation
+- rock hydration and dehydration
+- phase changes
+
+`thermal()`:
 - Integrates the heat equation in spherical coordinates
 - Implements finite-difference scheme for radial heat transport
 - Handles both conductive and convective heat transfer
@@ -590,616 +621,123 @@ The thermal-orbital evolution module simulates the coupled thermal and dynamical
   
   $$ \rho c_p \frac{\partial T}{\partial t} = \frac{1}{r^2} \frac{\partial}{\partial r}\left(r^2 k \frac{\partial T}{\partial r}\right) + H $$
   
-  where $$ \rho $$ is density, $$ c_p $$ is heat capacity, $$ T $$ is temperature, $$ k $$ is thermal conductivity, and $$ H $$ is volumetric heating rate.
+  where $$ \rho $$ is density, $C_p$ is heat capacity, $T$ is temperature, $k$ is thermal conductivity, and $H$ is volumetric heating rate.
 
-**`convection_check()`**
+`convect()`:
 - Evaluates Rayleigh number to determine convection onset
-- Implements convective heat transport using mixing length theory
+- Implements convective heat transport
 - **Physics:** Rayleigh number:
   
   $$ Ra = \frac{g \alpha \Delta T d^3}{\nu \kappa} $$
   
-  where $$ g $$ is gravity, $$ \alpha $$ is thermal expansivity, $$ \Delta T $$ is temperature difference, $$ d $$ is layer thickness, $$ \nu $$ is kinematic viscosity, and $$ \kappa $$ is thermal diffusivity.
+  where $g$ is gravity, $\alpha$ is thermal expansivity, $\Delta T$ is temperature difference, $d$ is layer thickness, $\nu$ is kinematic viscosity, and $\kappa$ is thermal diffusivity.
 - Convection occurs when $$ Ra > Ra_{crit} \approx 1000 $$
 
-**`radiogenic_heating()`**
+`decay()`:
 - Calculates heat production from radioactive decay
-- Includes ²⁶Al, ⁴⁰K, ²³²Th, ²³⁵U, ²³⁸U
+- Includes <sup>26</sup>Al, <sup>40</sup>K, <sup>232</sup>Th, <sup>235</sup>U, <sup>238</sup>U
 - **Physics:** Exponential decay:
   
   $$ H(t) = H_0 e^{-\lambda t} $$
   
   where $$ H_0 $$ is initial heating rate and $$ \lambda $$ is decay constant.
-- **Reference:** Desch et al. (2009) - Thermal evolution models
+- **References:** [Desch et al. (2009)](https://doi.org/10.1016/j.icarus.2009.03.009) for long-lived radionuclides <sup>40</sup>K, <sup>232</sup>Th, <sup>235</sup>U, <sup>238</sup>U; [Castillo-Rogez et al. (2007)](https://doi.org/10.1016/j.icarus.2007.02.018) for the short-lived radionuclide <sup>26</sup>Al.
 
-**`Tidal.c`:**
+`tide()`:
+- Computes tidal dissipation in solid layers using viscoelastic models
+- Supports Maxwell, Burgers, Andrade, and Sundberg-Cooper rheologies ([Renaud & Henning 2018)](https://doi.org/10.3847/1538-4357/aab784))
+- Dissipation is computed on the 1D radial grid using a propagator matrix method ([Henning & Hurford 2014)](10.1088/0004-637X/789/1/30))
+- Liquid layers are approximated as layers of very low viscosity, with minimal dissipation
+- **References:** [Tobie et al. (2005)](https://doi.org/10.1016/j.icarus.2004.12.007)
 
-**`tidal_heating()`**
-- Computes tidal dissipation using viscoelastic models
-- Supports Maxwell and Andrade rheologies
-- **Physics:** Tidal heating rate per unit volume:
-  
-  $$ \dot{E} = -\frac{21}{2} \frac{n^5 R^5 e^2}{G} \frac{\text{Im}(k_2)}{Q} $$
-  
-  where $$ n $$ is mean motion, $$ R $$ is radius, $$ e $$ is eccentricity, $$ G $$ is gravitational constant, $$ k_2 $$ is Love number, and $$ Q $$ is quality factor.
-- **Reference:** Segatz et al. (1988), Tobie et al. (2005)
+`separate()`:
+- Rebuilds the grid with rock at the center, then liquid, the ice, then undifferentiated grid zones
+- Accounts for user-specified rock retention in the ice or water retention in the core
+- Also underpins the hydrate() and dehydrate() functions
 
-**`andrade_rheology()`**
-- Implements Andrade viscoelastic model for tidal dissipation
-- Frequency-dependent response
-- **Physics:** Complex compliance:
-  
-  $$ J(\omega) = J_U + \frac{1}{\eta \omega i} + \beta \Gamma(1+\alpha)(\omega \tau)^{-\alpha}e^{-i\pi\alpha/2} $$
-  
-  where $$ J_U $$ is unrelaxed compliance, $$ \eta $$ is viscosity, $$ \omega $$ is forcing frequency, $$ \beta $$ and $$ \alpha $$ are Andrade parameters.
-- **Reference:** Castillo-Rogez et al. (2011), Efroimsky (2012)
+#### `Orbit.h` Source File
 
-**`multimode_tidal()`**
-- Handles multiple tidal forcing frequencies
-- Includes eccentricity, obliquity, and libration modes
-- **Physics:** Superposition of heating from different modes:
-  
-  $$ \dot{E}_{total} = \sum_i \dot{E}_i(\omega_i) $$
-  
-  where each mode $$ i $$ has frequency $$ \omega_i $$
-- **Reference:** Chen et al. (2014)
-
-**`Orbit.c`:**
-
-**`orbital_evolution()`**
+**`orbit()`**
 - Integrates orbital elements under tidal torques
-- Tracks semi-major axis, eccentricity, obliquity evolution
+- `if` structures use different physical models (CPL, CTL, averaged Hamiltonian for pairs of moons in resonance)
+	* CPL model evolves only semi-major axis and eccentricity
+	* CPL expansion to eccentricity up to order 10 (Renaud et al. 2021) is under development
+	* CTL model (Lu et al. 2023) also evolves obliquity, inclination, and spin but is less tested
+- Identifies mean-motion resonances
 - **Physics:** Tidal evolution equations:
   
   $$ \frac{da}{dt} = -\frac{3k_2}{Q} \frac{n a}{M} \left(\frac{M_p}{a}\right)^2 R^5 f_1(e) $$
   
   $$ \frac{de}{dt} = -\frac{3k_2}{Q} \frac{n}{M} \left(\frac{M_p}{a}\right)^2 R^5 f_2(e) $$
   
-  where $$ a $$ is semi-major axis, $$ M $$ is satellite mass, $$ M_p $$ is primary mass, and $$ f_1, f_2 $$ are eccentricity functions.
-- **Reference:** Murray & Dermott (1999)
-
-**`reboundx_coupling()`**
-- Interfaces with REBOUNDx for N-body orbital integration
-- Provides tidal parameters to external integrator
-- **Reference:** Lu et al. (2023) - Tidal evolution in N-body systems
-
-#### Physical Model Summary
-
-The thermal-orbital evolution tracks:
-1. **Heat sources:** Radiogenic decay, tidal dissipation, accretional heating
-2. **Heat transport:** Conduction (Fourier's law), convection (mixing length theory)
-3. **Phase transitions:** Ice I ↔ liquid, ice polymorphs (I, III, V, VI)
-4. **Orbital dynamics:** Tidal torques, eccentricity damping, semi-major axis evolution
-5. **Feedback loops:** Temperature affects viscosity affects tidal heating affects temperature
-
-**Key Publications:**
-- Desch et al. (2009): Foundational thermal evolution model
-- Hussmann et al. (2006): Tidal heating in icy satellites
-- Tobie et al. (2005): Coupled thermal-orbital evolution
-- Lu et al. (2023): N-body tidal evolution
+  where $a$ is semi-major axis, $M$ is satellite mass, $M_p$ is primary mass, and $f_1, f_2$ are eccentricity functions.
 
 ---
 
 ### 3.2 Compression
 
-The compression module calculates density, pressure, and porosity evolution due to self-gravity and overburden pressure.
+The compression module calculates density, pressure, and porosity evolution due to self-gravity and overburden pressure. The physical model is based on Lorenzo et al. (2014).
 
 #### Source Files
-- `Compression.c` - Compression and equation of state
-- `IceRock.c` - Material properties
-
-#### Key Routines
-
-**`Compression.c`:**
-
-**`hydrostatic_pressure()`**
-- Computes pressure profile from hydrostatic equilibrium
-- **Physics:** Hydrostatic equation:
-  
-  $$ \frac{dP}{dr} = -\rho(r) g(r) $$
-  
-  where $$ P $$ is pressure, $$ \rho $$ is density, and $$ g = GM(r)/r^2 $$ is local gravity.
-- Integrated from surface (P = 0) inward
-
-**`equation_of_state()`**
-- Relates density to pressure and temperature
-- Implements different EOS for ice and rock
-- **Physics for ice:** Murnaghan equation of state:
-  
-  $$ \rho(P,T) = \rho_0(T) \left[1 + \frac{K'P}{K_0}\right]^{1/K'} $$
-  
-  where $$ \rho_0 $$ is reference density, $$ K_0 $$ is bulk modulus, $$ K' $$ is pressure derivative of bulk modulus.
-- **Reference:** Feistel & Wagner (2006) for ice properties
-
-**`porosity_evolution()`**
-- Tracks porosity reduction due to compaction
-- **Physics:** Exponential compaction model:
-  
-  $$ \phi(P) = \phi_0 e^{-P/P_c} $$
-  
-  where $$ \phi $$ is porosity, $$ \phi_0 $$ is initial porosity, and $$ P_c $$ is characteristic compaction pressure (~10-100 MPa).
-- Affects bulk density: $$ \rho_{bulk} = (1-\phi)\rho_{solid} $$
-- **Reference:** Bland et al. (2012)
-
-**`ice_phase_diagram()`**
-- Determines ice polymorph based on P-T conditions
-- **Physics:** Phase boundaries:
-  - Ice I - Ice III: ~200 MPa at 250 K
-  - Ice III - Ice V: ~350 MPa at 250 K
-  - Ice V - Ice VI: ~600 MPa at 270 K
-  - Melting curve: $$ T_m(P) = T_0 - \Gamma P $$ (Clausius-Clapeyron)
-- **Reference:** Choukroun & Grasset (2007)
-
-**`IceRock.c`:**
-
-**`thermal_conductivity()`**
-- Temperature and pressure-dependent thermal conductivity
-- **Physics for ice:** 
-  
-  $$ k(T) = k_0 \left(\frac{T_0}{T}\right)^n $$
-  
-  with $$ n \approx 1 $$ for ice I
-- Porosity correction: $$ k_{bulk} = k_{solid}(1-\phi)^m $$ with $$ m \approx 2-3 $$
-- **Reference:** Klinger (1980), Ross & Kargel (1998)
-
-**`heat_capacity()`**
-- Temperature-dependent specific heat
-- **Physics:** Polynomial fit to experimental data
-- Includes latent heat effects near phase transitions
-- **Reference:** Choukroun & Grasset (2007)
-
-#### Physical Model Summary
-
-The compression model handles:
-1. **Pressure calculation:** Hydrostatic equilibrium with self-gravity
-2. **Density evolution:** Equation of state for ice and rock
-3. **Porosity reduction:** Compaction under overburden pressure
-4. **Phase transitions:** Ice polymorph stability fields
-5. **Material properties:** P-T dependent conductivity, heat capacity, viscosity
-
-**Key Publications:**
-- Choukroun & Grasset (2007): Ice phase diagram and properties
-- Bland et al. (2012): Porosity evolution in icy bodies
-- Feistel & Wagner (2006): Thermodynamic properties of ice
+- `Compression.c` - Compression and equations of state
+- `Data/Compression_planmat.txt` - Material properties
 
 ---
 
 ### 3.3 Exsolution-Driven Cryovolcanic Ascent
 
-The cryovolcanism module simulates the ascent of volatile-rich fluids through ice shells, driven by gas exsolution.
+The cryovolcanism module simulates the ascent of volatile-rich fluids through ice shells, driven by gas exsolution. Volatile solution equilibria are computed using the `CHNOSZ` package for `R`. The physico-chemical model is described in [Neveu et al. (2015b)](https://doi.org/10.1016/j.icarus.2014.03.043). It comprises a single source file, `Cryolava.h`, that reads a version of the thermal-orbital `xThermal.txt` output, albeit with less columns.
 
-#### Source Files
-- `Cryovolcanism.c` - Multiphase flow and eruption dynamics
-
-#### Key Routines
-
-**`Cryovolcanism.c`:**
-
-**`exsolution_depth()`**
-- Determines depth at which dissolved gases exsolve
 - **Physics:** Henry's Law for gas solubility:
   
   $$ C = k_H P_{gas} $$
   
   where $$ C $$ is dissolved concentration, $$ k_H $$ is Henry's constant, and $$ P_{gas} $$ is partial pressure.
-- Exsolution begins when $$ P < P_{sat}(C, T) $$
-- **Reference:** Neveu et al. (2015)
-
-**`bubble_nucleation()`**
-- Models homogeneous and heterogeneous nucleation
-- **Physics:** Classical nucleation theory:
-  
-  $$ J = J_0 \exp\left(-\frac{16\pi\gamma^3}{3k_BT(\Delta P)^2}\right) $$
-  
-  where $$ J $$ is nucleation rate, $$ \gamma $$ is surface tension, $$ k_B $$ is Boltzmann constant, and $$ \Delta P = P_{gas} - P $$ is supersaturation.
-- **Reference:** Hurwitz et al. (2007)
-
-**`bubble_growth()`**
-- Tracks bubble expansion during ascent
-- **Physics:** Rayleigh-Plesset equation:
-  
-  $$ R\frac{d^2R}{dt^2} + \frac{3}{2}\left(\frac{dR}{dt}\right)^2 = \frac{1}{\rho_l}\left[P_g - P - \frac{2\gamma}{R} - 4\mu\frac{1}{R}\frac{dR}{dt}\right] $$
-  
-  where $$ R $$ is bubble radius, $$ \rho_l $$ is liquid density, $$ P_g $$ is gas pressure, $$ \mu $$ is viscosity.
-- **Reference:** Brennen (1995)
-
-**`conduit_flow()`**
-- Solves multiphase flow equations in vertical conduit
-- **Physics:** Two-phase momentum equation:
-  
-  $$ \frac{\partial}{\partial t}(\rho u) + \frac{\partial}{\partial z}(\rho u^2) = -\frac{\partial P}{\partial z} - \rho g - f\frac{\rho u^2}{2D} $$
-  
-  where $$ u $$ is velocity, $$ z $$ is vertical coordinate, $$ f $$ is friction factor, $$ D $$ is conduit diameter.
-- Includes gas volume fraction evolution
-- **Reference:** Kieffer (1977), Wilson et al. (2001)
-
-**`fragmentation_criterion()`**
-- Determines if flow fragments into spray
-- **Physics:** Fragmentation when gas volume fraction $$ \alpha > 0.75 $$ or when:
-  
-  $$ \frac{dP}{dz} > \frac{dP}{dz}_{frag} $$
-  
-- **Reference:** Papale (1999)
-
-**`eruption_velocity()`**
-- Calculates exit velocity and mass flux
-- **Physics:** Energy conservation:
-  
-  $$ \frac{1}{2}u^2 + gz + \int \frac{dP}{\rho} = \text{const} $$
-  
-- Accounts for gas expansion work
-- **Reference:** Wilson & Head (2007)
-
-#### Physical Model Summary
-
-The cryovolcanism model simulates:
-1. **Gas exsolution:** Pressure-dependent solubility of volatiles (CO₂, CH₄, NH₃)
-2. **Bubble dynamics:** Nucleation, growth, coalescence
-3. **Multiphase flow:** Coupled liquid-gas ascent through conduit
-4. **Fragmentation:** Transition to explosive eruption
-5. **Surface expression:** Eruption velocity, plume height, deposit distribution
-
-**Key Publications:**
-- Neveu et al. (2015): Cryovolcanism on icy satellites
-- Kieffer (1977): Multiphase flow in volcanic conduits
-- Wilson & Head (2007): Explosive volcanism on icy satellites
+- Exsolution begins when $P < P_{sat}(C, T)$
+- Fluid-filled fractures propagate when the stress arising from the buoyancy force from the liquid-gas mixtures exceeds the fracture toughness of the ice shell or ice-rock crust.
 
 ---
 
-### 3.4 Geochemical Exploration
+### 3.4 Geochemical Parameter Exploration
 
-The geochemistry module explores water-rock interaction across vast parameter spaces of temperature, pressure, pH, and redox conditions.
-
-#### Source Files
-- `Geochemistry.c` - Aqueous speciation and mineral equilibria
-
-#### Key Routines
-
-**`Geochemistry.c`:**
-
-**`water_rock_interaction()`**
-- Simulates progressive water-rock reaction
-- Tracks mineral dissolution/precipitation and aqueous chemistry evolution
-- **Physics:** Mass action law for mineral equilibrium:
-  
-  $$ K_{sp} = \prod_i a_i^{\nu_i} $$
-  
-  where $$ K_{sp} $$ is solubility product, $$ a_i $$ are ion activities, $$ \nu_i $$ are stoichiometric coefficients.
-- **Reference:** Zolotov & Shock (2001)
-
-**`aqueous_speciation()`**
-- Solves chemical equilibrium for aqueous species
-- **Physics:** Mass balance and charge balance:
-  
-  $$ \sum_i m_i z_i = 0 $$
-  
-  where $$ m_i $$ is molality, $$ z_i $$ is charge.
-- Activity coefficients from extended Debye-Hückel theory:
-  
-  $$ \log \gamma_i = -\frac{A z_i^2 \sqrt{I}}{1 + B a_i \sqrt{I}} + b_i I $$
-  
-  where $$ I $$ is ionic strength, $$ A, B $$ are temperature-dependent constants.
-- **Reference:** Bethke (2008)
-
-**`mineral_saturation()`**
-- Calculates saturation indices for minerals
-- **Physics:** Saturation index:
-  
-  $$ SI = \log\left(\frac{IAP}{K_{sp}}\right) $$
-  
-  where $$ IAP $$ is ion activity product.
-- $$ SI > 0 $$: supersaturated (precipitation)
-- $$ SI < 0 $$: undersaturated (dissolution)
-- **Reference:** Drever (1997)
-
-**`redox_equilibria()`**
-- Computes redox speciation (Fe²⁺/Fe³⁺, S²⁻/SO₄²⁻, etc.)
-- **Physics:** Nernst equation:
-  
-  $$ Eh = E^0 + \frac{RT}{nF}\ln\left(\frac{[ox]}{[red]}\right) $$
-  
-  where $$ Eh $$ is redox potential, $$ E^0 $$ is standard potential, $$ n $$ is electrons transferred, $$ F $$ is Faraday constant.
-- **Reference:** Stumm & Morgan (1996)
-
-**`gas_exsolution_chemistry()`**
-- Calculates gas phase composition in equilibrium with aqueous solution
-- **Physics:** Henry's Law and ideal gas law:
-  
-  $$ P_i = k_H(T) \cdot m_i \cdot \gamma_i $$
-  
-  where $$ P_i $$ is partial pressure of gas $$ i $$
-- **Reference:** Shock & McKinnon (1993)
-
-**`parameter_space_exploration()`**
-- Systematically varies T, P, pH, Eh, W/R ratio
-- Generates large datasets for machine learning or statistical analysis
-- Enables identification of habitable parameter space
-- **Reference:** Neveu & Desch (2015)
-
-**`serpentinization()`**
-- Models serpentinization reactions producing H₂
-- **Physics:** Example reaction:
-  
-  $$ \text{Olivine} + \text{H}_2\text{O} \rightarrow \text{Serpentine} + \text{Magnetite} + \text{H}_2 $$
-  
-- Tracks H₂ production as energy source for life
-- **Reference:** McCollom & Bach (2009)
-
-#### Physical Model Summary
-
-The geochemistry model explores:
-1. **Aqueous speciation:** pH, ionic strength, activity coefficients
-2. **Mineral equilibria:** Dissolution, precipitation, saturation states
-3. **Redox chemistry:** Eh, electron transfer reactions
-4. **Gas-water equilibria:** Volatile partitioning (H₂, CH₄, CO₂)
-5. **Parameter space:** Systematic exploration of T, P, pH, Eh, W/R
-6. **Habitability metrics:** H₂ production, nutrient availability, energy sources
-
-**Key Publications:**
-- Zolotov & Shock (2001): Geochemistry of icy satellite oceans
-- Neveu & Desch (2015): Geochemistry and habitability
-- McCollom & Bach (2009): Serpentinization and H₂ production
-- Glein et al. (2015): Enceladus ocean chemistry
+The geochemistry module explores water-rock interaction across vast parameter spaces of temperature, pressure, composition, and water:rock ratios. Calculations are done with the PHREEQC software, with scripting commands in `WaterRock_ParamExploration.h`, and the PHREEQC thermodynamic database and input-output files in the `PHREEQC-3.1.2` folder.
 
 ---
 
 ## 4. Development History
 
-IcyDwarf has evolved over nearly two decades from a Fortran thermal evolution code to a comprehensive multi-physics simulation platform.
+### Key publications documenting IcyDwarf development
 
-### Origins: Fortran Era (2000s)
+| Publication | Model development | Application |
+|------|------------------|-----------------|
+| [Desch et al. (2009)](https://doi.org/10.1016/j.icarus.2009.03.009) | Original Fortran model | Kuiper belt objects including Charon |
+| [Rubin et al. (2014)](https://doi.org/10.1016/j.icarus.2014.03.047) | Differentiation by Rayleigh-Taylor instabilities | Kuiper belt objects including Charon |
+| [Neveu et al. (2015a)](https://doi.org/10.1002/2014JE004714) | Core cracking, hydrothermal circulation | Ceres |
+| [Neveu et al. (2015b)](https://doi.org/10.1016/j.icarus.2014.03.043) | Cryovolcanism | Kuiper belt objects including Charon |
+| [Neveu & Desch (2015)](https://doi.org/10.1002/2015GL066375) | Aqueous geochemistry, cryovolcanism | Ceres |
+| [Neveu et al. (2017)](https://doi.org/10.1016/j.gca.2017.06.023) | Aqueous geochemistry | - |
+| [Neveu & Rhoden (2017)](https://doi.org/10.1016/j.icarus.2017.06.011) | Tidal dissipation | Mimas |
+| [Neveu & Rhoden (2019)](https://doi.org/10.1038/s41550-019-0726-y) | Multi-moon system, rings, resonant orbital evolution | Saturn system |
 
-**Principal Developer:** Steve Desch (Arizona State University)
+### Ongoing Developments
 
-The code originated as a 1D thermal evolution model written in Fortran, designed to study the differentiation and thermal history of icy satellites and Kuiper Belt objects. The foundational model is described in:
-
-**Desch, S. J., Cook, J. C., Doggett, T. C., & Porter, S. B. (2009).** "Thermal evolution of Kuiper Belt objects, with implications for cryovolcanism." *Icarus*, 202(2), 694-714.
-
-This early version included:
-- Radiogenic heating from long-lived isotopes
-- Conductive heat transfer
-- Ice phase transitions
-- Basic differentiation modeling
-
-### Transition to C (2013)
-
-**Principal Developer:** Marc Neveu
-
-In 2013, Marc Neveu began porting the code from Fortran to C, modernizing the codebase and laying the groundwork for future expansions. The first commit to the GitHub repository corresponds approximately to this transition period.
-
-**Initial C version capabilities:**
-- Preserved core thermal evolution functionality
-- Improved modularity and code organization
-- Enhanced portability across platforms
-- Foundation for adding new physics modules
-
-### Major Capability Additions (2013-2026)
-
-#### Core Cracking (2014-2015)
-
-**Reference:** Neveu, M., Desch, S. J., & Castillo-Rogez, J. C. (2015). "Core cracking and hydrothermal circulation can profoundly affect Ceres' geophysical evolution." *Journal of Geophysical Research: Planets*, 120(2), 123-154.
-
-Added modeling of:
-- Thermal stress in rocky cores
-- Fracture mechanics and crack propagation
-- Enhanced heat transfer through fractured cores
-- Implications for hydrothermal circulation
-
-#### Geochemistry Module (2015-2017)
-
-**Reference:** Neveu, M., & Desch, S. J. (2015). "Geochemistry, thermal evolution, and cryovolcanism on Ceres with a muddy ice mantle." *Geophysical Research Letters*, 42(23), 10,197-10,206.
-
-Implemented:
-- Aqueous speciation calculations
-- Water-rock interaction modeling
-- Mineral dissolution and precipitation
-- pH and redox evolution
-- Parameter space exploration capabilities
-
-#### Tidal Dissipation Enhancement (2016-2018)
-
-**Reference:** Neveu, M., Rhoden, A. R., & Desch, S. J. (2017). "Tidal dissipation in icy satellites: Implications for ocean worlds." *Icarus*, 296, 183-196.
-
-Added:
-- Andrade viscoelastic rheology
-- Frequency-dependent tidal response
-- Multimode tidal forcing (eccentricity, obliquity, libration)
-- Improved coupling between thermal and orbital evolution
-
-#### Multiple Moons in a System (2017-2019)
-
-Extended capabilities to model:
-- Gravitational interactions between satellites
-- Resonant configurations
-- Tidal heating in multi-body systems
-- Comparative evolution of satellite systems
-
-#### Porosity Treatment (2018-2020)
-
-**Reference:** Neveu, M., Desch, S. J., & Castillo-Rogez, J. C. (2017). "Aqueous geochemistry in icy world interiors: Equilibrium fluid, rock, and gas compositions, and fate of antifreezes and radionuclides." *Geochimica et Cosmochimica Acta*, 212, 324-371.
-
-Implemented:
-- Pressure-dependent porosity evolution
-- Compaction modeling
-- Effects on thermal conductivity and permeability
-- Implications for ocean formation and persistence
-
-#### Recovery from Interrupted Simulations (2019)
-
-Added capability to:
-- Save simulation state at regular intervals
-- Resume from saved checkpoints
-- Enable long-duration simulations on shared computing resources
-
-#### Detailed Orbital Evolution (2020-2022)
-
-Enhanced orbital dynamics with:
-- Higher-order tidal torques
-- Obliquity evolution
-- Spin-orbit coupling
-- Long-term stability analysis
-
-#### Cryovolcanism Module (2021-2023)
-
-**Reference:** Neveu, M., Howell, S. M., Postberg, F., Porco, C. C., & Rhoden, A. R. (2023). "Cryovolcanic plumes on ocean worlds: Composition, dynamics, and detectability." *Icarus*, 405, 115713.
-
-Developed comprehensive cryovolcanism model:
-- Gas exsolution and bubble dynamics
-- Multiphase conduit flow
-- Eruption conditions
-- Plume modeling
-
-#### REBOUNDx Integration (2023-2024)
-
-**Reference:** Lu, T., Nimmo, F., & Kamata, S. (2023). "Tidal evolution of the Uranian satellites: Implications for Miranda's past." *The Planetary Science Journal*, 4(8), 152.
-
-Implemented coupling with REBOUNDx:
-- N-body orbital integration
-- Tidal model of Lu et al. (2023)
-- New output file format for N-body data
-- Enables study of complex multi-satellite systems
-
-### Recent Developments (2024-2026)
-
-**Enhanced Geochemistry:**
-- Expanded thermodynamic database
-- Improved kinetic modeling
-- Organic chemistry capabilities
-
-**Performance Optimization:**
-- Parallelization of parameter space exploration
-- Improved numerical stability
-- Reduced memory footprint
-
-**User Interface:**
-- Improved input file format
-- Enhanced error checking and reporting
-- Better documentation
-
-### Ongoing Development
-
-**Rust Port (2025-present):**
-Developer: Avi Gupta
+**[Rust Port](https://github.com/racecraftr/icy_dwarf_rs):**
+Developer: Avi Gupta, Univ. Maryland
 - Modern language implementation
 - Cross-platform compatibility
 - Memory safety improvements
 - Currently in testing phase
 
-### Publication Record
-
-Key publications documenting IcyDwarf development and applications:
-
-1. **Desch et al. (2009)** - Original Fortran model
-2. **Neveu et al. (2015)** - Core cracking, Ceres application
-3. **Neveu & Desch (2015)** - Geochemistry, cryovolcanism
-4. **Neveu et al. (2017a)** - Tidal dissipation
-5. **Neveu et al. (2017b)** - Aqueous geochemistry, porosity
-6. **Neveu et al. (2023)** - Cryovolcanism
-7. **Lu et al. (2023)** - N-body tidal evolution (REBOUNDx coupling)
-
-*Note: Additional publications may exist in Marc Neveu's publication record that document other enhancements not explicitly listed here.*
-
-### Future Directions
-
-Planned enhancements include:
-- Machine learning integration for parameter optimization
-- Improved 3D visualization tools
-- Coupling with atmospheric models
-- Enhanced habitability assessment metrics
-- Validation against spacecraft data (Europa Clipper, JUICE)
+**Coupling with N-body orbital evolution**
+In collaboration with Tiger Lu, Flatiron Institute
+- Integration with REBOUNDx
+- Tidal model of Lu et al. (2023)
+- New output file format for N-body data
+- Enables study of complex multi-satellite systems
 
 ---
 
 ## 5. References
 
-### Foundational Publications
+If you communicate or publish scientific results using this code, please acknowledge one of the references listed below from newest to oldest. Each describes the development of one piece of the code. Thanks!
 
-**Desch, S. J., Cook, J. C., Doggett, T. C., & Porter, S. B. (2009).** Thermal evolution of Kuiper Belt objects, with implications for cryovolcanism. *Icarus*, 202(2), 694-714.
-
-**Neveu, M., Desch, S. J., & Castillo-Rogez, J. C. (2015).** Core cracking and hydrothermal circulation can profoundly affect Ceres' geophysical evolution. *Journal of Geophysical Research: Planets*, 120(2), 123-154.
-
-**Neveu, M., & Desch, S. J. (2015).** Geochemistry, thermal evolution, and cryovolcanism on Ceres with a muddy ice mantle. *Geophysical Research Letters*, 42(23), 10,197-10,206.
-
-**Neveu, M., Desch, S. J., & Castillo-Rogez, J. C. (2017).** Aqueous geochemistry in icy world interiors: Equilibrium fluid, rock, and gas compositions, and fate of antifreezes and radionuclides. *Geochimica et Cosmochimica Acta*, 212, 324-371.
-
-**Neveu, M., Rhoden, A. R., & Desch, S. J. (2017).** Tidal dissipation in icy satellites: Implications for ocean worlds. *Icarus*, 296, 183-196.
-
-**Neveu, M., Howell, S. M., Postberg, F., Porco, C. C., & Rhoden, A. R. (2023).** Cryovolcanic plumes on ocean worlds: Composition, dynamics, and detectability. *Icarus*, 405, 115713.
-
-**Lu, T., Nimmo, F., & Kamata, S. (2023).** Tidal evolution of the Uranian satellites: Implications for Miranda's past. *The Planetary Science Journal*, 4(8), 152.
-
-### Thermal Evolution and Tidal Heating
-
-**Hussmann, H., Sohl, F., & Spohn, T. (2006).** Subsurface oceans and deep interiors of medium-sized outer planet satellites and large trans-neptunian objects. *Icarus*, 185(1), 258-273.
-
-**Tobie, G., Mocquet, A., & Sotin, C. (2005).** Tidal dissipation within large icy satellites: Applications to Europa and Titan. *Icarus*, 177(2), 534-549.
-
-**Segatz, M., Spohn, T., Ross, M. N., & Schubert, G. (1988).** Tidal dissipation, surface heat flow, and figure of viscoelastic models of Io. *Icarus*, 75(2), 187-206.
-
-**Castillo-Rogez, J. C., Efroimsky, M., & Lainey, V. (2011).** The tidal history of Iapetus: Spin dynamics in the light of a refined dissipation model. *Journal of Geophysical Research: Planets*, 116(E9).
-
-**Efroimsky, M. (2012).** Tidal dissipation compared to seismic dissipation: In small bodies, Earths, and super-Earths. *The Astrophysical Journal*, 746(2), 150.
-
-**Chen, E. M., Nimmo, F., & Glatzmaier, G. A. (2014).** Tidal heating in icy satellite oceans. *Icarus*, 229, 11-30.
-
-### Ice and Rock Properties
-
-**Choukroun, M., & Grasset, O. (2007).** Thermodynamic model for water and high-pressure ices up to 2.2 GPa and down to the metastable domain. *The Journal of Chemical Physics*, 127(12), 124506.
-
-**Feistel, R., & Wagner, W. (2006).** A new equation of state for H₂O ice Ih. *Journal of Physical and Chemical Reference Data*, 35(2), 1021-1047.
-
-**Klinger, J. (1980).** Influence of a phase transition of ice on the heat and mass balance of comets. *Science*, 209(4453), 271-272.
-
-**Ross, R. G., & Kargel, J. S. (1998).** Thermal conductivity of solar system ices, with special reference to Martian polar caps. In *Solar System Ices* (pp. 33-62). Springer.
-
-**Bland, M. T., Showman, A. P., & Tobie, G. (2012).** The production of Ganymede's magnetic field. *Icarus*, 218(1), 534-549.
-
-### Geochemistry
-
-**Zolotov, M. Y., & Shock, E. L. (2001).** Composition and stability of salts on the surface of Europa and their oceanic origin. *Journal of Geophysical Research: Planets*, 106(E12), 32815-32827.
-
-**Glein, C. R., Baross, J. A., & Waite Jr, J. H. (2015).** The pH of Enceladus' ocean. *Geochimica et Cosmochimica Acta*, 162, 202-219.
-
-**McCollom, T. M., & Bach, W. (2009).** Thermodynamic constraints on hydrogen generation during serpentinization of ultramafic rocks. *Geochimica et Cosmochimica Acta*, 73(3), 856-875.
-
-**Shock, E. L., & McKinnon, W. B. (1993).** Hydrothermal processing of cometary volatiles—Applications to Triton. *Icarus*, 106(2), 464-477.
-
-**Bethke, C. M. (2008).** *Geochemical and Biogeochemical Reaction Modeling* (2nd ed.). Cambridge University Press.
-
-**Drever, J. I. (1997).** *The Geochemistry of Natural Waters: Surface and Groundwater Environments* (3rd ed.). Prentice Hall.
-
-**Stumm, W., & Morgan, J. J. (1996).** *Aquatic Chemistry: Chemical Equilibria and Rates in Natural Waters* (3rd ed.). Wiley.
-
-### Cryovolcanism
-
-**Kieffer, S. W. (1977).** Sound speed in liquid-gas mixtures: Water-air and water-steam. *Journal of Geophysical Research*, 82(20), 2895-2904.
-
-**Wilson, L., & Head, J. W. (2007).** Explosive volcanic eruptions on Enceladus: Requirements and consequences. *Icarus*, 191(2), 765-779.
-
-**Wilson, L., Hawke, B. R., Giguere, T. A., & Petrycki, E. R. (2001).** An igneous origin for Rima Hyginus and Hyginus crater on the Moon. *Geophysical Research Letters*, 28(8), 1479-1482.
-
-**Papale, P. (1999).** Strain-induced magma fragmentation in explosive eruptions. *Nature*, 397(6718), 425-428.
-
-**Hurwitz, D. M., Head, J. W., Wilson, L., & Hiesinger, H. (2007).** Origin of lunar sinuous rilles: Modeling effects of gravity, surface slope, and lava composition on erosion rates during the formation of Rima Prinz. *Journal of Geophysical Research: Planets*, 117(E12).
-
-**Brennen, C. E. (1995).** *Cavitation and Bubble Dynamics*. Oxford University Press.
-
-### Orbital Mechanics
-
-**Murray, C. D., & Dermott, S. F. (1999).** *Solar System Dynamics*. Cambridge University Press.
-
-### Additional Resources
-
-**IcyDwarf GitHub Repository:** https://github.com/MarcNeveu/IcyDwarf
-
-**IcyDwarf Rust Port:** https://github.com/racecraftr/icy_dwarf_rs
-
----
-
-**Document Version:** 1.0  
-**Maintained by:** Marc Neveu  
-**Contributions:** Community contributions welcome via GitHub pull requests
-
----
-
-*This manual was generated with help from the Claude 4.5 Sonnet AI tool. It is a living document and will be updated as IcyDwarf continues to evolve. For the latest version, please refer to the GitHub repository.*
