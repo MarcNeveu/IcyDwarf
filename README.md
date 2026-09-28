@@ -9,18 +9,20 @@
 
 1. [Overview](#1-overview)
 2. [Quick Start Guide (macOS)](#2-quick-start-guide-macos)
-   - 2.1 [Installation Instructions](#21-installation-instructions)
+   - 2.1 [Installing and Running IcyDwarf](#21-installation-instructions)
    - 2.2 [Input File Description](#22-input-file-description)
    - 2.3 [Output Files Description](#23-output-files-description)
    - 2.4 [Benchmark Cases](#24-benchmark-cases)
    - 2.5 [Compilation Commands](#25-compilation-commands)
-   - 2.6 [Cross-Platform Support (Rust Version)](#26-cross-platform-support-rust-version)
 3. [Code Architecture and Physical Models](#3-code-architecture-and-physical-models)
-   - 3.1 [Thermal-Orbital Evolution](#31-thermal-orbital-evolution)
-   - 3.2 [Compression](#32-compression)
-   - 3.3 [Exsolution-Driven Cryovolcanic Ascent](#33-exsolution-driven-cryovolcanic-ascent)
-   - 3.4 [Geochemical Exploration](#34-geochemical-exploration)
+   - 3.1 [Source File Overview](#31-source-file-overview)
+   - 3.2 [Thermal-Orbital Evolution](#32-thermal-orbital-evolution)
+   - 3.3 [Compression](#33-compression)
+   - 3.4 [Exsolution-Driven Cryovolcanic Ascent](#34-exsolution-driven-cryovolcanic-ascent)
+   - 3.5 [Geochemical Parameter Exploration](#35-geochemical-parameter-exploration)
 4. [Development History and References](#4-development-history)
+   - 4.1 [Key Publications Documenting IcyDwarf](#41-key-publications-documenting-icydwarf)
+   - 4.2 [Ongoing Developments](#42-ongoing-developments)
 
 ---
 
