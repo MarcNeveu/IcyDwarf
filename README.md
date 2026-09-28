@@ -573,7 +573,7 @@ An emerging Rust implementation of IcyDwarf is currently under development by Av
 
 ## 3. Code Architecture and Physical Models
 
-IcyDwarf is organized into modular source files, each handling specific physical or chemical processes. The code can operate in several distinct modes depending on which capabilities are enabled.
+*This section is a work in progress. Beware that equations are AI-generated placeholders and may be inaccurate.*
 
 ### Source File Overview
 
@@ -708,6 +708,8 @@ The geochemistry module explores water-rock interaction across vast parameter sp
 
 ### Key publications documenting IcyDwarf development
 
+If you communicate or publish scientific results using this code, please acknowledge one of the references listed below. Each describes the development of one piece of the code. Thanks!
+
 | Publication | Model development | Application |
 |------|------------------|-----------------|
 | [Desch et al. (2009)](https://doi.org/10.1016/j.icarus.2009.03.009) | Original Fortran model | Kuiper belt objects including Charon |
@@ -736,8 +738,3 @@ In collaboration with Tiger Lu, Flatiron Institute
 - Enables study of complex multi-satellite systems
 
 ---
-
-## 5. References
-
-If you communicate or publish scientific results using this code, please acknowledge one of the references listed below from newest to oldest. Each describes the development of one piece of the code. Thanks!
-
