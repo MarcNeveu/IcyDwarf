@@ -4,7 +4,8 @@
 
 ## Table of Contents
 
-To display the list of contents while browsing on GitHub, click the ≡ symbol at the top right of this .md file window. Click [here](https://github.com/MarcNeveu/IcyDwarf/blob/master/README.md) to use the full window width to display this file for more comfortable reading.
+*To display the list of contents while browsing on GitHub, click the ≡ symbol at the top right of this .md file window.* 
+*Click [here](https://github.com/MarcNeveu/IcyDwarf/blob/master/README.md) to use the full window width to display this file for more comfortable reading.*
 
 1. [Overview](#1-overview)
 2. [Quick Start Guide (macOS)](#2-quick-start-guide-macos)
@@ -60,6 +61,8 @@ IcyDwarf is a thermal-orbital-chemical evolution model for icy worlds in the out
 - Recovery from interrupted thermal-orbital evolution simulations
 - User-selected use of different physical or geochemical models
 - Density profile computations for compressible solid bodies, albeit with no time evolution
+
+### Limitations
 
 The thermal evolution code is designed for studying icy bodies ranging in size from icy planetesimals to Triton, including icy moons such as Enceladus or Ariel and dwarf planets like Ceres and Pluto. It can model individual bodies or systems of multiple moons with gravitational and tidal interactions. The applicability of the thermal-orbital evolution code is limited to bodies big enough to be reasonably approximated by a 1D spherical geometry, yet small enough to preclude high-pressure ice phases, which are not considered except in stand-alone compression calculations with no time evolution.
 
@@ -121,13 +124,13 @@ In v3.8.6, the *./configure* script omits copying a header file *PHRQ_exports.h*
 
 In Mac OS 10.8+, the default compiler *clang* has replaced the compiler *gcc*. By default, *clang* does not include parallel processing capabilities, slowing down execution of the *PlanetSystem* (moon system evolution) and *WaterRock_ParamExploration* (aqueous geochemical equilibrium computation across a wide parameter space) routines of *IcyDwarf* by a factor of ~5-8. Two options exist to remedy this:
 
-### Option 1: Install HPC's *gcc*
+##### Option 1: Install HPC's *gcc*
 This option does not appear to work for Mac Intel machines with recent MacOS software (e.g., *XCode* 15+), because the compiler either works for Intel chips (*gcc* version 11 or older) or recent Mac *Xcode* command line tools (*gcc* version 12 or more recent). It worked for *Xcode* 14 and older on Intel machines. It should work for recent Macs with current *Xcode* and M1-M3 chips, but this has not been tested. Go to http://hpc.sourceforge.net and follow the instructions there to download and install *gcc*.
 Once installed, you might need to break the symbolic link between the command *gcc* and *clang* by typing:
 
     alias gcc=/usr/local/bin/gcc
 
-### Option 2: Install OpenMP on macOS with Xcode tools
+##### Option 2: Install OpenMP on macOS with Xcode tools
 This option should work for *XCode* 10.2+ by providing *Clang* with the needed parallel processing libraries (*OpenMP*). It works for a Mac Intel machine with *XCode* 15. Go to https://mac.r-project.org/openmp and follow the instructions there to download and install *OpenMP* libraries.
 
 #### Install *SDL2* (*IcyDwarfPlot* only, not needed to run *IcyDwarf*)
@@ -423,11 +426,12 @@ This last block of boolean flags sets which cracking processes to consider in th
 ### 2.3 Output Files Description
 
 IcyDwarf generates multiple output files, all in the `Outputs` folder, containing different aspects of the simulation results. For thermal-orbital outputs, the output file structure and content are defined in `PlanetSystem.h`.
-### Thermal (± orbital) evolution code
 
-For each file name, the initial character *x* is *0* for the first/only object and incremented by 1 for each additional object. Thermal and crack output files can be read and displayed by *IcyDwarfPlot*.
+#### Thermal (± orbital) evolution code
 
-- *xCrack_stresses.txt*: Internal stresses accounted for by the core cracking subroutine ([Neveu et al. 2015](https://doi.org/10.1002/2014JE004714)). There are *n_zones* rows (one per grid zone from the center to the surface) printed at each time interval. Columns list, respectively:
+For each file name, the initial character `x` is `0` for the first/only object and incremented by 1 for each additional object. Thermal and crack output files can be read and displayed by *IcyDwarfPlot*.
+
+- `xCrack_stresses.txt`: Internal stresses accounted for by the core cracking subroutine ([Neveu et al. 2015](https://doi.org/10.1002/2014JE004714)). There are *n_zones* rows (one per grid zone from the center to the surface) printed at each time interval. Columns list, respectively:
 	* grid zone radius (in km)
 	* pressure (in MPa)
 	* brittle strength (in MPa)
@@ -439,21 +443,21 @@ For each file name, the initial character *x* is *0* for the first/only object a
 	* old crack size prior to mineral dissolution/precipitation (in m)
 	* current crack size (in m)
 	* fraction of the crack that hasn't healed (i.e. 1 minus the integrated strain rate over time since cracking)
-	* integer indicating whether the grid zone is fractured, and by which process ([Neveu et al. 2015](https://doi.org/10.1002/2014JE004714)): 0 = no cracks; 1 = cracks from thermal contraction; 2 = cracks from thermal expansion; 3 = cracks from hydration; 4 = cracks from dehydration; 5 = cracks from pore water dilation; 6 = mineral dissolution widening; 7 = mineral precipitation shrinking; -1 = mineral precipitation clogging; -2: clogging from hydration swelling.
-Outputs are zero outside of the core.
-- *xCrack_depth_WR.txt*: The bulk water:rock mass ratio in the fractured zone. This file has three columns:
+	* integer indicating whether the grid zone is fractured, and by which process ([Neveu et al. 2015](https://doi.org/10.1002/2014JE004714)): `0` = no cracks; `1` = cracks from thermal contraction; `2` = cracks from thermal expansion; `3` = cracks from hydration; `4` = cracks from dehydration; `5` = cracks from pore water dilation; `6` = mineral dissolution widening; `7` = mineral precipitation shrinking; `-1` = mineral precipitation clogging; `-2`: clogging from hydration swelling.
+Outputs are `0` outside of the core.
+- `xCrack_depth_WR.txt`: The bulk water:rock mass ratio in the fractured zone. This file has three columns:
 	* time (in Gyr)
 	* depth below seafloor of the fractured zone (in km)
 	* water:rock ratio by mass in cracked zone.
 Outputs are zero if the core is not cracked or if there is no liquid.
-- *xHeats.txt*: Cumulative heats (in erg) produced or consumed by endogenic and exogenic processes. The six columns describe: 
+- `xHeats.txt`: Cumulative heats (in erg) produced or consumed by endogenic and exogenic processes. The six columns describe: 
 	* time (in Gyr)
 	* radiogenic heat
 	* gravitational heat
 	* heat of rock hydration
 	* heat consumed in rock dehydration
 	* heat from tidal dissipation.
-- *xOrbit.txt* (only for simulations with a nonzero host planet mass and in which the moon's orbit is allowed to change): Orbital parameters. Columns list:
+- `xOrbit.txt` (only for simulations with a nonzero host planet mass and in which the moon's orbit is allowed to change): Orbital parameters. Columns list:
 	* time (in Gyr)
 	* semi-major axis (in km)
 	* osculating semi-major axis in km (0 if no resonance)
@@ -463,7 +467,7 @@ Outputs are zero if the core is not cracked or if there is no liquid.
 	* resonant angle (in degrees)
 	* total tidal dissipation (in W)
 	* equivalent $k_2/Q$ for the moon ([Segatz et al. 1988](https://doi.org/10.1016/0019-1035(88)90001-2)).
-- *xThermal.txt*: There are *n_zones* rows for each grid zone, repeated *total time/timestep* times, i.e. for each time interval. Columns list, respectively, in each grid zone: 
+- `xThermal.txt`: There are *n_zones* rows for each grid zone, repeated *total time/timestep* times, i.e. for each time interval. Columns list, respectively, in each grid zone: 
 	* grid zone radius (in km), 
 	* grid zone temperature (in K)
 	* mass of rock (in g)
@@ -479,39 +483,39 @@ Outputs are zero if the core is not cracked or if there is no liquid.
 	* integer indicating whether the grid zone is fractured, and by which process (duplicate of the last column in *xCrack_stresses.txt* above)
 	* tidal heating rate (in W).
 
-In addition, each simulation with a nonzero host planet mass produces following files. Each of the last three files is read in *N_moon* x *N_moon* matrices, where *N_moon* is the number of moons. Matrices are symmetric since they describe interactions between pairs of moons. Element (*x*, *y*) represents interactions between the *x*th and *y*th worlds as specified in *IcyDwarfInput*. The first matrix is output at the first time step. Subsequent matrices are output following a time stamp that corresponds to the time at which pairs of moons get in and out of resonance.
+In addition, each simulation with a nonzero host planet mass produces following files. Each of the last three files is read in $N_{moon}$ x $N_{moon}$ matrices, where $N_{moon}$ is the number of moons. Matrices are symmetric since they describe interactions between pairs of moons. Element ($x$, $y$) represents interactions between the $x$th and $y$th worlds as specified in `IcyDwarfInput.txt`. The first matrix is output at the first time step. Subsequent matrices are output following a time stamp that corresponds to the time at which pairs of moons get in and out of resonance.
 
-- *Primary.txt*: Over time in Gyr (first column), the *Q* of the primary (second column) and the mass of any ring in kg (third column).
-- *Resonances.txt (for moon system)*: Values are integers *j* if the mean motions of the corresponding moons are commensurate in *j+1:j* ratios with *j≤5*, and if the migration of the moons is convergent (*j dn_inner moon/dt ≤ (j+1) dn_outer moon/dt* since *dn/dt < 0* for expanding orbits). Values are 0 otherwise. If a moon is in resonance with only one other moon, the code computes moon-moon interactions (value in *ResAcctFor* below = *j*), otherwise interactions may be ignored (value in *ResAcctFor* = 0).
-- *ResAcctFor.txt*: Stands for "Resonances Accounted For". A nonzero value in *Resonance* above is accounted for if a moon is in resonance with only one other moon. Otherwise, the code cannot compute the orbital evolution resulting from the interactions between more than two moons. In that case, the resonance accounted for is that between the pair of moons for which *j* is smallest (resonance for which the most moon-moon conjunctions occur per orbit). For equal values of *j* (e.g. for a 4:2:1 resonance, *j* would be 1 between the inner and middle moon, and also 1 between the middle and outer moon), the newer resonance is ignored. For moons with nonzero values, orbital evolution is computed by an averaged Hamiltonian subroutine ([Meyer & Wisdom 2008](https://doi.org/10.1016/j.icarus.2007.09.008)). Otherwise, orbital evolution is computed solely due to effects from moon-primary and moon-ring interactions, ignoring moon-moon interactions.
-- *PCapture.txt*: This output is not taken into account in computations, but provides an indicative probability of capture into resonance based on the equations of [Borderies & Goldreich (1984)](https://doi.org/10.1007/BF01231120). Whether or not capture occurs in a simulation depends on the outcome of orbital evolution computed with the averaged Hamiltonian routine. This matrix is not made symmetric, so usually the value of a coefficient in a position symmetric to that of a nonzero value is 0. In that case, only the nonzero value is meaningful.
+- `Primary.txt`: Over time in Gyr (first column), the *Q* of the primary (second column) and the mass of any ring in kg (third column).
+- `Resonances.txt` (for moon system): Values are integers *j* if the mean motions of the corresponding moons are commensurate in $j+1:j$ ratios with $j≤5$, and if the migration of the moons is convergent ($j dn_inner moon/dt ≤ (j+1) dn_outer moon/dt$ since $dn/dt < 0$ for expanding orbits). Values are 0 otherwise. If a moon is in resonance with only one other moon, the code computes moon-moon interactions (value in `ResAcctFor.txt` below = $j$), otherwise interactions may be ignored (value in `ResAcctFor.txt` = `0`).
+- `ResAcctFor.txt`: Stands for "Resonances Accounted For". A nonzero value in *Resonance* above is accounted for if a moon is in resonance with only one other moon. Otherwise, the code cannot compute the orbital evolution resulting from the interactions between more than two moons. In that case, the resonance accounted for is that between the pair of moons for which $j$ is smallest (resonance for which the most moon-moon conjunctions occur per orbit). For equal values of $j$ (e.g. for a 4:2:1 resonance, $j$ would be 1 between the inner and middle moon, and also 1 between the middle and outer moon), the newer resonance is ignored. For moons with nonzero values, orbital evolution is computed by an averaged Hamiltonian subroutine ([Meyer & Wisdom 2008](https://doi.org/10.1016/j.icarus.2007.09.008)). Otherwise, orbital evolution is computed solely due to effects from moon-primary and moon-ring interactions, ignoring moon-moon interactions.
+- `PCapture.txt`: This output is not taken into account in computations, but provides an indicative probability of capture into resonance based on the equations of [Borderies & Goldreich (1984)](https://doi.org/10.1007/BF01231120). Whether or not capture occurs in a simulation depends on the outcome of orbital evolution computed with the averaged Hamiltonian routine. This matrix is not made symmetric, so usually the value of a coefficient in a position symmetric to that of a nonzero value is 0. In that case, only the nonzero value is meaningful.
 
-### Cryolava code
+#### Cryolava code
 
 The cryolava routine outputs three files: 
-- *Cryolava_molalities.txt* (10 columns, *n_ice_or_crust_grid_zones* rows) shows the cryolava content in H<sub>2</sub>, CH<sub>4</sub>, CH<sub>3</sub>OH, CO, CO<sub>2</sub>, NH<sub>3</sub>, N<sub>2</sub>, H<sub>2</sub>S, SO<sub>2</sub>, Ar in mol per kg of liquid water
-- *Cryolava_partialP.txt*, with the same layout as the molalities file, shows the partial pressure of each of these 10 species
-- *Cryolava_xvap.txt* has the same amount of rows, but only 6 columns which show the depth under the surface (km), total gas pressure (bar), volumic vapor fraction x_vap (a dimensionless indicator of exsolution),  fluid cryolava density (kg m-3), stress intensity *K_I* at the crack tip (Pa m^0.5), a boolean (0: no crack propagation; 1: crack propagation).
+- `Cryolava_molalities.txt` (10 columns, *n_ice_or_crust_grid_zones* rows) shows the cryolava content in H<sub>2</sub>, CH<sub>4</sub>, CH<sub>3</sub>OH, CO, CO<sub>2</sub>, NH<sub>3</sub>, N<sub>2</sub>, H<sub>2</sub>S, SO<sub>2</sub>, Ar in mol per kg of liquid water
+- `Cryolava_partialP.txt`, with the same layout as the molalities file, shows the partial pressure of each of these 10 species
+- `Cryolava_xvap.txt` has the same amount of rows, but only 6 columns which show the depth under the surface (km), total gas pressure (bar), volumic vapor fraction x_vap (a dimensionless indicator of exsolution),  fluid cryolava density (kg m<sup>-3</sup>), stress intensity $K_I$ at the crack tip (Pa m<sup>0.5</sup>), a boolean (`0`: no crack propagation; `1`: crack propagation).
 
-### Compression code
+#### Compression code
 
-The compression routine outputs one file, *Compression.txt*, which provides pressures and densities as a function of radius, both accounting for self-compression (output) and not accounting for it (output of the thermal code). The file structure, format, and units are explained in the file itself.
+The compression routine outputs one file, `Compression.txt`, which provides pressures and densities as a function of radius, both accounting for self-compression (output) and not accounting for it (output of the thermal code). The file structure, format, and units are explained in the file itself.
 
-### WaterRock_ParamExplor code
+#### WaterRock_ParamExplor code
 
-This routine outputs a file, *ParamExploration.txt*, that looks much like the *PHREEQC* selected output specified in the *IcyDwarf/PHREEQC-3.1.2/io* folder, with a few added columns at the beginning (starting *T* in celsius, *P* in bar, *pH*, *pe*, log *fO2* at FMQ(*T*,*P*) buffer, *pe*-FMQ). The file is formatted for easy import into a spreadsheet, with each line describing a different simulation. Lines filled with zeros are *PHREEQC* simulations that did not converge.
+This routine outputs a file, *ParamExploration.txt*, that looks much like the *PHREEQC* selected output specified in the `IcyDwarf/PHREEQC-3.1.2/io` folder, with a few added columns at the beginning (starting $T$ in celsius, $P$ in bar, $pH$, $pe$, log $fO_2$ at FMQ($T$,$P$) buffer, $pe$-FMQ). The file is formatted for easy import into a spreadsheet, with each line describing a different simulation. Lines filled with zeros are *PHREEQC* simulations that did not converge.
 
-The *PHREEQC* input file, *IcyDwarf/PHREEQC-3.1.2/io/inputIcyDwarf*, can be modified, but be aware that *IcyDwarfPlot* will plot results accurately only if the SELECTED_OUTPUT block is left unchanged.
+The *PHREEQC* input file, `IcyDwarf/PHREEQC-3.1.2/io/inputIcyDwarf`, can be modified, but be aware that *IcyDwarfPlot* will plot results accurately only if the SELECTED_OUTPUT block is left unchanged.
 
 ---
 
 ### 2.4 Benchmark Cases
 
-**[PLACEHOLDER]**
+*[PLACEHOLDER]*
 
-This section will contain validated benchmark cases that users can run to verify their installation and understand expected outputs.
+*This section will contain validated benchmark cases that users can run to verify their installation and understand expected outputs.*
 
-Each benchmark to include:
+*Each benchmark to include:*
 - Input file
 - Expected runtime
 - Reference output files
@@ -572,7 +576,8 @@ An emerging Rust implementation of IcyDwarf is currently under development by Av
 
 ## 3. Code Architecture and Physical Models
 
-*This section provides an overview of the physico-chemical processes modeled in IcyDwarf. Corresponding equations are not provided explicitly here, but they can be found in the references linked throughout. Browsing the source files listed below will show how these equations are implemented; all files are thoroughly commented and specific references are listed in code comments for as many equations as possible.*
+*This section provides an overview of the physico-chemical processes modeled in IcyDwarf.*
+*Corresponding equations are not provided explicitly here, but they can be found in the references linked throughout.* *Browsing the source files listed below will show how these equations are implemented; all files are thoroughly commented and specific references are listed in code comments for as many equations as possible.*
 
 ### Source File Overview
 
@@ -654,7 +659,8 @@ This file contains code for temperature evolution in the main `thermal()` functi
 
 ### 3.2 Compression
 
-The compression module calculates density, pressure, and porosity evolution due to self-gravity and overburden pressure. The physical model is based on Lorenzo et al. (2014).
+The compression module calculates density, pressure, and porosity evolution due to self-gravity and overburden pressure for two- or three-layer planetary bodies. 
+The physical model is based on [Lorenzo et al. (2014)](https://www.hou.usra.edu/meetings/lpsc2014/pdf/1636.pdf), with addition of high-pressure phases of ice.
 
 #### Source Files
 - `Compression.c` - Compression and equations of state
@@ -673,13 +679,15 @@ The cryovolcanism module simulates the ascent of volatile-rich fluids through ic
 
 ### 3.4 Geochemical Parameter Exploration
 
-The geochemistry module explores water-rock interaction across vast parameter spaces of temperature, pressure, composition, and water:rock ratios. Calculations are done with the PHREEQC software, with scripting commands in `WaterRock_ParamExploration.h`, and the PHREEQC thermodynamic database and input-output files in the `PHREEQC-3.1.2` folder.
+The geochemistry module explores water-rock interaction across vast parameter spaces of temperature, pressure, composition, and water:rock ratios. 
+Calculations are done with the PHREEQC software, with scripting commands in `WaterRock_ParamExploration.h`, and the PHREEQC thermodynamic database and input-output files in the `PHREEQC-3.1.2` folder. 
+An application is in [Neveu et al. (2017)](https://doi.org/10.1016/j.gca.2017.06.023).
 
 ---
 
 ## 4. Development History and References
 
-### Key publications documenting IcyDwarf development
+### Key publications documenting IcyDwarf
 
 If you communicate or publish scientific results using this code, please acknowledge one of the references listed below. Each describes the development of one piece of the code. Thanks!
 
