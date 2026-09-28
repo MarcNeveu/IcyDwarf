@@ -4,7 +4,7 @@
 
 ## Table of Contents
 
-To display the list of contents while browsing on GitHub, click the ≡ symbol at the top right of this .md file window.
+To display the list of contents while browsing on GitHub, click the ≡ symbol at the top right of this .md file window. Click [here](https://github.com/MarcNeveu/IcyDwarf/blob/master/README.md) to use the full window width to display this file for more comfortable reading.
 
 1. [Overview](#1-overview)
 2. [Quick Start Guide (macOS)](#2-quick-start-guide-macos)
@@ -19,8 +19,7 @@ To display the list of contents while browsing on GitHub, click the ≡ symbol a
    - 3.2 [Compression](#32-compression)
    - 3.3 [Exsolution-Driven Cryovolcanic Ascent](#33-exsolution-driven-cryovolcanic-ascent)
    - 3.4 [Geochemical Exploration](#34-geochemical-exploration)
-4. [Development History](#4-development-history)
-5. [References](#5-references)
+4. [Development History and References](#4-development-history)
 
 ---
 
@@ -432,8 +431,8 @@ For each file name, the initial character *x* is *0* for the first/only object a
 	* grid zone radius (in km)
 	* pressure (in MPa)
 	* brittle strength (in MPa)
-	* critical stress intensity (in MPa m^0.5)
-	* stress intensity from thermal expansion mismatch at grain boundaries (in MPa m^0.5)
+	* critical stress intensity (in MPa m<sup>0.5</sup>)
+	* stress intensity from thermal expansion mismatch at grain boundaries (in MPa m<sup>0.5</sup>)
 	* pore fluid pressure (in MPa)
 	* net pressure (stress) resulting from rock hydration (in MPa)
 	* old crack size prior to hydration/dehydration (in m)
@@ -463,7 +462,7 @@ Outputs are zero if the core is not cracked or if there is no liquid.
 	* product of eccentricity and sine of resonant angle
 	* resonant angle (in degrees)
 	* total tidal dissipation (in W)
-	* equivalent *k2*/*Q* for the moon ([Segatz et al. 1988](https://doi.org/10.1016/0019-1035(88)90001-2)).
+	* equivalent $k_2/Q$ for the moon ([Segatz et al. 1988](https://doi.org/10.1016/0019-1035(88)90001-2)).
 - *xThermal.txt*: There are *n_zones* rows for each grid zone, repeated *total time/timestep* times, i.e. for each time interval. Columns list, respectively, in each grid zone: 
 	* grid zone radius (in km), 
 	* grid zone temperature (in K)
@@ -474,7 +473,7 @@ Outputs are zero if the core is not cracked or if there is no liquid.
 	* mass of liquid ammonia (in g)
 	* Nusselt number (if >1, convection)
 	* fraction of amorphous ice (always zero, a legacy of [Desch et al. 2009](https://doi.org/10.1016/j.icarus.2009.03.009))
-	* thermal conductivity (in W m^-1 K^-1)
+	* thermal conductivity (in W m<sup>-1</sup> K<sup>-1</sup>)
 	* degree of hydration (0: fully dry; 1: fully hydrated)
 	* porosity
 	* integer indicating whether the grid zone is fractured, and by which process (duplicate of the last column in *xCrack_stresses.txt* above)
@@ -490,7 +489,7 @@ In addition, each simulation with a nonzero host planet mass produces following 
 ### Cryolava code
 
 The cryolava routine outputs three files: 
-- *Cryolava_molalities.txt* (10 columns, *n_ice_or_crust_grid_zones* rows) shows the cryolava content in H2, CH4, CH3OH, CO, CO2, NH3, N2, H2S, SO2, Ar in mol per kg of liquid water
+- *Cryolava_molalities.txt* (10 columns, *n_ice_or_crust_grid_zones* rows) shows the cryolava content in H<sub>2</sub>, CH<sub>4</sub>, CH<sub>3</sub>OH, CO, CO<sub>2</sub>, NH<sub>3</sub>, N<sub>2</sub>, H<sub>2</sub>S, SO<sub>2</sub>, Ar in mol per kg of liquid water
 - *Cryolava_partialP.txt*, with the same layout as the molalities file, shows the partial pressure of each of these 10 species
 - *Cryolava_xvap.txt* has the same amount of rows, but only 6 columns which show the depth under the surface (km), total gas pressure (bar), volumic vapor fraction x_vap (a dimensionless indicator of exsolution),  fluid cryolava density (kg m-3), stress intensity *K_I* at the crack tip (Pa m^0.5), a boolean (0: no crack propagation; 1: crack propagation).
 
@@ -573,7 +572,7 @@ An emerging Rust implementation of IcyDwarf is currently under development by Av
 
 ## 3. Code Architecture and Physical Models
 
-*This section is a work in progress. Beware that equations are AI-generated placeholders and may be inaccurate.*
+*This section provides an overview of the physico-chemical processes modeled in IcyDwarf. Corresponding equations are not provided explicitly here, but they can be found in the references linked throughout. Browsing the source files listed below will show how these equations are implemented; all files are thoroughly commented and specific references are listed in code comments for as many equations as possible.*
 
 ### Source File Overview
 
@@ -617,60 +616,39 @@ This file contains code for temperature evolution in the main `thermal()` functi
 - Integrates the heat equation in spherical coordinates
 - Implements finite-difference scheme for radial heat transport
 - Handles both conductive and convective heat transfer
-- **Physics:** 1D spherical heat equation:
-  
-  $$ \rho c_p \frac{\partial T}{\partial t} = \frac{1}{r^2} \frac{\partial}{\partial r}\left(r^2 k \frac{\partial T}{\partial r}\right) + H $$
-  
-  where $$ \rho $$ is density, $C_p$ is heat capacity, $T$ is temperature, $k$ is thermal conductivity, and $H$ is volumetric heating rate.
+- **Physics:** Equations provided in [Desch et al. (2009)](https://doi.org/10.1016/j.icarus.2009.03.009)
 
 `convect()`:
 - Evaluates Rayleigh number to determine convection onset
 - Implements convective heat transport
-- **Physics:** Rayleigh number:
-  
-  $$ Ra = \frac{g \alpha \Delta T d^3}{\nu \kappa} $$
-  
-  where $g$ is gravity, $\alpha$ is thermal expansivity, $\Delta T$ is temperature difference, $d$ is layer thickness, $\nu$ is kinematic viscosity, and $\kappa$ is thermal diffusivity.
-- Convection occurs when $$ Ra > Ra_{crit} \approx 1000 $$
+- **Physics:** Equations provided in [Desch et al. (2009)](https://doi.org/10.1016/j.icarus.2009.03.009) for convection in liquid water and ice layers, and in [Neveu et al. (2015)](https://doi.org/10.1002/2014JE004714) for hydrothermal convection in a porous rocky core
 
 `decay()`:
 - Calculates heat production from radioactive decay
 - Includes <sup>26</sup>Al, <sup>40</sup>K, <sup>232</sup>Th, <sup>235</sup>U, <sup>238</sup>U
-- **Physics:** Exponential decay:
-  
-  $$ H(t) = H_0 e^{-\lambda t} $$
-  
-  where $$ H_0 $$ is initial heating rate and $$ \lambda $$ is decay constant.
-- **References:** [Desch et al. (2009)](https://doi.org/10.1016/j.icarus.2009.03.009) for long-lived radionuclides <sup>40</sup>K, <sup>232</sup>Th, <sup>235</sup>U, <sup>238</sup>U; [Castillo-Rogez et al. (2007)](https://doi.org/10.1016/j.icarus.2007.02.018) for the short-lived radionuclide <sup>26</sup>Al.
+- **Physics:** Equations and parameter values provided in [Desch et al. (2009)](https://doi.org/10.1016/j.icarus.2009.03.009) for long-lived radionuclides <sup>40</sup>K, <sup>232</sup>Th, <sup>235</sup>U, <sup>238</sup>U; [Castillo-Rogez et al. (2007)](https://doi.org/10.1016/j.icarus.2007.02.018) for the short-lived radionuclide <sup>26</sup>Al. See also [Neveu and Vernazza (2019)](https://doi.org/10.3847/1538-4357/ab0d87) for a summary.
 
 `tide()`:
 - Computes tidal dissipation in solid layers using viscoelastic models
 - Supports Maxwell, Burgers, Andrade, and Sundberg-Cooper rheologies ([Renaud & Henning 2018)](https://doi.org/10.3847/1538-4357/aab784))
-- Dissipation is computed on the 1D radial grid using a propagator matrix method ([Henning & Hurford 2014)](10.1088/0004-637X/789/1/30))
+- Dissipation is computed on the 1D radial grid with parameters defined by [Tobie et al. (2005)](https://doi.org/10.1016/j.icarus.2004.12.007) and using a propagator matrix method ([Henning & Hurford 2014)](10.1088/0004-637X/789/1/30))
 - Liquid layers are approximated as layers of very low viscosity, with minimal dissipation
-- **References:** [Tobie et al. (2005)](https://doi.org/10.1016/j.icarus.2004.12.007)
+- **References:** Equations provided in [Neveu & Rhoden (2017)](https://doi.org/10.1016/j.icarus.2017.06.011) 
 
 `separate()`:
-- Rebuilds the grid with rock at the center, then liquid, the ice, then undifferentiated grid zones
-- Accounts for user-specified rock retention in the ice or water retention in the core
-- Also underpins the hydrate() and dehydrate() functions
+- Rebuilds the grid with rock at the center, then liquid, the ice, then undifferentiated grid zones [(Desch et al. 2009)](https://doi.org/10.1016/j.icarus.2009.03.009)
+- Accounts for user-specified rock retention in the ice [(Neveu & Desch 2015)](https://doi.org/10.1002/2015GL066375) or water retention in the core [(Neveu & Rhoden 2019)](https://doi.org/10.1038/s41550-019-0726-y)
+- Also underpins the hydrate() and dehydrate() functions [(Neveu et al. 2015)](https://doi.org/10.1002/2014JE004714): when dehydrating, rock is replaced by less hydrated rock + liquid water lost from the rock and separate() is invoked to migrate the water up to the ocean, and vice-versa for hydrating rock.
 
 #### `Orbit.h` Source File
 
 **`orbit()`**
 - Integrates orbital elements under tidal torques
 - `if` structures use different physical models (CPL, CTL, averaged Hamiltonian for pairs of moons in resonance)
-	* CPL model evolves only semi-major axis and eccentricity
-	* CPL expansion to eccentricity up to order 10 (Renaud et al. 2021) is under development
-	* CTL model (Lu et al. 2023) also evolves obliquity, inclination, and spin but is less tested
-- Identifies mean-motion resonances
-- **Physics:** Tidal evolution equations:
-  
-  $$ \frac{da}{dt} = -\frac{3k_2}{Q} \frac{n a}{M} \left(\frac{M_p}{a}\right)^2 R^5 f_1(e) $$
-  
-  $$ \frac{de}{dt} = -\frac{3k_2}{Q} \frac{n}{M} \left(\frac{M_p}{a}\right)^2 R^5 f_2(e) $$
-  
-  where $a$ is semi-major axis, $M$ is satellite mass, $M_p$ is primary mass, and $f_1, f_2$ are eccentricity functions.
+	* CPL model evolves only semi-major axis and eccentricity. Equations are provided in [Neveu & Rhoden (2017)](https://doi.org/10.1016/j.icarus.2017.06.011) with an added term for the effect of rings described in [Neveu & Rhoden (2019)](https://doi.org/10.1038/s41550-019-0726-y).
+	* CPL expansion to eccentricity up to order 10 is under development, with equations provided in ([Renaud et al. 2021](https://doi.org/10.3847/PSJ/abc0f3)).
+	* CTL model ([Lu et al. 2023](https://doi.org/10.3847/1538-4357/acc06d)) also evolves obliquity, inclination, and spin but is less tested
+- Identifies mean-motion resonances as occurring when two moon mean motions have a ratio within 1% of a ratio of $j : j+1$ integers [(Neveu & Rhoden 2019)](https://doi.org/10.1038/s41550-019-0726-y)
 
 ---
 
@@ -688,12 +666,7 @@ The compression module calculates density, pressure, and porosity evolution due 
 
 The cryovolcanism module simulates the ascent of volatile-rich fluids through ice shells, driven by gas exsolution. Volatile solution equilibria are computed using the `CHNOSZ` package for `R`. The physico-chemical model is described in [Neveu et al. (2015b)](https://doi.org/10.1016/j.icarus.2014.03.043). It comprises a single source file, `Cryolava.h`, that reads a version of the thermal-orbital `xThermal.txt` output, albeit with less columns.
 
-- **Physics:** Henry's Law for gas solubility:
-  
-  $$ C = k_H P_{gas} $$
-  
-  where $$ C $$ is dissolved concentration, $$ k_H $$ is Henry's constant, and $$ P_{gas} $$ is partial pressure.
-- Exsolution begins when $P < P_{sat}(C, T)$
+- The model relies on Henry's Law for gas solubility, with solubility reaction constants computed with the `R` package `CHNOSZ`.
 - Fluid-filled fractures propagate when the stress arising from the buoyancy force from the liquid-gas mixtures exceeds the fracture toughness of the ice shell or ice-rock crust.
 
 ---
@@ -704,7 +677,7 @@ The geochemistry module explores water-rock interaction across vast parameter sp
 
 ---
 
-## 4. Development History
+## 4. Development History and References
 
 ### Key publications documenting IcyDwarf development
 
@@ -725,16 +698,14 @@ If you communicate or publish scientific results using this code, please acknowl
 
 **[Rust Port](https://github.com/racecraftr/icy_dwarf_rs):**
 Developer: Avi Gupta, Univ. Maryland
-- Modern language implementation
 - Cross-platform compatibility
-- Memory safety improvements
 - Currently in testing phase
 
 **Coupling with N-body orbital evolution**
 In collaboration with Tiger Lu, Flatiron Institute
 - Integration with REBOUNDx
-- Tidal model of Lu et al. (2023)
-- New output file format for N-body data
-- Enables study of complex multi-satellite systems
+- Tidal model of [Lu et al. (2023)](https://doi.org/10.3847/1538-4357/acc06d)
+- New output file format for N-body data: `Outputs/icydwarf_outputs_1.txt` specified in `PlanetSystem.h`
+- Expect slow simulations but orbital evolution will be very accurate, especially in cases of mean-motion resonances.
 
 ---
