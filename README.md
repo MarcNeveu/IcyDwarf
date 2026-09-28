@@ -431,7 +431,7 @@ IcyDwarf generates multiple output files, all in the `Outputs` folder, containin
 
 For each file name, the initial character `x` is `0` for the first/only object and incremented by 1 for each additional object. Thermal and crack output files can be read and displayed by *IcyDwarfPlot*.
 
-- `xCrack_stresses.txt`: Internal stresses accounted for by the core cracking subroutine ([Neveu et al. 2015](https://doi.org/10.1002/2014JE004714)). There are *n_zones* rows (one per grid zone from the center to the surface) printed at each time interval. Columns list, respectively:
+- `xCrack_stresses.txt`: Internal stresses accounted for by the core cracking subroutine ([Neveu et al. 2015](https://doi.org/10.1002/2014JE004714)). There are $n_{zones}$ rows (one per grid zone from the center to the surface) printed at each time interval. Columns list, respectively:
 	* grid zone radius (in km)
 	* pressure (in MPa)
 	* brittle strength (in MPa)
@@ -450,22 +450,29 @@ Outputs are `0` outside of the core.
 	* depth below seafloor of the fractured zone (in km)
 	* water:rock ratio by mass in cracked zone.
 Outputs are zero if the core is not cracked or if there is no liquid.
-- `xHeats.txt`: Cumulative heats (in erg) produced or consumed by endogenic and exogenic processes. The six columns describe: 
+- `xHeats.txt`: Cumulative heats (in erg) produced or consumed by endogenic and exogenic processes. The ten columns describe: 
 	* time (in Gyr)
 	* radiogenic heat
 	* gravitational heat
 	* heat of rock hydration
 	* heat consumed in rock dehydration
-	* heat from tidal dissipation.
+	* heat from solid tidal dissipation
+	* heat from fluid tidal dissipation
+	* non-dimensional square of sound speed used in fluid dissipation calculation
+	* non-dimensional dissipation timescale used in fluid dissipation calculation
+	* instantaneous fluid tidal dissipation rate in erg s<sup>-1</sup>.
 - `xOrbit.txt` (only for simulations with a nonzero host planet mass and in which the moon's orbit is allowed to change): Orbital parameters. Columns list:
 	* time (in Gyr)
 	* semi-major axis (in km)
 	* osculating semi-major axis in km (0 if no resonance)
 	* eccentricity
+	* inclination (in radians), only if CTL model is used
+	* obliquity (in radians), only if CTL model is used
+	* spin rate (in s<sup>-1</sup>), only if CTL model is used
 	* product of eccentricity and cosine of resonant angle
 	* product of eccentricity and sine of resonant angle
 	* resonant angle (in degrees)
-	* total tidal dissipation (in W)
+	* total tidal dissipation, solid + fluid (in W)
 	* equivalent $k_2/Q$ for the moon ([Segatz et al. 1988](https://doi.org/10.1016/0019-1035(88)90001-2)).
 - `xThermal.txt`: There are *n_zones* rows for each grid zone, repeated *total time/timestep* times, i.e. for each time interval. Columns list, respectively, in each grid zone: 
 	* grid zone radius (in km), 
@@ -478,24 +485,30 @@ Outputs are zero if the core is not cracked or if there is no liquid.
 	* Nusselt number (if >1, convection)
 	* fraction of amorphous ice (always zero, a legacy of [Desch et al. 2009](https://doi.org/10.1016/j.icarus.2009.03.009))
 	* thermal conductivity (in W m<sup>-1</sup> K<sup>-1</sup>)
-	* degree of hydration (0: fully dry; 1: fully hydrated)
+	* degree of hydration (`0`: fully dry; `1`: fully hydrated)
 	* porosity
 	* integer indicating whether the grid zone is fractured, and by which process (duplicate of the last column in *xCrack_stresses.txt* above)
-	* tidal heating rate (in W).
+	* tidal heating rate for solid dissipation only (in W).
 
-In addition, each simulation with a nonzero host planet mass produces following files. Each of the last three files is read in $N_{moon}$ x $N_{moon}$ matrices, where $N_{moon}$ is the number of moons. Matrices are symmetric since they describe interactions between pairs of moons. Element ($x$, $y$) represents interactions between the $x$th and $y$th worlds as specified in `IcyDwarfInput.txt`. The first matrix is output at the first time step. Subsequent matrices are output following a time stamp that corresponds to the time at which pairs of moons get in and out of resonance.
+In addition, each simulation with a nonzero host planet mass produces following files. Each of the last three files is read in $N_{moon}$ x $N_{moon}$ matrices, where $N_{moon}$ is the number of moons. Matrices are symmetric since they describe interactions between pairs of moons. Element ($x$, $y$) represents interactions between the $x^{th}$ and $y^{th}$ worlds as specified in `IcyDwarfInput.txt`. The first matrix is output at the first time step. Subsequent matrices are output following a time stamp that corresponds to the time at which pairs of moons get in and out of resonance.
 
-- `Primary.txt`: Over time in Gyr (first column), the *Q* of the primary (second column) and the mass of any ring in kg (third column).
-- `Resonances.txt` (for moon system): Values are integers *j* if the mean motions of the corresponding moons are commensurate in $j+1:j$ ratios with $j≤5$, and if the migration of the moons is convergent ($j dn_inner moon/dt ≤ (j+1) dn_outer moon/dt$ since $dn/dt < 0$ for expanding orbits). Values are 0 otherwise. If a moon is in resonance with only one other moon, the code computes moon-moon interactions (value in `ResAcctFor.txt` below = $j$), otherwise interactions may be ignored (value in `ResAcctFor.txt` = `0`).
+- `Primary.txt`: Over time in Gyr (first column), the $Q$ of the primary (second column) and the mass of any ring in kg (third column).
+- `Resonances.txt` (for moon system): Values are integers $j$ if the mean motions of the corresponding moons are commensurate in $j+1:j$ ratios with $j≤5$, and if the migration of the moons is convergent ($j dn_{inner moon}/dt ≤ (j+1) dn_{outer moon}/dt$ since $dn/dt < 0$ for expanding orbits). Values are 0 otherwise. If a moon is in resonance with only one other moon, the code computes moon-moon interactions (value in `ResAcctFor.txt` below = $j$), otherwise interactions may be ignored (value in `ResAcctFor.txt` = `0`).
 - `ResAcctFor.txt`: Stands for "Resonances Accounted For". A nonzero value in *Resonance* above is accounted for if a moon is in resonance with only one other moon. Otherwise, the code cannot compute the orbital evolution resulting from the interactions between more than two moons. In that case, the resonance accounted for is that between the pair of moons for which $j$ is smallest (resonance for which the most moon-moon conjunctions occur per orbit). For equal values of $j$ (e.g. for a 4:2:1 resonance, $j$ would be 1 between the inner and middle moon, and also 1 between the middle and outer moon), the newer resonance is ignored. For moons with nonzero values, orbital evolution is computed by an averaged Hamiltonian subroutine ([Meyer & Wisdom 2008](https://doi.org/10.1016/j.icarus.2007.09.008)). Otherwise, orbital evolution is computed solely due to effects from moon-primary and moon-ring interactions, ignoring moon-moon interactions.
 - `PCapture.txt`: This output is not taken into account in computations, but provides an indicative probability of capture into resonance based on the equations of [Borderies & Goldreich (1984)](https://doi.org/10.1007/BF01231120). Whether or not capture occurs in a simulation depends on the outcome of orbital evolution computed with the averaged Hamiltonian routine. This matrix is not made symmetric, so usually the value of a coefficient in a position symmetric to that of a nonzero value is 0. In that case, only the nonzero value is meaningful.
 
 #### Cryolava code
 
 The cryolava routine outputs three files: 
-- `Cryolava_molalities.txt` (10 columns, *n_ice_or_crust_grid_zones* rows) shows the cryolava content in H<sub>2</sub>, CH<sub>4</sub>, CH<sub>3</sub>OH, CO, CO<sub>2</sub>, NH<sub>3</sub>, N<sub>2</sub>, H<sub>2</sub>S, SO<sub>2</sub>, Ar in mol per kg of liquid water
+- `Cryolava_molalities.txt` (10 columns, $n_{ice or crust grid zones}$ rows) shows the cryolava content in H<sub>2</sub>, CH<sub>4</sub>, CH<sub>3</sub>OH, CO, CO<sub>2</sub>, NH<sub>3</sub>, N<sub>2</sub>, H<sub>2</sub>S, SO<sub>2</sub>, Ar in mol per kg of liquid water
 - `Cryolava_partialP.txt`, with the same layout as the molalities file, shows the partial pressure of each of these 10 species
-- `Cryolava_xvap.txt` has the same amount of rows, but only 6 columns which show the depth under the surface (km), total gas pressure (bar), volumic vapor fraction x_vap (a dimensionless indicator of exsolution),  fluid cryolava density (kg m<sup>-3</sup>), stress intensity $K_I$ at the crack tip (Pa m<sup>0.5</sup>), a boolean (`0`: no crack propagation; `1`: crack propagation).
+- `Cryolava_xvap.txt` has the same amount of rows, but only 6 columns which show:
+	* depth below surface (km)
+	* total gas pressure (bar)
+	* volumic vapor fraction $x_{vap}$ (a dimensionless indicator of exsolution)
+	* erupting fluid density (kg m<sup>-3</sup>)
+	* stress intensity $K_I$ at the crack tip (Pa m<sup>0.5</sup>)
+	* a boolean (`0`: no crack propagation; `1`: crack propagation).
 
 #### Compression code
 
@@ -503,7 +516,7 @@ The compression routine outputs one file, `Compression.txt`, which provides pres
 
 #### WaterRock_ParamExplor code
 
-This routine outputs a file, *ParamExploration.txt*, that looks much like the *PHREEQC* selected output specified in the `IcyDwarf/PHREEQC-3.1.2/io` folder, with a few added columns at the beginning (starting $T$ in celsius, $P$ in bar, $pH$, $pe$, log $fO_2$ at FMQ($T$,$P$) buffer, $pe$-FMQ). The file is formatted for easy import into a spreadsheet, with each line describing a different simulation. Lines filled with zeros are *PHREEQC* simulations that did not converge.
+This routine outputs a file, *ParamExploration.txt*, that looks much like the *PHREEQC* selected output specified in the `IcyDwarf/PHREEQC-3.1.2/io` folder, with a few added columns at the beginning (starting $T$ in celsius, $P$ in bar, $pH$, $pe$, log $fO_2$ at FMQ($T$, $P$) buffer, $pe$-FMQ). The file is formatted for easy import into a spreadsheet, with each line describing a different simulation. Lines filled with zeros are *PHREEQC* simulations that did not converge.
 
 The *PHREEQC* input file, `IcyDwarf/PHREEQC-3.1.2/io/inputIcyDwarf`, can be modified, but be aware that *IcyDwarfPlot* will plot results accurately only if the SELECTED_OUTPUT block is left unchanged.
 
@@ -539,7 +552,7 @@ For IcyDwarf (*clang gcc* with *XCode* 15 on Mac OS 14.6 Sonoma):
 
 	gcc -I/usr/local/include -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include -I/Library/Frameworks/R.framework/Versions/Current/Resources/include -I/Library/Frameworks/R.framework/Versions/Current/Resources/library/RInside/include -O3 -g -Wall -c -fmessage-length=0 -arch x86_64 -o IcyDwarf.o ../IcyDwarf.c -fopenmp
 	gcc -L/usr/lib -L/usr/local/lib -L/Library/Frameworks/R.framework/Versions/4.1/Resources/lib -o IcyDwarf IcyDwarf.o -lR -ld_classic -lomp
-(remove the '-ld_classic' flag for compilation on Apple M1-M3 machine).
+(remove the `-ld_classic` flag for compilation on Apple M1-M3 machine).
 
 For IcyDwarf (*gcc 11.2.0* on Mac OS 13.6 Ventura):
  
@@ -551,26 +564,9 @@ For IcyDwarfPlot (*gcc 6.2* on Mac OS 10.12 Sierra):
     gcc -I/usr/include -I/Library/Frameworks/SDL2.framework/Versions/A/Headers -I/Library/Frameworks/SDL2_image.framework/Versions/A/Headers -I/Library/Frameworks/SDL2_ttf.framework/Versions/A/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/GLUT.framework/Versions/A/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/OpenGL.framework/Versions/A/Headers -O3 -Wall -c -fmessage-length=0 -o IcyDwarfPlot.o ../IcyDwarfPlot.c 
     gcc -F/Library/Frameworks -arch x86_64 -framework openGL -framework Cocoa -framework GLUT -framework SDL2 -framework SDL2_image -framework SDL2_ttf -o IcyDwarfPlot IcyDwarfPlot.o 
 
-You might need to specify the full path to gcc (e.g. */usr/local/bin/gcc*) rather than simply the *gcc* alias.
+You might need to specify the full path to gcc (e.g. `/usr/local/bin/gcc`) rather than simply the `gcc` alias.
 
-Your *include* directories might be more simply found at *-I/usr/include*.
-
----
-
-### 2.6 Cross-Platform Support (Rust Version)
-
-An emerging Rust implementation of IcyDwarf is currently under development by Avi Gupta, offering improved cross-platform compatibility and modern language features.
-
-**Repository:** https://github.com/racecraftr/icy_dwarf_rs
-
-**Status:** Testing phase (as of September 2026)
-
-**Advantages of the Rust Version:**
-- Enhanced memory safety
-- Improved cross-platform compilation (Windows, Linux, macOS)
-- Modern package management with Cargo
-- Potential performance improvements
-- Better error handling
+Your *include* directories might be more simply found at `-I/usr/include`.
 
 ---
 
@@ -706,7 +702,8 @@ If you communicate or publish scientific results using this code, please acknowl
 
 **[Rust Port](https://github.com/racecraftr/icy_dwarf_rs):**
 Developer: Avi Gupta, Univ. Maryland
-- Cross-platform compatibility
+- Cross-platform compatibility (Windows, Linux, macOS)
+- Modern package management with Cargo
 - Currently in testing phase
 
 **Coupling with N-body orbital evolution**
