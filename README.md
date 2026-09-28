@@ -9,7 +9,7 @@
 
 1. [Overview](#1-overview)
 2. [Quick Start Guide (macOS)](#2-quick-start-guide-macos)
-   - 2.1 [Installing and Running IcyDwarf](#21-installation-instructions)
+   - 2.1 [Installing and Running IcyDwarf](#21-installing-and-running-icydwarf)
    - 2.2 [Input File Description](#22-input-file-description)
    - 2.3 [Output Files Description](#23-output-files-description)
    - 2.4 [Benchmark Cases](#24-benchmark-cases)
@@ -577,7 +577,7 @@ Your *include* directories might be more simply found at `-I/usr/include`.
 *This section provides an overview of the physico-chemical processes modeled in IcyDwarf.*
 *Corresponding equations are not provided explicitly here, but they can be found in the references linked throughout.* *Browsing the source files listed below will show how these equations are implemented; all files are thoroughly commented and specific references are listed in code comments for as many equations as possible.*
 
-### Source File Overview
+### 3.1 Source File Overview
 
 | File | Primary Functions | Physical Models |
 |------|------------------|-----------------|
@@ -598,7 +598,7 @@ All files but the last four underpin the thermal-orbital evolution code. `Compre
 
 ---
 
-### 3.1 Thermal-Orbital Evolution
+### 3.2 Thermal-Orbital Evolution
 
 The thermal-orbital evolution module simulates the coupled thermal and dynamical evolution of icy bodies over geological timescales.
 
@@ -655,7 +655,7 @@ This file contains code for temperature evolution in the main `thermal()` functi
 
 ---
 
-### 3.2 Compression
+### 3.3 Compression
 
 The compression module calculates density, pressure, and porosity evolution due to self-gravity and overburden pressure for two- or three-layer planetary bodies. 
 The physical model is based on [Lorenzo et al. (2014)](https://www.hou.usra.edu/meetings/lpsc2014/pdf/1636.pdf), with addition of high-pressure phases of ice.
@@ -666,7 +666,7 @@ The physical model is based on [Lorenzo et al. (2014)](https://www.hou.usra.edu/
 
 ---
 
-### 3.3 Exsolution-Driven Cryovolcanic Ascent
+### 3.4 Exsolution-Driven Cryovolcanic Ascent
 
 The cryovolcanism module simulates the ascent of volatile-rich fluids through ice shells, driven by gas exsolution. Volatile solution equilibria are computed using the `CHNOSZ` package for `R`. The physico-chemical model is described in [Neveu et al. (2015b)](https://doi.org/10.1016/j.icarus.2014.03.043). It comprises a single source file, `Cryolava.h`, that reads a version of the thermal-orbital `xThermal.txt` output, albeit with less columns.
 
@@ -675,7 +675,7 @@ The cryovolcanism module simulates the ascent of volatile-rich fluids through ic
 
 ---
 
-### 3.4 Geochemical Parameter Exploration
+### 3.5 Geochemical Parameter Exploration
 
 The geochemistry module explores water-rock interaction across vast parameter spaces of temperature, pressure, composition, and water:rock ratios. 
 Calculations are done with the PHREEQC software, with scripting commands in `WaterRock_ParamExploration.h`, and the PHREEQC thermodynamic database and input-output files in the `PHREEQC-3.1.2` folder. 
@@ -685,7 +685,7 @@ An application is in [Neveu et al. (2017)](https://doi.org/10.1016/j.gca.2017.06
 
 ## 4. Development History and References
 
-### Key publications documenting IcyDwarf
+### 4.1 Key publications documenting IcyDwarf
 
 If you communicate or publish scientific results using this code, please acknowledge one of the references listed below. Each describes the development of one piece of the code. Thanks!
 
@@ -700,7 +700,7 @@ If you communicate or publish scientific results using this code, please acknowl
 | [Neveu & Rhoden (2017)](https://doi.org/10.1016/j.icarus.2017.06.011) | Tidal dissipation | Mimas |
 | [Neveu & Rhoden (2019)](https://doi.org/10.1038/s41550-019-0726-y) | Multi-moon system, rings, resonant orbital evolution | Saturn system |
 
-### Ongoing Developments
+### 4.2 Ongoing Developments
 
 **[Rust Port](https://github.com/racecraftr/icy_dwarf_rs):**
 Developer: Avi Gupta, Univ. Maryland
