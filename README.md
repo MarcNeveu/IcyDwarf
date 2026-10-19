@@ -545,30 +545,21 @@ The *PHREEQC* input file, `IcyDwarf/PHREEQC-3.1.2/io/inputIcyDwarf`, can be modi
 
 My compiling instructions look like this:
 
-For IcyDwarf (M3 Mac with Mac OS 14 Sonoma):
+For IcyDwarf (M3 Mac with Mac OS 26 Tahoe):
 
-	gcc -I/usr/local/include -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include -I/Library/Frameworks/R.framework/Versions/Current/Resources/include -I/Library/Frameworks/R.framework/Versions/Current/Resources/library/RInside/include -O3 -g -Wall -c -fmessage-length=0 -o IcyDwarf.o ../IcyDwarf.c -fopenmp
-	gcc -L/usr/lib -L/usr/local/lib -L/Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/lib /usr/local/lib/libiphreeqc-3.8.6.dylib /usr/local/lib/libiphreeqc.dylib /usr/local/lib/libiphreeqc.a -o IcyDwarf IcyDwarf.o -lR -lomp
+	clang -I/usr/local/include -I/Library/Frameworks/R.framework/Versions/Current/Resources/include -I/Library/Frameworks/R.framework/Versions/Current/Resources/library/RInside/include -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include -I/opt/homebrew/opt/lapack/include -O0 -g3 -Wall -c -fmessage-length=0 -o IcyDwarf.o ../IcyDwarf.c -Xclang -fopenmp
 
-For IcyDwarf (*clang gcc* with *XCode* 15 on Mac OS 14.6 Sonoma):
+	clang -L/usr/lib -L/usr/local/lib -L/Library/Frameworks/R.framework/Versions/Current/Resources/lib /usr/local/lib/libiphreeqc-3.8.6.dylib /usr/local/lib/libiphreeqc.dylib /usr/local/lib/libiphreeqc.a -L/opt/homebrew/opt/lapack/lib -o IcyDwarf IcyDwarf.o -lR -llapacke -llapack -lblas -lm  
 
-	gcc -I/usr/local/include -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include -I/Library/Frameworks/R.framework/Versions/Current/Resources/include -I/Library/Frameworks/R.framework/Versions/Current/Resources/library/RInside/include -O3 -g -Wall -c -fmessage-length=0 -arch x86_64 -o IcyDwarf.o ../IcyDwarf.c -fopenmp
-	gcc -L/usr/lib -L/usr/local/lib -L/Library/Frameworks/R.framework/Versions/4.1/Resources/lib -o IcyDwarf IcyDwarf.o -lR -ld_classic -lomp
-(remove the `-ld_classic` flag for compilation on Apple M1-M3 machine).
+Legacy instructions for IcyDwarfPlot (*gcc 6.2* on Mac OS 10.12 Sierra):
 
-For IcyDwarf (*gcc 11.2.0* on Mac OS 13.6 Ventura):
- 
-    gcc -I/usr/local/include -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include -I/Library/Frameworks/R.framework/Versions/Current/Resources/include -I/Library/Frameworks/R.framework/Versions/Current/Resources/library/RInside/include -O3 -g -Wall -c -fmessage-length=0 -arch x86_64 -fopenmp -o IcyDwarf.o ../IcyDwarf.c
-    gcc -L/usr/lib -L/usr/local/lib -L/Library/Frameworks/R.framework/Versions/4.1/Resources/lib -o IcyDwarf IcyDwarf.o /usr/local/lib/libiphreeqc-3.7.3.dylib /usr/local/lib/libiphreeqc.dylib /usr/local/lib/libiphreeqc.a -lgomp -lR -ld64
-
-For IcyDwarfPlot (*gcc 6.2* on Mac OS 10.12 Sierra):
-
-    gcc -I/usr/include -I/Library/Frameworks/SDL2.framework/Versions/A/Headers -I/Library/Frameworks/SDL2_image.framework/Versions/A/Headers -I/Library/Frameworks/SDL2_ttf.framework/Versions/A/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/GLUT.framework/Versions/A/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/OpenGL.framework/Versions/A/Headers -O3 -Wall -c -fmessage-length=0 -o IcyDwarfPlot.o ../IcyDwarfPlot.c 
-    gcc -F/Library/Frameworks -arch x86_64 -framework openGL -framework Cocoa -framework GLUT -framework SDL2 -framework SDL2_image -framework SDL2_ttf -o IcyDwarfPlot IcyDwarfPlot.o 
+	gcc -I/usr/include -I/Library/Frameworks/SDL2.framework/Versions/A/Headers -I/Library/Frameworks/SDL2_image.framework/Versions/A/Headers -I/Library/Frameworks/SDL2_ttf.framework/Versions/A/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/Cocoa.framework/Versions/A/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/GLUT.framework/Versions/A/Headers -I/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.9.sdk/System/Library/Frameworks/OpenGL.framework/Versions/A/Headers -O3 -Wall -c -fmessage-length=0 -o IcyDwarfPlot.o ../IcyDwarfPlot.c 
+    
+	gcc -F/Library/Frameworks -arch x86_64 -framework openGL -framework Cocoa -framework GLUT -framework SDL2 -framework SDL2_image -framework SDL2_ttf -o IcyDwarfPlot IcyDwarfPlot.o 
 
 You might need to specify the full path to gcc (e.g. `/usr/local/bin/gcc`) rather than simply the `gcc` alias.
 
-Your *include* directories might be more simply found at `-I/usr/include`.
+Your `include` directories might be more simply found at `-I/usr/include`.
 
 ---
 
